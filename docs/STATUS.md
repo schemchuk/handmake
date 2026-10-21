@@ -1,14 +1,12 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** Task 0 — done (interview closed and confirmed)
+- **Active agent:** claude-code
+- **Current task:** Spec — docs/01-spec.md draft v1
 - **Branch:** main
-- **Last commit:** 7fd7924 docs: interview round 3
-- **Next step:** Spec (Claude Code), awaiting Volodymyr's go
-- **Blocked on:** —
-- **Open questions for Volodymyr:**
-  - Impressum address: wife's home address vs c/o or service address (legal check).
-  - Instagram account to be created by Volodymyr (in progress, outside the repo).
+- **Last commit:** 7df583f docs: confirm interview summary and close task 0
+- **Next step:** Volodymyr reviews the spec (gate 2); then Architecture (Claude Code)
+- **Blocked on:** Volodymyr's spec review
+- **Open questions for Volodymyr:** see docs/01-spec.md, section 10 (Q1-Q4)
 
 ## Decisions so far
 - See docs/00-interview.md (rounds 0-3 and confirmed summary).
