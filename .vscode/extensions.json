@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "github.vscode-github-actions",
+    "yzhang.markdown-all-in-one",
+    "eamodio.gitlens",
+    "editorconfig.editorconfig"
+  ]
+}

@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local agent/tool state
+.remember/
+
+# Common build outputs and caches
+dist/
+build/
+out/
+coverage/
+.cache/
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+*.log
