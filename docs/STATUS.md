@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** Spec — docs/01-spec.md draft v1
+- **Current task:** Spec — docs/01-spec.md draft v2
 - **Branch:** main
-- **Last commit:** 7df583f docs: confirm interview summary and close task 0
+- **Last commit:** 9027e3e docs: add spec draft v1
 - **Next step:** Volodymyr reviews the spec (gate 2); then Architecture (Claude Code)
 - **Blocked on:** Volodymyr's spec review
 - **Open questions for Volodymyr:** see docs/01-spec.md, section 10 (Q1-Q4)

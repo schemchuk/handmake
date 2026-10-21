@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: draft v1 (2026-10-21), awaiting Volodymyr's review. Source: docs/00-interview.md.
+Status: draft v2 (2026-10-21), awaiting Volodymyr's review. Source: docs/00-interview.md.
 
 ## 1. Problem and goals
 
@@ -134,14 +134,21 @@ Acceptance criteria:
 - Before enabling anything paid, Volodymyr checks the tax and volunteer status questions listed in
   docs/research/001-market-scan.md, section 6.
 
-## 9. Non-goals
+## 9. Non-goals and deferred features
 
+Not planned:
 - No posting to Facebook, Threads, TikTok, nebenan.de or Meetup.
-- No fully AI-generated posts in phase 1; AI only translates and humanizes.
-- No web admin panel; the bot is the only authoring interface.
-- No scheduled or queued publishing in the MVP (publish happens on button press).
-- No analytics dashboard; metrics are read manually from Telegram and Instagram.
-- No multi-group onboarding UI; a second group is added by configuration.
+
+Deferred: out of the MVP, but planned as possible later features. The architecture must not block them:
+- **Web admin panel** as a second authoring interface next to the bot. Design: drafts and publishing
+  logic live behind an interface that is independent of Telegram.
+- **Scheduled publishing** (publish at a chosen date and time). Design: a post can carry a `publishAt`
+  field; in the MVP it is always "now".
+- **Analytics** (subscribers, reach, per-post stats). Design: the ledger keeps per-channel post IDs so
+  stats can be fetched later.
+- **Fully AI-generated posts.** Design: `provenance: ai-generated` is already a valid value; such posts go
+  through the same preview and Publish step.
+- **Multi-group onboarding UI.** Until then a second group is added by configuration.
 
 ## 10. Open questions
 
