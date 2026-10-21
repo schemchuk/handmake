@@ -1,6 +1,6 @@
 # 003 — Publishing runs in GitHub Actions; Git is the source of truth
 
-Status: accepted · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21 · Amended 2026-10-21 by ADR 006
 
 ## Context
 Publishing must be idempotent, auditable and retryable (F11, F15). Published posts must land in the
@@ -25,3 +25,7 @@ Instagram (phase 1b) uses the committed photo's public URL in the repo.
   (Git rules, approved 2026-10-21). If branch protection is enabled on `main`, Volodymyr allows the
   workflow's bot identity to push, and CI checks that the workflow's commits touch only `content/`.
 - Publishing works without the Worker too (manual `workflow_dispatch` with a draft payload), useful for tests.
+
+## Amendment (ADR 006)
+GitHub Actions is the `PublishRunner` implementation **for the circle only**. External tenants will use
+a queue-based runner and their own `ContentStore`; this repo's workflow never publishes for them.
