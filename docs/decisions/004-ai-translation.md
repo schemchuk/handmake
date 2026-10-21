@@ -1,6 +1,6 @@
 # 004 — AI translation and humanizer
 
-Status: proposed (model choice open) · Date: 2026-10-21
+Status: accepted (model choice open) · Date: 2026-10-21
 
 ## Context
 UA posts are adapted to German and must not read as machine output (interview round 1). Volume is

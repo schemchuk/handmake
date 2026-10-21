@@ -2,7 +2,7 @@
 
 How the system is built; major choices are recorded in docs/decisions/.
 
-Status: draft v1 (2026-10-21), awaiting Volodymyr's review. Implements docs/01-spec.md v3.
+Status: approved v1 (2026-10-21). O1-O3 use the defaults below until Volodymyr confirms. Implements docs/01-spec.md v3.
 
 ## 1. Overview
 
@@ -183,6 +183,9 @@ See open question O1 about sending the album twice.
 | [005](decisions/005-editing-and-photos.md) | MVP editing by reply in chat; photos via Telegram file_id; Mini App later |
 
 ## 10. Open questions
+
+Working defaults (pending Volodymyr's confirmation): O1 = text-only DE reply to the UA album;
+O2 = no direct commits until AGENTS.md is amended (task T00); O3 = `claude-opus-5-5`.
 
 - **O1** Telegram layout: should the DE post repeat the photo album, or be a text-only post replying to
   the UA album? Repeating doubles the photos in the channel; a reply keeps the feed cleaner.

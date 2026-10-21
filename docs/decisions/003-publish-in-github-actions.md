@@ -1,6 +1,6 @@
 # 003 — Publishing runs in GitHub Actions; Git is the source of truth
 
-Status: proposed · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 Publishing must be idempotent, auditable and retryable (F11, F15). Published posts must land in the

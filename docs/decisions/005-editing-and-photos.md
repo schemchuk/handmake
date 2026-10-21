@@ -1,6 +1,6 @@
 # 005 — Editing UX in the MVP and photo handling
 
-Status: proposed · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 The author must edit both language versions before publishing (spec F9). Photos must be EXIF-free

@@ -1,6 +1,6 @@
 # 002 — Bot hosting: Cloudflare Workers + D1
 
-Status: proposed · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 The bot must react within seconds (preview, buttons, edits), so it needs an always-on webhook.
