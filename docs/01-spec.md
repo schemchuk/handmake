@@ -120,8 +120,9 @@ Acceptance criteria:
 - **Phase 1b:** Instagram adapter (professional account, Instagram Login API, no Facebook Page), F18, F19.
 - **Phase 2:** bilingual website and blog built from the content folders in the repo, with Impressum and
   Datenschutzerklärung pages. Legal texts are drafts for Volodymyr to verify, never presented as final.
-- **Phase 3:** participant-facing bot (sign-up, reminders). Requires explicit approval because it processes
-  personal data.
+- **Phase 3:** participant-facing bot (sign-up, reminders, and work-of-week submissions: participants send
+  their photos to the bot, the author moderates, the participant accepts the contest rules and photo-use
+  licence with a button). Requires explicit approval because it processes personal data.
 - **Presentation:** slide deck built from the author's photos and a guided Q&A, no third-party branding.
 
 ## 7. Non-functional requirements
@@ -157,6 +158,8 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
   stats can be fetched later.
 - **Fully AI-generated posts.** Design: `provenance: ai-generated` is already a valid value; such posts go
   through the same preview and Publish step.
+- **Instagram contest** (idea 2026-10-21): open work-of-the-week style contest on Instagram for people
+  outside the circle, aimed at bloggers. Feasibility and legal notes: docs/research/002-instagram-contest.md.
 - **Multi-tenant onboarding** for other groups and bloggers (sign-up, connecting their channels, billing).
   Until then a tenant is added by configuration and secrets, by the operator.
 
@@ -171,8 +174,8 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
   answered: AI picks among the tied ones.
 - **Q6** Work of the week, approval: do the poll and the result post need the author's Publish, or go out
   automatically? Default until answered: both need her Publish.
-- **Q7** Work of the week, candidates: all photos published that week (newest 10 if more), or does the
-  author preselect? Default until answered: one photo per published post, newest 10.
+- **Q7** Resolved (2026-10-21): in phase 1, candidates are photos from the author's own posts (one per
+  post, newest 10). Participant submissions come in phase 3 via the bot (see section 6).
 - **Q8** Work of the week, timing: when does the poll open and close? Default until answered: opens Monday
   10:00, closes Wednesday 20:00 Europe/Berlin, result announced before the Thursday meeting.
 - **Q4** Resolved: meetings every Thursday at 14:00 Europe/Berlin. Stored in group configuration so
@@ -215,3 +218,5 @@ requirements make sure the current build does not have to be rewritten for it.
   `../coachHelp/docs/legal/`.
 
 Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
+- **N9 Submissions port.** A `SubmissionSource` port exists for user-submitted contest entries; no
+  implementation until phase 3 (bot submissions) or later (Instagram, see deferred features).

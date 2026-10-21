@@ -22,4 +22,7 @@ replies to it. Opening and closing are Worker cron jobs; closing calls `closePol
   the result post.
 - The Worker performs one channel action itself (`closePoll`); all posting still goes through the
   publisher. Documented in architecture 4.4.
-- Open defaults until confirmed: candidates (spec Q7), timing (Q8), ties (Q5), approval (Q6).
+- Candidates in phase 1 come from the author's posts (Q7 resolved). Participant submissions arrive later
+  through the `SubmissionSource` port: Telegram bot with author moderation and rules/licence consent
+  (phase 3); option A (linked discussion group) was rejected as harder to moderate.
+- Open defaults until confirmed: timing (Q8), ties (Q5), approval (Q6).

@@ -137,7 +137,8 @@ analytics). The Git repo stays the source of truth; the D1 index can be rebuilt 
 ### 4.4 Work of the week (F19, after the MVP)
 
 1. Worker cron (default Monday 10:00 tenant time) collects candidates from the D1 index: one photo per
-   post published in the last 7 days, newest 10.
+   post published in the last 7 days, newest 10. Later, candidates may also come from a
+   `SubmissionSource` (phase 3: moderated bot submissions).
 2. It creates a `wotw-poll` draft: album of candidates numbered 1..N plus a poll "No 1".."No N". The
    author gets the usual preview and Publish (default for Q6).
 3. The publisher delivers it through the channel's poll capability (`sendMediaGroup`, then `sendPoll`
@@ -244,6 +245,7 @@ implementations only when needed.**
 | `Notifier` | messages to author and operator | Telegram bot | e-mail |
 | `SecretResolver` | resolve secret names per tenant | environment / GitHub Secrets | Worker secrets store per tenant |
 | `Clock` / `Scheduler` | time and recurring triggers | Worker cron | same |
+| `SubmissionSource` | contest entries submitted by participants | none (phase 1 uses the author's posts) | Telegram bot submissions (phase 3), Instagram (idea) |
 
 ### 11.2 Patterns
 
