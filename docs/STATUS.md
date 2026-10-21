@@ -1,9 +1,9 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T00 — content-commit exception in AGENTS.md (done)
+- **Active agent:** none
+- **Current task:** Tasks — docs/03-tasks.md v1 awaiting review (T00 done)
 - **Branch:** main
-- **Last commit:** bd43056 docs: record decisions on Telegram layout, commits, model
+- **Last commit:** fe07430 docs: allow publish workflow to commit content to main
 - **Next step:** Volodymyr reviews tasks (gate 4). After approval: H-tasks by Volodymyr, T01 by Kimi Code.
 - **Blocked on:** Volodymyr's task review
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
