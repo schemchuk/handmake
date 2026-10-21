@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: approved v3 (2026-10-21). Source: docs/00-interview.md.
+Status: draft v4 (2026-10-21), scope change awaiting review. v3 was approved. Source: docs/00-interview.md.
 
 ## 1. Problem and goals
 
@@ -15,8 +15,9 @@ Goals, in priority order:
    as a full-stack developer: bot, AI step, publishing pipeline, CI/CD, tests, docs.
 2. **Real use.** Inform and attract participants. Targets after about 3 months: 20 participants in the
    studio, 160 Telegram subscribers, 1000+ Instagram followers.
-3. **Reusable product.** The same chain can later be offered to other volunteer groups and individual
-   bloggers. Success signal: other groups ask for it.
+3. **Reusable product.** The same platform will later be offered to other volunteer groups and bloggers,
+   on any social network. Not developed now, but the design must be ready for it (section 12).
+   Success signal: other groups and bloggers ask for it.
 4. **Commercialization** of the circle itself: a stub only (see section 8).
 
 ## 2. Users and roles
@@ -87,8 +88,16 @@ IDs are referenced by tasks and tests.
 
 ### Later in phase 1 (after the MVP)
 - **F18** Automatic recurring posts: meeting announcement and meeting reminder, from a configured schedule.
-- **F19** "Work of the week": the author may mark a photo; if she does not, AI picks one from the week's
-  published photos. The result goes through the same preview and Publish step.
+- **F19** "Work of the week" is chosen by the channel's readers:
+  - The bot builds a candidate set from the week's published photos (max 10, numbered 1..N).
+  - It posts the candidates as an album and, as a reply, a Telegram poll with options "No 1".."No N".
+    Channel polls are anonymous, so no voter data is collected.
+  - At the configured closing time the bot stops the poll (`stopPoll`) and reads the final counts.
+  - Winner: most votes. If the poll has no votes (or cannot be read), AI picks the winner from the
+    candidate photos and the post says so. Ties: see open question Q5.
+  - A result post announces the winner on Telegram, and on Instagram as a normal post (Instagram has
+    no poll API).
+  - Poll and result posts are drafts like any other post and need the author's Publish (see Q6).
 
 ## 5. MVP (first week)
 
@@ -136,8 +145,8 @@ Acceptance criteria:
 
 ## 9. Non-goals and deferred features
 
-Not planned:
-- No posting to Facebook, Threads, TikTok, nebenan.de or Meetup.
+Not built now, but supported by design (a new channel = a new adapter, no core changes):
+- Facebook, Threads, TikTok, YouTube, X, Mastodon/Bluesky, nebenan.de, Meetup and others.
 
 Deferred: out of the MVP, but planned as possible later features. The architecture must not block them:
 - **Web admin panel** as a second authoring interface next to the bot. Design: drafts and publishing
@@ -148,7 +157,8 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
   stats can be fetched later.
 - **Fully AI-generated posts.** Design: `provenance: ai-generated` is already a valid value; such posts go
   through the same preview and Publish step.
-- **Multi-group onboarding UI.** Until then a second group is added by configuration.
+- **Multi-tenant onboarding** for other groups and bloggers (sign-up, connecting their channels, billing).
+  Until then a tenant is added by configuration and secrets, by the operator.
 
 ## 10. Open questions
 
@@ -157,6 +167,14 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
   Decided handling: Impressum data is never committed to the repo; it is injected at site build time
   from secrets (phase 2), so a later address change leaves no trace in Git history.
 - **Q3** Which AI provider and model for translation (decided in architecture, within the budget).
+- **Q5** Work of the week, tie: AI picks among the tied candidates, or several winners? Default until
+  answered: AI picks among the tied ones.
+- **Q6** Work of the week, approval: do the poll and the result post need the author's Publish, or go out
+  automatically? Default until answered: both need her Publish.
+- **Q7** Work of the week, candidates: all photos published that week (newest 10 if more), or does the
+  author preselect? Default until answered: one photo per published post, newest 10.
+- **Q8** Work of the week, timing: when does the poll open and close? Default until answered: opens Monday
+  10:00, closes Wednesday 20:00 Europe/Berlin, result announced before the Thursday meeting.
 - **Q4** Resolved: meetings every Thursday at 14:00 Europe/Berlin. Stored in group configuration so
   changes need no code. Place wording stays "Landshut" without naming the host organization.
 
@@ -171,3 +189,29 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
   - Her own face in her own posts is her decision; the consent check (F10) covers other people.
   - The handle and account IDs are not stored in the public repo; they live in configuration secrets.
   - The circle's brand ("Faden und Stimmung") is still used on Telegram and the website.
+
+## 12. Product readiness: scalability and extensibility (added 2026-10-21)
+
+Volodymyr will later offer the platform to other volunteer groups and bloggers. Not developed now; these
+requirements make sure the current build does not have to be rewritten for it.
+
+- **N1 Tenant-aware.** Every entity (draft, post, ledger, poll, config, secret reference) carries a
+  `tenantId`. The circle is the first tenant. No global state shared between tenants.
+- **N2 Pluggable channels.** Each social network is an adapter behind one interface, registered by key.
+  Core logic never imports a specific network.
+- **N3 Pluggable content store.** "Git repository" is one implementation (used for the circle, feeds its
+  website). Other tenants' content must never land in this public repo.
+- **N4 Pluggable services.** Translation, secret storage, scheduling and notifications sit behind
+  interfaces, so providers can be swapped.
+- **N5 Isolation and fairness.** Publishing is queued per tenant; a slow or failing tenant does not block
+  others. Retries and idempotency keys include `tenantId`.
+- **N6 Per-tenant settings.** Languages, channels, schedule, poll rules and enabled features are
+  configuration per tenant (feature flags), not code.
+- **N7 Observability.** Every publish, poll and AI call logs a structured event with `tenantId` and
+  `postId` (no message bodies, no tokens).
+- **N8 Legal readiness (flag, not legal advice).** Serving other people makes Volodymyr a data processor:
+  terms of service, data processing agreements, privacy policy and Meta App Review for third-party
+  Instagram accounts are needed before the first external tenant. Starting material:
+  `../coachHelp/docs/legal/`.
+
+Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
