@@ -2,7 +2,7 @@
 
 How the system is built; major choices are recorded in docs/decisions/.
 
-Status: approved v1 (2026-10-21). O1-O3 use the defaults below until Volodymyr confirms. Implements docs/01-spec.md v3.
+Status: approved v1 (2026-10-21). O1-O3 confirmed by Volodymyr (2026-10-21). Implements docs/01-spec.md v3.
 
 ## 1. Overview
 
@@ -121,8 +121,8 @@ list, Instagram default language (`de`), meeting schedule (Thursday 14:00 Europe
 5. Re-running the workflow for the same ID skips the steps already done (F11).
 
 Telegram rendering (`core`): UA post = photo album with the UA text as caption if it fits 1024
-characters, otherwise album then a separate text message (up to 4096). DE post follows the same rule.
-See open question O1 about sending the album twice.
+characters, otherwise album then a separate text message (up to 4096). DE post is a text-only message
+replying to the UA album (O1), split into several replies only if it exceeds 4096 characters.
 
 ### 4.3 Failure handling
 
@@ -184,8 +184,8 @@ See open question O1 about sending the album twice.
 
 ## 10. Open questions
 
-Working defaults (pending Volodymyr's confirmation): O1 = text-only DE reply to the UA album;
-O2 = no direct commits until AGENTS.md is amended (task T00); O3 = `claude-opus-5-5`.
+Resolved 2026-10-21: O1 = DE post is a text-only reply to the UA album; O2 = the publish workflow may
+commit to `main` under `content/` only (AGENTS.md amended, task T00); O3 = `claude-opus-5-5`.
 
 - **O1** Telegram layout: should the DE post repeat the photo album, or be a text-only post replying to
   the UA album? Repeating doubles the photos in the channel; a reply keeps the feed cleaner.

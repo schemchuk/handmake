@@ -1,6 +1,6 @@
 # 004 — AI translation and humanizer
 
-Status: accepted (model choice open) · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 UA posts are adapted to German and must not read as machine output (interview round 1). Volume is
@@ -17,7 +17,7 @@ about 10 posts per month. Budget below 10 EUR/month.
 Option 1, using the official Anthropic TypeScript SDK. The prompt version and model ID are written to
 the post's frontmatter (`versions.de.model`, `versions.de.prompt`) for provenance.
 
-Model (to confirm by Volodymyr): default `claude-opus-5-5` (best quality for natural German).
+Model (confirmed by Volodymyr 2026-10-21): `claude-opus-5-5` (best quality for natural German).
 Cheaper alternatives are `claude-sonnet-5-5` or `claude-haiku-4-5`. At this volume all of them cost
 well under 1 EUR/month, so quality decides. The model ID is configuration, not code.
 

@@ -18,7 +18,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H3 | Anthropic API key (console), spending limit set to 10 EUR. | T12, T15 |
 | H4 | Fine-grained GitHub token: this repo only, permission "Contents: read and write" for `repository_dispatch`. | T16 |
 | H5 | Put secrets into GitHub Secrets and Worker secrets (names in `.env.example`). | T11, T16 |
-| H6 | Decide O1 (Telegram DE layout) and O2 (content commits to main). | T05, T00, T10 |
+| H6 | ~~Decide O1 and O2~~ done 2026-10-21. | T05, T00, T10 |
 
 ## Tasks
 
@@ -67,7 +67,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 ### T05 — Telegram renderer and limits (`core`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T03, H6 (O1)
 - Change: `renderTelegram(post, config)` returns an ordered list of send operations: UA album with
-  caption if ≤ 1024 chars else album + text message (≤ 4096); DE per O1. Text over 4096 → validation
+  caption if ≤ 1024 chars else album + text message (≤ 4096); DE as a text-only reply to the UA album (O1). Text over 4096 → validation
   error (F9). Plain text, no parse mode in the MVP.
 - Acceptance: the same function output is used later by the bot preview and the publisher.
 - Tests: table tests for 0 / 1 / 10 photos, caption at 1024 / 1025 chars, text at 4096 / 4097 chars.
