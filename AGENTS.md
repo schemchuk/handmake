@@ -55,6 +55,7 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
 - The Active agent is responsible for committing and pushing. After EVERY logical block (one coherent unit of work): update STATUS.md, stage only relevant files, commit, `git push`, then tell me the hash and a one-line summary. Never batch several blocks into one commit.
 - Commit format: Conventional Commits (docs:, feat:, fix:, chore:, test:), imperative, under 72 chars, plus a trailer line `Agent: claude-code` or `Agent: kimi-code`.
 - Docs and setup commits may go to `main`. Code goes on `feat/<task-id>-<slug>` branches and is merged only by me.
+- Exception (approved 2026-10-21, ADR 003): the publish workflow in GitHub Actions may commit published posts and ledger entries directly to `main`, under `content/` only, as the bot identity. It never touches any other path. Agents never use this exception.
 - Never force-push, never rewrite history, never commit `.env` or any secret. Run `git status` and `git diff --staged` before each commit and check for secrets.
 - If a push is rejected: `git pull --rebase`, resolve, push again; on non-trivial conflicts stop and ask me.
 

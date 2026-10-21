@@ -21,6 +21,7 @@ Instagram (phase 1b) uses the committed photo's public URL in the repo.
 
 ## Consequences
 - The author waits about a minute for "published"; the bot shows "publishing…" meanwhile.
-- The workflow commits to `main` under `content/` only. This needs an exception in AGENTS.md (open
-  question O2 in the architecture).
+- The workflow commits to `main` under `content/` only, as allowed by the exception in AGENTS.md
+  (Git rules, approved 2026-10-21). If branch protection is enabled on `main`, Volodymyr allows the
+  workflow's bot identity to push, and CI checks that the workflow's commits touch only `content/`.
 - Publishing works without the Worker too (manual `workflow_dispatch` with a draft payload), useful for tests.

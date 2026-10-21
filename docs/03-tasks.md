@@ -22,7 +22,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ## Tasks
 
-### T00 — Allow content commits to main in AGENTS.md
+### T00 — Allow content commits to main in AGENTS.md ✅ done 2026-10-21
 - Owner: claude-code · Reviewer: Volodymyr · Depends on: H6 (O2 approved)
 - Change: Git rules get an exception: the publish workflow may commit to `main` under `content/` only,
   as the bot identity. Branch protection note for Volodymyr.

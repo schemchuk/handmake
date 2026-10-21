@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** Tasks — docs/03-tasks.md draft v1 (T00-T17, H1-H6)
+- **Current task:** T00 — content-commit exception in AGENTS.md (done)
 - **Branch:** main
-- **Last commit:** b154ae2 docs: add MVP task breakdown
+- **Last commit:** bd43056 docs: record decisions on Telegram layout, commits, model
 - **Next step:** Volodymyr reviews tasks (gate 4). After approval: H-tasks by Volodymyr, T01 by Kimi Code.
 - **Blocked on:** Volodymyr's task review
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
