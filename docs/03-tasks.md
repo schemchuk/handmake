@@ -2,7 +2,7 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: draft v1 (2026-10-21), awaiting Volodymyr's review. Scope: MVP (spec section 5), Telegram only.
+Status: approved v1 (2026-10-21). Scope: MVP (spec section 5), Telegram only.
 Each task: one branch `feat/<id>-<slug>`, one PR, reviewable in 10-15 minutes. Do tasks in order unless
 "Depends on" says otherwise. A task is done when its tests pass in CI, docs are updated, and Volodymyr
 merged it.
@@ -116,6 +116,9 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 - Acceptance: a manual `workflow_dispatch` with the sample payload publishes to the **test** channel;
   a second run does not duplicate.
 - Tests: workflow lint (actionlint) in CI; manual run documented in the PR.
+- Reviewer reminder (before merge): check `main` protection (`gh api repos/schemchuk/handmake/branches/main --jq .protected`).
+  If protection or a ruleset is enabled, tell Volodymyr to allow `github-actions[bot]` to push to `main`
+  (content/ only); otherwise the publish workflow cannot commit. Status 2026-10-21: not protected.
 
 ### T12 — AI translation and humanizer prompt (`ai`)
 - Owner: claude-code · Reviewer: kimi-code · Depends on: T01, H3 for the live check
