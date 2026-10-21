@@ -75,3 +75,7 @@ Background: mostly TypeScript and Python, plus HTML/CSS, some Bash. Bot hosting:
 **Q6. Legal and presentation.**
 - (a) Impressum will use the wife's address. *Flag: this publishes a private home address; alternatives (c/o or Impressum service address) to be checked by Volodymyr — not legal advice.*
 - (b) A presentation is needed as slides. The wife uploads photos and answers questions in a dialogue that Volodymyr starts with Claude; slides are built from that. No third-party branding.
+
+## Summary confirmed (2026-10-21)
+
+Volodymyr confirmed the 10-line summary. Addition: Impressum and Datenschutzerklärung are required deliverables (drafts only; final legal text is Volodymyr's responsibility, not generated as final).
