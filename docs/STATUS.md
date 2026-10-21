@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** Task 0 / market research (before interview)
+- **Current task:** Task 0 / Step 3 — interview round 2
 - **Branch:** main
-- **Last commit:** 60ce79e chore: add repo skeleton and docs structure
-- **Next step:** Interview round 1 (Claude Code), awaiting answers
+- **Last commit:** b528031 docs: add market scan of similar projects
+- **Next step:** Interview round 2 (Claude Code), awaiting answers
 - **Blocked on:** —
 - **Open questions for Volodymyr:** —
 
