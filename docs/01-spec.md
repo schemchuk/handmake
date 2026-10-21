@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: draft v4 (2026-10-21), scope change awaiting review. v3 was approved. Source: docs/00-interview.md.
+Status: approved v4 (2026-10-21). Source: docs/00-interview.md.
 
 ## 1. Problem and goals
 

@@ -1,6 +1,6 @@
 # 006 — Tenant-aware from day one, pluggable content store
 
-Status: proposed · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 The platform will later be offered to other volunteer groups and bloggers (spec v4, section 12).

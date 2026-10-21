@@ -2,7 +2,7 @@
 
 How the system is built; major choices are recorded in docs/decisions/.
 
-Status: draft v2 (2026-10-21), awaiting review. v1 approved; v2 adds ports, tenancy and the work-of-week poll. Implements docs/01-spec.md v4.
+Status: approved v2 (2026-10-21). v2 adds ports, tenancy and the work-of-week poll. Implements docs/01-spec.md v4.
 
 ## 1. Overview
 

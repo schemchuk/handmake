@@ -1,6 +1,6 @@
 # 007 — Hexagonal core with a channel registry
 
-Status: proposed · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 Today only Telegram and Instagram are built, but bloggers will need other networks. lumara showed what

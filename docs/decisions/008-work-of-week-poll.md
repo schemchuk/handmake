@@ -1,6 +1,6 @@
 # 008 — Work of the week via a channel poll
 
-Status: proposed · Date: 2026-10-21
+Status: accepted · Date: 2026-10-21
 
 ## Context
 Volodymyr decided that readers choose the work of the week by voting in the Telegram channel; if there

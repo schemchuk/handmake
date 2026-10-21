@@ -2,7 +2,7 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: draft v2 (2026-10-21), awaiting review (v1 approved; v2 adds ports and tenancy, spec v4).
+Status: approved v2 (2026-10-21). v2 adds ports and tenancy (spec v4).
 Scope: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
 Each task: one branch `feat/<id>-<slug>`, one PR, reviewable in 10-15 minutes. Do tasks in order unless
 "Depends on" says otherwise. A task is done when its tests pass in CI, docs are updated, and Volodymyr
