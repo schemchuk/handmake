@@ -1,13 +1,13 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** Spec — docs/01-spec.md draft v3
+- **Current task:** Architecture — docs/02-architecture.md draft v1 + ADR 001-005
 - **Branch:** main
-- **Last commit:** 9eea467 docs: record spec review decisions
-- **Next step:** Volodymyr reviews the spec (gate 2); then Architecture (Claude Code)
-- **Blocked on:** Volodymyr's spec review
-- **Open questions for Volodymyr:** see docs/01-spec.md, section 10 (Q2, Q3)
+- **Last commit:** 1f82261 docs: record meeting schedule and Impressum handling
+- **Next step:** Volodymyr reviews the architecture (gate 3); then Tasks (Claude Code)
+- **Blocked on:** Volodymyr's architecture review
+- **Open questions for Volodymyr:** docs/02-architecture.md section 10 (O1 Telegram layout, O2 content commits to main, O3 AI model); spec Q2 (Impressum address, phase 2)
 
 ## Decisions so far
-- See docs/00-interview.md (rounds 0-3 and confirmed summary).
+- Interview: docs/00-interview.md (confirmed). Spec: docs/01-spec.md v3 (approved 2026-10-21).
 - Market scan: docs/research/001-market-scan.md
