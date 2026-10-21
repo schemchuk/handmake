@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T01 — Workspace scaffold (docs/03-tasks.md)
-- **Branch:** feat/T01-workspace-scaffold (to be created by kimi-code)
-- **Last commit:** a8a14be docs: update status after T00
-- **Next step:** Kimi Code implements T01; Claude Code reviews. Volodymyr does H1-H5 in a separate session.
+- **Active agent:** claude-code
+- **Current task:** Scope change — multi-network, multi-tenant readiness, poll-based work of the week
+- **Branch:** main
+- **Last commit:** b479d85 Add MIT license
+- **Next step:** Update AGENTS.md, spec, architecture, tasks; then hand T01 back to kimi-code
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
