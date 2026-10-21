@@ -2,7 +2,8 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: approved v1 (2026-10-21). Scope: MVP (spec section 5), Telegram only.
+Status: draft v2 (2026-10-21), awaiting review (v1 approved; v2 adds ports and tenancy, spec v4).
+Scope: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
 Each task: one branch `feat/<id>-<slug>`, one PR, reviewable in 10-15 minutes. Do tasks in order unless
 "Depends on" says otherwise. A task is done when its tests pass in CI, docs are updated, and Volodymyr
 merged it.
@@ -31,8 +32,8 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T01 — Workspace scaffold
 - Owner: kimi-code · Reviewer: claude-code
-- Change: pnpm workspace (`apps/bot`, `apps/publisher`, `packages/core`, `packages/adapters`,
-  `packages/ai`), TypeScript strict base config, ESLint + Prettier, Vitest, `.nvmrc` (Node LTS),
+- Change: pnpm workspace (`apps/bot`, `apps/publisher`, `packages/core`, `packages/channels`,
+  `packages/stores`, `packages/ai`), TypeScript strict base config, ESLint + Prettier, Vitest, `.nvmrc` (Node LTS),
   root scripts `lint`, `typecheck`, `test`, `build`. Update `.vscode/extensions.json` with ESLint,
   Prettier, Vitest.
 - Acceptance: `pnpm i && pnpm lint && pnpm typecheck && pnpm test` pass on a clean clone; each package
@@ -49,24 +50,38 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T03 — Post schema and frontmatter I/O (`core`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T01
-- Change: zod schema for a post (architecture section 3: id ULID, group, date, publishAt, type, photos,
+- Change: zod schema for a post (architecture section 3: id ULID, tenant, date, publishAt, type, photos,
   channels, versions with provenance `human | ai-assisted | ai-generated`); `parsePost(md)` and
   `serializePost(post)` with `<!-- lang:xx -->` sections.
 - Acceptance: round-trip `serialize(parse(x)) == x` for fixtures; invalid provenance or missing language
   section raises a clear error.
 - Tests: unit tests with 3 valid and 4 invalid fixtures.
 
-### T04 — Group config schema and loader (`core`)
+### T04 — Tenant config schema and loader (`core`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T01
-- Change: zod schema and loader for `config/groups/*.yaml`: name, languages and order, channels,
-  `instagram.defaultLanguage`, meeting schedule (weekday, time, IANA zone), empty `offerings`, secret
-  *names*. Add `config/groups/faden-und-stimmung.yaml` (Thursday 14:00 Europe/Berlin, languages uk, de).
-- Acceptance: loader rejects any key that looks like a secret value; the real config file validates.
-- Tests: unit tests for valid config, missing fields, unknown channel, secret-looking value.
+- Change: zod schema and loader for `config/tenants/*.yaml`: tenant ID and name, languages and order,
+  enabled channels with per-channel settings (e.g. `instagram.language`), content store type, meeting
+  schedule (weekday, time, IANA zone), work-of-week poll settings, feature flags, empty `offerings`,
+  secret *names*. Add `config/tenants/faden-und-stimmung.yaml` (Thursday 14:00 Europe/Berlin, uk, de).
+- Acceptance: loader rejects any key that looks like a secret value; the real config file validates;
+  unknown channel keys are rejected against the channel registry's key list.
+- Tests: unit tests for valid config, missing fields, unknown channel, secret-looking value, two tenants.
 
-### T05 — Telegram renderer and limits (`core`)
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T03, H6 (O1)
-- Change: `renderTelegram(post, config)` returns an ordered list of send operations: UA album with
+### T04b — Ports, channel registry and fakes (`core`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T03
+- Change: TypeScript interfaces in `packages/core/ports` per architecture 11.1 (`ChannelAdapter` with
+  `capabilities`, `render`, `deliver`, optional `openPoll`/`closePoll`; `ContentStore`; `DraftStore`;
+  `PublishRunner`; `Translator`; `WinnerPicker`; `MediaSource`; `Notifier`; `SecretResolver`; `Clock`).
+  `ChannelRegistry` (register, get, list keys). In-memory fakes for every port in `packages/core/testing`.
+  Idempotency key helper `tenantId:postId:channel:opIndex`.
+- Acceptance: no port imports any network, SDK or Node-only module; fakes satisfy the interfaces.
+- Tests: registry tests (duplicate key rejected, unknown key error); fake contract tests reused later
+  by real adapters.
+
+### T05 — Telegram renderer and limits (`channels/telegram`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T04b
+- Change: the pure `render(post, settings)` part of the Telegram `ChannelAdapter`, with declared
+  `capabilities` (max 10 photos, caption 1024, message 4096, polls: true). It returns an ordered list of send operations: UA album with
   caption if ≤ 1024 chars else album + text message (≤ 4096); DE as a text-only reply to the UA album (O1). Text over 4096 → validation
   error (F9). Plain text, no parse mode in the MVP.
 - Acceptance: the same function output is used later by the bot preview and the publisher.
@@ -74,14 +89,15 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T06 — Ledger model (`core`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T03
-- Change: ledger type and pure functions: `pendingChannels(ledger, post)`, `markDone`, `markFailed`;
-  JSON (de)serialization.
+- Change: ledger type keyed by `tenantId` + `postId`, pure functions: `pendingChannels(ledger, post)`,
+  `markDone`, `markFailed`; JSON (de)serialization.
 - Acceptance: a channel marked `done` is never returned as pending; failures keep the last error.
 - Tests: unit tests for all transitions, including a re-run after partial failure.
 
-### T07 — Telegram adapter (`adapters`)
+### T07 — Telegram adapter delivery (`channels/telegram`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T05, H1 for the manual check
-- Change: `ChannelAdapter` interface (`deliver(ops) → remote IDs`) and the Telegram implementation
+- Change: `deliver(ops) → remote IDs` of the Telegram `ChannelAdapter` (interface from T04b), registered
+  in the registry under `telegram`; implementation
   (`sendMediaGroup`, `sendMessage`, `reply_parameters`) with retry on 429 honouring `retry_after`.
   Bot token injected, never logged.
 - Acceptance: tests run without network; a manual script posts a sample to the **test** channel.
@@ -93,9 +109,10 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 - Acceptance: output has no EXIF/GPS; output dimensions respect the limit.
 - Tests: fixture JPEG with GPS EXIF → output checked for no metadata; PNG and large image cases.
 
-### T09 — Content folder builder and dry-run (`publisher`)
+### T09 — Git-repo content store and dry-run (`stores/git-repo`, `publisher`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T03, T04, T05, T08
-- Change: from a dispatch payload (draft ID, texts, file_ids, provenance) build
+- Change: `GitRepoContentStore` implementing `ContentStore`. From a dispatch payload (tenant ID, draft ID,
+  texts, file_ids, provenance) build
   `content/posts/<date>-<slug>/` with `index.md` and photos; `publisher --dry-run <payload.json>` prints
   the planned Telegram operations and writes nothing outside a temp dir.
 - Acceptance: the folder validates with `parsePost`; dry-run output matches `renderTelegram`.
@@ -103,7 +120,8 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T10 — Delivery with ledger idempotency (`publisher`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T06, T07, T09, T00
-- Change: `publisher publish <payload>`: build folder → commit → for each pending channel deliver →
+- Change: `publisher publish <payload>`: composition root wires registry, store and notifier; build
+  folder → commit → for each pending channel (from tenant config, via the registry) deliver →
   update ledger → commit ledger. Re-run with the same ID skips `done` channels.
 - Acceptance: simulated failure on DE send → ledger `failed`; re-run sends only the missing operation.
 - Tests: integration test with a fake adapter and a temp git repo.
@@ -122,7 +140,8 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T12 — AI translation and humanizer prompt (`ai`)
 - Owner: claude-code · Reviewer: kimi-code · Depends on: T01, H3 for the live check
-- Change: `translateToGerman(ukText) → { de, notes }` via the official Anthropic TypeScript SDK,
+- Change: `ClaudeTranslator` implementing the `Translator` port: `translate(ukText) → { de, notes }`
+  via the official Anthropic TypeScript SDK,
   structured output, model ID from config (default `claude-opus-5-5`); prompt
   `packages/ai/prompts/humanize-de@1.md` (translation + humanizer rules); 5 sample UA texts as an eval seed.
 - Acceptance: unit tests with a mocked SDK; a manual eval run on the 5 samples is attached to the PR
@@ -131,8 +150,9 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T13 — Bot Worker skeleton
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T01, H2
-- Change: `apps/bot` with grammY on Cloudflare Workers, `wrangler.toml`, D1 migration (drafts,
-  publish requests), webhook secret-token check, allow-list from secrets, `/start` reply. Webhook
+- Change: `apps/bot` with grammY on Cloudflare Workers, composition root, `wrangler.toml`, D1 migration
+  (all tables keyed by `tenant_id`; drafts,
+  publish requests), webhook secret-token check, allow-list from secrets mapping Telegram user ID → tenant, `/start` reply. Webhook
   setup script.
 - Acceptance: non-allow-listed user gets a refusal and no D1 row is written (A6); wrong secret token → 401.
 - Tests: unit tests of the middleware with grammY test utilities / mocked updates.
@@ -147,7 +167,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T15 — Preview, edit and regenerate (`bot`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T05, T12, T14
-- Change: after collecting, call `translateToGerman` in `waitUntil`; send preview built from
+- Change: after collecting, call the `Translator` port in `waitUntil`; send preview built from
   `renderTelegram`; buttons Edit UA / Edit DE / Regenerate DE / Publish / Discard; edit by reply
   (ADR 005); limit warnings block Publish.
 - Acceptance: A1 and A2 from the spec on the test bot.
@@ -155,7 +175,8 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 
 ### T16 — Publish button, consent and dispatch (`bot`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T11, T15, H4
-- Change: Publish → consent question → atomic `ready → publishing` → `repository_dispatch`; status
+- Change: Publish → consent question → atomic `ready → publishing` → `PublishRunner.run` (implementation
+  `GitHubActionsRunner` = `repository_dispatch`); status
   message "publishing…"; on dispatch failure revert to `ready` and inform.
 - Acceptance: double press and webhook retry cause exactly one dispatch (A4).
 - Tests: concurrency test on the D1 transition; mocked GitHub API.
@@ -169,6 +190,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 - Tests: the checklist.
 
 ## After the MVP (planned, not yet broken down)
+Publish callback and D1 published index (architecture 4.3) · work of the week poll (F19, ADR 008) ·
 Instagram adapter (phase 1b) · F18 announcements and reminders · F19 work of the week ·
 Mini App editor · scheduled publishing · website (phase 2) with Impressum / Datenschutzerklärung ·
 presentation slides.
