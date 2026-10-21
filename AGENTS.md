@@ -6,10 +6,10 @@
 - Channel/site content is written by his wife in Ukrainian and/or German. Never rewrite her texts unless asked.
 
 ## Project
-"Faden und Stimmung" is a Telegram channel (already created, with our bot as channel admin) and an Instagram account for a weekly handmade circle in Landshut, Germany, led by Volodymyr's wife as a volunteer. Volodymyr is the technical side; she is the face of the project and decides tone and what gets published. Both participate voluntarily. Two purposes:
+"Faden und Stimmung" is a Telegram channel (already created, with our bot as channel admin) and an Instagram account for a weekly handmade circle in Landshut, Germany, led by Volodymyr's wife as a volunteer. Volodymyr is the technical side; she is the face of the project and decides tone and what gets published. Both participate voluntarily. Purposes:
 1. Real use: informing and attracting participants.
 2. Volodymyr's IT portfolio: must show real engineering (automation, CI/CD, documentation, clean repo), not a demo.
-3. Possible later commercialization (e.g. reusable for other circles or makers). Not a current goal, but keep the design reusable and our branding separable. Market research lives in docs/research/.
+3. Future product: the same platform offered to other volunteer groups and bloggers (multi-tenant, any social network). Not developed now, but the architecture must be ready for it: ports and adapters, tenant-aware data, pluggable channels and content stores. Commercialization of the circle itself stays a stub. Market research lives in docs/research/.
 
 Phases:
 1. Single content source with automated publishing to Telegram and Instagram (current).
@@ -20,6 +20,7 @@ Later, content may become partly AI-generated; for now texts are written by his 
 His wife needs a simple place to write texts and upload photos without touching Git or Markdown directly. How that works is decided in the interview and architecture.
 
 Prior art: Volodymyr's earlier project `../lumara` (Telegram + Instagram + Facebook publishing via GitHub Actions). Learn from it; do not copy it blindly.
+Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of service, data processing agreement). Reuse as a starting point when the product or website phase needs them; still flag to Volodymyr, never treat as final.
 
 ## Hard constraints
 - Use ONLY our own names and branding. Do NOT put any third-party organization's name, logo or branding anywhere (repo, content, bot, site, examples). The host organization is not named until I confirm we have written permission. This keeps us free to reuse everything without permissions.
@@ -30,6 +31,7 @@ Prior art: Volodymyr's earlier project `../lumara` (Telegram + Instagram + Faceb
 - Germany/GDPR applies. A public site needs Impressum and Datenschutzerklärung. You are not a lawyer: flag legal questions to me, never present generated legal text as final.
 - Everything must be automated: content -> Telegram / Instagram -> website, triggered by CI. My wife writes; the pipeline does the rest.
 - Publishing must be idempotent: re-running CI never posts the same item twice.
+- Channels are pluggable: only Telegram and Instagram are built now, but nothing in the core may depend on a specific network.
 - Do NOT assume the tech stack. It is decided in the interview, from my goals and trade-offs you present.
 
 ## Environment
