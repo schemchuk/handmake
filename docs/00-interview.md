@@ -57,3 +57,21 @@ Background: mostly TypeScript and Python, plus HTML/CSS, some Bash. Bot hosting:
 - Time: "5 hours a day, up to 40 a month" — contradictory, re-asked in round 3.
 - Job market: Germany, possibly other EU countries.
 - One-week MVP: bot accepts text and photos, translates, shows an editable preview, publishes to Telegram.
+
+## Round 3 (2026-10-21)
+
+**Q1. Time.** Up to 120 hours per month.
+
+**Q2. Stack.** Option A: TypeScript everywhere (bot on a serverless webhook, Astro site, shared post schema). Python only for side scripts if needed.
+
+**Q3. Telegram layout.** One channel; UA and DE posts published one after another.
+
+**Q4. Instagram language.** German by default (configurable).
+
+**Q5. Success metrics (about 3 months).**
+- For the circle: 20 participants in the studio, 160 Telegram subscribers, 1000+ Instagram followers.
+- For Volodymyr: demand for the product from other volunteer organizations and individual bloggers.
+
+**Q6. Legal and presentation.**
+- (a) Impressum will use the wife's address. *Flag: this publishes a private home address; alternatives (c/o or Impressum service address) to be checked by Volodymyr — not legal advice.*
+- (b) A presentation is needed as slides. The wife uploads photos and answers questions in a dialogue that Volodymyr starts with Claude; slides are built from that. No third-party branding.

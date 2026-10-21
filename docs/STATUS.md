@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** Task 0 / Step 3 — interview round 3
+- **Current task:** Task 0 / Step 3 — interview summary
 - **Branch:** main
-- **Last commit:** a08918e docs: interview round 1
-- **Next step:** Interview round 3 (Claude Code), awaiting answers
+- **Last commit:** 7f5ee4d docs: interview round 2
+- **Next step:** Volodymyr confirms the interview summary
 - **Blocked on:** —
 - **Open questions for Volodymyr:** —
 
