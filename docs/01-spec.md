@@ -154,8 +154,11 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
 
 - **Q1** Resolved (2026-10-21): Instagram is the author's **personal** account. See section 11.
 - **Q2** Impressum address: wife's home address vs c/o or service address (legal check by Volodymyr).
+  Decided handling: Impressum data is never committed to the repo; it is injected at site build time
+  from secrets (phase 2), so a later address change leaves no trace in Git history.
 - **Q3** Which AI provider and model for translation (decided in architecture, within the budget).
-- **Q4** Meeting schedule (day, time) and place wording for F18, without naming the host organization.
+- **Q4** Resolved: meetings every Thursday at 14:00 Europe/Berlin. Stored in group configuration so
+  changes need no code. Place wording stays "Landshut" without naming the host organization.
 
 ## 11. Decisions from spec review (2026-10-21)
 
