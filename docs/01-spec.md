@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: draft v2 (2026-10-21), awaiting Volodymyr's review. Source: docs/00-interview.md.
+Status: draft v3 (2026-10-21), awaiting Volodymyr's review. Source: docs/00-interview.md.
 
 ## 1. Problem and goals
 
@@ -108,7 +108,7 @@ Acceptance criteria:
 
 ## 6. Later phases (outline, specified separately)
 
-- **Phase 1b:** Instagram adapter (Business account, Instagram Login API, no Facebook Page), F18, F19.
+- **Phase 1b:** Instagram adapter (professional account, Instagram Login API, no Facebook Page), F18, F19.
 - **Phase 2:** bilingual website and blog built from the content folders in the repo, with Impressum and
   Datenschutzerklärung pages. Legal texts are drafts for Volodymyr to verify, never presented as final.
 - **Phase 3:** participant-facing bot (sign-up, reminders). Requires explicit approval because it processes
@@ -152,9 +152,19 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
 
 ## 10. Open questions
 
-- **Q1** The new Instagram account currently has a personal username: is it the circle's account (rename to
-  a brand handle) or her personal author account? Affects naming, photos and personal data. The handle is
-  not recorded in the repo until Volodymyr decides.
+- **Q1** Resolved (2026-10-21): Instagram is the author's **personal** account. See section 11.
 - **Q2** Impressum address: wife's home address vs c/o or service address (legal check by Volodymyr).
 - **Q3** Which AI provider and model for translation (decided in architecture, within the budget).
 - **Q4** Meeting schedule (day, time) and place wording for F18, without naming the host organization.
+
+## 11. Decisions from spec review (2026-10-21)
+
+- The face-consent confirmation before Publish (F10) stays.
+- F18 (announcement, reminder) and F19 (work of the week) come after the MVP, at the end of phase 1.
+- Instagram is the author's personal account, not a brand account. Consequences:
+  - The pipeline publishes only circle posts; she keeps posting personal content manually. Nothing in
+    the pipeline reads, edits or deletes posts it did not create.
+  - The account must be switched to a professional (Creator or Business) type for API publishing.
+  - Her own face in her own posts is her decision; the consent check (F10) covers other people.
+  - The handle and account IDs are not stored in the public repo; they live in configuration secrets.
+  - The circle's brand ("Faden und Stimmung") is still used on Telegram and the website.

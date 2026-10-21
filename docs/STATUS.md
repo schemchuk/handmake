@@ -1,12 +1,12 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** Spec — docs/01-spec.md draft v2
+- **Current task:** Spec — docs/01-spec.md draft v3
 - **Branch:** main
-- **Last commit:** 9027e3e docs: add spec draft v1
+- **Last commit:** 91c0419 docs: mark admin, scheduling, analytics, AI posts as deferred
 - **Next step:** Volodymyr reviews the spec (gate 2); then Architecture (Claude Code)
 - **Blocked on:** Volodymyr's spec review
-- **Open questions for Volodymyr:** see docs/01-spec.md, section 10 (Q1-Q4)
+- **Open questions for Volodymyr:** see docs/01-spec.md, section 10 (Q2-Q4)
 
 ## Decisions so far
 - See docs/00-interview.md (rounds 0-3 and confirmed summary).
