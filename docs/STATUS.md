@@ -3,10 +3,10 @@
 - **Active agent:** claude-code
 - **Current task:** Scope change v4 (spec v4, architecture v2, ADR 006-008, tasks v2) — awaiting review
 - **Branch:** main
-- **Last commit:** 9d247ad docs: update status for scope change review
+- **Last commit:** 0eff687 docs: plan participant contest entries and Instagram contest idea
 - **Next step:** Volodymyr reviews the scope change; then T01 goes back to kimi-code
 - **Blocked on:** Volodymyr's review of spec v4 / architecture v2 / tasks v2
-- **Open questions for Volodymyr:** spec Q5, Q6, Q8 (work-of-week tie, approval, timing; defaults set); spec Q2 Impressum address (phase 2)
+- **Open questions for Volodymyr:** approval of the v4 package; spec Q2 Impressum address (phase 2)
 
 ## Reminders
 - At T11 review: if `main` gets branch protection, allow `github-actions[bot]` to push (content/ only). Currently not protected.

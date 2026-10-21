@@ -136,17 +136,17 @@ analytics). The Git repo stays the source of truth; the D1 index can be rebuilt 
 
 ### 4.4 Work of the week (F19, after the MVP)
 
-1. Worker cron (default Monday 10:00 tenant time) collects candidates from the D1 index: one photo per
+1. Worker cron (Monday 10:00 tenant time, Q8) collects candidates from the D1 index: one photo per
    post published in the last 7 days, newest 10. Later, candidates may also come from a
    `SubmissionSource` (phase 3: moderated bot submissions).
 2. It creates a `wotw-poll` draft: album of candidates numbered 1..N plus a poll "No 1".."No N". The
-   author gets the usual preview and Publish (default for Q6).
+   author gets the usual preview and Publish (Q6).
 3. The publisher delivers it through the channel's poll capability (`sendMediaGroup`, then `sendPoll`
    replying to the album). The ledger stores the poll's message ID.
-4. Worker cron at the closing time (default Wednesday 20:00) calls `closePoll` on the channel adapter
+4. Worker cron at the closing time (Wednesday 20:00, Q8) calls `closePoll` on the channel adapter
    (`stopPoll`), which returns the final counts.
 5. Winner = most votes. Zero votes or unreadable result → `WinnerPicker` (Claude, sees the candidate
-   photos) chooses and gives a one-line reason. Tie → `WinnerPicker` chooses among the tied (default for Q5).
+   photos) chooses and gives a one-line reason. Tie → `WinnerPicker` chooses among the tied (Q5).
 6. A `wotw-result` draft (winner photo, UA/DE text, "chosen by readers" or "chosen by AI") goes to the
    author for Publish; Instagram gets it as a normal post.
 

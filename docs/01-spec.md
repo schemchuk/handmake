@@ -94,10 +94,10 @@ IDs are referenced by tasks and tests.
     Channel polls are anonymous, so no voter data is collected.
   - At the configured closing time the bot stops the poll (`stopPoll`) and reads the final counts.
   - Winner: most votes. If the poll has no votes (or cannot be read), AI picks the winner from the
-    candidate photos and the post says so. Ties: see open question Q5.
+    candidate photos and the post says so. Ties: AI picks among the tied candidates (Q5).
   - A result post announces the winner on Telegram, and on Instagram as a normal post (Instagram has
     no poll API).
-  - Poll and result posts are drafts like any other post and need the author's Publish (see Q6).
+  - Poll and result posts are drafts like any other post and need the author's Publish (Q6).
 
 ## 5. MVP (first week)
 
@@ -170,14 +170,12 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
   Decided handling: Impressum data is never committed to the repo; it is injected at site build time
   from secrets (phase 2), so a later address change leaves no trace in Git history.
 - **Q3** Which AI provider and model for translation (decided in architecture, within the budget).
-- **Q5** Work of the week, tie: AI picks among the tied candidates, or several winners? Default until
-  answered: AI picks among the tied ones.
-- **Q6** Work of the week, approval: do the poll and the result post need the author's Publish, or go out
-  automatically? Default until answered: both need her Publish.
+- **Q5** Resolved (2026-10-21): on a tie, AI picks among the tied candidates.
+- **Q6** Resolved (2026-10-21): the poll and the result post both need the author's Publish.
 - **Q7** Resolved (2026-10-21): in phase 1, candidates are photos from the author's own posts (one per
   post, newest 10). Participant submissions come in phase 3 via the bot (see section 6).
-- **Q8** Work of the week, timing: when does the poll open and close? Default until answered: opens Monday
-  10:00, closes Wednesday 20:00 Europe/Berlin, result announced before the Thursday meeting.
+- **Q8** Resolved (2026-10-21): poll opens Monday 10:00, closes Wednesday 20:00 Europe/Berlin; result
+  announced before the Thursday meeting. Times are tenant configuration.
 - **Q4** Resolved: meetings every Thursday at 14:00 Europe/Berlin. Stored in group configuration so
   changes need no code. Place wording stays "Landshut" without naming the host organization.
 

@@ -25,4 +25,5 @@ replies to it. Opening and closing are Worker cron jobs; closing calls `closePol
 - Candidates in phase 1 come from the author's posts (Q7 resolved). Participant submissions arrive later
   through the `SubmissionSource` port: Telegram bot with author moderation and rules/licence consent
   (phase 3); option A (linked discussion group) was rejected as harder to moderate.
-- Open defaults until confirmed: timing (Q8), ties (Q5), approval (Q6).
+- Confirmed 2026-10-21: Monday 10:00 to Wednesday 20:00 (Q8), AI breaks ties (Q5), author approves
+  poll and result (Q6).
