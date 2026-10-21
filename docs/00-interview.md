@@ -32,3 +32,28 @@ Main goal is the portfolio. Volodymyr wants to be among the first to build this 
 **Q6. Portfolio.**
 Show businesses that he can automate processes in any domain. Positioning: full-stack developer.
 *Open: target job market / region — re-asked in round 2.*
+
+## Round 2 (2026-10-21)
+
+**Q1. Audience and language layout.**
+International group, two languages: Ukrainian and German. Telegram: two separate posts (UA and DE). Instagram: if bilingual content hurts the Instagram algorithm, use Ukrainian only. Website: bilingual.
+*Open: one or two Telegram channels; Instagram language choice — re-asked in round 3.*
+
+**Q2. German text review.**
+The wife reviews the German text herself in the bot preview.
+
+**Q3. "Work of the week".**
+If she marks one herself, use it; otherwise AI picks.
+
+**Q4. Drafts.**
+Agreed: drafts live outside Git (bot storage). Only published posts (text, photos, ledger entry) land in the public repo.
+
+**Q5. Stack.**
+Background: mostly TypeScript and Python, plus HTML/CSS, some Bash. Bot hosting: serverless with webhook.
+*Open: option A (TypeScript everywhere) vs B (Python bot + TS site) not explicitly chosen — re-asked in round 3.*
+
+**Q6. Budget, time, market, MVP.**
+- Budget: 0-10 EUR/month for AI API and hosting is acceptable.
+- Time: "5 hours a day, up to 40 a month" — contradictory, re-asked in round 3.
+- Job market: Germany, possibly other EU countries.
+- One-week MVP: bot accepts text and photos, translates, shows an editable preview, publishes to Telegram.
