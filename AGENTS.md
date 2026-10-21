@@ -9,6 +9,7 @@
 "Faden und Stimmung" is a Telegram channel (already created, with our bot as channel admin) and an Instagram account for a weekly handmade circle in Landshut, Germany, led by Volodymyr's wife as a volunteer. Volodymyr is the technical side; she is the face of the project and decides tone and what gets published. Both participate voluntarily. Two purposes:
 1. Real use: informing and attracting participants.
 2. Volodymyr's IT portfolio: must show real engineering (automation, CI/CD, documentation, clean repo), not a demo.
+3. Possible later commercialization (e.g. reusable for other circles or makers). Not a current goal, but keep the design reusable and our branding separable. Market research lives in docs/research/.
 
 Phases:
 1. Single content source with automated publishing to Telegram and Instagram (current).
@@ -32,7 +33,7 @@ Prior art: Volodymyr's earlier project `../lumara` (Telegram + Instagram + Faceb
 - Do NOT assume the tech stack. It is decided in the interview, from my goals and trade-offs you present.
 
 ## Environment
-- Both agents run in the repo root inside VS Code's terminal. `origin` is GitHub over HTTPS, already authenticated by me. If push fails on auth, stop and tell me.
+- Both agents run in the repo root inside VS Code's terminal. `origin` is GitHub over SSH, already authenticated by me. If push fails on auth, stop and tell me.
 - Only ONE agent is active at a time in the working tree. Never run both in parallel on the same checkout.
 
 ## Roles and ownership
