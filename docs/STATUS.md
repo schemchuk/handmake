@@ -3,7 +3,7 @@
 - **Active agent:** claude-code
 - **Current task:** Scope change v4 (spec v4, architecture v2, ADR 006-008, tasks v2) — awaiting review
 - **Branch:** main
-- **Last commit:** 0eff687 docs: plan participant contest entries and Instagram contest idea
+- **Last commit:** 2b37cf3 docs: resolve work-of-week tie, approval and timing
 - **Next step:** Volodymyr reviews the scope change; then T01 goes back to kimi-code
 - **Blocked on:** Volodymyr's review of spec v4 / architecture v2 / tasks v2
 - **Open questions for Volodymyr:** approval of the v4 package; spec Q2 Impressum address (phase 2)

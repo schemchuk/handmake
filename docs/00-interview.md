@@ -79,3 +79,14 @@ Background: mostly TypeScript and Python, plus HTML/CSS, some Bash. Bot hosting:
 ## Summary confirmed (2026-10-21)
 
 Volodymyr confirmed the 10-line summary. Addition: Impressum and Datenschutzerklärung are required deliverables (drafts only; final legal text is Volodymyr's responsibility, not generated as final).
+
+## Round 4 — contests (2026-10-21)
+
+Answered via multiple-choice questions; all recommended options chosen.
+- Telegram (phase 3): entry via the bot in private chat; the author moderates manually; anonymous poll
+  with up to 10 candidates; no prize, winner's name only with consent.
+- Instagram (deferred): entry by tag/@mention + hashtag; rights via reply phrase; voting by numbered
+  comment under a finalists carousel; open to everyone 18+ worldwide.
+- Both: two separate contests; Instagram monthly with a theme; AI pre-checks Instagram entries, the
+  author decides; minimal data retention.
+Details: docs/research/002-contests.md.

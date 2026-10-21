@@ -122,7 +122,8 @@ Acceptance criteria:
   Datenschutzerklärung pages. Legal texts are drafts for Volodymyr to verify, never presented as final.
 - **Phase 3:** participant-facing bot (sign-up, reminders, and work-of-week submissions: participants send
   their photos to the bot, the author moderates, the participant accepts the contest rules and photo-use
-  licence with a button). Requires explicit approval because it processes personal data.
+  licence with a button; details in docs/research/002-contests.md). Requires explicit approval because
+  it processes personal data.
 - **Presentation:** slide deck built from the author's photos and a guided Q&A, no third-party branding.
 
 ## 7. Non-functional requirements
@@ -159,7 +160,7 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
 - **Fully AI-generated posts.** Design: `provenance: ai-generated` is already a valid value; such posts go
   through the same preview and Publish step.
 - **Instagram contest** (idea 2026-10-21): open work-of-the-week style contest on Instagram for people
-  outside the circle, aimed at bloggers. Feasibility and legal notes: docs/research/002-instagram-contest.md.
+  outside the circle, aimed at bloggers. Decisions, flows and legal notes: docs/research/002-contests.md.
 - **Multi-tenant onboarding** for other groups and bloggers (sign-up, connecting their channels, billing).
   Until then a tenant is added by configuration and secrets, by the operator.
 
