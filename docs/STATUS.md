@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T06 — Ledger model (`core`, docs/03-tasks.md v2)
-- **Branch:** feat/T06-ledger (to be created by kimi-code)
-- **Last commit:** 9ccaf3b T05: Telegram renderer and limits (#7)
-- **Next step:** Kimi Code implements T06: pure transition functions on the ledger types in `packages/core/src/ports/store.ts`.
+- **Active agent:** claude-code
+- **Current task:** T06 — Ledger model (`core`) — review fix applied, awaiting re-review
+- **Branch:** feat/T06-ledger
+- **Last commit:** 3c8673d fix: operation-granular ledger so re-runs never duplicate (T06 review)
+- **Next step:** Claude Code re-reviews and merges PR #8. Then Kimi Code starts T08 (photo processing). For T07 (per PR #8 review): change `ChannelAdapter.deliver` so the caller learns per-op results (e.g. resume at `startAt` with `knownIds` and an `onDelivered` callback) — atomic deliver loses ids mid-batch; T10 writes the ledger after every op.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
@@ -13,6 +13,8 @@
 - pnpm is not in /usr/bin on this machine; Kimi Code uses `~/.local/bin/pnpm` (12.14.0). Node is v22.23.2 (`.nvmrc` = 22).
 
 ## Review notes carried forward
+- T07: `ChannelAdapter.deliver` must report each delivered op (e.g. `startAt`, `knownIds`, `onDelivered(opIndex, id)`) so T10 writes the ledger after every op (PR #8 review note 2).
+- T17 runbook: document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
 - T07: render in the tenant's `languages` order (pass it via `settings`), not section order in the file (PR #7 review note 1).
 - F19 (work of the week): add "list published" to `ContentStore` when candidates are built (PR #6 review note 3).
 - Before T11: pin GitHub Actions to commit SHAs (+ Dependabot for actions). gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.
