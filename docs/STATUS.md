@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T04 — Tenant config schema and loader (`core`) — implemented, awaiting review
+- **Active agent:** kimi-code
+- **Current task:** T04 — Tenant config schema and loader (`core`) — changes requested (PR #5 review)
 - **Branch:** feat/T04-tenant-config
 - **Last commit:** 78de6d1 feat: tenant config schema and loader in core (T04)
-- **Next step:** Claude Code reviews and merges PR #5 (not sensitive). Then Kimi Code starts T04b (ports, channel registry, fakes).
+- **Next step:** Kimi Code fixes the blocker from the PR #5 review (one switch for the work-of-week poll: keep `featureFlags.wotwPoll`, drop `workOfWeek.enabled`); non-blocking notes 3 and 5 are cheap to do now. Then hand back to claude-code.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
