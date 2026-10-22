@@ -24,7 +24,6 @@ meetingSchedule:
   time: '18:30'
   timezone: Europe/Berlin
 workOfWeek:
-  enabled: true
   opens:
     weekday: monday
     time: '09:00'
@@ -33,6 +32,7 @@ workOfWeek:
     time: '12:00'
 featureFlags:
   translation: false
+  wotwPoll: true
 offerings: []
 `;
 
@@ -56,7 +56,7 @@ describe('parseTenantConfig', () => {
     expect(first.id).not.toBe(second.id);
     expect(second.languages).toEqual(['de']);
     expect(second.channels.instagram).toEqual({ language: 'de' });
-    expect(second.workOfWeek.enabled).toBe(true);
+    expect(second.featureFlags.wotwPoll).toBe(true);
   });
 
   it('rejects a missing required field', () => {
@@ -102,5 +102,10 @@ describe('parseTenantConfig', () => {
       '  telegram:\n    channelId: TELEGRAM_CHANNEL_ID\n  instagram:\n    language: fr',
     );
     expect(() => parseTenantConfig(withBadLanguage)).toThrowError(/instagram\.language/);
+  });
+
+  it('rejects a non-empty offerings stub', () => {
+    const withOffering = realConfig().replace('offerings: []', 'offerings:\n  - paid-course');
+    expect(() => parseTenantConfig(withOffering)).toThrowError(/offerings/);
   });
 });

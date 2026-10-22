@@ -87,16 +87,17 @@ export const tenantConfigSchema = z
         timezone: timezoneSchema,
       })
       .strict(),
+    // Whether the poll runs is featureFlags.wotwPoll — a single switch.
+    // Times use meetingSchedule.timezone.
     workOfWeek: z
       .object({
-        enabled: z.boolean(),
         opens: weeklyMomentSchema.strict(),
         closes: weeklyMomentSchema.strict(),
       })
       .strict(),
     featureFlags: z.record(z.string(), z.boolean()),
-    // Commercialization stub — must stay empty for now.
-    offerings: z.array(z.unknown()),
+    // Commercialization stub — must stay empty for now (spec section 8).
+    offerings: z.array(z.never()),
   })
   .strict()
   .superRefine((config, ctx) => {
@@ -120,8 +121,8 @@ const secretValuePatterns: RegExp[] = [
   /\bAKIA[0-9A-Z]{16}\b/,
   // GitHub tokens
   /\bgh[pousr]_[A-Za-z0-9]{30,}\b/,
-  // Anthropic / OpenAI-style API keys
-  /\bsk-(?:ant|live|test)?-[A-Za-z0-9_-]{20,}\b/,
+  // Anthropic / OpenAI-style API keys (sk-, sk-ant-, sk-proj-, ...)
+  /\bsk-[A-Za-z0-9_-]{20,}\b/,
   // PEM private key
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
 ];

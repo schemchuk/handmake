@@ -16,9 +16,9 @@ meetingSchedule:
   time: '14:00'
   timezone: Europe/Berlin
 
-# Work of the week (F19); disabled until the poll ships.
+# Work of the week (F19) poll times; whether it runs is featureFlags.wotwPoll.
+# Times use meetingSchedule.timezone.
 workOfWeek:
-  enabled: false
   opens:
     weekday: monday
     time: '10:00'
@@ -30,5 +30,5 @@ featureFlags:
   translation: true
   wotwPoll: false
 
-# Commercialization stub: must stay empty (see ADR 006 context, spec N-stub).
+# Commercialization stub: must stay empty (spec section 8).
 offerings: []
