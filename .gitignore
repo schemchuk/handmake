@@ -14,7 +14,7 @@ Thumbs.db
 
 # Local agent/tool state
 .remember/
-.claude/
+.claude/settings.local.json
 
 # Common build outputs and caches
 dist/
