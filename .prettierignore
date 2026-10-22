@@ -1,0 +1,11 @@
+dist/
+node_modules/
+coverage/
+
+# Generated / lockfiles
+pnpm-lock.yaml
+
+# Docs and content are edited by humans; do not reformat
+*.md
+docs/
+content/
