@@ -1,0 +1,34 @@
+id: faden-und-stimmung
+name: Faden und Stimmung
+languages: [uk, de]
+
+# Presence of a channel key means "enabled". Values hold per-channel
+# settings; secret *names* only, never secret values (loader enforces this).
+channels:
+  telegram:
+    channelId: TELEGRAM_CHANNEL_ID
+
+contentStore:
+  type: git-repo
+
+meetingSchedule:
+  weekday: thursday
+  time: '14:00'
+  timezone: Europe/Berlin
+
+# Work of the week (F19) poll times; whether it runs is featureFlags.wotwPoll.
+# Times use meetingSchedule.timezone.
+workOfWeek:
+  opens:
+    weekday: monday
+    time: '10:00'
+  closes:
+    weekday: wednesday
+    time: '20:00'
+
+featureFlags:
+  translation: true
+  wotwPoll: false
+
+# Commercialization stub: must stay empty (spec section 8).
+offerings: []
