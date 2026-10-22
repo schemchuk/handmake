@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T04b — Ports, channel registry and fakes (`core`) — changes requested (PR #6 review)
+- **Active agent:** claude-code
+- **Current task:** T04b — Ports, channel registry and fakes (`core`) — review fixes applied, awaiting re-review
 - **Branch:** feat/T04b-ports
-- **Last commit:** 8e18a60 feat: ports, channel registry and in-memory fakes (T04b)
-- **Next step:** Kimi Code fixes the two blockers from the PR #6 review: (1) internal packages exported as TS source so consumer tests run without a build, plus a note in docs/02-architecture.md; (2) async `SecretResolver.resolve`. Then hand back to claude-code. Note for T06: ledger types already live in `packages/core/src/ports/store.ts`.
+- **Last commit:** c26097c fix: consume workspace packages as source, async SecretResolver (T04b review)
+- **Next step:** Claude Code re-reviews and merges PR #6. Then Kimi Code starts T05 (Telegram renderer). Note for T06: ledger types already live in `packages/core/src/ports/store.ts` — T06 adds pure transition functions on them.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
