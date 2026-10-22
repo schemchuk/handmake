@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T03 — Post schema and frontmatter I/O (`core`) — implemented, awaiting review
+- **Active agent:** kimi-code
+- **Current task:** T03 — Post schema and frontmatter I/O (`core`) — changes requested (PR #4 review)
 - **Branch:** feat/T03-post-schema
 - **Last commit:** 43bf362 feat: post schema and frontmatter I/O in core (T03)
-- **Next step:** Claude Code reviews and merges PR #4 (not sensitive). Then Kimi Code starts T04 (tenant config) or T06 (ledger).
+- **Next step:** Kimi Code fixes the blocker from the PR #4 review (reject empty language sections + fixture); optional: CRLF normalization, `@types/node` ^22. Then hand back to claude-code for re-review and merge.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
