@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T03 — Post schema and frontmatter I/O (`core`, docs/03-tasks.md v2)
-- **Branch:** feat/T03-post-schema (to be created by kimi-code)
-- **Last commit:** b3a6da5 T02: CI workflow (#2)
-- **Next step:** Kimi Code implements T03. Volodymyr commits `.claude/settings.json` (merge permission) to `main`.
+- **Active agent:** claude-code
+- **Current task:** T03 — Post schema and frontmatter I/O (`core`) — implemented, awaiting review
+- **Branch:** feat/T03-post-schema
+- **Last commit:** 0c2098d feat: post schema and frontmatter I/O in core (T03)
+- **Next step:** Claude Code reviews and merges PR #4 (not sensitive). Then Kimi Code starts T04 (tenant config) or T06 (ledger).
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
