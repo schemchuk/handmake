@@ -18,8 +18,9 @@ export interface ChannelCapabilities {
 export type RemoteId = number | string;
 
 /**
- * One send operation. `photoIndexes` reference `post.photos`; `replyTo`
- * references a RemoteId returned by an earlier operation of the same render.
+ * One send operation. `photoIndexes` reference `post.photos`; `replyToOp`
+ * references an earlier operation (by index) of the same render batch, so
+ * `render` stays pure — adapters resolve it to a network id at delivery.
  */
 export type SendOperation =
   | {
@@ -27,9 +28,9 @@ export type SendOperation =
       photoIndexes: number[];
       caption?: string;
       captionLang?: string;
-      replyTo?: RemoteId;
+      replyToOp?: number;
     }
-  | { kind: 'message'; text: string; lang: string; replyTo?: RemoteId };
+  | { kind: 'message'; text: string; lang: string; replyToOp?: number };
 
 export interface PollSpec {
   question: string;

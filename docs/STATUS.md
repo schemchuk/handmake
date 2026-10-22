@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T05 — Telegram renderer and limits (`channels/telegram`, docs/03-tasks.md v2)
-- **Branch:** feat/T05-telegram-render (to be created by kimi-code)
-- **Last commit:** 8e6e6ff T04b: Ports, channel registry and fakes (#6)
-- **Next step:** Kimi Code implements T05 (run `describeChannelAdapterContract` from `@handmake/core/testing`). Then T06: ledger types already live in `packages/core/src/ports/store.ts`; T06 adds pure transition functions on them.
+- **Active agent:** claude-code
+- **Current task:** T05 — Telegram renderer and limits (`channels/telegram`) — implemented, awaiting review
+- **Branch:** feat/T05-telegram-render
+- **Last commit:** a340a62 feat: pure Telegram renderer with channel limits (T05)
+- **Next step:** Claude Code reviews and merges PR #7 (not sensitive). Then Kimi Code starts T06 (ledger pure functions on the types in `packages/core/src/ports/store.ts`).
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 

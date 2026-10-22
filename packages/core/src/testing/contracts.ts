@@ -14,7 +14,7 @@ import type { ContentStore } from '../ports/store';
 
 const sampleOps: SendOperation[] = [
   { kind: 'mediaGroup', photoIndexes: [0, 1], caption: 'caption', captionLang: 'uk' },
-  { kind: 'message', text: 'text', lang: 'de', replyTo: 'msg-1' },
+  { kind: 'message', text: 'text', lang: 'de', replyToOp: 0 },
 ];
 
 export function describeChannelAdapterContract(

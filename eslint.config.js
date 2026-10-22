@@ -4,5 +4,13 @@ export default tseslint.config(
   {
     ignores: ['**/dist/**', '**/node_modules/**', 'docs/**', '.remember/**'],
   },
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
   tseslint.configs.recommended,
 );
