@@ -1,0 +1,3 @@
+# DEMO ONLY: fake AWS access key to prove gitleaks catches token patterns.
+# This is NOT a real secret (random chars in the documented AWS key shape).
+aws_access_key_id = AKIA4X7EH2R8N9QW3ZLD
