@@ -25,7 +25,7 @@ Goals, in priority order:
 | Role | Who | Can do |
 |---|---|---|
 | Author | the circle lead (Volodymyr's wife) | send drafts to the bot, edit, publish, delete drafts |
-| Operator | Volodymyr | configure groups and channels, manage secrets, receive failure alerts, merge code |
+| Operator | Volodymyr | configure groups and channels, manage secrets, receive failure alerts, approve sensitive merges |
 | Reader | public | read the Telegram channel, Instagram, later the website |
 
 Only allow-listed Telegram user IDs may use the bot. Everyone else gets a polite refusal and nothing is stored.

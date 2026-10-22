@@ -5,8 +5,8 @@ Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 Status: approved v2 (2026-10-21). v2 adds ports and tenancy (spec v4).
 Scope: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
 Each task: one branch `feat/<id>-<slug>`, one PR, reviewable in 10-15 minutes. Do tasks in order unless
-"Depends on" says otherwise. A task is done when its tests pass in CI, docs are updated, and Volodymyr
-merged it.
+"Depends on" says otherwise. A task is done when its tests pass in CI, docs are updated, and the reviewer
+agent merged it (AGENTS.md, Git rules; sensitive PRs such as T02 and T11 need Volodymyr's OK first).
 
 ## Human tasks (Volodymyr only: accounts and secrets)
 
