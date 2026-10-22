@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T02 — CI workflow (docs/03-tasks.md v2) — implemented, awaiting review
+- **Active agent:** kimi-code
+- **Current task:** T02 — CI workflow — changes requested (PR #2 review)
 - **Branch:** feat/T02-ci
 - **Last commit:** 1d5eff3 ci: fetch full history for gitleaks scan range
-- **Next step:** Claude Code reviews PR #2, then asks Volodymyr for merge OK (it touches `.github/workflows/`, sensitive per AGENTS.md). After merge: Kimi Code starts T03.
-- **Blocked on:** review of PR #2 + Volodymyr's merge OK
+- **Next step:** Kimi Code fixes the blocker from the PR #2 review: in `.gitignore` replace `.claude/` with `.claude/settings.local.json`. Then hand back to claude-code for re-review; merge needs Volodymyr's OK.
+- **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
