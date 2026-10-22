@@ -3,7 +3,7 @@
 - **Active agent:** claude-code
 - **Current task:** T03 — Post schema and frontmatter I/O (`core`) — implemented, awaiting review
 - **Branch:** feat/T03-post-schema
-- **Last commit:** 0c2098d feat: post schema and frontmatter I/O in core (T03)
+- **Last commit:** 43bf362 feat: post schema and frontmatter I/O in core (T03)
 - **Next step:** Claude Code reviews and merges PR #4 (not sensitive). Then Kimi Code starts T04 (tenant config) or T06 (ledger).
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
