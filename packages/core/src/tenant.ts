@@ -4,14 +4,10 @@ import { z } from 'zod';
 /**
  * Tenant config lives in `config/tenants/<id>.yaml` and holds everything
  * about a tenant except secrets: it references secrets *by name* only.
- * This module is the single place that knows which channel keys exist;
- * the channel registry (T04b) reuses `knownChannelKeys`.
+ * This module is the single place that knows which channel keys exist:
+ * `knownChannelKeys` is derived from `channelsSchema` below, so the two
+ * can never drift apart.
  */
-
-// Keys of channels that may appear under `channels:`. Extend when a new
-// ChannelAdapter lands in packages/channels/.
-export const knownChannelKeys = ['telegram', 'instagram'] as const;
-export type ChannelKey = (typeof knownChannelKeys)[number];
 
 export const tenantConfigError = 'TenantConfigError';
 
@@ -68,6 +64,10 @@ export const channelsSchema = z
   })
   .strict()
   .refine((channels) => Object.keys(channels).length > 0, 'at least one channel must be enabled');
+
+// Derived from channelsSchema — single source of truth for channel keys.
+export const knownChannelKeys = Object.keys(channelsSchema.shape);
+export type ChannelKey = keyof typeof channelsSchema.shape;
 
 export const tenantConfigSchema = z
   .object({

@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T04b — Ports, channel registry and fakes (`core`, docs/03-tasks.md v2)
-- **Branch:** feat/T04b-ports (to be created by kimi-code)
-- **Last commit:** 3e47976 T04: Tenant config schema and loader (#5)
-- **Next step:** Kimi Code implements T04b; derive `knownChannelKeys` and the `channels` schema keys from one list (PR #5 review note 2).
+- **Active agent:** claude-code
+- **Current task:** T04b — Ports, channel registry and fakes (`core`) — review fixes applied, awaiting re-review
+- **Branch:** feat/T04b-ports
+- **Last commit:** c26097c fix: consume workspace packages as source, async SecretResolver (T04b review)
+- **Next step:** Claude Code re-reviews and merges PR #6. Then Kimi Code starts T05 (Telegram renderer). Note for T06: ledger types already live in `packages/core/src/ports/store.ts` — T06 adds pure transition functions on them.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 

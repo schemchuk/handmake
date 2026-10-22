@@ -59,6 +59,9 @@ docs/
 ```
 
 pnpm workspaces, TypeScript strict, Vitest, ESLint + Prettier, secret scanning in CI (see ADR 001).
+Internal packages are consumed as TypeScript source (`exports` → `src/*.ts`), so tests and
+typecheck need no build; apps bundle (wrangler/esbuild for the bot, decided in their tasks).
+`pnpm build` stays as an emit check.
 
 ## 3. Content model
 

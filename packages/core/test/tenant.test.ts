@@ -3,7 +3,12 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseTenantConfig, TenantConfigError } from '../src/tenant';
+import {
+  parseTenantConfig,
+  channelsSchema,
+  knownChannelKeys,
+  TenantConfigError,
+} from '../src/tenant';
 
 const realConfigPath = join(import.meta.dirname, '../../../config/tenants/faden-und-stimmung.yaml');
 const realConfig = () => readFileSync(realConfigPath, 'utf8');
@@ -107,5 +112,9 @@ describe('parseTenantConfig', () => {
   it('rejects a non-empty offerings stub', () => {
     const withOffering = realConfig().replace('offerings: []', 'offerings:\n  - paid-course');
     expect(() => parseTenantConfig(withOffering)).toThrowError(/offerings/);
+  });
+
+  it('knownChannelKeys matches the channels schema keys', () => {
+    expect(knownChannelKeys).toEqual(Object.keys(channelsSchema.shape));
   });
 });
