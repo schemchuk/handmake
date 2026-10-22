@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T06 — Ledger model (`core`) — review fix applied, awaiting re-review
-- **Branch:** feat/T06-ledger
-- **Last commit:** 3c8673d fix: operation-granular ledger so re-runs never duplicate (T06 review)
-- **Next step:** Claude Code re-reviews and merges PR #8. Then Kimi Code starts T08 (photo processing). For T07 (per PR #8 review): change `ChannelAdapter.deliver` so the caller learns per-op results (e.g. resume at `startAt` with `knownIds` and an `onDelivered` callback) — atomic deliver loses ids mid-batch; T10 writes the ledger after every op.
+- **Active agent:** kimi-code
+- **Current task:** T08 — Photo processing (`publisher`, docs/03-tasks.md v2)
+- **Branch:** feat/T08-photo-processing (to be created by kimi-code)
+- **Last commit:** ddcf91f T06: Ledger model (#8)
+- **Next step:** Kimi Code implements T08. T07 (Telegram delivery) can follow; see review notes below.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
@@ -13,6 +13,7 @@
 - pnpm is not in /usr/bin on this machine; Kimi Code uses `~/.local/bin/pnpm` (12.14.0). Node is v22.23.2 (`.nvmrc` = 22).
 
 ## Review notes carried forward
+- Ledger: guard `markOpDelivered` on a `done` channel; restore an immutability assertion (PR #8 re-review).
 - T07: `ChannelAdapter.deliver` must report each delivered op (e.g. `startAt`, `knownIds`, `onDelivered(opIndex, id)`) so T10 writes the ledger after every op (PR #8 review note 2).
 - T17 runbook: document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
 - T07: render in the tenant's `languages` order (pass it via `settings`), not section order in the file (PR #7 review note 1).
@@ -24,7 +25,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T04b added (ports).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T04b added (ports).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
