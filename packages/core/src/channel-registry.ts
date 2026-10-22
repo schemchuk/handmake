@@ -1,5 +1,12 @@
 import type { ChannelAdapter } from './ports';
 
+export class ChannelRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ChannelRegistryError';
+  }
+}
+
 /**
  * Registry of channel adapters (Strategy + registry, ADR 007). The publisher
  * asks the registry for the tenant's enabled channels; core has no
@@ -10,7 +17,7 @@ export class ChannelRegistry {
 
   register(adapter: ChannelAdapter): void {
     if (this.adapters.has(adapter.key)) {
-      throw new Error(`duplicate channel key: "${adapter.key}"`);
+      throw new ChannelRegistryError(`duplicate channel key: "${adapter.key}"`);
     }
     this.adapters.set(adapter.key, adapter);
   }
@@ -18,7 +25,7 @@ export class ChannelRegistry {
   get(key: string): ChannelAdapter {
     const adapter = this.adapters.get(key);
     if (!adapter) {
-      throw new Error(`unknown channel: "${key}"`);
+      throw new ChannelRegistryError(`unknown channel: "${key}"`);
     }
     return adapter;
   }

@@ -35,10 +35,10 @@ describe('fakes', () => {
     expect(adapter.deliveries[0]!.idempotencyKeys).toEqual(['t:p:telegram:0', 't:p:telegram:1']);
   });
 
-  it('FakeSecretResolver throws on unknown names without leaking values', () => {
+  it('FakeSecretResolver throws on unknown names without leaking values', async () => {
     const resolver = new FakeSecretResolver({ MY_SECRET: 'value' });
-    expect(resolver.resolve('MY_SECRET')).toBe('value');
-    expect(() => resolver.resolve('OTHER')).toThrowError(/unknown secret/);
+    expect(await resolver.resolve('MY_SECRET')).toBe('value');
+    await expect(resolver.resolve('OTHER')).rejects.toThrowError(/unknown secret/);
   });
 
   it('FakeClock is frozen until advanced', () => {

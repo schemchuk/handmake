@@ -191,7 +191,11 @@ importers:
 
   packages/ai: {}
 
-  packages/channels: {}
+  packages/channels:
+    dependencies:
+      '@handmake/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/core:
     dependencies:

@@ -33,7 +33,7 @@ export function describeChannelAdapterContract(
     it('deliver returns one remote id per operation', async () => {
       const adapter = makeAdapter();
       const remoteIds = await adapter.deliver(sampleOps, {
-        secrets: { resolve: () => 'unused' },
+        secrets: { resolve: async () => 'unused' },
         idempotencyBase: idempotencyBase('tenant', 'post', adapter.key),
       });
       expect(remoteIds).toHaveLength(sampleOps.length);

@@ -205,7 +205,7 @@ export class FakeNotifier implements Notifier {
 export class FakeSecretResolver implements SecretResolver {
   constructor(private readonly secrets: Record<string, string> = {}) {}
 
-  resolve(name: string): string {
+  async resolve(name: string): Promise<string> {
     const value = this.secrets[name];
     if (value === undefined) throw new Error(`FakeSecretResolver: unknown secret "${name}"`);
     return value;

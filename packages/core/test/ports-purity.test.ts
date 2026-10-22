@@ -11,6 +11,17 @@ describe('ports stay pure', () => {
   const portsDir = join(import.meta.dirname, '../src/ports');
   const portFiles = readdirSync(portsDir).filter((f) => f.endsWith('.ts'));
 
+  const importSpecifiers = (source: string): string[] => {
+    const specifiers: string[] = [];
+    const patterns = [/(?:import|export)[\s\S]*?from\s+'([^']+)'/g, /import\('([^']+)'\)/g];
+    for (const pattern of patterns) {
+      for (const match of source.matchAll(pattern)) {
+        specifiers.push(match[1]!);
+      }
+    }
+    return specifiers;
+  };
+
   it('has port files to guard', () => {
     expect(portFiles.length).toBeGreaterThan(0);
   });
@@ -18,8 +29,7 @@ describe('ports stay pure', () => {
   for (const file of portFiles) {
     it(`${file} imports no network, SDK or Node-only module`, () => {
       const source = readFileSync(join(portsDir, file), 'utf8');
-      const imports = [...source.matchAll(/^import .*?from '(.*?)';/gm)].map((m) => m[1]!);
-      for (const specifier of imports) {
+      for (const specifier of importSpecifiers(source)) {
         expect(specifier.startsWith('.')).toBe(true);
       }
       expect(source).not.toMatch(/\bfetch\(|new URL\(|node:/);

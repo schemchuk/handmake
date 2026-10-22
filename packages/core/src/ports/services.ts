@@ -60,7 +60,7 @@ export interface Notifier {
 
 /** Resolves secret NAMES (from tenant config) to values. Never logs values. */
 export interface SecretResolver {
-  resolve(name: string): string;
+  resolve(name: string): Promise<string>;
 }
 
 export interface Clock {
