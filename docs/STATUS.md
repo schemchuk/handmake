@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T04 — Tenant config schema and loader (`core`, docs/03-tasks.md v2)
-- **Branch:** feat/T04-tenant-config (to be created by kimi-code)
-- **Last commit:** 06e533b T03: Post schema and frontmatter I/O (#4)
-- **Next step:** Kimi Code implements T04 (then T04b ports, T06 ledger).
+- **Active agent:** claude-code
+- **Current task:** T04 — Tenant config schema and loader (`core`) — implemented, awaiting review
+- **Branch:** feat/T04-tenant-config
+- **Last commit:** 78de6d1 feat: tenant config schema and loader in core (T04)
+- **Next step:** Claude Code reviews and merges PR #5 (not sensitive). Then Kimi Code starts T04b (ports, channel registry, fakes).
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
