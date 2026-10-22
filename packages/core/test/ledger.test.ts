@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest';
 import {
   initLedger,
   LedgerParseError,
+  LedgerTransitionError,
   markDone,
   markFailed,
+  markOpDelivered,
+  nextOpIndex,
   parseLedger,
   pendingChannels,
   serializeLedger,
@@ -37,7 +40,9 @@ describe('pendingChannels', () => {
   });
 
   it('never returns a done channel', () => {
-    const ledger = markDone(initLedger('tenant', 'post-1', post.channels, t0), 'telegram', [7], t1);
+    let ledger = initLedger('tenant', 'post-1', post.channels, t0);
+    ledger = markOpDelivered(ledger, 'telegram', 0, 7, t1);
+    ledger = markDone(ledger, 'telegram', t1);
     expect(pendingChannels(ledger, post)).toEqual(['instagram']);
   });
 
@@ -57,58 +62,90 @@ describe('pendingChannels', () => {
   });
 });
 
-describe('markDone / markFailed transitions', () => {
-  it('markDone records remote ids and timestamp, immutably', () => {
-    const ledger = initLedger('t', 'p', post.channels, t0);
-    const done = markDone(ledger, 'telegram', [11, 12], t1);
-    expect(done.channels.telegram).toEqual({
-      status: 'done',
-      remoteIds: [11, 12],
-      updatedAt: t1.toISOString(),
-    });
-    expect(ledger.channels.telegram!.status).toBe('pending'); // original untouched
-  });
-
-  it('markFailed keeps the last error', () => {
+describe('operation-granular delivery', () => {
+  it('records each delivered op in order', () => {
     let ledger = initLedger('t', 'p', post.channels, t0);
-    ledger = markFailed(ledger, 'telegram', 'first failure', t1);
-    ledger = markFailed(ledger, 'telegram', 'second failure', t2);
+    ledger = markOpDelivered(ledger, 'telegram', 0, 100, t1);
+    ledger = markOpDelivered(ledger, 'telegram', 1, 101, t2);
     expect(ledger.channels.telegram).toEqual({
-      status: 'failed',
-      remoteIds: [],
-      error: 'second failure',
+      status: 'pending',
+      remoteIds: [100, 101],
       updatedAt: t2.toISOString(),
     });
   });
 
-  it('markFailed preserves remote ids from a partial delivery', () => {
-    let ledger = initLedger('t', 'p', post.channels, t0);
-    ledger = {
-      ...ledger,
-      channels: { ...ledger.channels, telegram: { ...ledger.channels.telegram!, remoteIds: [5] } },
-    };
-    ledger = markFailed(ledger, 'telegram', 'caption op failed', t1);
-    expect(ledger.channels.telegram!.remoteIds).toEqual([5]);
+  it('rejects a gap in the op sequence', () => {
+    const ledger = initLedger('t', 'p', post.channels, t0);
+    expect(() => markOpDelivered(ledger, 'telegram', 1, 101, t1)).toThrowError(
+      LedgerTransitionError,
+    );
+    expect(() => markOpDelivered(ledger, 'telegram', 1, 101, t1)).toThrowError(/next op is 0/);
   });
 
-  it('supports the re-run flow: partial failure, then finish', () => {
-    // First run: telegram done, instagram fails after delivery started.
+  it('markDone preserves recorded ids and requires an entry', () => {
     let ledger = initLedger('t', 'p', post.channels, t0);
-    ledger = markDone(ledger, 'telegram', [21], t1);
-    ledger = markFailed(ledger, 'instagram', 'HTTP 500', t1);
+    ledger = markOpDelivered(ledger, 'telegram', 0, 100, t1);
+    ledger = markDone(ledger, 'telegram', t2);
+    expect(ledger.channels.telegram).toEqual({
+      status: 'done',
+      remoteIds: [100],
+      updatedAt: t2.toISOString(),
+    });
+    expect(() => markDone(ledger, 'unknown-channel', t2)).toThrowError(/no ledger entry/);
+  });
+});
 
-    // Re-run sends only instagram.
+describe('failure and re-run flow', () => {
+  it('records op 0, fails on op 1, resumes without duplicating op 0', () => {
+    // First run: album (op 0) delivered, DE reply (op 1) fails.
+    let ledger = initLedger('t', 'p', post.channels, t0);
+    ledger = markOpDelivered(ledger, 'telegram', 0, 100, t1);
+    ledger = markFailed(ledger, 'telegram', 'HTTP 500 on op 1', t1);
+
+    // The remote id of op 0 survives the failure…
+    expect(ledger.channels.telegram!.remoteIds).toEqual([100]);
+    expect(ledger.channels.telegram!.error).toBe('HTTP 500 on op 1');
+    // …and a re-run resumes at op 1, with op 0's id available for replyToOp.
+    expect(nextOpIndex(ledger, 'telegram')).toBe(1);
+    const albumMessageId = ledger.channels.telegram!.remoteIds[0];
+    expect(albumMessageId).toBe(100);
+
+    // Re-run delivers only op 1 and finishes the channel.
+    expect(pendingChannels(ledger, post)).toEqual(['telegram', 'instagram']);
+    ledger = markOpDelivered(ledger, 'telegram', 1, 101, t2);
+    expect(nextOpIndex(ledger, 'telegram')).toBe(2);
+    ledger = markDone(ledger, 'telegram', t2);
     expect(pendingChannels(ledger, post)).toEqual(['instagram']);
-    ledger = markDone(ledger, 'instagram', [99], t2);
-    expect(pendingChannels(ledger, post)).toEqual([]);
-    expect(ledger.channels.telegram!.remoteIds).toEqual([21]); // untouched
+    expect(ledger.channels.telegram).toEqual({
+      status: 'done',
+      remoteIds: [100, 101],
+      updatedAt: t2.toISOString(),
+    });
+  });
+
+  it('markFailed keeps the last error and clears it on progress', () => {
+    let ledger = initLedger('t', 'p', post.channels, t0);
+    ledger = markFailed(ledger, 'telegram', 'first failure', t1);
+    ledger = markFailed(ledger, 'telegram', 'second failure', t2);
+    expect(ledger.channels.telegram!.error).toBe('second failure');
+    ledger = markOpDelivered(ledger, 'telegram', 0, 100, t2);
+    expect(ledger.channels.telegram!.error).toBeUndefined();
+    expect(ledger.channels.telegram!.status).toBe('pending');
+  });
+
+  it('returns 0 as nextOpIndex for an untouched channel', () => {
+    const ledger = initLedger('t', 'p', post.channels, t0);
+    expect(nextOpIndex(ledger, 'telegram')).toBe(0);
+    expect(nextOpIndex(ledger, 'never-seen')).toBe(0);
   });
 });
 
 describe('JSON (de)serialization', () => {
   it('round-trips a ledger', () => {
     let ledger = initLedger('t', 'p', post.channels, t0);
-    ledger = markDone(ledger, 'telegram', [1, 'two'], t1);
+    ledger = markOpDelivered(ledger, 'telegram', 0, 1, t1);
+    ledger = markOpDelivered(ledger, 'telegram', 1, 'two', t1);
+    ledger = markDone(ledger, 'telegram', t1);
     ledger = markFailed(ledger, 'instagram', 'nope', t1);
     expect(parseLedger(serializeLedger(ledger))).toEqual(ledger);
   });

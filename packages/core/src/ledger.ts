@@ -10,6 +10,11 @@ const remoteIdSchema = z.union([z.number(), z.string()]);
  * (architecture section 3). Types live in `ports/store.ts` (T04b); this
  * module holds the pure transition functions and JSON (de)serialization.
  * Every function returns a new ledger — ledgers are immutable.
+ *
+ * The ledger is granular per send operation (the idempotency key is
+ * `tenantId:postId:channel:opIndex`): a channel renders several operations
+ * (UA album, DE reply, …) and a failure mid-batch must not lose the remote
+ * ids already delivered, or a re-run would duplicate them.
  */
 
 export const ledgerEntrySchema = z.object({
@@ -31,6 +36,13 @@ export class LedgerParseError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'LedgerParseError';
+  }
+}
+
+export class LedgerTransitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LedgerTransitionError';
   }
 }
 
@@ -62,24 +74,65 @@ export function pendingChannels(ledger: PublishLedger, post: Pick<Post, 'channel
   return post.channels.filter((channel) => ledger.channels[channel]?.status !== 'done');
 }
 
-/** Mark a channel delivered. Returns a new ledger. */
-export function markDone(
+/**
+ * Index of the next operation to deliver on a channel — where a re-run
+ * resumes. Equals the number of already recorded remote ids.
+ */
+export function nextOpIndex(ledger: PublishLedger, channel: string): number {
+  return ledger.channels[channel]?.remoteIds.length ?? 0;
+}
+
+/**
+ * Record one delivered operation: appends its remote id at `remoteIds[opIndex]`.
+ * The op index must equal the number of already recorded ids (no gaps), so
+ * remoteIds is always the exact delivery prefix. Status returns to
+ * `pending` (delivery in progress) and any previous failure is cleared.
+ */
+export function markOpDelivered(
   ledger: PublishLedger,
   channel: string,
-  remoteIds: (number | string)[],
+  opIndex: number,
+  remoteId: number | string,
   now: Date,
 ): PublishLedger {
+  const previous = ledger.channels[channel] ?? {
+    status: 'pending' as const,
+    remoteIds: [],
+    updatedAt: now.toISOString(),
+  };
+  if (opIndex !== previous.remoteIds.length) {
+    throw new LedgerTransitionError(
+      `channel "${channel}": cannot record op ${opIndex}; next op is ${previous.remoteIds.length}`,
+    );
+  }
   return updateEntry(ledger, channel, {
-    status: 'done',
-    remoteIds,
+    status: 'pending',
+    remoteIds: [...previous.remoteIds, remoteId],
     updatedAt: now.toISOString(),
   });
 }
 
 /**
- * Mark a channel failed; keeps the error as the last one and preserves any
- * remote ids recorded before the failure (partial delivery). Returns a new
- * ledger.
+ * Mark a channel fully delivered. The caller records every operation with
+ * `markOpDelivered` first; the recorded remote ids stay available for
+ * resolving `replyToOp` references on future renders.
+ */
+export function markDone(ledger: PublishLedger, channel: string, now: Date): PublishLedger {
+  const previous = ledger.channels[channel];
+  if (!previous) {
+    throw new LedgerTransitionError(`channel "${channel}" has no ledger entry`);
+  }
+  return updateEntry(ledger, channel, {
+    status: 'done',
+    remoteIds: previous.remoteIds,
+    updatedAt: now.toISOString(),
+  });
+}
+
+/**
+ * Mark a channel failed; keeps the error as the last one and preserves the
+ * remote ids of operations delivered before the failure, so a re-run resumes
+ * at `nextOpIndex` instead of duplicating them. Returns a new ledger.
  */
 export function markFailed(
   ledger: PublishLedger,
@@ -87,10 +140,14 @@ export function markFailed(
   error: string,
   now: Date,
 ): PublishLedger {
-  const previous = ledger.channels[channel];
+  const previous = ledger.channels[channel] ?? {
+    status: 'pending' as const,
+    remoteIds: [],
+    updatedAt: now.toISOString(),
+  };
   return updateEntry(ledger, channel, {
     status: 'failed',
-    remoteIds: previous?.remoteIds ?? [],
+    remoteIds: previous.remoteIds,
     error,
     updatedAt: now.toISOString(),
   });
