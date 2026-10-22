@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T06 — Ledger model (`core`, docs/03-tasks.md v2)
-- **Branch:** feat/T06-ledger (to be created by kimi-code)
-- **Last commit:** 9ccaf3b T05: Telegram renderer and limits (#7)
-- **Next step:** Kimi Code implements T06: pure transition functions on the ledger types in `packages/core/src/ports/store.ts`.
+- **Active agent:** claude-code
+- **Current task:** T06 — Ledger model (`core`) — implemented, awaiting review
+- **Branch:** feat/T06-ledger
+- **Last commit:** 35d22d5 feat: ledger pure functions and JSON I/O in core (T06)
+- **Next step:** Claude Code reviews and merges PR #8 (not sensitive). Then Kimi Code starts T08 (photo processing, `publisher`, depends only on T01).
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
