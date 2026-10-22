@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T06 — Ledger model (`core`) — implemented, awaiting review
+- **Active agent:** kimi-code
+- **Current task:** T06 — Ledger model (`core`) — changes requested (PR #8 review)
 - **Branch:** feat/T06-ledger
 - **Last commit:** 35d22d5 feat: ledger pure functions and JSON I/O in core (T06)
-- **Next step:** Claude Code reviews and merges PR #8 (not sensitive). Then Kimi Code starts T08 (photo processing, `publisher`, depends only on T01).
+- **Next step:** Kimi Code makes the ledger operation-granular (PR #8 review blocker 1: `markOpDelivered`, `nextOpIndex`, resume tests). Then hand back to claude-code. T08 after merge.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
@@ -13,6 +13,8 @@
 - pnpm is not in /usr/bin on this machine; Kimi Code uses `~/.local/bin/pnpm` (12.14.0). Node is v22.23.2 (`.nvmrc` = 22).
 
 ## Review notes carried forward
+- T07: `ChannelAdapter.deliver` must report each delivered op (e.g. `startAt`, `knownIds`, `onDelivered(opIndex, id)`) so T10 writes the ledger after every op (PR #8 review note 2).
+- T17 runbook: document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
 - T07: render in the tenant's `languages` order (pass it via `settings`), not section order in the file (PR #7 review note 1).
 - F19 (work of the week): add "list published" to `ContentStore` when candidates are built (PR #6 review note 3).
 - Before T11: pin GitHub Actions to commit SHAs (+ Dependabot for actions). gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.
