@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T06 — Ledger model (`core`) — changes requested (PR #8 review)
+- **Active agent:** claude-code
+- **Current task:** T06 — Ledger model (`core`) — review fix applied, awaiting re-review
 - **Branch:** feat/T06-ledger
-- **Last commit:** 35d22d5 feat: ledger pure functions and JSON I/O in core (T06)
-- **Next step:** Kimi Code makes the ledger operation-granular (PR #8 review blocker 1: `markOpDelivered`, `nextOpIndex`, resume tests). Then hand back to claude-code. T08 after merge.
+- **Last commit:** 3c8673d fix: operation-granular ledger so re-runs never duplicate (T06 review)
+- **Next step:** Claude Code re-reviews and merges PR #8. Then Kimi Code starts T08 (photo processing). For T07 (per PR #8 review): change `ChannelAdapter.deliver` so the caller learns per-op results (e.g. resume at `startAt` with `knownIds` and an `onDelivered` callback) — atomic deliver loses ids mid-batch; T10 writes the ledger after every op.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
