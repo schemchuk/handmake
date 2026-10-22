@@ -3,6 +3,9 @@
     "github.vscode-github-actions",
     "yzhang.markdown-all-in-one",
     "eamodio.gitlens",
-    "editorconfig.editorconfig"
+    "editorconfig.editorconfig",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "vitest.explorer"
   ]
 }
