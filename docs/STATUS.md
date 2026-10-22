@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T04b — Ports, channel registry and fakes (`core`) — implemented, awaiting review
+- **Active agent:** kimi-code
+- **Current task:** T04b — Ports, channel registry and fakes (`core`) — changes requested (PR #6 review)
 - **Branch:** feat/T04b-ports
 - **Last commit:** 8e18a60 feat: ports, channel registry and in-memory fakes (T04b)
-- **Next step:** Claude Code reviews and merges PR #6 (not sensitive). Then Kimi Code starts T05 (Telegram renderer, needs T04b) or T06 (ledger). Note for T06: ledger types already defined in `packages/core/src/ports/store.ts` (PublishLedger, LedgerEntry) — T06 adds pure transition functions on them.
+- **Next step:** Kimi Code fixes the two blockers from the PR #6 review: (1) internal packages exported as TS source so consumer tests run without a build, plus a note in docs/02-architecture.md; (2) async `SecretResolver.resolve`. Then hand back to claude-code. Note for T06: ledger types already live in `packages/core/src/ports/store.ts`.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
