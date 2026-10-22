@@ -29,6 +29,11 @@ describe('parsePost / serializePost round-trip', () => {
     expect(post.texts.uk).toContain('Осінні шарфи');
     expect(post.texts.de).toContain('Herbstschals');
   });
+
+  it('tolerates CRLF line endings', () => {
+    const post = parsePost(readFixture('valid-1.md').replace(/\n/g, '\r\n'));
+    expect(post.texts.uk).toContain('Осінні шарфи');
+  });
 });
 
 describe('parsePost rejects invalid posts', () => {
@@ -37,6 +42,7 @@ describe('parsePost rejects invalid posts', () => {
     ['invalid-missing-language-section.md', /missing language section.*lang:de/],
     ['invalid-undeclared-language-section.md', /without a declared version.*lang:de/],
     ['invalid-ulid.md', /ULID/],
+    ['invalid-empty-language-section.md', /empty language section.*lang:de/],
   ])('%s raises PostParseError', (name, messagePattern) => {
     expect(() => parsePost(readFixture(name))).toThrowError(PostParseError);
     expect(() => parsePost(readFixture(name))).toThrowError(messagePattern);

@@ -66,6 +66,9 @@ function parseSections(body: string): Record<string, string> {
     while (currentLines.length > 0 && currentLines[currentLines.length - 1]!.trim() === '') {
       currentLines.pop();
     }
+    if (currentLines.length === 0) {
+      throw new PostParseError(`empty language section: lang:${currentLang}`);
+    }
     texts[currentLang] = currentLines.join('\n');
   };
 
@@ -92,7 +95,9 @@ function parseSections(body: string): Record<string, string> {
 }
 
 export function parsePost(markdown: string): Post {
-  const match = frontmatterRegex.exec(markdown);
+  // Tolerate CRLF files (Windows editors, GitHub web UI).
+  const normalized = markdown.replace(/\r\n/g, '\n');
+  const match = frontmatterRegex.exec(normalized);
   if (!match) {
     throw new PostParseError('post must start with a --- frontmatter block');
   }
