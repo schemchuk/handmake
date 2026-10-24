@@ -121,6 +121,46 @@ describe('TelegramAdapter', () => {
     expect(requests[1]!.json?.reply_parameters).toEqual({ message_id: 101 });
   });
 
+  it('sends a single-photo mediaGroup via sendPhoto (Bot API forbids 1-item albums)', async () => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+    const ops: SendOperation[] = [
+      { kind: 'mediaGroup', photoIndexes: [0], caption: 'Одне фото', captionLang: 'uk' },
+      { kind: 'message', text: 'Ein Foto', lang: 'de', replyToOp: 0 },
+    ];
+    const photos = [new Uint8Array([9, 9])];
+
+    const ids = await adapter.deliver(ops, makeCtx({ photos }), {
+      startAt: 0,
+      knownIds: [],
+      onDelivered: () => {},
+    });
+
+    expect(ids).toEqual([1, 2]);
+    expect(requests[0]!.url).toBe(`https://api.telegram.org/bot${TOKEN}/sendPhoto`);
+    const form = requests[0]!.form!;
+    expect(form.get('chat_id')).toBe('chat-1');
+    expect(form.get('photo')).toBeInstanceOf(Blob);
+    expect(form.get('caption')).toBe('Одне фото');
+    expect(form.has('media')).toBe(false);
+    // The reply still references the photo message's remote id.
+    expect(requests[1]!.json?.reply_parameters).toEqual({ message_id: 1 });
+  });
+
+  it('rejects an empty mediaGroup op before any fetch', async () => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+
+    await expect(
+      adapter.deliver([{ kind: 'mediaGroup', photoIndexes: [] }], makeCtx(), {
+        startAt: 0,
+        knownIds: [],
+        onDelivered: () => {},
+      }),
+    ).rejects.toThrow(TelegramAdapterError);
+    expect(requests).toHaveLength(0);
+  });
+
   it('honours retry_after on 429 and retries the same op', async () => {
     const sleep = vi.fn(sleepNoop);
     let first = true;

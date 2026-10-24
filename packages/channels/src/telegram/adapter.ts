@@ -141,6 +141,12 @@ export class TelegramAdapter implements ChannelAdapter {
     return ids;
   }
 
+  /**
+   * One op, with 429 retries. Deliberately ONLY 429 is retried: a network
+   * error after Telegram accepted a message is NOT retried (the send may
+   * have landed; retrying blindly could duplicate a post) — the
+   * ledger-driven re-run covers it. 5xx is left to the re-run as well.
+   */
   async #sendWithRetry(
     op: SendOperation,
     chatId: string,
@@ -168,6 +174,20 @@ export class TelegramAdapter implements ChannelAdapter {
   ): Promise<RemoteId> {
     const replyParameters = this.#replyParameters(op, deliveredIds);
     if (op.kind === 'mediaGroup') {
+      // The Bot API requires 2–10 items in sendMediaGroup; a single photo
+      // goes through sendPhoto instead (same op shape from render). render
+      // never emits an empty album, but the port allows any op — guard it.
+      if (op.photoIndexes.length === 0) {
+        throw new TelegramAdapterError('mediaGroup op has no photos to send');
+      }
+      if (op.photoIndexes.length === 1) {
+        const form = this.#photoForm(op, chatId, photos, replyParameters);
+        const result = (await this.#call('sendPhoto', form)) as { message_id?: unknown };
+        if (typeof result.message_id !== 'number') {
+          throw new TelegramAdapterError('Telegram sendPhoto returned a malformed result');
+        }
+        return result.message_id;
+      }
       const form = this.#mediaGroupForm(op, chatId, photos, replyParameters);
       const result = (await this.#call('sendMediaGroup', form)) as unknown;
       if (!Array.isArray(result) || typeof result[0]?.message_id !== 'number') {
@@ -202,6 +222,28 @@ export class TelegramAdapter implements ChannelAdapter {
       );
     }
     return { message_id: remoteId };
+  }
+
+  /** Single-photo variant of #mediaGroupForm (the Bot API forbids 1-item albums). */
+  #photoForm(
+    op: Extract<SendOperation, { kind: 'mediaGroup' }>,
+    chatId: string,
+    photos: Uint8Array[],
+    replyParameters: { message_id: RemoteId } | undefined,
+  ): FormData {
+    const photoIndex = op.photoIndexes[0]!;
+    const bytes = photos[photoIndex];
+    if (bytes === undefined) {
+      throw new TelegramAdapterError(`op references missing photo at index ${photoIndex}`);
+    }
+    const form = new FormData();
+    form.set('chat_id', chatId);
+    form.set('photo', new Blob([bytes]), 'photo0.jpg');
+    if (op.caption !== undefined) form.set('caption', op.caption);
+    if (replyParameters) {
+      form.set('reply_parameters', JSON.stringify(replyParameters));
+    }
+    return form;
   }
 
   #mediaGroupForm(

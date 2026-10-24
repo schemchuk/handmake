@@ -28,7 +28,7 @@ const post: Post = {
   date: new Date().toISOString(),
   publishAt: 'now',
   type: 'free',
-  photos: ['sample-1.jpg', 'sample-2.jpg'],
+  photos: ['sample-1.jpg'],
   channels: ['telegram'],
   versions: { uk: { provenance: 'human' }, de: { provenance: 'human' } },
   texts: {
@@ -46,10 +46,7 @@ const photo = async (rgb: [number, number, number]) =>
 
 const settings = { channelId: 'TELEGRAM_TEST_CHANNEL_ID', languages: ['uk', 'de'] };
 const ops = renderTelegram(post, settings);
-const photos = [
-  new Uint8Array(await photo([180, 120, 160])),
-  new Uint8Array(await photo([120, 150, 190])),
-];
+const photos = [new Uint8Array(await photo([180, 120, 160]))];
 
 const adapter = createTelegramAdapter({ token });
 
