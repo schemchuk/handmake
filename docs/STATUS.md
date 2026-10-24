@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
+- **Active agent:** kimi-code
 - **Current task:** T12 — AI translation and humanizer prompt (`ai`; owner claude-code, reviewer kimi-code)
-- **Branch:** feat/T12-ai-translation (to be created)
+- **Branch:** feat/T12-ai-translation
 - **Last commit:** 4b6e4d3 T10: Delivery with ledger idempotency (#12)
-- **Next step:** claude-code implements T12 (needs H3 only for the live eval). Volodymyr: H1-H5 status needed before T11/T13 (H1 test channel, H2 Cloudflare, H3 Anthropic key, H5 secrets).
+- **Next step:** Review T12 PR (kimi-code, reviewer). Volodymyr and his wife judge `packages/ai/eval/results/humanize-de@1.md`. Merge when CI is green and review is clean.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
