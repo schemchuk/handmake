@@ -10,12 +10,15 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "post:sample": "tsx scripts/post-sample.ts"
+    "post:sample": "tsx scripts/post-sample.ts",
+    "dry-run": "tsx src/cli.ts --dry-run"
   },
   "dependencies": {
     "@handmake/channels": "workspace:*",
     "@handmake/core": "workspace:*",
-    "sharp": "^0.34.5"
+    "@handmake/stores": "workspace:*",
+    "sharp": "^0.34.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "tsx": "^4.21.0"

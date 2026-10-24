@@ -1,0 +1,71 @@
+import { parseTenantConfig } from '@handmake/core';
+import { describe, expect, it } from 'vitest';
+
+import { buildPostFromPayload } from '../src/build-post';
+import type { DispatchPayload } from '../src/payload';
+import { newUlid } from '../src/ulid';
+
+const tenant = parseTenantConfig(`
+id: faden-und-stimmung
+name: Faden und Stimmung
+languages: [uk, de]
+channels:
+  telegram:
+    channelId: TELEGRAM_CHANNEL_ID
+contentStore:
+  type: git-repo
+meetingSchedule:
+  weekday: thursday
+  time: '14:00'
+  timezone: Europe/Berlin
+workOfWeek:
+  opens: { weekday: monday, time: '10:00' }
+  closes: { weekday: wednesday, time: '20:00' }
+featureFlags:
+  wotwPoll: false
+offerings: []
+`);
+
+const payload: DispatchPayload = {
+  tenantId: 'faden-und-stimmung',
+  draftId: 'draft-1',
+  texts: { uk: 'uk text', de: 'de text' },
+  fileIds: ['file-1', 'file-2', 'file-3'],
+  provenance: 'ai-assisted',
+};
+
+const now = new Date('2026-10-24T10:00:00.000Z');
+
+describe('buildPostFromPayload', () => {
+  it('maps payload and tenant fields to a post', () => {
+    const post = buildPostFromPayload(payload, tenant, {
+      now,
+      newId: () => '01JDRYRNT000000000000000BC',
+    });
+    expect(post).toEqual({
+      id: '01JDRYRNT000000000000000BC',
+      date: '2026-10-24T10:00:00.000Z',
+      publishAt: 'now',
+      type: 'free',
+      tenant: 'faden-und-stimmung',
+      channels: ['telegram'],
+      photos: ['photo-1.jpg', 'photo-2.jpg', 'photo-3.jpg'],
+      versions: {
+        uk: { provenance: 'ai-assisted' },
+        de: { provenance: 'ai-assisted' },
+      },
+      texts: { uk: 'uk text', de: 'de text' },
+    });
+  });
+
+  it('generates a ULID id when no newId is given', () => {
+    const post = buildPostFromPayload(payload, tenant, { now });
+    expect(post.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+    expect(newUlid(now)).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+  });
+
+  it('names no photos for an empty fileIds list', () => {
+    const post = buildPostFromPayload({ ...payload, fileIds: [] }, tenant, { now });
+    expect(post.photos).toEqual([]);
+  });
+});

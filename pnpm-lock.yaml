@@ -195,9 +195,15 @@ importers:
       '@handmake/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@handmake/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       tsx:
         specifier: ^4.21.0
@@ -220,7 +226,11 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
-  packages/stores: {}
+  packages/stores:
+    dependencies:
+      '@handmake/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 
