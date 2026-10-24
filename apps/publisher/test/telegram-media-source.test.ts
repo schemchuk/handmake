@@ -34,7 +34,7 @@ const okGetFile = (filePath: string) =>
   Response.json({ ok: true, result: { file_path: filePath } });
 
 describe('TelegramMediaSource', () => {
-  it('downloads by file_id and returns the processed JPEG, not the raw bytes', async () => {
+  it('downloads by file_id and returns the raw file bytes', async () => {
     const raw = await tinyPhoto();
     const { fetchImpl, calls } = fakeFetch((url) => {
       if (url.includes('/getFile')) return okGetFile('photos/file_42.jpg');
@@ -45,8 +45,7 @@ describe('TelegramMediaSource', () => {
     const result = await source.fetchPhoto('FILE_ID_42');
 
     expect(result).toBeInstanceOf(Uint8Array);
-    expect(Buffer.from(result.subarray(0, 3))).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
-    expect(Buffer.from(result).equals(Buffer.from(raw))).toBe(false);
+    expect(Buffer.from(result).equals(Buffer.from(raw))).toBe(true);
     expect(calls).toHaveLength(2);
     expect(calls[0]?.url).toBe(`${API_BASE}/bot${TOKEN}/getFile?file_id=FILE_ID_42`);
     expect(calls[1]?.url).toBe(`${API_BASE}/file/bot${TOKEN}/photos/file_42.jpg`);

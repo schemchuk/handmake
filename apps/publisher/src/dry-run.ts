@@ -4,12 +4,12 @@ import path from 'node:path';
 
 import { renderTelegram } from '@handmake/channels';
 import { parsePost } from '@handmake/core';
-import type { MediaSource, PhotoFile, Post, SendOperation } from '@handmake/core';
+import type { MediaSource, Post, SendOperation } from '@handmake/core';
 import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
 import { buildPostFromPayload } from './build-post';
+import { fetchAndProcessPhotos } from './photos';
 import { parseDispatchPayload } from './payload';
-import { TelegramMediaSource } from './photos/telegram-media-source';
 import { loadTenantConfig } from './tenant-config';
 
 export interface DryRunDeps {
@@ -30,14 +30,6 @@ export interface DryRunResult {
   photoCount: number;
 }
 
-function requiredEnv(name: string, env: NodeJS.ProcessEnv): string {
-  const value = env[name];
-  if (!value) {
-    throw new Error(`dry-run: missing environment variable ${name} (see .env.example)`);
-  }
-  return value;
-}
-
 /**
  * Dry-run (T09): payload -> post -> content store in a temp dir, then print
  * the Telegram operations renderTelegram would deliver. Nothing leaves the
@@ -52,20 +44,11 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
   const tenant = await loadTenantConfig(payload.tenantId, root);
   const tempDir = deps.tempDir ?? (await mkdtemp(path.join(os.tmpdir(), 'handmake-dry-run-')));
 
-  const photos: PhotoFile[] = [];
-  if (payload.fileIds.length > 0) {
-    const mediaSource =
-      deps.mediaSource ??
-      new TelegramMediaSource({
-        token: requiredEnv('TELEGRAM_BOT_TOKEN', deps.env ?? process.env),
-      });
-    for (const [i, fileId] of payload.fileIds.entries()) {
-      photos.push({
-        fileName: `photo-${i + 1}.jpg`,
-        data: await mediaSource.fetchPhoto(fileId),
-      });
-    }
-  }
+  const photos = await fetchAndProcessPhotos(
+    payload.fileIds,
+    deps.mediaSource,
+    deps.env ?? process.env,
+  );
 
   const post = buildPostFromPayload(payload, tenant, { now: deps.now, newId: deps.newId });
   const store = new GitRepoContentStore({ rootDir: tempDir });
