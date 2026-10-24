@@ -5,6 +5,8 @@ export { runDryRun } from './dry-run';
 export type { DryRunDeps, DryRunResult } from './dry-run';
 export { createGitCommitter } from './git';
 export type { GitCommitter, GitCommitterOptions } from './git';
+export { TelegramNotifier } from './notify/telegram-notifier';
+export type { TelegramNotifierOptions } from './notify/telegram-notifier';
 export { parseDispatchPayload, PayloadParseError } from './payload';
 export type { DispatchPayload } from './payload';
 export { runPublish, PublishError } from './publish';

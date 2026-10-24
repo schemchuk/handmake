@@ -15,6 +15,7 @@ import {
 import type {
   MediaSource,
   Notifier,
+  NotifyTarget,
   Post,
   PublishLedger,
   SecretResolver,
@@ -130,6 +131,14 @@ export async function runPublish(
   const notifier: Notifier =
     deps.notifier ??
     ({ notify: async (target, message) => log(`notify ${target}: ${message}`) } satisfies Notifier);
+  // An alert must never change the publish outcome.
+  const notify = async (target: NotifyTarget, message: string): Promise<void> => {
+    try {
+      await notifier.notify(target, message);
+    } catch (error) {
+      log(`notify ${target} failed: ${safeErrorMessage(error)}`);
+    }
+  };
 
   let ledger =
     (await store.readLedger(post.tenant, post.id)) ??
@@ -185,7 +194,7 @@ export async function runPublish(
       const message = safeErrorMessage(error);
       ledger = markFailed(ledger, channel, message, now);
       await persistLedger();
-      await notifier.notify(
+      await notify(
         'operator',
         `publish failed for ${post.tenant}/${post.id} on ${channel}: ${message}`,
       );
@@ -194,6 +203,6 @@ export async function runPublish(
     await persistLedger();
   }
 
-  await notifier.notify('author', `published ${post.id} to ${Object.keys(delivered).join(', ')}`);
+  await notify('author', `published ${post.id} to ${Object.keys(delivered).join(', ')}`);
   return { post, ledger, delivered, skipped };
 }
