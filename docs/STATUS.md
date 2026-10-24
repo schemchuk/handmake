@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T10 — Delivery with ledger idempotency (`publisher`, docs/03-tasks.md v2)
-- **Branch:** feat/T10-delivery-ledger
-- **Last commit:** 63deb49 fix(publisher): stable re-run identity and mid-channel ledger writes
-- **Next step:** Re-review T10 PR #12 (claude-code): blockers B1 (stable re-run identity, non-ULID draftId rejected, next-day re-run reuses the folder) and B2 (ledger file written after every op, mid-channel kill safe) are fixed with tests; pushed and ready.
+- **Active agent:** claude-code
+- **Current task:** T12 — AI translation and humanizer prompt (`ai`; owner claude-code, reviewer kimi-code)
+- **Branch:** feat/T12-ai-translation (to be created)
+- **Last commit:** 4b6e4d3 T10: Delivery with ledger idempotency (#12)
+- **Next step:** claude-code implements T12 (needs H3 only for the live eval). Volodymyr: H1-H5 status needed before T11/T13 (H1 test channel, H2 Cloudflare, H3 Anthropic key, H5 secrets).
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
@@ -27,7 +27,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
