@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T07 — Telegram adapter delivery (`channels/telegram`) — changes requested (PR #10 review)
-- **Branch:** feat/T07-telegram-deliver
-- **Last commit:** 137b213 chore: document Telegram env vars for T07 manual check and bot
-- **Next step:** Kimi Code fixes the two blockers from the PR #10 review: (1) CI red, allow the `esbuild` build in `pnpm-workspace.yaml`; (2) one-photo posts go via `sendPhoto` (Bot API `sendMediaGroup` needs 2-10 items) + test. Check CI is green before handing back to claude-code.
+- **Current task:** T09 — Git-repo content store and dry-run (`stores/git-repo`, `publisher`, docs/03-tasks.md v2)
+- **Branch:** feat/T09-git-content-store (to be created by kimi-code)
+- **Last commit:** 755644b T07: Telegram adapter delivery (#10)
+- **Next step:** Kimi Code implements T09. Check CI on the PR is green before handing off.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
@@ -16,9 +16,7 @@
 - T10: `MediaSource` returns raw bytes; the publish pipeline calls `processPhoto` once for every source (PR #9 review note 1).
 - T13: accept Telegram photos; reply clearly for unsupported files such as HEIC documents (PR #9 review note 3).
 - Ledger: guard `markOpDelivered` on a `done` channel; restore an immutability assertion (PR #8 re-review).
-- T07: `ChannelAdapter.deliver` must report each delivered op (e.g. `startAt`, `knownIds`, `onDelivered(opIndex, id)`) so T10 writes the ledger after every op (PR #8 review note 2).
-- T17 runbook: document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
-- T07: render in the tenant's `languages` order (pass it via `settings`), not section order in the file (PR #7 review note 1).
+- T17 runbook: 5xx and network errors are not retried in-process, the ledger re-run covers them (PR #10 review note 4). Document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
 - F19 (work of the week): add "list published" to `ContentStore` when candidates are built (PR #6 review note 3).
 - Before T11: pin GitHub Actions to commit SHAs (+ Dependabot for actions). gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.
 - gitleaks-action on `pull_request` needs `fetch-depth: 0` on checkout (fixed in PR #2).
@@ -27,7 +25,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 in review (PR #10, implements the two carried T07 review notes below).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
