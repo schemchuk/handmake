@@ -1,4 +1,12 @@
 export const packageName = '@handmake/publisher';
+export { buildPostFromPayload } from './build-post';
+export type { BuildPostDeps } from './build-post';
+export { runDryRun } from './dry-run';
+export type { DryRunDeps, DryRunResult } from './dry-run';
+export { parseDispatchPayload, PayloadParseError } from './payload';
+export type { DispatchPayload } from './payload';
+export { loadTenantConfig } from './tenant-config';
+export { newUlid } from './ulid';
 export { MAX_LONG_SIDE, processPhoto } from './photos/process';
 export type { ProcessedPhoto } from './photos/process';
 export { TelegramMediaSource } from './photos/telegram-media-source';
