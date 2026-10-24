@@ -3,8 +3,8 @@
 - **Active agent:** kimi-code
 - **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
 - **Branch:** feat/T11-publish-workflow
-- **Last commit:** 2f60287 fix(ci): safe manual runs and a lossless final push
-- **Next step:** kimi-code fixes B1b (the TELEGRAM_CHANNEL_ID expression yields `true` on repository_dispatch) from the PR #14 re-review, pushes, checks CI, hands back to claude-code. Merge still needs Volodymyr's explicit OK (sensitive).
+- **Last commit:** 4d20abb fix(ci): channel pick always resolves to a secret, never to true
+- **Next step:** Re-review of B1b (claude-code): the channel-pick condition now only feeds the && branch, so both outer-|| branches resolve to a secret; pnpm/action-setup pin confirmed as v4.3.0. Everything else already approved. Merge still needs Volodymyr's explicit OK (sensitive) + H5 secrets for the manual acceptance run.
 - **Blocked on:** Volodymyr — explicit OK for the merge (workflow change) + H5 secrets for the manual acceptance run
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
