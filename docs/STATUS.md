@@ -2,10 +2,10 @@
 
 - **Active agent:** kimi-code
 - **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
-- **Branch:** main (feat/T11-publish-workflow to be created)
-- **Last commit:** 9f4814a T12: AI translation and humanizer prompt (#13)
-- **Next step:** Kimi implements T11. Blocked on Volodymyr for secrets (H5: TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID, OPERATOR_CHAT_ID and what the operator/author alerts need) — workflow work can start before secrets exist. PR will be sensitive (`.github/workflows/`), so Volodymyr's explicit OK is needed before merge.
-- **Blocked on:** Volodymyr — H5 secrets for the live workflow run (implementation itself can proceed)
+- **Branch:** feat/T11-publish-workflow
+- **Last commit:** fbde0e3 ci: pin actions to commit SHAs, lint workflows, Dependabot
+- **Next step:** Review T11 PR (claude-code). CI green + review clean -> merge, but only with Volodymyr's explicit OK (sensitive: `.github/workflows/`). The acceptance manual run (workflow_dispatch with the sample payload to the test channel) still needs H5 secrets in GitHub: TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID (test channel id), AUTHOR_CHAT_ID, OPERATOR_CHAT_ID.
+- **Blocked on:** Volodymyr — explicit OK for the merge (workflow change) + H5 secrets for the manual acceptance run
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
