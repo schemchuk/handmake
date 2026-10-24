@@ -27,10 +27,16 @@ describe('fakes', () => {
       { kind: 'mediaGroup' as const, photoIndexes: [0] },
       { kind: 'message' as const, text: 'hi', lang: 'de' },
     ];
-    const remoteIds = await adapter.deliver(ops, {
-      secrets: new FakeSecretResolver(),
-      idempotencyBase: idempotencyBase('t', 'p', 'telegram'),
-    });
+    const remoteIds = await adapter.deliver(
+      ops,
+      {
+        secrets: new FakeSecretResolver(),
+        idempotencyBase: idempotencyBase('t', 'p', 'telegram'),
+        settings: { channelId: 'TEST_CHANNEL' },
+        photos: [],
+      },
+      { startAt: 0, knownIds: [], onDelivered: () => {} },
+    );
     expect(remoteIds).toHaveLength(2);
     expect(adapter.deliveries[0]!.idempotencyKeys).toEqual(['t:p:telegram:0', 't:p:telegram:1']);
   });

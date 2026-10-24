@@ -3,6 +3,7 @@ import type {
   ChannelAdapter,
   ChannelCapabilities,
   DeliverContext,
+  DeliverProgress,
   PollResult,
   PollSpec,
   RemoteId,
@@ -38,6 +39,7 @@ export class FakeChannelAdapter implements ChannelAdapter {
   readonly renderImpl: (post: Post, settings: unknown) => SendOperation[];
 
   readonly deliveries: { ops: SendOperation[]; idempotencyKeys: string[] }[] = [];
+  readonly progressCalls: { opIndex: number; remoteId: RemoteId }[] = [];
   readonly pollsOpened: { poll: PollSpec; idempotencyKey: string }[] = [];
   readonly pollsClosed: RemoteId[] = [];
   /** Preset for the next closePoll result. */
@@ -59,12 +61,28 @@ export class FakeChannelAdapter implements ChannelAdapter {
     return this.renderImpl(post, settings);
   }
 
-  async deliver(ops: SendOperation[], ctx: DeliverContext): Promise<RemoteId[]> {
+  async deliver(
+    ops: SendOperation[],
+    ctx: DeliverContext,
+    progress?: DeliverProgress,
+  ): Promise<RemoteId[]> {
+    const start = progress?.startAt ?? 0;
+    const known = progress?.knownIds ?? [];
+    if (start > ops.length || known.length !== start) {
+      throw new Error('FakeChannelAdapter: progress violates the ledger invariant');
+    }
     this.deliveries.push({
       ops,
       idempotencyKeys: ops.map((_, i) => `${ctx.idempotencyBase}:${i}`),
     });
-    return ops.map((_, i) => `${this.key}-msg-${this.deliveries.length}-${i}`);
+    const newIds: RemoteId[] = [];
+    for (let i = start; i < ops.length; i++) {
+      const remoteId = `${this.key}-msg-${this.deliveries.length}-${i}`;
+      newIds.push(remoteId);
+      this.progressCalls.push({ opIndex: i, remoteId });
+      await progress?.onDelivered(i, remoteId);
+    }
+    return [...known, ...newIds];
   }
 
   async openPoll(poll: PollSpec, ctx: DeliverContext): Promise<RemoteId> {

@@ -49,13 +49,49 @@ export interface DeliverContext {
   secrets: SecretResolver;
   /** Equals `idempotencyKey(...)` without the op index; adapters suffix it. */
   idempotencyBase: string;
+  /**
+   * The tenant's per-channel settings object (e.g. `{ channelId: 'TELEGRAM_CHANNEL_ID' }`).
+   * The adapter interprets and validates it; core stays network-agnostic.
+   */
+  settings: unknown;
+  /**
+   * The post's processed photo bytes, aligned by index with
+   * `SendOperation.photoIndexes`. The publisher assembles them via its
+   * MediaSource; the adapter never downloads anything itself.
+   */
+  photos: Uint8Array[];
+}
+
+/**
+ * Per-op delivery reporting. The caller (publisher) passes the resume point
+ * from the ledger and a callback the adapter awaits after each op, so the
+ * ledger is persisted between ops and the at-least-once window shrinks to
+ * a single op.
+ */
+export interface DeliverProgress {
+  /** Index of the first op to send (ledger nextOpIndex). Ops before it were delivered. */
+  startAt: number;
+  /** Already-delivered remote ids, the exact prefix; used to resolve replyToOp on resume. */
+  knownIds: RemoteId[];
+  /** Called (and awaited) after each op is accepted by the network, before the next op is sent. */
+  onDelivered(opIndex: number, remoteId: RemoteId): void | Promise<void>;
 }
 
 export interface ChannelAdapter {
   readonly key: string;
   readonly capabilities: ChannelCapabilities;
   render(post: Post, settings: unknown): SendOperation[];
-  deliver(ops: SendOperation[], ctx: DeliverContext): Promise<RemoteId[]>;
+  /**
+   * Delivers ops in order and returns the complete remote id array
+   * (known prefix + newly delivered), aligned by op index. Implementations
+   * with no native idempotency (e.g. Telegram) treat the ledger-driven
+   * resume via `progress` as their idempotency mechanism.
+   */
+  deliver(
+    ops: SendOperation[],
+    ctx: DeliverContext,
+    progress?: DeliverProgress,
+  ): Promise<RemoteId[]>;
   openPoll?(poll: PollSpec, ctx: DeliverContext): Promise<RemoteId>;
   closePoll?(pollId: RemoteId, ctx: DeliverContext): Promise<PollResult>;
 }

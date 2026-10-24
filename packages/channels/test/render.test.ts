@@ -128,3 +128,49 @@ describe('renderTelegram: layout (O1)', () => {
     ]);
   });
 });
+
+describe('renderTelegram: tenant language order (settings.languages)', () => {
+  const settings = { channelId: 'TELEGRAM_CHANNEL_ID', languages: ['uk', 'de'] };
+
+  it('makes the first tenant language primary even when texts are keyed differently', () => {
+    const texts = { de: 'Hallo!', uk: 'Привіт!' };
+    const ops = renderTelegram(makePost({ texts }), settings);
+    expect(ops[0]).toMatchObject({
+      kind: 'mediaGroup',
+      caption: 'Привіт!',
+      captionLang: 'uk',
+    });
+    expect(ops[1]).toEqual({ kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 });
+  });
+
+  it('skips a tenant language that has no text in the post', () => {
+    const texts = { uk: 'Привіт!' };
+    const ops = renderTelegram(makePost({ texts, photos: [] }), settings);
+    expect(ops).toEqual([{ kind: 'message', text: 'Привіт!', lang: 'uk' }]);
+  });
+
+  it('appends texts not listed in the tenant languages in file order', () => {
+    const texts = { uk: 'UA', de: 'DE', en: 'EN' };
+    const ops = renderTelegram(makePost({ texts, photos: [] }), {
+      ...settings,
+      languages: ['de'],
+    });
+    expect(ops.map((op) => (op.kind === 'message' ? op.lang : op.captionLang))).toEqual([
+      'de',
+      'uk',
+      'en',
+    ]);
+  });
+
+  it('keeps file order when settings carry no languages', () => {
+    const texts = { de: 'Hallo!', uk: 'Привіт!' };
+    const ops = renderTelegram(makePost({ texts }), { channelId: 'TELEGRAM_CHANNEL_ID' });
+    expect(ops[0]).toMatchObject({ kind: 'mediaGroup', captionLang: 'de' });
+  });
+
+  it('ignores a malformed languages setting and keeps file order', () => {
+    const texts = { de: 'Hallo!', uk: 'Привіт!' };
+    const ops = renderTelegram(makePost({ texts }), { channelId: 'X', languages: 'uk' });
+    expect(ops[0]).toMatchObject({ kind: 'mediaGroup', captionLang: 'de' });
+  });
+});
