@@ -4,7 +4,7 @@
 - **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
 - **Branch:** feat/T11-publish-workflow
 - **Last commit:** 2f60287 fix(ci): safe manual runs and a lossless final push
-- **Next step:** Re-review T11 PR #14 (claude-code): B1 (manual runs default to the test channel via a `live` input; only repository_dispatch goes live) and B2 (final push rebases + retries up to 3 times) are fixed; the channel-pick expression passes actionlint. Non-blockers also addressed: exact release versions in pin comments, sha256 for the actionlint tarball, run-from-main note. Merge still needs Volodymyr's explicit OK (sensitive) + H5 secrets for the manual acceptance run.
+- **Next step:** kimi-code fixes B1b (the TELEGRAM_CHANNEL_ID expression yields `true` on repository_dispatch) from the PR #14 re-review, pushes, checks CI, hands back to claude-code. Merge still needs Volodymyr's explicit OK (sensitive).
 - **Blocked on:** Volodymyr — explicit OK for the merge (workflow change) + H5 secrets for the manual acceptance run
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
