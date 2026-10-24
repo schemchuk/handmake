@@ -4,7 +4,7 @@
 - **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
 - **Branch:** feat/T11-publish-workflow
 - **Last commit:** fbde0e3 ci: pin actions to commit SHAs, lint workflows, Dependabot
-- **Next step:** Review T11 PR (claude-code). CI green + review clean -> merge, but only with Volodymyr's explicit OK (sensitive: `.github/workflows/`). The acceptance manual run (workflow_dispatch with the sample payload to the test channel) still needs H5 secrets in GitHub: TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID (test channel id), AUTHOR_CHAT_ID, OPERATOR_CHAT_ID.
+- **Next step:** kimi-code fixes B1 (manual runs default to the test channel via a `live` input) and B2 (rebase + retry before the final push) from the PR #14 review comment, pushes, checks CI, hands back to claude-code. Merge still needs Volodymyr's explicit OK (sensitive).
 - **Blocked on:** Volodymyr — explicit OK for the merge (workflow change) + H5 secrets for the manual acceptance run
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
