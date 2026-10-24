@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { idempotencyBase } from '../ports/channel';
-import type { ChannelAdapter, SendOperation } from '../ports/channel';
+import type { ChannelAdapter, RemoteId, SendOperation } from '../ports/channel';
 import type { Translator } from '../ports/services';
 import type { ContentStore } from '../ports/store';
 
@@ -30,13 +30,53 @@ export function describeChannelAdapterContract(
       expect(typeof caps.polls).toBe('boolean');
     });
 
-    it('deliver returns one remote id per operation', async () => {
+    it('deliver returns one remote id per operation and reports each delivery', async () => {
       const adapter = makeAdapter();
-      const remoteIds = await adapter.deliver(sampleOps, {
-        secrets: { resolve: async () => 'unused' },
-        idempotencyBase: idempotencyBase('tenant', 'post', adapter.key),
-      });
+      const reported: { opIndex: number; remoteId: RemoteId }[] = [];
+      const remoteIds = await adapter.deliver(
+        sampleOps,
+        {
+          secrets: { resolve: async () => 'chat-1' },
+          idempotencyBase: idempotencyBase('tenant', 'post', adapter.key),
+          settings: { channelId: 'TEST_CHANNEL' },
+          photos: [new Uint8Array([1]), new Uint8Array([2])],
+        },
+        {
+          startAt: 0,
+          knownIds: [],
+          onDelivered: (opIndex, remoteId) => {
+            reported.push({ opIndex, remoteId });
+          },
+        },
+      );
       expect(remoteIds).toHaveLength(sampleOps.length);
+      expect(reported.map((r) => r.opIndex)).toEqual(sampleOps.map((_, i) => i));
+      // The returned array is the reported ids, aligned by op index.
+      expect(remoteIds).toEqual(reported.map((r) => r.remoteId));
+    });
+
+    it('deliver resumes at startAt without re-sending the known prefix', async () => {
+      const adapter = makeAdapter();
+      const reported: number[] = [];
+      const remoteIds = await adapter.deliver(
+        sampleOps,
+        {
+          secrets: { resolve: async () => 'chat-1' },
+          idempotencyBase: idempotencyBase('tenant', 'post', adapter.key),
+          settings: { channelId: 'TEST_CHANNEL' },
+          photos: [new Uint8Array([1]), new Uint8Array([2])],
+        },
+        {
+          startAt: 1,
+          knownIds: ['known-0'],
+          onDelivered: (opIndex) => {
+            reported.push(opIndex);
+          },
+        },
+      );
+      expect(remoteIds).toHaveLength(sampleOps.length);
+      expect(remoteIds[0]).toBe('known-0');
+      expect(reported).toEqual([1]);
     });
 
     it('honours capabilities.polls: false by exposing no poll methods', () => {

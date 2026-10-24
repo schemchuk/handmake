@@ -5,10 +5,21 @@ import type { ChannelCapabilities, Post, SendOperation } from '@handmake/core';
  * ordered list of send operations. The bot preview and the publisher both
  * call this exact function, so the preview is what gets posted.
  *
- * Layout (O1, ADR in architecture 10): the primary language (first text in
- * the post) gets the photo album; further languages are text-only messages
- * replying to the album. Plain text, no parse mode in the MVP.
+ * Layout (O1, ADR in architecture 10): the primary language gets the photo
+ * album; further languages are text-only messages replying to the album.
+ * The primary language is the first entry of the tenant's `languages` list
+ * (passed via settings) that actually has a text in the post; any remaining
+ * post texts follow in file order. Without settings the order of
+ * `post.texts` keys is used. Plain text, no parse mode in the MVP.
  */
+
+/** Per-channel settings of the tenant config (`channels.telegram`). */
+export interface TelegramChannelSettings {
+  /** Secret NAME resolving to the target chat id; never a raw value. */
+  channelId: string;
+  /** Tenant language order; the first language present in the post is primary. */
+  languages?: string[];
+}
 
 export const telegramCapabilities: ChannelCapabilities = {
   maxPhotos: 10,
@@ -24,10 +35,35 @@ export class TelegramRenderError extends Error {
   }
 }
 
-export function renderTelegram(post: Post, _settings?: unknown): SendOperation[] {
+/** Lenient read of `settings.languages`: only a string array is honoured. */
+function readLanguages(settings: unknown): string[] | undefined {
+  if (typeof settings !== 'object' || settings === null) return undefined;
+  const languages = (settings as { languages?: unknown }).languages;
+  if (!Array.isArray(languages) || languages.some((l) => typeof l !== 'string')) {
+    return undefined;
+  }
+  return languages;
+}
+
+/**
+ * Language order: the tenant's `languages` filtered to languages present in
+ * the post, then any remaining post texts in file order. First element is
+ * the primary language (gets the album).
+ */
+function orderLanguages(post: Post, settings?: unknown): string[] {
+  const fileOrder = Object.keys(post.texts);
+  const languages = readLanguages(settings);
+  if (!languages) return fileOrder;
+  const present = new Set(fileOrder);
+  const ordered = languages.filter((lang) => present.has(lang));
+  const rest = fileOrder.filter((lang) => !languages.includes(lang));
+  return [...ordered, ...rest];
+}
+
+export function renderTelegram(post: Post, settings?: unknown): SendOperation[] {
   const { maxPhotos, captionLimit, messageLimit } = telegramCapabilities;
   // Post texts are validated non-empty by the post schema (T03).
-  const [primaryLang, ...otherLangs] = Object.keys(post.texts) as [string, ...string[]];
+  const [primaryLang, ...otherLangs] = orderLanguages(post, settings) as [string, ...string[]];
 
   if (post.photos.length > maxPhotos) {
     throw new TelegramRenderError(

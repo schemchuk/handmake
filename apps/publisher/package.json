@@ -9,10 +9,15 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "post:sample": "tsx scripts/post-sample.ts"
   },
   "dependencies": {
+    "@handmake/channels": "workspace:*",
     "@handmake/core": "workspace:*",
     "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
   }
 }
