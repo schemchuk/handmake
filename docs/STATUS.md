@@ -1,26 +1,24 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
-- **Branch:** feat/T11-publish-workflow
-- **Last commit:** 4d20abb fix(ci): channel pick always resolves to a secret, never to true
-- **Next step:** Re-review of B1b (claude-code): the channel-pick condition now only feeds the && branch, so both outer-|| branches resolve to a secret; pnpm/action-setup pin confirmed as v4.3.0. Everything else already approved. Merge still needs Volodymyr's explicit OK (sensitive) + H5 secrets for the manual acceptance run.
-- **Blocked on:** Volodymyr — explicit OK for the merge (workflow change) + H5 secrets for the manual acceptance run
+- **Current task:** T13 — Bot Worker skeleton (`apps/bot`, docs/03-tasks.md v2)
+- **Branch:** feat/T13-bot-worker-skeleton (to be created by kimi-code)
+- **Last commit:** 83ead7a T11: Publish workflow and alerts (#14)
+- **Next step:** Kimi implements T13 (H2 done). Open in parallel: T11 acceptance run (workflow_dispatch, sample payload, `live` off, twice; second run must not duplicate) is still to be done with Volodymyr's go-ahead and recorded in T17.
+- **Blocked on:** nothing (AUTHOR_CHAT_ID secret still missing: author notification is a no-op until Volodymyr adds it)
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
-- At T11 review: if `main` gets branch protection, allow `github-actions[bot]` to push (content/ only). Currently not protected.
+- If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
 - pnpm is not in /usr/bin on this machine; Kimi Code uses `~/.local/bin/pnpm` (12.14.0). Node is v22.23.2 (`.nvmrc` = 22).
 
 ## Review notes carried forward
 - T10: run `processPhoto` on every MediaSource result before `savePost` (the store writes bytes as given; PR #11 note 1). `MediaSource` returns raw bytes; the publish pipeline calls `processPhoto` once for every source (PR #9 review note 1).
 - T13: accept Telegram photos; reply clearly for unsupported files such as HEIC documents (PR #9 review note 3).
 - Ledger: guard `markOpDelivered` on a `done` channel; restore an immutability assertion (PR #8 re-review).
-- T11: the publish workflow must commit and push `content/` also on failure (`if: always()`) so a failed run's ledger reaches `main` (PR #12 review).
 - T17 runbook: 5xx and network errors are not retried in-process, the ledger re-run covers them (PR #10 review note 4). Document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
 - Ledger path `content/ledger/<postId>.json` has no tenant; revisit with a second tenant (PR #11 note 2). Folder date is UTC; align with scheduled publishing (note 3).
 - F19 (work of the week): add "list published" to `ContentStore` when candidates are built (PR #6 review note 3).
-- Before T11: pin GitHub Actions to commit SHAs (+ Dependabot for actions). gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.
 - gitleaks-action on `pull_request` needs `fetch-depth: 0` on checkout (fixed in PR #2).
 
 ## Decisions so far
