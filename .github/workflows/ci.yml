@@ -47,6 +47,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Dry-run sample payload (T09)
+        run: pnpm --filter @handmake/publisher exec tsx src/cli.ts --dry-run "$GITHUB_WORKSPACE/fixtures/sample-payload.json" --root "$GITHUB_WORKSPACE"
+
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2
         env:
