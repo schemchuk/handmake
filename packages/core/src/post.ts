@@ -24,6 +24,10 @@ export type PostType = z.infer<typeof postTypeSchema>;
 // Crockford's Base32, 26 chars — https://github.com/ulid/spec
 const ulidRegex = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
+export function isUlid(value: string): boolean {
+  return ulidRegex.test(value);
+}
+
 export const isoDateTime = z.iso.datetime({ offset: true });
 
 export const frontmatterSchema = z.object({
