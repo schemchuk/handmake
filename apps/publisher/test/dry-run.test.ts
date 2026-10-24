@@ -7,6 +7,7 @@ import { renderTelegram } from '@handmake/channels';
 import { parsePost, TenantConfigError } from '@handmake/core';
 import { FakeMediaSource } from '@handmake/core/testing';
 import { afterAll, describe, expect, it } from 'vitest';
+import sharp from 'sharp';
 
 import { runDryRun } from '../src/dry-run';
 import type { DispatchPayload } from '../src/payload';
@@ -14,6 +15,7 @@ import type { DispatchPayload } from '../src/payload';
 const realTenantConfig = fileURLToPath(
   new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
 );
+const jpegFixturePath = fileURLToPath(new URL('./fixtures/with-gps-exif.jpg', import.meta.url));
 
 const now = new Date('2026-10-24T10:00:00.000Z');
 const postId = '01JDRYRNT000000000000000BC';
@@ -57,9 +59,10 @@ describe('runDryRun', () => {
     const payloadPath = path.join(payloadDir, 'payload.json');
     await writeFile(payloadPath, JSON.stringify(basePayload));
 
+    const jpegFixture = new Uint8Array(await readFile(jpegFixturePath));
     const mediaSource = new FakeMediaSource();
-    mediaSource.photos.set('file-1', new Uint8Array([1, 2, 3]));
-    mediaSource.photos.set('file-2', new Uint8Array([4, 5]));
+    mediaSource.photos.set('file-1', jpegFixture);
+    mediaSource.photos.set('file-2', jpegFixture);
     const lines: string[] = [];
 
     const result = await runDryRun(payloadPath, {
@@ -96,15 +99,16 @@ describe('runDryRun', () => {
       path.join(tempDir, 'content', 'posts', `2026-10-24-${postId.toLowerCase()}`),
     );
 
-    // The saved folder validates with parsePost and holds both photos.
+    // The saved folder validates with parsePost and holds both photos,
+    // normalised by processPhoto: valid JPEGs with EXIF stripped.
     const markdown = await readFile(path.join(result.postDir, 'index.md'), 'utf8');
     expect(parsePost(markdown)).toEqual(expectedPost);
-    expect(new Uint8Array(await readFile(path.join(result.postDir, 'photo-1.jpg')))).toEqual(
-      new Uint8Array([1, 2, 3]),
-    );
-    expect(new Uint8Array(await readFile(path.join(result.postDir, 'photo-2.jpg')))).toEqual(
-      new Uint8Array([4, 5]),
-    );
+    for (const name of ['photo-1.jpg', 'photo-2.jpg']) {
+      const data = await readFile(path.join(result.postDir, name));
+      const meta = await sharp(data).metadata();
+      expect(meta.format).toBe('jpeg');
+      expect(meta.exif).toBeUndefined();
+    }
 
     // Nothing was written to the cwd (payload lives outside it).
     expect(await readdir(cwd)).toEqual([]);

@@ -138,6 +138,22 @@ describe('failure and re-run flow', () => {
     expect(nextOpIndex(ledger, 'telegram')).toBe(0);
     expect(nextOpIndex(ledger, 'never-seen')).toBe(0);
   });
+
+  it('refuses to record a delivery on a done channel', () => {
+    const done = markDone(initLedger('t', 'p', post.channels, t0), 'telegram', t1);
+    expect(() => markOpDelivered(done, 'telegram', 0, 100, t2)).toThrowError(LedgerTransitionError);
+    expect(() => markOpDelivered(done, 'telegram', 0, 100, t2)).toThrowError(/already done/);
+  });
+
+  it('never mutates the input ledger', () => {
+    const ledger = initLedger('t', 'p', post.channels, t0);
+    const snapshot = structuredClone(ledger);
+    let next = markOpDelivered(ledger, 'telegram', 0, 100, t1);
+    next = markFailed(next, 'telegram', 'boom', t2);
+    next = markDone(next, 'telegram', t2);
+    expect(next).not.toEqual(ledger);
+    expect(ledger).toEqual(snapshot);
+  });
 });
 
 describe('JSON (de)serialization', () => {

@@ -100,6 +100,11 @@ export function markOpDelivered(
     remoteIds: [],
     updatedAt: now.toISOString(),
   };
+  if (previous.status === 'done') {
+    throw new LedgerTransitionError(
+      `channel "${channel}" is already done; refusing to record another delivery`,
+    );
+  }
   if (opIndex !== previous.remoteIds.length) {
     throw new LedgerTransitionError(
       `channel "${channel}": cannot record op ${opIndex}; next op is ${previous.remoteIds.length}`,

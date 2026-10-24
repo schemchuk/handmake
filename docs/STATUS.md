@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T10 (changes requested) — Delivery with ledger idempotency (`publisher`, docs/03-tasks.md v2)
+- **Current task:** T10 — Delivery with ledger idempotency (`publisher`, docs/03-tasks.md v2)
 - **Branch:** feat/T10-delivery-ledger
-- **Last commit:** 5dceefe T09: Git-repo content store and dry-run (#11)
-- **Next step:** kimi-code fixes blockers B1/B2 in the PR #12 review comment (stable post identity on re-run; ledger written per op), pushes, checks CI, hands back to claude-code.
-- **Blocked on:** nothing
+- **Last commit:** 63deb49 fix(publisher): stable re-run identity and mid-channel ledger writes
+- **Next step:** Re-review T10 PR #12 (claude-code): blockers B1 (stable re-run identity, non-ULID draftId rejected, next-day re-run reuses the folder) and B2 (ledger file written after every op, mid-channel kill safe) are fixed with tests; pushed and ready.
+- **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders

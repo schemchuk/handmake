@@ -1,7 +1,5 @@
 import type { MediaSource } from '@handmake/core';
 
-import { processPhoto } from './process';
-
 export interface TelegramMediaSourceOptions {
   token: string;
   fetchImpl?: typeof fetch;
@@ -17,9 +15,10 @@ interface GetFileResponse {
 const DEFAULT_API_BASE = 'https://api.telegram.org';
 
 /**
- * Fetches the author's photos from Telegram by file_id (Bot API) and
- * normalises them via processPhoto. The bot token is never logged or
- * included in error messages.
+ * Fetches the author's photos from Telegram by file_id (Bot API). Returns
+ * the RAW downloaded bytes; the publish pipeline normalises every photo via
+ * processPhoto exactly once before storage or delivery. The bot token is
+ * never logged or included in error messages.
  */
 export class TelegramMediaSource implements MediaSource {
   readonly #token: string;
@@ -42,8 +41,7 @@ export class TelegramMediaSource implements MediaSource {
       );
     }
     const raw = new Uint8Array(await response.arrayBuffer());
-    const processed = await processPhoto(raw);
-    return processed.data;
+    return raw;
   }
 
   async #resolveFilePath(fileId: string): Promise<string> {
