@@ -65,9 +65,8 @@ jobs:
           # Manual runs go to the private test channel unless live is ticked;
           # the bot's repository_dispatch always publishes to the live channel.
           TELEGRAM_CHANNEL_ID: >-
-            ${{ github.event_name == 'repository_dispatch'
-              || (inputs.live && secrets.TELEGRAM_CHANNEL_ID)
-              || secrets.TELEGRAM_TEST_CHANNEL_ID }}
+            ${{ ((github.event_name == 'repository_dispatch' || inputs.live)
+              && secrets.TELEGRAM_CHANNEL_ID) || secrets.TELEGRAM_TEST_CHANNEL_ID }}
           AUTHOR_CHAT_ID: ${{ secrets.AUTHOR_CHAT_ID }}
           OPERATOR_CHAT_ID: ${{ secrets.OPERATOR_CHAT_ID }}
           PUBLISHER_GIT_NAME: github-actions[bot]
