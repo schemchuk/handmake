@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** kimi-code (reviewer)
-- **Current task:** T12 — AI translation and humanizer prompt (`ai`; owner claude-code, reviewer kimi-code)
-- **Branch:** feat/T12-ai-translation (PR #13)
-- **Last commit:** 4b6e4d3 T10: Delivery with ledger idempotency (#12)
-- **Next step:** Volodymyr and his wife judge the German texts in `packages/ai/eval/results/humanize-de@1.md`. Review is done — no blocking findings (comment in PR #13); after their OK kimi-code merges PR #13 (CI already green).
-- **Blocked on:** Volodymyr + wife judging the T12 eval results
+- **Active agent:** kimi-code
+- **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
+- **Branch:** main (feat/T11-publish-workflow to be created)
+- **Last commit:** 9f4814a T12: AI translation and humanizer prompt (#13)
+- **Next step:** Kimi implements T11. Blocked on Volodymyr for secrets (H5: TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID, OPERATOR_CHAT_ID and what the operator/author alerts need) — workflow work can start before secrets exist. PR will be sensitive (`.github/workflows/`), so Volodymyr's explicit OK is needed before merge.
+- **Blocked on:** Volodymyr — H5 secrets for the live workflow run (implementation itself can proceed)
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
@@ -27,7 +27,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
