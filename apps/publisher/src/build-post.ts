@@ -1,3 +1,4 @@
+import { isUlid } from '@handmake/core';
 import type { Post, TenantConfig } from '@handmake/core';
 
 import type { DispatchPayload } from './payload';
@@ -8,7 +9,11 @@ export interface BuildPostDeps {
   newId?: () => string;
 }
 
-/** Turn a dispatch payload into a post ready for the content store. */
+/**
+ * Turn a dispatch payload into a post ready for the content store. A draftId
+ * that is already a ULID is reused as the post id, so re-running the publish
+ * with the same payload finds the same post (and its ledger) again.
+ */
 export function buildPostFromPayload(
   payload: DispatchPayload,
   tenant: TenantConfig,
@@ -16,7 +21,7 @@ export function buildPostFromPayload(
 ): Post {
   const now = deps.now ?? new Date();
   return {
-    id: deps.newId?.() ?? newUlid(now),
+    id: isUlid(payload.draftId) ? payload.draftId : (deps.newId?.() ?? newUlid(now)),
     date: now.toISOString(),
     publishAt: 'now',
     type: 'free',

@@ -64,6 +64,21 @@ describe('buildPostFromPayload', () => {
     expect(newUlid(now)).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
   });
 
+  it('reuses the draftId as post id when it is a ULID', () => {
+    const post = buildPostFromPayload(
+      { ...payload, draftId: '01JBCA1B2C3D4E5F6G7H8J9K0M' },
+      tenant,
+      { now },
+    );
+    expect(post.id).toBe('01JBCA1B2C3D4E5F6G7H8J9K0M');
+  });
+
+  it('generates a fresh id when the draftId is not a ULID', () => {
+    const post = buildPostFromPayload({ ...payload, draftId: 'draft-1' }, tenant, { now });
+    expect(post.id).not.toBe('draft-1');
+    expect(post.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+  });
+
   it('names no photos for an empty fileIds list', () => {
     const post = buildPostFromPayload({ ...payload, fileIds: [] }, tenant, { now });
     expect(post.photos).toEqual([]);
