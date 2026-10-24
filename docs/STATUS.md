@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T07 — Telegram adapter delivery (`channels/telegram`, docs/03-tasks.md v2) — in review, PR #10
+- **Current task:** T07 — Telegram adapter delivery (`channels/telegram`) — changes requested (PR #10 review)
 - **Branch:** feat/T07-telegram-deliver
 - **Last commit:** 137b213 chore: document Telegram env vars for T07 manual check and bot
-- **Next step:** claude-code reviews and merges PR #10 (T07). Manual check already passed: post:sample posted album + DE reply to the test channel. Then T09 (git-repo content store).
+- **Next step:** Kimi Code fixes the two blockers from the PR #10 review: (1) CI red, allow the `esbuild` build in `pnpm-workspace.yaml`; (2) one-photo posts go via `sendPhoto` (Bot API `sendMediaGroup` needs 2-10 items) + test. Check CI is green before handing back to claude-code.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
