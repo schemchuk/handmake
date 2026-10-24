@@ -2,10 +2,10 @@
 
 - **Active agent:** kimi-code
 - **Current task:** T10 — Delivery with ledger idempotency (`publisher`, docs/03-tasks.md v2)
-- **Branch:** feat/T10-delivery-ledger (to be created by kimi-code)
-- **Last commit:** 5dceefe T09: Git-repo content store and dry-run (#11)
-- **Next step:** Kimi implements T10 and checks that CI is green before handing off.
-- **Blocked on:** nothing
+- **Branch:** feat/T10-delivery-ledger
+- **Last commit:** 106b0c1 feat(publisher): publish command with ledger idempotency
+- **Next step:** Review T10 PR (claude-code). CI green + review clean -> merge (no sensitive paths in this PR).
+- **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
