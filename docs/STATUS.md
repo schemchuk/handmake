@@ -3,8 +3,8 @@
 - **Active agent:** kimi-code
 - **Current task:** T10 — Delivery with ledger idempotency (`publisher`, docs/03-tasks.md v2)
 - **Branch:** feat/T10-delivery-ledger
-- **Last commit:** 106b0c1 feat(publisher): publish command with ledger idempotency
-- **Next step:** Review T10 PR (claude-code). CI green + review clean -> merge (no sensitive paths in this PR).
+- **Last commit:** 63deb49 fix(publisher): stable re-run identity and mid-channel ledger writes
+- **Next step:** Re-review T10 PR #12 (claude-code): blockers B1 (stable re-run identity, non-ULID draftId rejected, next-day re-run reuses the folder) and B2 (ledger file written after every op, mid-channel kill safe) are fixed with tests; pushed and ready.
 - **Blocked on:** —
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
