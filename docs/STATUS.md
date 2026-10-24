@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** kimi-code
+- **Active agent:** kimi-code (reviewer)
 - **Current task:** T12 — AI translation and humanizer prompt (`ai`; owner claude-code, reviewer kimi-code)
-- **Branch:** feat/T12-ai-translation
+- **Branch:** feat/T12-ai-translation (PR #13)
 - **Last commit:** 4b6e4d3 T10: Delivery with ledger idempotency (#12)
-- **Next step:** Review T12 PR (kimi-code, reviewer). Volodymyr and his wife judge `packages/ai/eval/results/humanize-de@1.md`. Merge when CI is green and review is clean.
-- **Blocked on:** —
+- **Next step:** Volodymyr and his wife judge the German texts in `packages/ai/eval/results/humanize-de@1.md`. Review is done — no blocking findings (comment in PR #13); after their OK kimi-code merges PR #13 (CI already green).
+- **Blocked on:** Volodymyr + wife judging the T12 eval results
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
