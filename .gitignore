@@ -27,3 +27,6 @@ __pycache__/
 *.pyc
 .venv/
 *.log
+
+# actionlint binary downloaded by the CI workflow lint step
+/actionlint
