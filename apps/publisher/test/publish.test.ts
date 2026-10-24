@@ -6,13 +6,14 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import { renderTelegram } from '@handmake/channels';
-import { ChannelRegistry } from '@handmake/core';
+import { ChannelRegistry, parseLedger } from '@handmake/core';
 import type {
   ChannelAdapter,
   ChannelCapabilities,
   DeliverContext,
   DeliverProgress,
   Post,
+  PublishLedger,
   RemoteId,
   SendOperation,
 } from '@handmake/core';
@@ -85,6 +86,53 @@ const renderImpl = (post: Post, _settings: unknown): SendOperation[] =>
 
 function fakeAdapter(): FakeChannelAdapter {
   return new FakeChannelAdapter({ key: 'telegram', renderImpl });
+}
+
+/**
+ * Telegram stand-in that fails on `failOnOp` and records what it reported.
+ * After op 0 it reads the ledger file from disk, proving the publish loop
+ * persisted the delivery mid-channel (B2: a kill must not lose delivered ops).
+ */
+class FlakyAdapter implements ChannelAdapter {
+  readonly key = 'telegram';
+  readonly capabilities: ChannelCapabilities = {
+    maxPhotos: 10,
+    captionLimit: 1024,
+    messageLimit: 4096,
+    polls: false,
+  };
+  failOnOp: number | null = 1;
+  readonly progressReports: number[] = [];
+  ledgerOnDiskAfterOp0: PublishLedger | undefined;
+
+  constructor(private readonly repoDir: string) {}
+
+  render(post: Post, _settings: unknown): SendOperation[] {
+    return renderImpl(post, _settings);
+  }
+
+  async deliver(
+    ops: SendOperation[],
+    _ctx: DeliverContext,
+    progress?: DeliverProgress,
+  ): Promise<RemoteId[]> {
+    const ids: RemoteId[] = [...(progress?.knownIds ?? [])];
+    for (let i = progress?.startAt ?? 0; i < ops.length; i++) {
+      if (i === this.failOnOp) throw new Error(`simulated failure on op ${i}`);
+      const remoteId = `remote-${i}`;
+      ids.push(remoteId);
+      this.progressReports.push(i);
+      await progress?.onDelivered(i, remoteId);
+      if (i === 0) {
+        const raw = await readFile(
+          path.join(this.repoDir, 'content', 'ledger', `${draftId}.json`),
+          'utf8',
+        );
+        this.ledgerOnDiskAfterOp0 = parseLedger(raw);
+      }
+    }
+    return ids;
+  }
 }
 
 async function mediaSourceWithFixture(): Promise<FakeMediaSource> {
@@ -174,39 +222,7 @@ describe('runPublish', () => {
     const { repoDir, payloadPath } = await makeRepo();
     const notifier = new FakeNotifier();
 
-    class FlakyAdapter implements ChannelAdapter {
-      readonly key = 'telegram';
-      readonly capabilities: ChannelCapabilities = {
-        maxPhotos: 10,
-        captionLimit: 1024,
-        messageLimit: 4096,
-        polls: false,
-      };
-      failOnOp: number | null = 1;
-      readonly progressReports: number[] = [];
-
-      render(post: Post, _settings: unknown): SendOperation[] {
-        return renderImpl(post, _settings);
-      }
-
-      async deliver(
-        ops: SendOperation[],
-        _ctx: DeliverContext,
-        progress?: DeliverProgress,
-      ): Promise<RemoteId[]> {
-        const ids: RemoteId[] = [...(progress?.knownIds ?? [])];
-        for (let i = progress?.startAt ?? 0; i < ops.length; i++) {
-          if (i === this.failOnOp) throw new Error(`simulated failure on op ${i}`);
-          const remoteId = `remote-${i}`;
-          ids.push(remoteId);
-          this.progressReports.push(i);
-          await progress?.onDelivered(i, remoteId);
-        }
-        return ids;
-      }
-    }
-
-    const adapter = new FlakyAdapter();
+    const adapter = new FlakyAdapter(repoDir);
 
     await expect(
       runPublish(payloadPath, {
@@ -220,6 +236,10 @@ describe('runPublish', () => {
         logger: () => {},
       }),
     ).rejects.toThrow(PublishError);
+
+    // Op 0 was already on disk before the failure surfaced (mid-channel write).
+    expect(adapter.ledgerOnDiskAfterOp0?.channels.telegram?.remoteIds).toEqual(['remote-0']);
+    expect(adapter.ledgerOnDiskAfterOp0?.channels.telegram?.status).toBe('pending');
 
     // The failed ledger was persisted and committed.
     const store = new GitRepoContentStore({ rootDir: repoDir });
@@ -272,5 +292,54 @@ describe('runPublish', () => {
     expect(result.delivered.telegram).toEqual(['telegram-msg-1-0', 'telegram-msg-1-1']);
     const postDir = path.join(repoDir, 'content', 'posts', `2026-10-24-${draftId.toLowerCase()}`);
     expect(await readdir(postDir)).toEqual(['index.md']);
+  });
+
+  it('rejects a payload whose draftId is not a ULID', async () => {
+    const { repoDir, payloadPath } = await makeRepo();
+    await writeFile(
+      payloadPath,
+      JSON.stringify({ ...basePayload, draftId: '01JDRYRUNSAMPLE000000000000' }),
+    );
+
+    await expect(
+      runPublish(payloadPath, {
+        cwd: repoDir,
+        root: repoDir,
+        env: {},
+        now,
+        registry: makeRegistry(fakeAdapter()),
+        notifier: new FakeNotifier(),
+        logger: () => {},
+      }),
+    ).rejects.toThrow(/not a ULID/);
+    // Nothing was written before the rejection.
+    expect(await readdir(repoDir)).not.toContain('content');
+  });
+
+  it('re-run on the next day reuses the same folder and sends only the missing op', async () => {
+    const { repoDir, payloadPath } = await makeRepo();
+    const adapter = new FlakyAdapter(repoDir);
+    const notifier = new FakeNotifier();
+    const deps = {
+      cwd: repoDir,
+      root: repoDir,
+      env: {},
+      mediaSource: await mediaSourceWithFixture(),
+      registry: makeRegistry(adapter),
+      notifier,
+      logger: () => {},
+    };
+
+    await expect(runPublish(payloadPath, { ...deps, now })).rejects.toThrow(PublishError);
+    adapter.failOnOp = null;
+
+    const nextDay = new Date('2026-10-25T10:00:00.000Z');
+    const rerun = await runPublish(payloadPath, { ...deps, now: nextDay });
+
+    expect(adapter.progressReports).toEqual([0, 1]);
+    expect(rerun.post.date).toBe(now.toISOString());
+    expect(rerun.ledger.channels.telegram?.status).toBe('done');
+    const postsDir = path.join(repoDir, 'content', 'posts');
+    expect(await readdir(postsDir)).toEqual([`2026-10-24-${draftId.toLowerCase()}`]);
   });
 });

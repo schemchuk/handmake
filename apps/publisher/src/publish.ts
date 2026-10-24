@@ -6,6 +6,7 @@ import {
   ChannelRegistry,
   idempotencyBase,
   initLedger,
+  isUlid,
   markDone,
   markFailed,
   markOpDelivered,
@@ -98,12 +99,23 @@ export async function runPublish(
   const now = deps.now ?? new Date();
 
   const payload = parseDispatchPayload(await readFile(path.resolve(cwd, payloadPath), 'utf8'));
+  if (!isUlid(payload.draftId)) {
+    // The post id IS the idempotency key; a re-run must find the same post.
+    throw new PublishError(
+      `draftId "${payload.draftId}" is not a ULID; refusing to publish without a stable id`,
+    );
+  }
   const tenant = await loadTenantConfig(payload.tenantId, root);
 
   const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
-  const post = buildPostFromPayload(payload, tenant, { now });
 
   const store = new GitRepoContentStore({ rootDir: root });
+  const post = buildPostFromPayload(payload, tenant, { now });
+  // A re-run (e.g. the next day) must reuse the existing folder, not create a
+  // second one for the same post.
+  const existing = await store.readPost(post.tenant, post.id);
+  if (existing) post.date = existing.date;
+
   await store.savePost(post, photos);
 
   const git = deps.git ?? createGitCommitter({ repoDir: root, env });
@@ -158,8 +170,11 @@ export async function runPublish(
         {
           startAt,
           knownIds: entry?.remoteIds ?? [],
-          onDelivered: (opIndex, remoteId) => {
+          onDelivered: async (opIndex, remoteId) => {
             ledger = markOpDelivered(ledger, channel, opIndex, remoteId, now);
+            // Write the file after every op so a kill mid-channel cannot lose
+            // delivered ops; the git commit stays per channel.
+            await store.writeLedger(ledger);
           },
         },
       );
