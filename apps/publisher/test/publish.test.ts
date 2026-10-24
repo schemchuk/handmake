@@ -12,6 +12,8 @@ import type {
   ChannelCapabilities,
   DeliverContext,
   DeliverProgress,
+  Notifier,
+  NotifyTarget,
   Post,
   PublishLedger,
   RemoteId,
@@ -341,5 +343,42 @@ describe('runPublish', () => {
     expect(rerun.ledger.channels.telegram?.status).toBe('done');
     const postsDir = path.join(repoDir, 'content', 'posts');
     expect(await readdir(postsDir)).toEqual([`2026-10-24-${draftId.toLowerCase()}`]);
+  });
+
+  it('never lets a failing notifier change the publish outcome', async () => {
+    const failing = {
+      notify: async (_target: NotifyTarget, _message: string): Promise<void> => {
+        throw new Error('notify transport down');
+      },
+    } satisfies Notifier;
+
+    // Success path still succeeds when the author alert fails.
+    const okRepo = await makeRepo();
+    const okResult = await runPublish(okRepo.payloadPath, {
+      cwd: okRepo.repoDir,
+      root: okRepo.repoDir,
+      env: {},
+      now,
+      mediaSource: await mediaSourceWithFixture(),
+      registry: makeRegistry(fakeAdapter()),
+      notifier: failing,
+      logger: () => {},
+    });
+    expect(okResult.delivered.telegram).toHaveLength(2);
+
+    // Failure path still surfaces PublishError, not the notify error.
+    const badRepo = await makeRepo();
+    await expect(
+      runPublish(badRepo.payloadPath, {
+        cwd: badRepo.repoDir,
+        root: badRepo.repoDir,
+        env: {},
+        now,
+        mediaSource: await mediaSourceWithFixture(),
+        registry: makeRegistry(new FlakyAdapter(badRepo.repoDir)),
+        notifier: failing,
+        logger: () => {},
+      }),
+    ).rejects.toThrow(PublishError);
   });
 });

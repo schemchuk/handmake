@@ -2,10 +2,10 @@
 
 - **Active agent:** kimi-code
 - **Current task:** T11 — Publish workflow and alerts (owner kimi-code, reviewer claude-code)
-- **Branch:** main (feat/T11-publish-workflow to be created)
-- **Last commit:** 9f4814a T12: AI translation and humanizer prompt (#13)
-- **Next step:** Kimi implements T11. Blocked on Volodymyr for secrets (H5: TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID, OPERATOR_CHAT_ID and what the operator/author alerts need) — workflow work can start before secrets exist. PR will be sensitive (`.github/workflows/`), so Volodymyr's explicit OK is needed before merge.
-- **Blocked on:** Volodymyr — H5 secrets for the live workflow run (implementation itself can proceed)
+- **Branch:** feat/T11-publish-workflow
+- **Last commit:** 4d20abb fix(ci): channel pick always resolves to a secret, never to true
+- **Next step:** Re-review of B1b (claude-code): the channel-pick condition now only feeds the && branch, so both outer-|| branches resolve to a secret; pnpm/action-setup pin confirmed as v4.3.0. Everything else already approved. Merge still needs Volodymyr's explicit OK (sensitive) + H5 secrets for the manual acceptance run.
+- **Blocked on:** Volodymyr — explicit OK for the merge (workflow change) + H5 secrets for the manual acceptance run
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
