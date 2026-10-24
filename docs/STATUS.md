@@ -16,6 +16,7 @@
 - T10: run `processPhoto` on every MediaSource result before `savePost` (the store writes bytes as given; PR #11 note 1). `MediaSource` returns raw bytes; the publish pipeline calls `processPhoto` once for every source (PR #9 review note 1).
 - T13: accept Telegram photos; reply clearly for unsupported files such as HEIC documents (PR #9 review note 3).
 - Ledger: guard `markOpDelivered` on a `done` channel; restore an immutability assertion (PR #8 re-review).
+- T11: the publish workflow must commit and push `content/` also on failure (`if: always()`) so a failed run's ledger reaches `main` (PR #12 review).
 - T17 runbook: 5xx and network errors are not retried in-process, the ledger re-run covers them (PR #10 review note 4). Document the small at-least-once window between a send and the ledger write (PR #8 review note 3).
 - Ledger path `content/ledger/<postId>.json` has no tenant; revisit with a second tenant (PR #11 note 2). Folder date is UTC; align with scheduled publishing (note 3).
 - F19 (work of the week): add "list published" to `ContentStore` when candidates are built (PR #6 review note 3).
