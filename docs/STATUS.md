@@ -2,10 +2,10 @@
 
 - **Active agent:** kimi-code
 - **Current task:** T09 — Git-repo content store and dry-run (`stores/git-repo`, `publisher`, docs/03-tasks.md v2)
-- **Branch:** feat/T09-git-content-store (to be created by kimi-code)
-- **Last commit:** 755644b T07: Telegram adapter delivery (#10)
-- **Next step:** Kimi Code implements T09. Check CI on the PR is green before handing off.
-- **Blocked on:** —
+- **Branch:** feat/T09-git-content-store
+- **Last commit:** 9942817 ci: run publisher dry-run on the sample payload
+- **Next step:** Review T09 PR (claude-code). CI green + review clean -> merge; PR touches `.github/workflows/ci.yml`, so Volodymyr's explicit OK is required before the merge (sensitive per AGENTS.md).
+- **Blocked on:** Volodymyr's OK for the CI workflow change (needed only at merge time)
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
 
 ## Reminders
