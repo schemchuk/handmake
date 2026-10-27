@@ -1,0 +1,13 @@
+name = "handmake-bot"
+main = "src/index.ts"
+compatibility_date = "2026-10-26"
+
+# Create the database once:
+#   pnpm --filter @handmake/bot exec wrangler d1 create handmake-bot
+# then paste the printed database_id below and apply migrations:
+#   pnpm --filter @handmake/bot db:migrate
+[[d1_databases]]
+binding = "DB"
+database_name = "handmake-bot"
+migrations_dir = "migrations"
+# database_id = "<from wrangler d1 create>"

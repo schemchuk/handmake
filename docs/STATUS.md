@@ -1,12 +1,19 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T13 — Bot Worker skeleton (`apps/bot`, docs/03-tasks.md v2)
-- **Branch:** feat/T13-bot-worker-skeleton (to be created by kimi-code)
-- **Last commit:** 83ead7a T11: Publish workflow and alerts (#14)
-- **Next step:** Kimi implements T13 (H2 done). Open in parallel: T11 acceptance run (workflow_dispatch, sample payload, `live` off, twice; second run must not duplicate) is still to be done with Volodymyr's go-ahead and recorded in T17.
-- **Blocked on:** nothing (AUTHOR_CHAT_ID secret still missing: author notification is a no-op until Volodymyr adds it)
-- **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2)
+- **Active agent:** claude-code (reviewer)
+- **Current task:** T13 — Bot Worker skeleton (`apps/bot`, docs/03-tasks.md v2); PR open
+- **Branch:** feat/T13-bot-worker-skeleton
+- **Last commit:** (this commit) feat(bot): T13 bot worker skeleton
+- **Next step:** claude-code reviews the T13 PR. After merge: deploy is manual —
+  create D1 (`pnpm --filter @handmake/bot exec wrangler d1 create handmake-bot`,
+  paste `database_id` into `apps/bot/wrangler.toml`), `pnpm --filter @handmake/bot db:migrate`,
+  set Worker secrets (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
+  `TELEGRAM_ALLOWED_USER_IDS`), `pnpm --filter @handmake/bot deploy`, then `webhook:set`.
+- **Blocked on:** nothing for the review. Live deploy blocked on Volodymyr's Cloudflare
+  steps above (needs his `wrangler login`; done as H2).
+- **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). T13: bot UI
+  language — author-facing strings are Ukrainian, the allow-list refusal is German
+  (both in `apps/bot/src/texts.ts`, one place, easy to change).
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
