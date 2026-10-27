@@ -1,24 +1,26 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T15 — Preview, edit and regenerate (`apps/bot`, docs/03-tasks.md v2)
-- **Branch:** feat/T15-preview (to be created by kimi-code)
-- **Last commit:** `4cffdad feat: T14 draft state machine (core FSM + bot collection in D1) (#22)`
-- **Next step:** kimi-code implements T15. T14 merged 2026-10-27 after two review rounds (album race fixed:
-  atomic SQL appends, one collecting draft per chat via migration 0003, update_id dedupe).
-  Use `D1DraftStore.update(draft, expectedVersion)` with retry for whole-state transitions
-  (collecting → translating → ready). Review note from PR #22: `processed_updates` also records
-  update_ids of refused (non-allow-listed) senders, which breaks the letter of A6 ("no D1 row");
-  move the dedupe write behind the allow-list gate, or record only allow-listed updates.
-  Migrations 0002 and 0003 are applied to remote D1. The Worker still runs T13 code: Volodymyr runs
-  `pnpm run deploy` in `apps/bot` (also activates the daily cleanup cron).
-  Known accepted edge: DB write succeeded but reply failed → retry re-appends text (at-least-once window).
-  Bot is deployed (2026-10-27): D1 `handmake-bot`, Worker `handmake-bot.shemchukaga.workers.dev`, webhook set,
-  `database_id` in `wrangler.toml` (PR #20). Worker secrets set: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
-  `TELEGRAM_ALLOWED_USER_IDS`. Redeploy with `pnpm run deploy` (not `pnpm deploy`, which is a pnpm built-in).
-  Not yet in the Worker: `ANTHROPIC_API_KEY` (T15), `GITHUB_DISPATCH_TOKEN` (T16); Volodymyr adds them with `wrangler secret put`.
-  T11 acceptance run done 2026-10-27 (runs 40476184863, 40476250639; test channel, `live` off): first run posted UA album + DE reply (Telegram ids 10, 11) and committed post + ledger; second run skipped ("channel telegram: already done"), no duplicate. Record in T17.
-- **Blocked on:** nothing (all GitHub secrets incl. `AUTHOR_CHAT_ID` are set).
+- **Active agent:** claude-code
+- **Current task:** T15 review (PR #23)
+- **Branch:** feat/T15-preview, PR #23 (`feat: T15 preview, edit and regenerate (bot)`)
+- **Last commit:** `a255865 feat(bot): T15 preview, edit and regenerate` (on feat/T15-preview;
+  main is at `72ca01d`)
+- **Next step:** claude-code reviews PR #23 (T15 — bot preview/edit/regenerate).
+  What to know before the review:
+  - **waitUntil deviation (explicitly flagged in the PR body)**: the grammY cloudflare-mod adapter
+    takes only `request`, so ExecutionContext is unavailable; /done answers "translating…" first,
+    then awaits the AI call in-handler and sends the preview as a second message (A1's 60 s window).
+  - Translation claim is one atomic guarded UPDATE (`claimTranslation`); results are single
+    guarded UPDATEs too (T14 round-2 lesson: CAS+retry livelocks under parallel writers).
+  - Migration `0004_preview.sql` (drafts.pending_edit) is **already applied to remote D1**
+    (2026-10-27); additive/nullable, safe while prod Worker runs T14 code.
+  - Source language key is `uk` (tenant config, Translator pair uk->de); the branch also carries
+    two pre-existing unmerged fixes: `6d226b3` (dedupe scoped to allow-listed senders, A6) and
+    `4c1b309` (canonical `uk` key replacing `ua` in core/bot).
+  - Preview truncates each language display at 900 chars; Publish is a stub (T16).
+  - Volodymyr must still add the `ANTHROPIC_API_KEY` Worker secret (`wrangler secret put`) before
+    the deployed bot can translate; redeploy with `pnpm run deploy` in `apps/bot` after merge.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
@@ -40,7 +42,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19); T14 merged (PR #22).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19); T14 merged (PR #22). T15 in review (PR #23).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
