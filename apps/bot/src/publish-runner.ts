@@ -13,6 +13,9 @@ export interface GitHubActionsRunnerOptions {
   repo: string;
   /** Fine-grained PAT: this repo only, contents read/write (H4/H5). */
   token: string;
+  /** Routes the dispatch to the live channel; false keeps it on the test
+   * channel. From the PUBLISH_LIVE var — flipped only on Volodymyr's go. */
+  live: boolean;
   /** Injectable fetch for tests; production uses the Worker's global. */
   fetchImpl?: typeof fetch;
 }
@@ -37,6 +40,7 @@ export function createGitHubActionsRunner(options: GitHubActionsRunnerOptions): 
             texts: job.texts,
             fileIds: job.fileIds,
             provenance: job.provenance,
+            live: options.live,
           },
         }),
       });

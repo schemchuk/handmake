@@ -24,6 +24,7 @@ describe('createGitHubActionsRunner', () => {
     const runner = createGitHubActionsRunner({
       repo: 'owner/repo',
       token: 'secret-token',
+      live: true,
       fetchImpl: fetchImpl as typeof fetch,
     });
 
@@ -44,8 +45,24 @@ describe('createGitHubActionsRunner', () => {
         texts: job.texts,
         fileIds: job.fileIds,
         provenance: job.provenance,
+        live: true,
       },
     });
+  });
+
+  it('carries live=false as long as the PUBLISH_LIVE var stays off', async () => {
+    const fetchImpl = mockFetch(204);
+    const runner = createGitHubActionsRunner({
+      repo: 'owner/repo',
+      token: 'secret-token',
+      live: false,
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+
+    await runner.run(job);
+
+    const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).client_payload['live']).toBe(false);
   });
 
   it('a non-204 response rejects without ever mentioning the token', async () => {
@@ -53,6 +70,7 @@ describe('createGitHubActionsRunner', () => {
     const runner = createGitHubActionsRunner({
       repo: 'owner/repo',
       token: 'secret-token',
+      live: false,
       fetchImpl: fetchImpl as typeof fetch,
     });
 
@@ -72,6 +90,7 @@ describe('createGitHubActionsRunner', () => {
     const runner = createGitHubActionsRunner({
       repo: 'owner/repo',
       token: 'secret-token',
+      live: false,
       fetchImpl,
     });
 

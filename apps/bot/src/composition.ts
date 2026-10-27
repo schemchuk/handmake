@@ -100,6 +100,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         publishRunner: createGitHubActionsRunner({
           repo: env.GITHUB_REPO,
           token: env.GITHUB_DISPATCH_TOKEN,
+          live: env.PUBLISH_LIVE === 'true',
         }),
         background: (task) =>
           executionCtx ? executionCtx.waitUntil(task()) : void task().catch(() => undefined),

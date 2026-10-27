@@ -19,6 +19,7 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     ANTHROPIC_API_KEY: 'test-key',
     GITHUB_DISPATCH_TOKEN: 'test-dispatch-token',
     GITHUB_REPO: 'owner/repo',
+    PUBLISH_LIVE: 'false',
     ...overrides,
   };
 }
