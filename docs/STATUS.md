@@ -7,11 +7,12 @@
 - **Next step:** kimi-code implements T14. Include review notes from PR #19: reply clearly
   for HEIC/unsupported files; optionally check the webhook secret in constant time and before
   parsing the allow-list (`index.ts`/`composition.ts`); consider rate-limiting refusals.
-  Bot deploy is manual and owned by Volodymyr: `wrangler d1 create handmake-bot`, paste
-  `database_id` into `apps/bot/wrangler.toml`, `db:migrate`, set Worker secrets
-  (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_ALLOWED_USER_IDS`), `deploy`, `webhook:set`.
+  Bot is deployed (2026-10-27): D1 `handmake-bot`, Worker `handmake-bot.shemchukaga.workers.dev`, webhook set,
+  `database_id` in `wrangler.toml` (PR #20). Worker secrets set: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
+  `TELEGRAM_ALLOWED_USER_IDS`. Redeploy with `pnpm run deploy` (not `pnpm deploy`, which is a pnpm built-in).
+  Not yet in the Worker: `ANTHROPIC_API_KEY` (T15), `GITHUB_DISPATCH_TOKEN` (T16); Volodymyr adds them with `wrangler secret put`.
   T11 acceptance run done 2026-10-27 (runs 40476184863, 40476250639; test channel, `live` off): first run posted UA album + DE reply (Telegram ids 10, 11) and committed post + ledger; second run skipped ("channel telegram: already done"), no duplicate. Record in T17.
-- **Blocked on:** nothing (AUTHOR_CHAT_ID secret missing; author notification is a no-op until added).
+- **Blocked on:** nothing (all GitHub secrets incl. `AUTHOR_CHAT_ID` are set).
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
