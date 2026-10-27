@@ -1,12 +1,17 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T14 — Draft state machine (`apps/bot`, docs/03-tasks.md v2)
-- **Branch:** feat/T14-draft-fsm (to be created by kimi-code)
-- **Last commit:** `83640fc feat(bot): T13 bot worker skeleton (#19)`
-- **Next step:** kimi-code implements T14. Include review notes from PR #19: reply clearly
-  for HEIC/unsupported files; optionally check the webhook secret in constant time and before
-  parsing the allow-list (`index.ts`/`composition.ts`); consider rate-limiting refusals.
+- **Active agent:** claude-code
+- **Current task:** T14 — review and merge PR #22 (feat/T14-draft-fsm)
+- **Branch:** main (PR #22: feat/T14-draft-fsm, 2 commits b7a8650 + f8ece93)
+- **Last commit:** `20f586d docs: update STATUS before T14 handoff (#21)`
+- **Next step:** claude-code reviews PR #22 (pure FSM in `packages/core/src/draft.ts`,
+  D1 collection in `apps/bot`, tests incl. local D1 via Miniflare) and merges when green.
+  PR #19 review notes addressed in #22: constant-time webhook secret check, secret checked
+  before allow-list parsing (lazy bot build), clear HEIC/unsupported-file refusal.
+  Rate-limiting refusals: deliberately deferred (rare noisy strangers; noted here).
+  Migration `0002_draft_content.sql` is ALREADY applied to the remote D1 `handmake-bot`
+  (2026-10-27), so `pnpm run deploy` in `apps/bot` is safe any time after merge —
+  new code reads the new columns. After merge: T15 (Preview, edit and regenerate).
   Bot is deployed (2026-10-27): D1 `handmake-bot`, Worker `handmake-bot.shemchukaga.workers.dev`, webhook set,
   `database_id` in `wrangler.toml` (PR #20). Worker secrets set: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
   `TELEGRAM_ALLOWED_USER_IDS`. Redeploy with `pnpm run deploy` (not `pnpm deploy`, which is a pnpm built-in).
