@@ -28,5 +28,9 @@ __pycache__/
 .venv/
 *.log
 
+# Wrangler local state (miniflare databases, caches)
+.wrangler/
+
 # actionlint binary downloaded by the CI workflow lint step
 /actionlint
+.dev.vars
