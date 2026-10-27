@@ -11,3 +11,8 @@ binding = "DB"
 database_name = "handmake-bot"
 migrations_dir = "migrations"
 database_id = "4cae8a3e-9869-4dad-a2b8-ab046365999e"
+
+# Daily draft cleanup (architecture section 5: drafts older than 30 days are
+# deleted). UTC.
+[triggers]
+crons = ["29 3 * * *"]
