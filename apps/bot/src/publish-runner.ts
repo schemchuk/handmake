@@ -30,6 +30,9 @@ export function createGitHubActionsRunner(options: GitHubActionsRunnerOptions): 
           Authorization: `Bearer ${options.token}`,
           Accept: 'application/vnd.github+json',
           'X-GitHub-Api-Version': '2022-11-28',
+          // GitHub rejects API calls without a User-Agent (403); Workers' fetch
+          // sends none by default.
+          'User-Agent': 'handmake-bot',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
