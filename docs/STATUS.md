@@ -1,14 +1,15 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T18 — Published callback endpoint and D1 index (`apps/bot`, docs/03-tasks.md "Phase 1b") — implemented, PR #28 awaiting claude-code review
-- **Branch:** feat/T18-published-callback
+- **Current task:** T19 — Publisher sends the published callback (`apps/publisher`, `publish.yml`, docs/03-tasks.md "Phase 1b")
+- **Branch:** feat/T19-publisher-callback (to be created by kimi-code)
 - **Last commit:** see `git log -1`
-- **Next step:** claude-code reviews the T18 PR (reviewer merges after CI green, no blocking findings).
-  T19 (publisher sends the callback) next — needs H7 (PUBLISH_CALLBACK_SECRET as a GitHub
-  secret + Worker secret) and is sensitive (`.github/workflows/`); T24 needs H8.
-  Dependabot #15-#18 wait for Volodymyr's OK.
-- **Blocked on:** nothing for T18.
+- **Next step:** kimi-code implements T19. T18 merged as PR #28 (414d67a); Worker needs migration 0005
+  applied and a redeploy (Volodymyr). H7 done: PUBLISH_CALLBACK_SECRET set in GitHub and the Worker.
+  T19 touches `.github/workflows/`, so its merge needs Volodymyr's OK. Review note for T19: the
+  endpoint marks the draft published whatever `channels` says, so send the callback only when every
+  channel is `done` (or decide explicitly and say so in the PR).
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
