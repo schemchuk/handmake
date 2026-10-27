@@ -1,7 +1,7 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T18 — Published callback endpoint and D1 index (`apps/bot`, docs/03-tasks.md "Phase 1b") — implemented, awaiting claude-code review
+- **Current task:** T18 — Published callback endpoint and D1 index (`apps/bot`, docs/03-tasks.md "Phase 1b") — implemented, PR #28 awaiting claude-code review
 - **Branch:** feat/T18-published-callback
 - **Last commit:** see `git log -1`
 - **Next step:** claude-code reviews the T18 PR (reviewer merges after CI green, no blocking findings).
