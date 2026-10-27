@@ -54,6 +54,14 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
 - START of every session: `git pull --rebase`, read AGENTS.md and docs/STATUS.md, confirm you are the Active agent. If not, stop and tell me.
 - END of every session: working tree clean, STATUS.md updated, everything pushed, Active agent set to the next owner or "none".
 
+## Context budget (ADR 009)
+- At session start read only AGENTS.md and docs/STATUS.md. Read docs/review-notes.md, the spec,
+  architecture and ADRs only for the parts your task touches.
+- One session per task. Start a fresh session for the next task instead of continuing a long one.
+- Keep a task PR under ~400 changed non-test lines; if a task will be larger, the task owner proposes
+  a split in docs/03-tasks.md before coding.
+- Keep STATUS.md to the handoff fields plus short reminders; history belongs in git and PRs.
+
 ## Git rules
 - The Active agent is responsible for committing and pushing. After EVERY logical block (one coherent unit of work): update STATUS.md, stage only relevant files, commit, `git push`, then tell me the hash and a one-line summary. Never batch several blocks into one commit.
 - Commit format: Conventional Commits (docs:, feat:, fix:, chore:, test:), imperative, under 72 chars, plus a trailer line `Agent: claude-code` or `Agent: kimi-code`.
