@@ -37,6 +37,7 @@ describe('createGitHubActionsRunner', () => {
     const headers = init.headers as Record<string, string>;
     expect(headers['Authorization']).toBe('Bearer secret-token');
     expect(headers['Accept']).toBe('application/vnd.github+json');
+    expect(headers['User-Agent']).toBe('handmake-bot');
     expect(JSON.parse(init.body as string)).toEqual({
       event_type: 'publish-post',
       client_payload: {
