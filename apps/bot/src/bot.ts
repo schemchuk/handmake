@@ -75,6 +75,10 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       await ctx.reply(texts.draftBusyText);
       return;
     }
+    if (existing.draft.state === 'published') {
+      await ctx.reply(texts.draftFinishedText);
+      return;
+    }
     await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId);
     await ctx.reply(texts.discardDoneText);
   });
@@ -132,6 +136,12 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
     if (!stored) {
       await ctx.reply(texts.draftNoneText);
+      return;
+    }
+    // Any button on an old preview of a published draft gets the finished
+    // answer — the draft is gone for editing, publishing or discarding.
+    if (stored.draft.state === 'published') {
+      await ctx.reply(texts.draftFinishedText);
       return;
     }
 
@@ -201,10 +211,6 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
 
     if (data === 'draft:publish:confirm') {
-      if (stored.draft.state === 'published') {
-        await ctx.reply(texts.draftFinishedText);
-        return;
-      }
       // The guarded claim decides, not the state we just read: a fresh
       // 'publishing' row means a racing press already dispatched (back off),
       // a stale one means the background dispatch died and may be reclaimed.
@@ -216,9 +222,15 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         publishingStaleCutoff(now),
       );
       if (!claimed) {
+        // The callback may have landed between the read above and the claim:
+        // a now-'published' draft answers "finished", not "not ready".
         const fresh = await ctx.drafts.get(ctx.tenantId, stored.draft.draftId);
         await ctx.reply(
-          fresh?.draft.state === 'publishing' ? texts.draftBusyText : texts.publishNotReadyText,
+          fresh?.draft.state === 'published'
+            ? texts.draftFinishedText
+            : fresh?.draft.state === 'publishing'
+              ? texts.draftBusyText
+              : texts.publishNotReadyText,
         );
         return;
       }

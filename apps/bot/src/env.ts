@@ -17,4 +17,7 @@ export interface Env {
   /** "true" sends bot dispatches to the live channel; anything else (and
    * until Volodymyr's go in the T17 E2E) keeps them on the test channel. */
   PUBLISH_LIVE: string;
+  /** HMAC key for the publisher's POST /callbacks/published (H7). Secret value:
+   * must match the GitHub secret of the same name that signs the callback. */
+  PUBLISH_CALLBACK_SECRET: string;
 }

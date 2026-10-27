@@ -11,6 +11,7 @@ import { createD1DraftStore } from './draft-store';
 import type { Env } from './env';
 import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './processed-updates';
 import { createGitHubActionsRunner } from './publish-runner';
+import { handlePublishedCallback, publishedCallbackPath } from './published-callback';
 import type { BotTexts } from './texts';
 
 /** Header Telegram sends when the webhook was registered with a secret token. */
@@ -117,6 +118,11 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     },
 
     async handle(request) {
+      // The publisher's callback authenticates with its own HMAC, not the
+      // Telegram webhook secret — it must branch off before that gate.
+      if (new URL(request.url).pathname === publishedCallbackPath) {
+        return handlePublishedCallback(env, request);
+      }
       if (request.method !== 'POST') {
         return new Response('method not allowed', { status: 405 });
       }

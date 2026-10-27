@@ -1,5 +1,5 @@
 import type { Bot } from 'grammy';
-import { isUlid } from '@handmake/core';
+import { createDraft, isUlid } from '@handmake/core';
 import type { PublishJob, TranslationRequest, TranslationResult, Translator } from '@handmake/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -465,6 +465,65 @@ describe('publishing (T16)', () => {
     await flushBackground();
     expect(publishJobs).toHaveLength(1);
     expect(await drafts.listByState(allowed.tenantId, 'publishing')).toHaveLength(1);
+  });
+});
+
+describe('published drafts (T18)', () => {
+  async function makePublishedDraft(): Promise<void> {
+    // Direct store setup: the callback (T18) is what moves a draft here in
+    // production; this test only needs the end state.
+    const draft = {
+      ...createDraft(allowed.tenantId, 'published-1', new Date()),
+      state: 'published' as const,
+    };
+    await drafts.create(draft, String(allowed.userId));
+  }
+
+  it('every button on an old preview answers "already published" and changes nothing', async () => {
+    await makePublishedDraft();
+    const buttons = [
+      'draft:edit:uk',
+      'draft:edit:de',
+      'draft:regen-de',
+      'draft:publish',
+      'draft:discard',
+    ];
+
+    for (const data of buttons) {
+      await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, data));
+    }
+
+    expect(sentTexts(calls)).toEqual(buttons.map(() => botTexts.draftFinishedText));
+    expect(await drafts.listByState(allowed.tenantId, 'published')).toHaveLength(1);
+    expect(publishJobs).toHaveLength(0);
+  });
+
+  it('publish confirm on a published draft answers "already published"', async () => {
+    await makePublishedDraft();
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.draftFinishedText);
+    expect(publishJobs).toHaveLength(0);
+  });
+
+  it('/discard on a published draft refuses and keeps it', async () => {
+    await makePublishedDraft();
+    await bot.handleUpdate(textUpdate(allowed.userId, '/discard'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.draftFinishedText);
+    expect(await drafts.listByState(allowed.tenantId, 'published')).toHaveLength(1);
+  });
+
+  it('a text message starts a new collecting draft; the published one stays', async () => {
+    await makePublishedDraft();
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Новий допис'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.textSavedText(0));
+    expect(await drafts.listByState(allowed.tenantId, 'published')).toHaveLength(1);
+    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
+    expect(open?.draft.texts['uk']).toBe('Новий допис');
   });
 });
 
