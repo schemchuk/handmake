@@ -8,4 +8,6 @@ export interface Env {
   /** JSON object mapping Telegram user ID (string) to tenant ID, e.g.
    * `{"123456789":"faden-und-stimmung"}`. Parsed by createTenantLookup. */
   TELEGRAM_ALLOWED_USER_IDS: string;
+  /** Anthropic API key for the draft translator (ADR 004). Secret value. */
+  ANTHROPIC_API_KEY: string;
 }

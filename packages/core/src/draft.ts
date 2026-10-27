@@ -25,8 +25,8 @@ export const maxDraftPhotos = 10;
 /** Drafts untouched this long are deleted by the Worker cron (section 5). */
 export const draftRetentionDays = 30;
 
-export const uaTextKey = 'ua';
-export const deTextKey = 'de';
+export const sourceTextKey = 'uk';
+export const targetTextKey = 'de';
 
 export type DraftEvent =
   | { type: 'addText'; text: string }
@@ -79,13 +79,13 @@ export function transitionDraft(draft: Draft, event: DraftEvent, now: Date): Dra
       if (!text) {
         throw new DraftTransitionError('addText: text is empty');
       }
-      const previous = draft.texts[uaTextKey];
+      const previous = draft.texts[sourceTextKey];
       return touched(
         {
           ...draft,
           texts: {
             ...draft.texts,
-            [uaTextKey]: previous ? `${previous}\n\n${text}` : text,
+            [sourceTextKey]: previous ? `${previous}\n\n${text}` : text,
           },
         },
         now,
@@ -106,7 +106,7 @@ export function transitionDraft(draft: Draft, event: DraftEvent, now: Date): Dra
     case 'translationSucceeded':
       requireState(draft, 'translating', event.type);
       return touched(
-        { ...moved(draft, 'ready', now), texts: { ...draft.texts, [deTextKey]: event.german } },
+        { ...moved(draft, 'ready', now), texts: { ...draft.texts, [targetTextKey]: event.german } },
         now,
       );
     case 'translationFailed':

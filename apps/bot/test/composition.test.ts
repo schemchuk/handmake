@@ -16,6 +16,7 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     TELEGRAM_BOT_TOKEN: 'TEST_TOKEN',
     TELEGRAM_WEBHOOK_SECRET: 'webhook-secret',
     TELEGRAM_ALLOWED_USER_IDS: '{"11":"faden-und-stimmung"}',
+    ANTHROPIC_API_KEY: 'test-key',
     ...overrides,
   };
 }
@@ -130,7 +131,24 @@ describe('webhook retry dedupe', () => {
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0)]);
     const store = createD1DraftStore(db);
     const open = await store.findCollectingForChat('faden-und-stimmung', '11');
-    expect(open?.draft.texts['ua']).toBe('hello');
+    expect(open?.draft.texts['uk']).toBe('hello');
+  });
+
+  it('refused strangers leave no trace in the dedupe table (A6)', async () => {
+    const db = await makeD1();
+    const env = makeEnv({ DB: db });
+    const app = createApp(env, botTexts);
+    const calls = mockTelegramApi(app.bot);
+    const update = { ...textUpdate(999, '/start'), update_id: 44 };
+
+    await app.handle(webhookRequest(env, update));
+    await app.handle(webhookRequest(env, update));
+
+    // No dedupe for strangers: each delivery is processed (two refusals)…
+    expect(sentTexts(calls)).toEqual([botTexts.refusalText, botTexts.refusalText]);
+    // …and nothing was recorded in D1.
+    const tracker = createProcessedUpdateTracker(db);
+    expect(await tracker.wasProcessed(44)).toBe(false);
   });
 
   it('a failed update is not recorded, so an error-retry re-runs it', async () => {

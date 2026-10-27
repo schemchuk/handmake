@@ -1,9 +1,12 @@
 import { maxDraftPhotos } from '@handmake/core';
+import type { Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
-import type { D1DraftStore, StoredDraft } from './draft-store';
+import type { D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
+import { translationStaleMs } from './draft-store';
+import { buildPreview } from './preview';
 import type { BotTexts } from './texts';
 
 export interface CreateBotOptions {
@@ -11,6 +14,14 @@ export interface CreateBotOptions {
   drafts: D1DraftStore;
   resolveTenant: TenantLookup;
   texts: BotTexts;
+  translator: Translator;
+  /**
+   * Defers work past the webhook response (Cloudflare ExecutionContext
+   * waitUntil in production; a collecting runner in tests). The AI call must
+   * never run inside the handler: grammY's webhook timeout is 10 s while a
+   * translation takes 10-30 s.
+   */
+  background: (task: () => Promise<void>) => void;
 }
 
 /** How often an append retries when the draft vanishes mid-flight (a racing
@@ -53,13 +64,134 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   });
 
   bot.command('discard', async (ctx) => {
-    const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx));
+    const existing = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
     if (!existing) {
       await ctx.reply(texts.discardNothingText);
       return;
     }
+    if (existing.draft.state === 'publishing') {
+      await ctx.reply(texts.draftBusyText);
+      return;
+    }
     await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId);
     await ctx.reply(texts.discardDoneText);
+  });
+
+  // /done: claim the draft for translation (one atomic statement — racing
+  // presses cannot trigger two paid AI calls) and answer immediately; the
+  // translation itself runs in `background`, past the webhook response.
+  bot.command('done', async (ctx) => {
+    const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    if (!stored) {
+      await ctx.reply(texts.draftNoneText);
+      return;
+    }
+    if (stored.draft.state === 'ready') {
+      await sendPreview(ctx, stored);
+      return;
+    }
+    if (stored.draft.state === 'publishing' || stored.draft.state === 'published') {
+      await ctx.reply(texts.draftFinishedText);
+      return;
+    }
+    if ((stored.draft.texts['uk'] ?? '').trim() === '') {
+      await ctx.reply(texts.doneNeedsText);
+      return;
+    }
+    const now = new Date();
+    const claimed = await ctx.drafts.claimTranslation(
+      ctx.tenantId,
+      stored.draft.draftId,
+      ['collecting', 'failed'],
+      now,
+      staleCutoff(now),
+    );
+    if (!claimed) {
+      // Either a racing press won, or a translation is genuinely running.
+      const fresh = await ctx.drafts.get(ctx.tenantId, stored.draft.draftId);
+      if (fresh?.draft.state === 'ready') {
+        await sendPreview(ctx, fresh);
+      } else {
+        await ctx.reply(texts.translateInProgressText);
+      }
+      return;
+    }
+    await runTranslation(ctx, claimed);
+  });
+
+  // Preview buttons. All actions re-read the latest draft — the keyboard in
+  // an old preview message must not operate on stale state.
+  bot.on('callback_query:data', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    if (!data.startsWith('draft:')) {
+      return;
+    }
+    await ctx.answerCallbackQuery();
+    const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    if (!stored) {
+      await ctx.reply(texts.draftNoneText);
+      return;
+    }
+
+    if (data === 'draft:edit:uk' || data === 'draft:edit:de') {
+      const target: DraftEditTarget = data === 'draft:edit:uk' ? 'uk' : 'de';
+      const armed = await ctx.drafts.setPendingEdit(
+        ctx.tenantId,
+        stored.draft.draftId,
+        target,
+        new Date(),
+      );
+      if (!armed) {
+        await ctx.reply(texts.editConflictText);
+        return;
+      }
+      const current = stored.draft.texts[target] ?? '';
+      await ctx.reply(
+        current === '' ? texts.editPromptNewText(target) : texts.editPromptText(target, current),
+      );
+      return;
+    }
+
+    if (data === 'draft:regen-de') {
+      const now = new Date();
+      const claimed = await ctx.drafts.claimTranslation(
+        ctx.tenantId,
+        stored.draft.draftId,
+        ['ready'],
+        now,
+        staleCutoff(now),
+      );
+      if (!claimed) {
+        await ctx.reply(
+          stored.draft.state === 'translating'
+            ? texts.translateInProgressText
+            : texts.regenUnavailableText,
+        );
+        return;
+      }
+      await runTranslation(ctx, claimed);
+      return;
+    }
+
+    if (data === 'draft:publish') {
+      // T16 wires actual publishing; the draft is approved and waits.
+      if (stored.draft.state !== 'ready') {
+        await ctx.reply(texts.regenUnavailableText);
+        return;
+      }
+      await ctx.reply(texts.publishNotAvailableText);
+      return;
+    }
+
+    if (data === 'draft:discard') {
+      if (stored.draft.state === 'publishing') {
+        await ctx.reply(texts.draftBusyText);
+        return;
+      }
+      await ctx.drafts.delete(ctx.tenantId, stored.draft.draftId);
+      await ctx.reply(texts.discardDoneText);
+      return;
+    }
   });
 
   // Everything else: one switch on the message content. Texts starting with
@@ -83,7 +215,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         await ctx.reply(texts.unknownCommandText);
         return;
       }
-      await collectText(ctx, message.text);
+      await handleText(ctx, message.text);
       return;
     }
     await ctx.reply(texts.unsupportedMessageText);
@@ -91,9 +223,113 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
   return bot;
 
-  async function collectText(ctx: AppContext, text: string): Promise<void> {
+  /**
+   * A plain text message can mean four things, checked in this order:
+   * 1. an armed reply-based edit (ADR 005) replaces that language version;
+   * 2. after a failed translation the author's own German text is taken as-is
+   *    (failed -> ready);
+   * 3. under a ready draft it just re-sends the preview (nothing is collected
+   *    into an approved draft);
+   * 4. otherwise the text is collected into the collecting draft.
+   */
+  async function handleText(ctx: AppContext, text: string): Promise<void> {
+    const latest = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+
+    if (latest?.pendingEdit) {
+      const target = latest.pendingEdit;
+      const applied = await ctx.drafts.replaceText(
+        ctx.tenantId,
+        latest.draft.draftId,
+        target,
+        text,
+        new Date(),
+      );
+      if (!applied) {
+        await ctx.reply(texts.editConflictText);
+        return;
+      }
+      await ctx.reply(texts.editSavedText(target));
+      const fresh = await ctx.drafts.get(ctx.tenantId, latest.draft.draftId);
+      if (fresh?.draft.state === 'ready') {
+        await sendPreview(ctx, fresh);
+      }
+      return;
+    }
+
+    if (latest?.draft.state === 'failed') {
+      const applied = await ctx.drafts.writeGermanByHand(
+        ctx.tenantId,
+        latest.draft.draftId,
+        text,
+        new Date(),
+      );
+      if (!applied) {
+        await ctx.reply(texts.editConflictText);
+        return;
+      }
+      await ctx.reply(texts.deSavedText);
+      const fresh = await ctx.drafts.get(ctx.tenantId, latest.draft.draftId);
+      if (fresh) {
+        await sendPreview(ctx, fresh);
+      }
+      return;
+    }
+
+    if (latest?.draft.state === 'ready') {
+      await sendPreview(ctx, latest);
+      return;
+    }
+
     const stored = await appendTextToOpenDraft(ctx, text);
     await ctx.reply(texts.textSavedText(stored.draft.photoRefs.length));
+  }
+
+  /**
+   * Schedules the claimed translation past the webhook response: the handler
+   * has already answered "translating…", and everything below runs inside
+   * `background` (Cloudflare waitUntil). The later messages go through
+   * `bot.api`, not `ctx.reply` — the update context is finished by then.
+   * Failures to notify the author are swallowed: the draft state is the
+   * source of truth, /done recovers it.
+   */
+  async function runTranslation(ctx: AppContext, claimed: StoredDraft): Promise<void> {
+    const targetChat = chatId(ctx);
+    const ukText = claimed.draft.texts['uk'] ?? '';
+    await ctx.reply(texts.translatingText);
+    options.background(async () => {
+      let german: string;
+      try {
+        const result = await options.translator.translate({
+          text: ukText,
+          sourceLang: 'uk',
+          targetLang: 'de',
+        });
+        german = result.text;
+      } catch {
+        await ctx.drafts.markTranslationFailed(ctx.tenantId, claimed.draft.draftId, new Date());
+        await bot.api.sendMessage(targetChat, texts.translationFailedText).catch(() => undefined);
+        return;
+      }
+      await ctx.drafts.markTranslated(ctx.tenantId, claimed.draft.draftId, german, new Date());
+      const fresh = await ctx.drafts.get(ctx.tenantId, claimed.draft.draftId);
+      if (!fresh) {
+        return;
+      }
+      const preview = buildPreview(fresh.draft, texts);
+      await bot.api
+        .sendMessage(
+          targetChat,
+          preview.text,
+          preview.keyboard ? { reply_markup: preview.keyboard } : {},
+        )
+        .catch(() => undefined);
+    });
+  }
+
+  /** Sends the author the rendered preview with its action keyboard. */
+  async function sendPreview(ctx: AppContext, stored: StoredDraft): Promise<void> {
+    const preview = buildPreview(stored.draft, texts);
+    await ctx.reply(preview.text, preview.keyboard ? { reply_markup: preview.keyboard } : {});
   }
 
   async function collectPhoto(
@@ -101,6 +337,9 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     photos: NonNullable<NonNullable<AppContext['msg']>['photo']>,
     caption: string | undefined,
   ): Promise<void> {
+    if (await readyDraftRepliesPreview(ctx)) {
+      return;
+    }
     // Telegram sends each photo in several sizes, ascending; the last one
     // is the largest. We keep the file_id only (architecture 4.1).
     const largest = photos.at(-1);
@@ -122,6 +361,9 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     ctx: AppContext,
     document: NonNullable<NonNullable<AppContext['msg']>['document']>,
   ): Promise<void> {
+    if (await readyDraftRepliesPreview(ctx)) {
+      return;
+    }
     // Sent-as-document photos arrive unmodified. Only JPEG/PNG go through —
     // HEIC and friends are refused with a clear explanation (review note):
     // the publisher pipeline re-encodes to JPEG and cannot read them.
@@ -135,6 +377,21 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
     await ctx.reply(texts.photoSavedText(stored.draft.photoRefs.length));
+  }
+
+  /**
+   * Photo (or document) under a ready draft: mirror the text behaviour
+   * (review m2) — re-show the preview with a hint instead of silently
+   * forking a new collecting draft next to the approved one.
+   */
+  async function readyDraftRepliesPreview(ctx: AppContext): Promise<boolean> {
+    const latest = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    if (latest?.draft.state !== 'ready') {
+      return false;
+    }
+    await ctx.reply(texts.photoUnderReadyText);
+    await sendPreview(ctx, latest);
+    return true;
   }
 
   /**
@@ -202,4 +459,9 @@ function chatId(ctx: AppContext): string {
     throw new Error('message update has no chat');
   }
   return String(ctx.chat.id);
+}
+
+/** Cutoff for reclaiming a 'translating' draft whose background task died. */
+function staleCutoff(now: Date): Date {
+  return new Date(now.getTime() - translationStaleMs);
 }

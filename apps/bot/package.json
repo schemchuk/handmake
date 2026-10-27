@@ -16,6 +16,8 @@
     "webhook:set": "tsx scripts/set-webhook.ts"
   },
   "dependencies": {
+    "@handmake/ai": "workspace:*",
+    "@handmake/channels": "workspace:*",
     "@handmake/core": "workspace:*",
     "grammy": "^1.40.0"
   },
