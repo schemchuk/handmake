@@ -434,3 +434,80 @@ describe('T16 publishing claim (A4)', () => {
     expect(reclaimed?.draft.state).toBe('publishing');
   });
 });
+
+describe('markPublished / indexPublished (T18)', () => {
+  it("markPublished moves 'publishing' → 'published' exactly once", async () => {
+    const store = await makeStore();
+    await store.create(createDraft(tenantA, 'pub-1', t0), 'chat-1');
+    await store.claimTranslation(tenantA, 'pub-1', ['collecting'], t1);
+    await store.markTranslated(tenantA, 'pub-1', 'Hallo!', t1);
+    expect(await store.claimPublishing(tenantA, 'pub-1', t1)).toBeDefined();
+
+    expect(await store.markPublished(tenantA, 'pub-1', t1)).toBe(true);
+    expect((await store.get(tenantA, 'pub-1'))?.draft.state).toBe('published');
+    // A duplicate callback is a guarded no-op, not an error.
+    expect(await store.markPublished(tenantA, 'pub-1', t1)).toBe(false);
+  });
+
+  it('markPublished refuses drafts that are not publishing', async () => {
+    const store = await makeStore();
+    await store.create(createDraft(tenantA, 'pub-2', t0), 'chat-1');
+    // And a ready one, one translation step further.
+    await store.create(createDraft(tenantA, 'pub-3', t0), 'chat-2');
+    await store.claimTranslation(tenantA, 'pub-3', ['collecting'], t1);
+    await store.markTranslated(tenantA, 'pub-3', 'Hallo!', t1);
+
+    expect(await store.markPublished(tenantA, 'pub-2', t1)).toBe(false);
+    expect(await store.markPublished(tenantA, 'pub-3', t1)).toBe(false);
+    expect(await store.markPublished(tenantA, 'missing', t1)).toBe(false);
+    expect((await store.get(tenantA, 'pub-2'))?.draft.state).toBe('collecting');
+    expect((await store.get(tenantA, 'pub-3'))?.draft.state).toBe('ready');
+  });
+
+  it('indexPublished inserts once and ignores duplicates', async () => {
+    const db = await makeD1();
+    const store = createD1DraftStore(db);
+    const entry = {
+      tenantId: tenantA,
+      postId: 'pub-3',
+      publishedAt: '2026-10-27',
+      photos: ['content/posts/pub-3/photo-1.jpg'],
+    };
+
+    await store.indexPublished(entry);
+    await store.indexPublished(entry);
+
+    const rows = await db
+      .prepare(
+        'SELECT published_at, photos FROM published_posts WHERE tenant_id = ? AND post_id = ?',
+      )
+      .bind(tenantA, 'pub-3')
+      .all<{ published_at: string; photos: string }>();
+    expect(rows.results).toHaveLength(1);
+    expect(rows.results?.[0]?.published_at).toBe('2026-10-27');
+    expect(JSON.parse(rows.results?.[0]?.photos ?? '')).toEqual(entry.photos);
+  });
+
+  it('index rows are isolated per tenant', async () => {
+    const db = await makeD1();
+    const store = createD1DraftStore(db);
+    await store.indexPublished({
+      tenantId: tenantA,
+      postId: 'same-post',
+      publishedAt: '2026-10-27',
+      photos: [],
+    });
+    await store.indexPublished({
+      tenantId: tenantB,
+      postId: 'same-post',
+      publishedAt: '2026-10-27',
+      photos: [],
+    });
+
+    const count = await db
+      .prepare('SELECT COUNT(*) AS n FROM published_posts WHERE post_id = ?')
+      .bind('same-post')
+      .first<{ n: number }>();
+    expect(count?.n).toBe(2);
+  });
+});

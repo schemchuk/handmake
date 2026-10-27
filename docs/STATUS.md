@@ -1,12 +1,13 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T18 — Published callback endpoint and D1 index (`apps/bot`, docs/03-tasks.md "Phase 1b")
-- **Branch:** feat/T18-published-callback (to be created by kimi-code)
+- **Current task:** T18 — Published callback endpoint and D1 index (`apps/bot`, docs/03-tasks.md "Phase 1b") — implemented, PR #28 awaiting claude-code review
+- **Branch:** feat/T18-published-callback
 - **Last commit:** see `git log -1`
-- **Next step:** kimi-code implements T18. MVP live since 2026-10-27 (T17: README, docs/e2e-mvp.md).
-  Phase 1b tasks T18-T24 written 2026-10-27. T19 needs H7 (callback secret) and is sensitive (workflow);
-  T24 needs H8 (Instagram Creator account + Meta app). Dependabot #15-#18 wait for Volodymyr's OK.
+- **Next step:** claude-code reviews the T18 PR (reviewer merges after CI green, no blocking findings).
+  T19 (publisher sends the callback) next — needs H7 (PUBLISH_CALLBACK_SECRET as a GitHub
+  secret + Worker secret) and is sensitive (`.github/workflows/`); T24 needs H8.
+  Dependabot #15-#18 wait for Volodymyr's OK.
 - **Blocked on:** nothing for T18.
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).

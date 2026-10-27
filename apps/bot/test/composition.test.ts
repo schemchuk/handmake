@@ -20,6 +20,7 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     GITHUB_DISPATCH_TOKEN: 'test-dispatch-token',
     GITHUB_REPO: 'owner/repo',
     PUBLISH_LIVE: 'false',
+    PUBLISH_CALLBACK_SECRET: 'callback-secret',
     ...overrides,
   };
 }

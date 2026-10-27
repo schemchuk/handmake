@@ -132,6 +132,24 @@ export interface D1DraftStore {
   /** Moves 'publishing' → 'ready' when the dispatch itself failed. */
   revertPublishing(tenantId: string, draftId: string, now: Date): Promise<boolean>;
   /**
+   * Moves 'publishing' → 'published' in one guarded statement when the
+   * publisher's callback (T18) confirms delivery. Returns false when the
+   * draft is not in 'publishing' — already published, or never dispatched;
+   * the callback treats that as a no-op, never an error.
+   */
+  markPublished(tenantId: string, draftId: string, now: Date): Promise<boolean>;
+  /**
+   * Idempotent index row for a published post (migration 0005). Insert or
+   * ignore: a retried or duplicated callback can never index the same post
+   * twice. Written even when no draft matches (a post published by hand).
+   */
+  indexPublished(entry: {
+    tenantId: string;
+    postId: string;
+    publishedAt: string;
+    photos: string[];
+  }): Promise<void>;
+  /**
    * Replaces one language version with the author's message and disarms the
    * edit. Atomic and guarded on the pending target, so a stray message
    * cannot overwrite an edit meant for the other version.
@@ -365,6 +383,28 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(now.toISOString(), tenantId, draftId)
         .run();
       return result.meta.changes === 1;
+    },
+
+    async markPublished(tenantId, draftId, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'published', updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'publishing'`,
+        )
+        .bind(now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes === 1;
+    },
+
+    async indexPublished({ tenantId, postId, publishedAt, photos }) {
+      await db
+        .prepare(
+          `INSERT OR IGNORE INTO published_posts (tenant_id, post_id, published_at, photos)
+           VALUES (?, ?, ?, ?)`,
+        )
+        .bind(tenantId, postId, publishedAt, JSON.stringify(photos))
+        .run();
     },
 
     async markTranslated(tenantId, draftId, german, now) {
