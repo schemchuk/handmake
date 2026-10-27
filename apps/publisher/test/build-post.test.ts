@@ -78,6 +78,16 @@ describe('buildPostFromPayload', () => {
     expect(post.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
   });
 
+  it('orders languages by the tenant, whatever the payload key order', () => {
+    const post = buildPostFromPayload(
+      { ...payload, texts: { de: 'de text', fr: 'fr text', uk: 'uk text' } },
+      tenant,
+      { now },
+    );
+    expect(Object.keys(post.texts)).toEqual(['uk', 'de', 'fr']);
+    expect(Object.keys(post.versions)).toEqual(['uk', 'de', 'fr']);
+  });
+
   it('names no photos for an empty fileIds list', () => {
     const post = buildPostFromPayload({ ...payload, fileIds: [] }, tenant, { now });
     expect(post.photos).toEqual([]);
