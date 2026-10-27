@@ -219,3 +219,106 @@ describe('concurrent appends', () => {
     expect(stored?.draft.texts['uk']?.split('\n\n')).toHaveLength(3);
   });
 });
+
+describe('T15 translation and edit guards', () => {
+  async function makeCollecting(store: D1DraftStore): Promise<string> {
+    await appendText(store, tenantA, 'chat-1', 'Привіт!');
+    const stored = await store.findCollectingForChat(tenantA, 'chat-1');
+    return stored!.draft.draftId;
+  }
+
+  it('latestForChat finds drafts in any state, newest first', async () => {
+    const store = await makeStore();
+    const old = transitionDraft(
+      transitionDraft(createDraft(tenantA, 'old', t0), { type: 'beginTranslation' }, t0),
+      { type: 'translationFailed', error: 'boom' },
+      t0,
+    );
+    await store.create(old, 'chat-1');
+    // The unique index allows only one collecting draft per chat, so the
+    // newer one is created after the old one left 'collecting'.
+    await new Promise((r) => setTimeout(r, 5));
+    await store.create(createDraft(tenantA, 'newer', t1), 'chat-1');
+
+    const latest = await store.latestForChat(tenantA, 'chat-1');
+    expect(latest?.draft.draftId).toBe('newer');
+    expect(await store.latestForChat(tenantA, 'no-such-chat')).toBeUndefined();
+  });
+
+  it('claimTranslation lets exactly one caller through', async () => {
+    const store = await makeStore();
+    const draftId = await makeCollecting(store);
+
+    const [first, second] = await Promise.all([
+      store.claimTranslation(tenantA, draftId, ['collecting'], t1),
+      store.claimTranslation(tenantA, draftId, ['collecting'], t1),
+    ]);
+
+    expect([first === undefined, second === undefined].filter(Boolean)).toHaveLength(1);
+    const winner = first ?? second;
+    expect(winner?.draft.state).toBe('translating');
+    expect(await store.claimTranslation(tenantA, draftId, ['collecting'], t1)).toBeUndefined();
+  });
+
+  it('markTranslated stores the German text and flips to ready', async () => {
+    const store = await makeStore();
+    const draftId = await makeCollecting(store);
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
+
+    expect(await store.markTranslated(tenantA, draftId, 'Hallo!', t1)).toBe(true);
+    const stored = await store.get(tenantA, draftId);
+    expect(stored?.draft.state).toBe('ready');
+    expect(stored?.draft.texts['de']).toBe('Hallo!');
+    // A second mark (racing reply) is a no-op.
+    expect(await store.markTranslated(tenantA, draftId, 'Anders', t1)).toBe(false);
+  });
+
+  it('markTranslationFailed keeps the old texts for a retry', async () => {
+    const store = await makeStore();
+    const draftId = await makeCollecting(store);
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
+    await store.markTranslated(tenantA, draftId, 'Alt', t1);
+    await store.claimTranslation(tenantA, draftId, ['ready'], t1);
+
+    expect(await store.markTranslationFailed(tenantA, draftId, t1)).toBe(true);
+    const stored = await store.get(tenantA, draftId);
+    expect(stored?.draft.state).toBe('failed');
+    expect(stored?.draft.texts['de']).toBe('Alt');
+  });
+
+  it('writeGermanByHand takes the author text from failed to ready', async () => {
+    const store = await makeStore();
+    const draftId = await makeCollecting(store);
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
+    await store.markTranslationFailed(tenantA, draftId, t1);
+
+    expect(await store.writeGermanByHand(tenantA, draftId, 'Von Hand', t1)).toBe(true);
+    const stored = await store.get(tenantA, draftId);
+    expect(stored?.draft.state).toBe('ready');
+    expect(stored?.draft.texts['de']).toBe('Von Hand');
+    expect(await store.writeGermanByHand(tenantA, draftId, 'Nochmal', t1)).toBe(false);
+  });
+
+  it('setPendingEdit and replaceText arm and disarm the reply-based edit', async () => {
+    const store = await makeStore();
+    const draftId = await makeCollecting(store);
+
+    expect(await store.replaceText(tenantA, draftId, 'de', 'Zu früh', t1)).toBe(false);
+
+    expect(await store.setPendingEdit(tenantA, draftId, 'de', t1)).toBe(true);
+    expect(await store.replaceText(tenantA, draftId, 'uk', 'Falsch', t1)).toBe(false);
+    expect(await store.replaceText(tenantA, draftId, 'de', 'Neu', t1)).toBe(true);
+
+    const stored = await store.get(tenantA, draftId);
+    expect(stored?.draft.texts['de']).toBe('Neu');
+    expect(stored?.pendingEdit).toBeNull();
+  });
+
+  it('setPendingEdit refuses drafts that are not collecting or ready', async () => {
+    const store = await makeStore();
+    const draftId = await makeCollecting(store);
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
+
+    expect(await store.setPendingEdit(tenantA, draftId, 'uk', t1)).toBe(false);
+  });
+});

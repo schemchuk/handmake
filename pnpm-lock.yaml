@@ -187,6 +187,12 @@ importers:
 
   apps/bot:
     dependencies:
+      '@handmake/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@handmake/channels':
+        specifier: workspace:*
+        version: link:../../packages/channels
       '@handmake/core':
         specifier: workspace:*
         version: link:../../packages/core

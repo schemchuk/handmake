@@ -26,6 +26,20 @@ import type { Draft, DraftState } from '@handmake/core';
 export interface StoredDraft {
   draft: Draft;
   version: number;
+  /** Set while the bot waits for the author's replacement text (ADR 005). */
+  pendingEdit: DraftEditTarget | null;
+}
+
+/** Which language version an edit replaces; the canonical draft keys. */
+export type DraftEditTarget = 'uk' | 'de';
+
+const editTargetPattern = /^[a-z]{2}$/;
+
+function editJsonPath(lang: string): string {
+  if (!editTargetPattern.test(lang)) {
+    throw new Error(`invalid edit target "${lang}"`);
+  }
+  return `$.${lang}`;
 }
 
 export interface D1DraftStore {
@@ -35,8 +49,8 @@ export interface D1DraftStore {
   /**
    * Optimistic update: writes the draft only if the row version still
    * matches. Returns false on interference — re-read and retry. Used for
-   * whole-state transitions (translation results, publishing); content
-   * collection goes through the atomic appends below instead.
+   * whole-state transitions; content collection goes through the atomic
+   * statements below instead.
    */
   update(draft: Draft, expectedVersion: number): Promise<boolean>;
   /**
@@ -52,13 +66,52 @@ export interface D1DraftStore {
     limit: number,
     now: Date,
   ): Promise<'added' | 'limit' | 'not-collecting'>;
-  /** Atomically appends text to the UA version. False if not collecting. */
+  /** Atomically appends text to the Ukrainian version. False if not collecting. */
   appendText(tenantId: string, draftId: string, text: string, now: Date): Promise<boolean>;
   delete(tenantId: string, draftId: string): Promise<void>;
   listByState(tenantId: string, state: DraftState): Promise<StoredDraft[]>;
   findCollectingForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
+  /** The chat's most recent draft in any state, for /done and the buttons. */
+  latestForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
   /** One collecting draft per chat, created on the spot if missing. */
   getOrCreateCollecting(tenantId: string, chatId: string, now: Date): Promise<StoredDraft>;
+  /**
+   * Claims the draft for one translation run: moves it to 'translating' in
+   * a single statement if it is in one of `from`. Returns the claimed row,
+   * or undefined if someone else got there first — the caller then backs
+   * off instead of running a duplicate (paid) AI call.
+   */
+  claimTranslation(
+    tenantId: string,
+    draftId: string,
+    from: DraftState[],
+    now: Date,
+  ): Promise<StoredDraft | undefined>;
+  /** Stores the German text and moves 'translating' → 'ready'. */
+  markTranslated(tenantId: string, draftId: string, german: string, now: Date): Promise<boolean>;
+  /** Moves 'translating' → 'failed'; the old texts stay for a retry. */
+  markTranslationFailed(tenantId: string, draftId: string, now: Date): Promise<boolean>;
+  /** Stores the author's own German text and moves 'failed' → 'ready'. */
+  writeGermanByHand(tenantId: string, draftId: string, german: string, now: Date): Promise<boolean>;
+  /** Arms reply-based editing; the next text message replaces `target`. */
+  setPendingEdit(
+    tenantId: string,
+    draftId: string,
+    target: DraftEditTarget | null,
+    now: Date,
+  ): Promise<boolean>;
+  /**
+   * Replaces one language version with the author's message and disarms the
+   * edit. Atomic and guarded on the pending target, so a stray message
+   * cannot overwrite an edit meant for the other version.
+   */
+  replaceText(
+    tenantId: string,
+    draftId: string,
+    target: DraftEditTarget,
+    text: string,
+    now: Date,
+  ): Promise<boolean>;
   /** Delete every draft untouched since the cutoff; returns the row count. */
   deleteOlderThan(cutoff: Date): Promise<number>;
 }
@@ -71,6 +124,7 @@ interface DraftRow {
   texts: string;
   photos: string;
   version: number;
+  pending_edit: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,7 +138,7 @@ const draftStates: ReadonlySet<string> = new Set([
   'failed',
 ]);
 
-const selectDraft = `SELECT tenant_id, id, chat_id, status, texts, photos, version, created_at, updated_at
+const selectDraft = `SELECT tenant_id, id, chat_id, status, texts, photos, version, pending_edit, created_at, updated_at
   FROM drafts WHERE tenant_id = ?`;
 
 /** D1/SQLite report UNIQUE violations with this message; we treat them as
@@ -210,7 +264,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           )
           .bind(tenantId, draft.draftId, chatId, draft.state, draft.createdAt, draft.updatedAt)
           .run();
-        return { draft, version: 0 };
+        return { draft, version: 0, pendingEdit: null };
       } catch (error) {
         if (!isUniqueViolation(error)) {
           throw error;
@@ -225,6 +279,88 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         }
         return existing;
       }
+    },
+
+    async latestForChat(tenantId, chatId) {
+      const row = await db
+        .prepare(`${selectDraft} AND chat_id = ? ORDER BY created_at DESC LIMIT 1`)
+        .bind(tenantId, chatId)
+        .first<DraftRow>();
+      return row ? toStoredDraft(row) : undefined;
+    },
+
+    async claimTranslation(tenantId, draftId, from, now) {
+      const guards = from.map(() => '?').join(', ');
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'translating', updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status IN (${guards})`,
+        )
+        .bind(now.toISOString(), tenantId, draftId, ...from)
+        .run();
+      return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
+    },
+
+    async markTranslated(tenantId, draftId, german, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'ready', texts = json_set(texts, '$.de', ?), updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'translating'`,
+        )
+        .bind(german, now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes === 1;
+    },
+
+    async markTranslationFailed(tenantId, draftId, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'failed', updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'translating'`,
+        )
+        .bind(now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes === 1;
+    },
+
+    async writeGermanByHand(tenantId, draftId, german, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'ready', texts = json_set(texts, '$.de', ?), updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'failed'`,
+        )
+        .bind(german, now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes === 1;
+    },
+
+    async setPendingEdit(tenantId, draftId, target, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET pending_edit = ?, updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status IN ('collecting', 'ready')`,
+        )
+        .bind(target, now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes === 1;
+    },
+
+    async replaceText(tenantId, draftId, target, text, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET texts = json_set(texts, ?, ?), pending_edit = NULL, updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ?
+             AND pending_edit = ? AND status IN ('collecting', 'ready')`,
+        )
+        .bind(editJsonPath(target), text, now.toISOString(), tenantId, draftId, target)
+        .run();
+      return result.meta.changes === 1;
     },
 
     async deleteOlderThan(cutoff) {
@@ -252,6 +388,7 @@ function toStoredDraft(row: DraftRow): StoredDraft {
       updatedAt: row.updated_at,
     },
     version: row.version,
+    pendingEdit: row.pending_edit === 'uk' || row.pending_edit === 'de' ? row.pending_edit : null,
   };
 }
 

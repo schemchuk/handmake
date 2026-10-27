@@ -1,4 +1,5 @@
 import type { Bot } from 'grammy';
+import type { TranslationRequest, TranslationResult, Translator } from '@handmake/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createBot } from '../src/bot';
@@ -6,7 +7,9 @@ import type { AppContext } from '../src/context';
 import { createD1DraftStore } from '../src/draft-store';
 import type { D1DraftStore } from '../src/draft-store';
 import { botTexts } from '../src/texts';
+import type { SentCall } from './helpers';
 import {
+  callbackQueryUpdate,
   documentUpdate,
   makeD1,
   mockTelegramApi,
@@ -22,15 +25,32 @@ let db: D1Database;
 let drafts: D1DraftStore;
 let bot: Bot<AppContext>;
 let calls: ReturnType<typeof mockTelegramApi>;
+let translateCalls: TranslationRequest[];
+/** Swap to make the fake translator fail (AI outage). */
+let translateImpl: (request: TranslationRequest) => Promise<TranslationResult>;
+let translator: Translator;
+
+function lastSendMessage(calls: SentCall[]): Record<string, unknown> | undefined {
+  return calls.filter((call) => call.method === 'sendMessage').at(-1)?.payload;
+}
 
 beforeEach(async () => {
   db = await makeD1();
   drafts = createD1DraftStore(db);
+  translateCalls = [];
+  translateImpl = async (request) => ({ text: `DE:${request.text}` });
+  translator = {
+    translate: async (request) => {
+      translateCalls.push(request);
+      return translateImpl(request);
+    },
+  };
   bot = createBot({
     token: 'TEST_TOKEN',
     drafts,
     resolveTenant: (userId) => (userId === allowed.userId ? allowed.tenantId : undefined),
     texts: botTexts,
+    translator,
   });
   calls = mockTelegramApi(bot);
   await bot.init();
@@ -176,5 +196,143 @@ describe('refusals', () => {
 
     expect(sentTexts(calls)).toEqual([botTexts.unsupportedMessageText]);
     expect(await drafts.listByState(allowed.tenantId, 'collecting')).toEqual([]);
+  });
+});
+
+describe('/done: translate and preview', () => {
+  it('translates the collecting draft and sends a preview with buttons', async () => {
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    const sent = sentTexts(calls);
+    expect(sent[0]).toBe(botTexts.textSavedText(0));
+    expect(sent[1]).toBe(botTexts.translatingText);
+    expect(sent[2]).toContain(botTexts.previewHeader(0));
+    expect(sent[2]).toContain('Привіт!');
+    expect(sent[2]).toContain('DE:Привіт!');
+
+    const keyboard = (
+      lastSendMessage(calls)?.['reply_markup'] as {
+        inline_keyboard: { callback_data: string }[][];
+      }
+    ).inline_keyboard.flat();
+    expect(keyboard.map((b) => b.callback_data)).toContain('draft:publish');
+
+    expect(translateCalls).toHaveLength(1);
+    expect(translateCalls[0]).toMatchObject({
+      sourceLang: 'uk',
+      targetLang: 'de',
+      text: 'Привіт!',
+    });
+
+    const ready = await drafts.listByState(allowed.tenantId, 'ready');
+    expect(ready).toHaveLength(1);
+    expect(ready[0]?.draft.texts['de']).toBe('DE:Привіт!');
+  });
+
+  it('without a draft asks to start one', async () => {
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    expect(sentTexts(calls)).toEqual([botTexts.draftNoneText]);
+    expect(translateCalls).toHaveLength(0);
+  });
+
+  it('with photos but no Ukrainian text asks for the text first', async () => {
+    await bot.handleUpdate(photoUpdate(allowed.userId, ['p1']));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.doneNeedsText);
+    expect(translateCalls).toHaveLength(0);
+    expect(await drafts.listByState(allowed.tenantId, 'collecting')).toHaveLength(1);
+  });
+
+  it('a failed translation offers the authors own German text, which flips the draft to ready', async () => {
+    translateImpl = async () => {
+      throw new Error('AI unavailable');
+    };
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.translationFailedText);
+    expect(await drafts.listByState(allowed.tenantId, 'failed')).toHaveLength(1);
+
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Mein handgemachter Text'));
+
+    expect(sentTexts(calls).at(-1)).toContain('Mein handgemachter Text');
+    const ready = await drafts.listByState(allowed.tenantId, 'ready');
+    expect(ready).toHaveLength(1);
+    expect(ready[0]?.draft.texts['de']).toBe('Mein handgemachter Text');
+    expect(translateCalls).toHaveLength(1);
+  });
+
+  it('a text beyond the Telegram limit blocks the preview: no Publish button', async () => {
+    await bot.handleUpdate(textUpdate(allowed.userId, 'x'.repeat(4100)));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    const sent = sentTexts(calls).at(-1)!;
+    expect(sent).toContain('❌');
+    const keyboard = (
+      lastSendMessage(calls)?.['reply_markup'] as {
+        inline_keyboard: { callback_data: string; text: string }[][];
+      }
+    ).inline_keyboard.flat();
+    expect(keyboard.map((b) => b.callback_data)).not.toContain('draft:publish');
+    expect(keyboard.map((b) => b.text)).toContain(botTexts.discardButton);
+  });
+});
+
+describe('preview buttons', () => {
+  async function makeReadyDraft(): Promise<void> {
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+  }
+
+  it('Edit DE arms the edit; the next text message replaces the German version', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:edit:de'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.editPromptText('de', 'DE:Привіт!'));
+    const stored = await drafts.latestForChat(allowed.tenantId, String(allowed.userId));
+    expect(stored?.pendingEdit).toBe('de');
+
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Neuer Text'));
+
+    expect(sentTexts(calls).at(-1)).toContain('Neuer Text');
+    const updated = await drafts.latestForChat(allowed.tenantId, String(allowed.userId));
+    expect(updated?.draft.texts['de']).toBe('Neuer Text');
+    expect(updated?.pendingEdit).toBeNull();
+  });
+
+  it('Regenerate DE re-translates and shows a fresh preview', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:regen-de'));
+
+    expect(sentTexts(calls).at(-2)).toBe(botTexts.translatingText);
+    expect(sentTexts(calls).at(-1)).toContain(botTexts.previewHeader(0));
+    expect(translateCalls).toHaveLength(2);
+    const ready = await drafts.listByState(allowed.tenantId, 'ready');
+    expect(ready[0]?.draft.texts['de']).toBe('DE:Привіт!');
+  });
+
+  it('Publish is not wired yet and says so', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.publishNotAvailableText);
+    expect(await drafts.listByState(allowed.tenantId, 'ready')).toHaveLength(1);
+  });
+
+  it('Discard deletes the draft', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:discard'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.discardDoneText);
+    expect(await drafts.latestForChat(allowed.tenantId, String(allowed.userId))).toBeUndefined();
+  });
+
+  it('a button press without any draft gets a gentle pointer', async () => {
+    await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish'));
+
+    expect(sentTexts(calls)).toEqual([botTexts.draftNoneText]);
   });
 });

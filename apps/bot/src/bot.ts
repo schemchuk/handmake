@@ -1,9 +1,11 @@
 import { maxDraftPhotos } from '@handmake/core';
+import type { Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
-import type { D1DraftStore, StoredDraft } from './draft-store';
+import type { D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
+import { buildPreview } from './preview';
 import type { BotTexts } from './texts';
 
 export interface CreateBotOptions {
@@ -11,6 +13,7 @@ export interface CreateBotOptions {
   drafts: D1DraftStore;
   resolveTenant: TenantLookup;
   texts: BotTexts;
+  translator: Translator;
 }
 
 /** How often an append retries when the draft vanishes mid-flight (a racing
@@ -53,13 +56,134 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   });
 
   bot.command('discard', async (ctx) => {
-    const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx));
+    const existing = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
     if (!existing) {
       await ctx.reply(texts.discardNothingText);
       return;
     }
+    if (existing.draft.state === 'publishing') {
+      await ctx.reply(texts.draftBusyText);
+      return;
+    }
     await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId);
     await ctx.reply(texts.discardDoneText);
+  });
+
+  // /done: translate the Ukrainian text and show the preview. The claim is
+  // one atomic D1 statement, so two racing /done presses cannot trigger two
+  // (paid) AI calls — the loser is told a translation is already running.
+  bot.command('done', async (ctx) => {
+    const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    if (!stored) {
+      await ctx.reply(texts.draftNoneText);
+      return;
+    }
+    if (stored.draft.state === 'ready') {
+      await sendPreview(ctx, stored);
+      return;
+    }
+    if (stored.draft.state === 'translating') {
+      await ctx.reply(texts.translateInProgressText);
+      return;
+    }
+    if (stored.draft.state === 'publishing' || stored.draft.state === 'published') {
+      await ctx.reply(texts.draftFinishedText);
+      return;
+    }
+    if ((stored.draft.texts['uk'] ?? '').trim() === '') {
+      await ctx.reply(texts.doneNeedsText);
+      return;
+    }
+    const claimed = await ctx.drafts.claimTranslation(
+      ctx.tenantId,
+      stored.draft.draftId,
+      ['collecting', 'failed'],
+      new Date(),
+    );
+    if (!claimed) {
+      // The state moved under us (a racing /done or button press won).
+      const fresh = await ctx.drafts.get(ctx.tenantId, stored.draft.draftId);
+      if (fresh?.draft.state === 'ready') {
+        await sendPreview(ctx, fresh);
+      } else {
+        await ctx.reply(texts.translateInProgressText);
+      }
+      return;
+    }
+    await runTranslation(ctx, claimed);
+  });
+
+  // Preview buttons. All actions re-read the latest draft — the keyboard in
+  // an old preview message must not operate on stale state.
+  bot.on('callback_query:data', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    if (!data.startsWith('draft:')) {
+      return;
+    }
+    await ctx.answerCallbackQuery();
+    const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    if (!stored) {
+      await ctx.reply(texts.draftNoneText);
+      return;
+    }
+
+    if (data === 'draft:edit:uk' || data === 'draft:edit:de') {
+      const target: DraftEditTarget = data === 'draft:edit:uk' ? 'uk' : 'de';
+      const armed = await ctx.drafts.setPendingEdit(
+        ctx.tenantId,
+        stored.draft.draftId,
+        target,
+        new Date(),
+      );
+      if (!armed) {
+        await ctx.reply(texts.editConflictText);
+        return;
+      }
+      const current = stored.draft.texts[target] ?? '';
+      await ctx.reply(
+        current === '' ? texts.editPromptNewText(target) : texts.editPromptText(target, current),
+      );
+      return;
+    }
+
+    if (data === 'draft:regen-de') {
+      const claimed = await ctx.drafts.claimTranslation(
+        ctx.tenantId,
+        stored.draft.draftId,
+        ['ready'],
+        new Date(),
+      );
+      if (!claimed) {
+        await ctx.reply(
+          stored.draft.state === 'translating'
+            ? texts.translateInProgressText
+            : texts.regenUnavailableText,
+        );
+        return;
+      }
+      await runTranslation(ctx, claimed);
+      return;
+    }
+
+    if (data === 'draft:publish') {
+      // T16 wires actual publishing; the draft is approved and waits.
+      if (stored.draft.state !== 'ready') {
+        await ctx.reply(texts.regenUnavailableText);
+        return;
+      }
+      await ctx.reply(texts.publishNotAvailableText);
+      return;
+    }
+
+    if (data === 'draft:discard') {
+      if (stored.draft.state === 'publishing') {
+        await ctx.reply(texts.draftBusyText);
+        return;
+      }
+      await ctx.drafts.delete(ctx.tenantId, stored.draft.draftId);
+      await ctx.reply(texts.discardDoneText);
+      return;
+    }
   });
 
   // Everything else: one switch on the message content. Texts starting with
@@ -83,7 +207,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         await ctx.reply(texts.unknownCommandText);
         return;
       }
-      await collectText(ctx, message.text);
+      await handleText(ctx, message.text);
       return;
     }
     await ctx.reply(texts.unsupportedMessageText);
@@ -91,9 +215,98 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
   return bot;
 
-  async function collectText(ctx: AppContext, text: string): Promise<void> {
+  /**
+   * A plain text message can mean four things, checked in this order:
+   * 1. an armed reply-based edit (ADR 005) replaces that language version;
+   * 2. after a failed translation the author's own German text is taken as-is
+   *    (failed -> ready);
+   * 3. under a ready draft it just re-sends the preview (nothing is collected
+   *    into an approved draft);
+   * 4. otherwise the text is collected into the collecting draft.
+   */
+  async function handleText(ctx: AppContext, text: string): Promise<void> {
+    const latest = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+
+    if (latest?.pendingEdit) {
+      const target = latest.pendingEdit;
+      const applied = await ctx.drafts.replaceText(
+        ctx.tenantId,
+        latest.draft.draftId,
+        target,
+        text,
+        new Date(),
+      );
+      if (!applied) {
+        await ctx.reply(texts.editConflictText);
+        return;
+      }
+      await ctx.reply(texts.editSavedText(target));
+      const fresh = await ctx.drafts.get(ctx.tenantId, latest.draft.draftId);
+      if (fresh?.draft.state === 'ready') {
+        await sendPreview(ctx, fresh);
+      }
+      return;
+    }
+
+    if (latest?.draft.state === 'failed') {
+      const applied = await ctx.drafts.writeGermanByHand(
+        ctx.tenantId,
+        latest.draft.draftId,
+        text,
+        new Date(),
+      );
+      if (!applied) {
+        await ctx.reply(texts.editConflictText);
+        return;
+      }
+      await ctx.reply(texts.deSavedText);
+      const fresh = await ctx.drafts.get(ctx.tenantId, latest.draft.draftId);
+      if (fresh) {
+        await sendPreview(ctx, fresh);
+      }
+      return;
+    }
+
+    if (latest?.draft.state === 'ready') {
+      await sendPreview(ctx, latest);
+      return;
+    }
+
     const stored = await appendTextToOpenDraft(ctx, text);
     await ctx.reply(texts.textSavedText(stored.draft.photoRefs.length));
+  }
+
+  /**
+   * Runs the claimed translation to completion: translate, then mark the
+   * draft ready or failed in one guarded statement each. The AI call happens
+   * only after a successful claim, so retries and double presses never pay
+   * for two translations.
+   */
+  async function runTranslation(ctx: AppContext, claimed: StoredDraft): Promise<void> {
+    const ukText = claimed.draft.texts['uk'] ?? '';
+    await ctx.reply(texts.translatingText);
+    try {
+      const result = await options.translator.translate({
+        text: ukText,
+        sourceLang: 'uk',
+        targetLang: 'de',
+      });
+      await ctx.drafts.markTranslated(ctx.tenantId, claimed.draft.draftId, result.text, new Date());
+    } catch {
+      await ctx.drafts.markTranslationFailed(ctx.tenantId, claimed.draft.draftId, new Date());
+      await ctx.reply(texts.translationFailedText);
+      return;
+    }
+    const fresh = await ctx.drafts.get(ctx.tenantId, claimed.draft.draftId);
+    if (fresh) {
+      await sendPreview(ctx, fresh);
+    }
+  }
+
+  /** Sends the author the rendered preview with its action keyboard. */
+  async function sendPreview(ctx: AppContext, stored: StoredDraft): Promise<void> {
+    const preview = buildPreview(stored.draft, texts);
+    await ctx.reply(preview.text, preview.keyboard ? { reply_markup: preview.keyboard } : {});
   }
 
   async function collectPhoto(

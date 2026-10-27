@@ -1,7 +1,9 @@
+import { ClaudeTranslator } from '@handmake/ai';
 import { draftRetentionDays } from '@handmake/core';
 import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
+import humanizeDePrompt from '../../../packages/ai/prompts/humanize-de@1.md';
 import { createTenantLookup } from './allow-list';
 import type { TenantLookup } from './allow-list';
 import { createBot } from './bot';
@@ -87,6 +89,10 @@ export function createApp(env: Env, texts: BotTexts): App {
         drafts: createD1DraftStore(env.DB),
         resolveTenant: createTenantLookup(env.TELEGRAM_ALLOWED_USER_IDS),
         texts,
+        translator: new ClaudeTranslator({
+          systemPrompt: humanizeDePrompt,
+          apiKey: env.ANTHROPIC_API_KEY,
+        }),
       });
       handleUpdate = webhookCallback(bot, 'cloudflare-mod');
     }

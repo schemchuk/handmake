@@ -92,6 +92,31 @@ export function voiceUpdate(userId: number | undefined, fileId: string): Update 
   } as Update;
 }
 
+/** Builds a callback-query update, like a preview button press. */
+export function callbackQueryUpdate(
+  userId: number | undefined,
+  chatId: number,
+  data: string,
+): Update {
+  return {
+    update_id: 1,
+    callback_query: {
+      id: 'callback-1',
+      from:
+        userId === undefined
+          ? { id: 0, is_bot: false, first_name: '?' }
+          : { id: userId, is_bot: false, first_name: 'Tester' },
+      message: {
+        message_id: 1,
+        date: 1_700_000_000,
+        chat: { id: chatId, type: 'private' },
+      },
+      data,
+      chat_instance: 'test',
+    },
+  } as Update;
+}
+
 /**
  * Intercepts every outgoing Bot API call with a grammY transformer. The
  * transformer is installed on bot.api, and grammY copies installed
@@ -124,6 +149,9 @@ export function mockTelegramApi(bot: Bot<AppContext>): SentCall[] {
           chat: { id: chatId, type: 'private' },
         },
       };
+    }
+    if (method === 'answerCallbackQuery') {
+      return { ok: true, result: true };
     }
     throw new Error(`mockTelegramApi: unexpected API call: ${method}`);
   };
