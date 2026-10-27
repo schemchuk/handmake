@@ -10,7 +10,7 @@
   Bot deploy is manual and owned by Volodymyr: `wrangler d1 create handmake-bot`, paste
   `database_id` into `apps/bot/wrangler.toml`, `db:migrate`, set Worker secrets
   (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_ALLOWED_USER_IDS`), `deploy`, `webhook:set`.
-  T11 acceptance run (workflow_dispatch, sample payload, `live` off, twice) still pending Volodymyr's go-ahead; record in T17.
+  T11 acceptance run done 2026-10-27 (runs 40476184863, 40476250639; test channel, `live` off): first run posted UA album + DE reply (Telegram ids 10, 11) and committed post + ledger; second run skipped ("channel telegram: already done"), no duplicate. Record in T17.
 - **Blocked on:** nothing (AUTHOR_CHAT_ID secret missing; author notification is a no-op until added).
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
