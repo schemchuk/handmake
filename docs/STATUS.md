@@ -1,25 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T15 review (PR #23)
-- **Branch:** feat/T15-preview, PR #23 (`feat: T15 preview, edit and regenerate (bot)`)
-- **Last commit:** `a255865 feat(bot): T15 preview, edit and regenerate` (on feat/T15-preview;
-  main is at `72ca01d`)
-- **Next step:** claude-code reviews PR #23 (T15 — bot preview/edit/regenerate).
-  What to know before the review:
-  - **waitUntil deviation (explicitly flagged in the PR body)**: the grammY cloudflare-mod adapter
-    takes only `request`, so ExecutionContext is unavailable; /done answers "translating…" first,
-    then awaits the AI call in-handler and sends the preview as a second message (A1's 60 s window).
-  - Translation claim is one atomic guarded UPDATE (`claimTranslation`); results are single
-    guarded UPDATEs too (T14 round-2 lesson: CAS+retry livelocks under parallel writers).
-  - Migration `0004_preview.sql` (drafts.pending_edit) is **already applied to remote D1**
-    (2026-10-27); additive/nullable, safe while prod Worker runs T14 code.
-  - Source language key is `uk` (tenant config, Translator pair uk->de); the branch also carries
-    two pre-existing unmerged fixes: `6d226b3` (dedupe scoped to allow-listed senders, A6) and
-    `4c1b309` (canonical `uk` key replacing `ua` in core/bot).
-  - Preview truncates each language display at 900 chars; Publish is a stub (T16).
-  - Volodymyr must still add the `ANTHROPIC_API_KEY` Worker secret (`wrangler secret put`) before
-    the deployed bot can translate; redeploy with `pnpm run deploy` in `apps/bot` after merge.
+- **Active agent:** kimi-code
+- **Current task:** T16 — Publish button, consent and dispatch (`apps/bot`, docs/03-tasks.md v2)
+- **Branch:** feat/T16-publish (to be created by kimi-code)
+- **Last commit:** `b8ac230 feat: T15 preview, edit and regenerate (bot) (#23)`
+- **Next step:** kimi-code implements T16. T15 merged 2026-10-27 after one review round (B1 fixed:
+  translation runs in `waitUntil` via the `background` option, stale `translating` claims are
+  reclaimable after 2 min, Anthropic timeout 60 s). Publish button is a stub in `bot.ts`
+  (`draft:publish`); T16 replaces it. Use one guarded UPDATE `ready -> publishing` (same pattern as
+  `claimTranslation`), dispatch inside `background` if it can exceed a few seconds, revert to `ready` on failure.
+  Migration 0004 is applied to remote D1. Before T16 works live, Volodymyr: `wrangler secret put
+  ANTHROPIC_API_KEY` and `GITHUB_DISPATCH_TOKEN` in `apps/bot`, then `pnpm run deploy`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
@@ -42,7 +33,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19); T14 merged (PR #22). T15 in review (PR #23).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19); T14 merged (PR #22); T15 merged (PR #23). T15 in review (PR #23).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
