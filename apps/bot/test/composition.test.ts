@@ -130,7 +130,7 @@ describe('webhook retry dedupe', () => {
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0)]);
     const store = createD1DraftStore(db);
     const open = await store.findCollectingForChat('faden-und-stimmung', '11');
-    expect(open?.draft.texts['ua']).toBe('hello');
+    expect(open?.draft.texts['uk']).toBe('hello');
   });
 
   it('refused strangers leave no trace in the dedupe table (A6)', async () => {

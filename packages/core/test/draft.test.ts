@@ -36,7 +36,7 @@ describe('createDraft', () => {
 describe('collecting', () => {
   it('addText stores the UA text and stamps updatedAt', () => {
     const d = transitionDraft(draft(), { type: 'addText', text: '  Привіт! ' }, t1);
-    expect(d.texts['ua']).toBe('Привіт!');
+    expect(d.texts['uk']).toBe('Привіт!');
     expect(d.updatedAt).toBe(t1.toISOString());
     expect(d.state).toBe('collecting');
   });
@@ -44,7 +44,7 @@ describe('collecting', () => {
   it('a second addText joins with a blank line', () => {
     let d = transitionDraft(draft(), { type: 'addText', text: 'Перший рядок' }, t1);
     d = transitionDraft(d, { type: 'addText', text: 'Другий рядок' }, t2);
-    expect(d.texts['ua']).toBe('Перший рядок\n\nДругий рядок');
+    expect(d.texts['uk']).toBe('Перший рядок\n\nДругий рядок');
   });
 
   it('addText with only whitespace is rejected', () => {
@@ -86,7 +86,7 @@ describe('the full lifecycle', () => {
     expect(d.state).toBe('translating');
     d = transitionDraft(d, { type: 'translationSucceeded', german: 'Hallo!' }, t2);
     expect(d.state).toBe('ready');
-    expect(d.texts).toEqual({ ua: 'Привіт!', de: 'Hallo!' });
+    expect(d.texts).toEqual({ uk: 'Привіт!', de: 'Hallo!' });
   });
 
   it('translation failure goes to failed and retryTranslation returns to translating', () => {

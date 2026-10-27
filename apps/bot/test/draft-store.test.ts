@@ -213,9 +213,9 @@ describe('concurrent appends', () => {
       ['один', 'два', 'три'].map((text) => appendText(store, tenantA, 'chat-1', text)),
     );
     const stored = await store.findCollectingForChat(tenantA, 'chat-1');
-    expect(stored?.draft.texts['ua']).toContain('один');
-    expect(stored?.draft.texts['ua']).toContain('два');
-    expect(stored?.draft.texts['ua']).toContain('три');
-    expect(stored?.draft.texts['ua']?.split('\n\n')).toHaveLength(3);
+    expect(stored?.draft.texts['uk']).toContain('один');
+    expect(stored?.draft.texts['uk']).toContain('два');
+    expect(stored?.draft.texts['uk']).toContain('три');
+    expect(stored?.draft.texts['uk']?.split('\n\n')).toHaveLength(3);
   });
 });

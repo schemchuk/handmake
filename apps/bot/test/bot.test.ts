@@ -59,7 +59,7 @@ describe('allow-list middleware (A6)', () => {
     // and nothing was stored for anyone.
     const stored = await drafts.listByState(allowed.tenantId, 'collecting');
     expect(stored).toHaveLength(1);
-    expect(stored[0]?.draft.texts['ua']).toBe('hello');
+    expect(stored[0]?.draft.texts['uk']).toBe('hello');
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0), botTexts.refusalText]);
   });
 
@@ -105,7 +105,7 @@ describe('collecting content', () => {
 
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0), botTexts.textSavedText(0)]);
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
-    expect(open?.draft.texts['ua']).toBe('Привіт!\n\nДругий абзац');
+    expect(open?.draft.texts['uk']).toBe('Привіт!\n\nДругий абзац');
   });
 
   it('a photo stores the largest size as a file_id', async () => {
@@ -121,7 +121,7 @@ describe('collecting content', () => {
 
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
     expect(open?.draft.photoRefs).toEqual(['p1']);
-    expect(open?.draft.texts['ua']).toBe('Підпис до фото');
+    expect(open?.draft.texts['uk']).toBe('Підпис до фото');
   });
 
   it('a JPEG document is collected like a photo', async () => {

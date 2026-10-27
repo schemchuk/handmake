@@ -163,9 +163,9 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET texts = json_set(texts, '$.ua', CASE
-                 WHEN json_extract(texts, '$.ua') IS NULL THEN ?
-                 ELSE json_extract(texts, '$.ua') || char(10) || char(10) || ?
+           SET texts = json_set(texts, '$.uk', CASE
+                 WHEN json_extract(texts, '$.uk') IS NULL THEN ?
+                 ELSE json_extract(texts, '$.uk') || char(10) || char(10) || ?
                END),
                updated_at = ?, version = version + 1
            WHERE tenant_id = ? AND id = ? AND status = 'collecting'`,
