@@ -1,20 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T14 — re-review round 2 of PR #22 (feat/T14-draft-fsm)
-- **Branch:** main (PR #22: feat/T14-draft-fsm, 3 commits — latest `60b9a96`)
-- **Last commit:** `dd9b28b docs: hand off T14 to claude-code for review of PR #22`
-- **Next step:** claude-code re-reviews PR #22 round 2 and merges when green.
-  Review round 1 blocker (album race) fixed in `60b9a96`: atomic SQL appends
-  (state + 10-photo limit guards in the UPDATE itself), partial unique index
-  for one collecting draft per chat (migration 0003), update_id redelivery
-  dedupe (processed_updates). Version-CAS retry was tried and replaced —
-  it livelocks under N parallel writers; version counter kept for T15/T16
-  transitions. Migrations 0002 AND 0003 are applied to remote D1 `handmake-bot`
-  (2026-10-27), so `pnpm run deploy` in `apps/bot` is safe any time after merge.
-  Known accepted edge: DB write succeeded but reply failed → retry re-appends
-  text (at-least-once window, fixable by /discard; documented in code).
-  After merge: T15 (Preview, edit and regenerate).
+- **Active agent:** kimi-code
+- **Current task:** T15 — Preview, edit and regenerate (`apps/bot`, docs/03-tasks.md v2)
+- **Branch:** feat/T15-preview (to be created by kimi-code)
+- **Last commit:** `4cffdad feat: T14 draft state machine (core FSM + bot collection in D1) (#22)`
+- **Next step:** kimi-code implements T15. T14 merged 2026-10-27 after two review rounds (album race fixed:
+  atomic SQL appends, one collecting draft per chat via migration 0003, update_id dedupe).
+  Use `D1DraftStore.update(draft, expectedVersion)` with retry for whole-state transitions
+  (collecting → translating → ready). Review note from PR #22: `processed_updates` also records
+  update_ids of refused (non-allow-listed) senders, which breaks the letter of A6 ("no D1 row");
+  move the dedupe write behind the allow-list gate, or record only allow-listed updates.
+  Migrations 0002 and 0003 are applied to remote D1. The Worker still runs T13 code: Volodymyr runs
+  `pnpm run deploy` in `apps/bot` (also activates the daily cleanup cron).
+  Known accepted edge: DB write succeeded but reply failed → retry re-appends text (at-least-once window).
   Bot is deployed (2026-10-27): D1 `handmake-bot`, Worker `handmake-bot.shemchukaga.workers.dev`, webhook set,
   `database_id` in `wrangler.toml` (PR #20). Worker secrets set: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
   `TELEGRAM_ALLOWED_USER_IDS`. Redeploy with `pnpm run deploy` (not `pnpm deploy`, which is a pnpm built-in).
@@ -42,7 +40,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19); T14 merged (PR #22).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
