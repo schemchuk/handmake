@@ -35,9 +35,7 @@ export function buildPostFromPayload(
     tenant: tenant.id,
     channels: Object.keys(tenant.channels),
     photos: payload.fileIds.map((_, i) => `photo-${i + 1}.jpg`),
-    versions: Object.fromEntries(
-      langs.map((lang) => [lang, { provenance: payload.provenance }]),
-    ),
+    versions: Object.fromEntries(langs.map((lang) => [lang, { provenance: payload.provenance }])),
     texts,
   };
 }
