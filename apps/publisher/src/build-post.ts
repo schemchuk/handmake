@@ -19,6 +19,14 @@ export function buildPostFromPayload(
   deps: BuildPostDeps = {},
 ): Post {
   const now = deps.now ?? new Date();
+  // Key order decides the primary language (album caption) in renderTelegram.
+  // The dispatch payload's order is not reliable (GitHub's toJson sorts keys,
+  // so "de" came before "uk"), hence re-order by the tenant's languages.
+  const langs = [
+    ...tenant.languages.filter((lang) => lang in payload.texts),
+    ...Object.keys(payload.texts).filter((lang) => !tenant.languages.includes(lang)),
+  ];
+  const texts = Object.fromEntries(langs.map((lang) => [lang, payload.texts[lang]!]));
   return {
     id: isUlid(payload.draftId) ? payload.draftId : (deps.newId?.() ?? newUlid(now)),
     date: now.toISOString(),
@@ -28,8 +36,8 @@ export function buildPostFromPayload(
     channels: Object.keys(tenant.channels),
     photos: payload.fileIds.map((_, i) => `photo-${i + 1}.jpg`),
     versions: Object.fromEntries(
-      Object.keys(payload.texts).map((lang) => [lang, { provenance: payload.provenance }]),
+      langs.map((lang) => [lang, { provenance: payload.provenance }]),
     ),
-    texts: payload.texts,
+    texts,
   };
 }
