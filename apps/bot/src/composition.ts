@@ -3,6 +3,7 @@ import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
 import { createTenantLookup } from './allow-list';
+import type { TenantLookup } from './allow-list';
 import { createBot } from './bot';
 import type { AppContext } from './context';
 import { createD1DraftStore } from './draft-store';
@@ -39,22 +40,30 @@ export function secretsEqual(expected: string, provided: string): boolean {
   return diff === 0;
 }
 
-/** Extracts Telegram's update_id from a webhook request body (undefined if
- * the body is not a Telegram update). */
-async function updateIdOf(request: Request): Promise<number | undefined> {
-  const body: unknown = await request
+interface TelegramUpdateBody {
+  update_id?: unknown;
+  message?: { from?: { id?: unknown } };
+  callback_query?: { from?: { id?: unknown } };
+}
+
+/** Parses the webhook body once; every guard below reads the same object. */
+async function bodyOf(request: Request): Promise<unknown> {
+  return request
     .clone()
     .json()
     .catch(() => undefined);
-  if (
-    body !== null &&
-    typeof body === 'object' &&
-    'update_id' in body &&
-    typeof body.update_id === 'number'
-  ) {
-    return body.update_id;
-  }
-  return undefined;
+}
+
+function updateIdOf(body: unknown): number | undefined {
+  const updateId = (body as TelegramUpdateBody | null | undefined)?.update_id;
+  return typeof updateId === 'number' ? updateId : undefined;
+}
+
+/** Sender of the update, whether it came as a message or a button press. */
+function senderIdOf(body: unknown): number | undefined {
+  const update = body as TelegramUpdateBody | null | undefined;
+  const from = update?.message?.from ?? update?.callback_query?.from;
+  return typeof from?.id === 'number' ? from.id : undefined;
 }
 
 /** Composition root: wires secrets/bindings to the bot (ADR 007). */
@@ -64,6 +73,13 @@ export function createApp(env: Env, texts: BotTexts): App {
   // 500, for unauthenticated callers (PR #19 review note 2).
   let bot: Bot<AppContext> | undefined;
   let handleUpdate: ((request: Request) => Promise<Response>) | undefined;
+  // Cached for the dedupe gate below; parsing the allow-list secret once per
+  // app instance, not once per request.
+  let tenantLookup: TenantLookup | undefined;
+  function lookup(): TenantLookup {
+    tenantLookup ??= createTenantLookup(env.TELEGRAM_ALLOWED_USER_IDS);
+    return tenantLookup;
+  }
   function build(): (request: Request) => Promise<Response> {
     if (!handleUpdate) {
       bot = createBot({
@@ -98,13 +114,19 @@ export function createApp(env: Env, texts: BotTexts): App {
       // successfully are recorded by update_id and exact redeliveries are
       // dropped (handled-failed updates are NOT recorded, so a genuine
       // retry after an error re-runs normally).
-      const updateId = await updateIdOf(request);
-      const processed = createProcessedUpdateTracker(env.DB);
-      if (updateId !== undefined && (await processed.wasProcessed(updateId))) {
+      //
+      // The dedupe write is scoped to allow-listed senders: a refused
+      // stranger must leave no trace in D1 (A6, PR #22 review note).
+      const body = await bodyOf(request);
+      const updateId = updateIdOf(body);
+      const senderId = senderIdOf(body);
+      const allowListed = senderId !== undefined && lookup()(senderId) !== undefined;
+      const processed = allowListed ? createProcessedUpdateTracker(env.DB) : undefined;
+      if (processed && updateId !== undefined && (await processed.wasProcessed(updateId))) {
         return new Response('ok');
       }
       const response = await build()(request);
-      if (updateId !== undefined && response.ok) {
+      if (processed && updateId !== undefined && response.ok) {
         await processed.markProcessed(updateId);
       }
       return response;

@@ -133,6 +133,23 @@ describe('webhook retry dedupe', () => {
     expect(open?.draft.texts['ua']).toBe('hello');
   });
 
+  it('refused strangers leave no trace in the dedupe table (A6)', async () => {
+    const db = await makeD1();
+    const env = makeEnv({ DB: db });
+    const app = createApp(env, botTexts);
+    const calls = mockTelegramApi(app.bot);
+    const update = { ...textUpdate(999, '/start'), update_id: 44 };
+
+    await app.handle(webhookRequest(env, update));
+    await app.handle(webhookRequest(env, update));
+
+    // No dedupe for strangers: each delivery is processed (two refusals)…
+    expect(sentTexts(calls)).toEqual([botTexts.refusalText, botTexts.refusalText]);
+    // …and nothing was recorded in D1.
+    const tracker = createProcessedUpdateTracker(db);
+    expect(await tracker.wasProcessed(44)).toBe(false);
+  });
+
   it('a failed update is not recorded, so an error-retry re-runs it', async () => {
     const db = await makeD1();
     const env = makeEnv({ DB: db });
