@@ -1,10 +1,9 @@
-import { createDraft, DraftLimitError, maxDraftPhotos, transitionDraft } from '@handmake/core';
-import type { Draft } from '@handmake/core';
+import { maxDraftPhotos } from '@handmake/core';
 import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
-import type { D1DraftStore } from './draft-store';
+import type { D1DraftStore, StoredDraft } from './draft-store';
 import type { BotTexts } from './texts';
 
 export interface CreateBotOptions {
@@ -13,6 +12,11 @@ export interface CreateBotOptions {
   resolveTenant: TenantLookup;
   texts: BotTexts;
 }
+
+/** How often an append retries when the draft vanishes mid-flight (a racing
+ * /discard) before giving up. Content appends themselves are single atomic
+ * D1 statements, so no other retry is needed. */
+const maxVanishedRetries = 1;
 
 export function createBot(options: CreateBotOptions): Bot<AppContext> {
   const bot = new Bot<AppContext>(options.token);
@@ -41,12 +45,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   bot.command('new', async (ctx) => {
     const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx));
     if (existing) {
-      await ctx.reply(texts.draftExistsText(existing.photoRefs.length));
+      await ctx.reply(texts.draftExistsText(existing.draft.photoRefs.length));
       return;
     }
-    const draft = createDraft(ctx.tenantId, crypto.randomUUID(), new Date());
-    await ctx.drafts.create(draft, chatId(ctx));
-    await ctx.reply(texts.draftCreatedText(draft.photoRefs.length));
+    const created = await ctx.drafts.getOrCreateCollecting(ctx.tenantId, chatId(ctx), new Date());
+    await ctx.reply(texts.draftCreatedText(created.draft.photoRefs.length));
   });
 
   bot.command('discard', async (ctx) => {
@@ -55,7 +58,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       await ctx.reply(texts.discardNothingText);
       return;
     }
-    await ctx.drafts.delete(existing.tenantId, existing.draftId);
+    await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId);
     await ctx.reply(texts.discardDoneText);
   });
 
@@ -89,10 +92,8 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   return bot;
 
   async function collectText(ctx: AppContext, text: string): Promise<void> {
-    const draft = await openDraft(ctx);
-    const updated = transitionDraft(draft, { type: 'addText', text }, new Date());
-    await ctx.drafts.save(updated);
-    await ctx.reply(texts.textSavedText(updated.photoRefs.length));
+    const stored = await appendTextToOpenDraft(ctx, text);
+    await ctx.reply(texts.textSavedText(stored.draft.photoRefs.length));
   }
 
   async function collectPhoto(
@@ -106,22 +107,15 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     if (!largest) {
       throw new Error('photo message carries no photo sizes');
     }
-    const fileId = largest.file_id;
-    const draft = await openDraft(ctx);
-    try {
-      let updated = transitionDraft(draft, { type: 'addPhoto', fileId }, new Date());
-      if (caption) {
-        updated = transitionDraft(updated, { type: 'addText', text: caption }, new Date());
-      }
-      await ctx.drafts.save(updated);
-      await ctx.reply(texts.photoSavedText(updated.photoRefs.length));
-    } catch (error) {
-      if (error instanceof DraftLimitError) {
-        await ctx.reply(texts.photoLimitText(maxDraftPhotos));
-        return;
-      }
-      throw error;
+    let stored = await appendPhotoToOpenDraft(ctx, largest.file_id);
+    if (stored === 'limit') {
+      await ctx.reply(texts.photoLimitText(maxDraftPhotos));
+      return;
     }
+    if (caption) {
+      stored = await appendTextToOpenDraft(ctx, caption);
+    }
+    await ctx.reply(texts.photoSavedText(stored.draft.photoRefs.length));
   }
 
   async function collectDocument(
@@ -135,33 +129,71 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       await ctx.reply(texts.unsupportedFileText(document.file_name ?? 'без назви'));
       return;
     }
-    const draft = await openDraft(ctx);
-    try {
-      const updated = transitionDraft(
-        draft,
-        { type: 'addPhoto', fileId: document.file_id },
+    const stored = await appendPhotoToOpenDraft(ctx, document.file_id);
+    if (stored === 'limit') {
+      await ctx.reply(texts.photoLimitText(maxDraftPhotos));
+      return;
+    }
+    await ctx.reply(texts.photoSavedText(stored.draft.photoRefs.length));
+  }
+
+  /**
+   * Append one photo to the chat's collecting draft and return the draft as
+   * stored. The append is a single atomic D1 statement — parallel album
+   * messages serialize at SQLite and cannot lose each other or bypass the
+   * limit. Only a racing /discard (draft vanished) triggers one recreate
+   * and retry.
+   */
+  async function appendPhotoToOpenDraft(
+    ctx: AppContext,
+    fileId: string,
+  ): Promise<StoredDraft | 'limit'> {
+    for (let attempt = 0; ; attempt++) {
+      const stored = await ctx.drafts.getOrCreateCollecting(ctx.tenantId, chatId(ctx), new Date());
+      const result = await ctx.drafts.appendPhoto(
+        ctx.tenantId,
+        stored.draft.draftId,
+        fileId,
+        maxDraftPhotos,
         new Date(),
       );
-      await ctx.drafts.save(updated);
-      await ctx.reply(texts.photoSavedText(updated.photoRefs.length));
-    } catch (error) {
-      if (error instanceof DraftLimitError) {
-        await ctx.reply(texts.photoLimitText(maxDraftPhotos));
-        return;
+      if (result === 'added') {
+        return storedRefreshed(ctx, stored.draft.draftId);
       }
-      throw error;
+      if (result === 'limit') {
+        return 'limit';
+      }
+      if (attempt >= maxVanishedRetries) {
+        throw new Error('collecting draft keeps vanishing; giving up');
+      }
     }
   }
 
-  /** The collecting draft for this chat, creating it on first content. */
-  async function openDraft(ctx: AppContext): Promise<Draft> {
-    const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx));
-    if (existing) {
-      return existing;
+  async function appendTextToOpenDraft(ctx: AppContext, text: string): Promise<StoredDraft> {
+    for (let attempt = 0; ; attempt++) {
+      const stored = await ctx.drafts.getOrCreateCollecting(ctx.tenantId, chatId(ctx), new Date());
+      const applied = await ctx.drafts.appendText(
+        ctx.tenantId,
+        stored.draft.draftId,
+        text,
+        new Date(),
+      );
+      if (applied) {
+        return storedRefreshed(ctx, stored.draft.draftId);
+      }
+      if (attempt >= maxVanishedRetries) {
+        throw new Error('collecting draft keeps vanishing; giving up');
+      }
     }
-    const draft = createDraft(ctx.tenantId, crypto.randomUUID(), new Date());
-    await ctx.drafts.create(draft, chatId(ctx));
-    return draft;
+  }
+
+  /** Re-read a just-written draft so replies report current counts. */
+  async function storedRefreshed(ctx: AppContext, draftId: string) {
+    const stored = await ctx.drafts.get(ctx.tenantId, draftId);
+    if (!stored) {
+      throw new Error('draft vanished right after writing it');
+    }
+    return stored;
   }
 }
 

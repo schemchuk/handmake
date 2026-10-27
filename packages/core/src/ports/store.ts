@@ -51,7 +51,10 @@ export interface Draft {
   updatedAt: string;
 }
 
-/** Draft persistence for the bot. D1 now; the state machine is pure (T14). */
+/** Draft persistence for the bot. D1 now; the state machine is pure (T14).
+ * The D1 implementation adds optimistic locking (a version counter quoted on
+ * every write) and one-collecting-draft-per-chat enforcement on top of this
+ * minimal port, because the Worker handles Telegram updates concurrently. */
 export interface DraftStore {
   get(tenantId: string, draftId: string): Promise<Draft | undefined>;
   save(draft: Draft): Promise<void>;

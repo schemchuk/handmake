@@ -59,7 +59,7 @@ describe('allow-list middleware (A6)', () => {
     // and nothing was stored for anyone.
     const stored = await drafts.listByState(allowed.tenantId, 'collecting');
     expect(stored).toHaveLength(1);
-    expect(stored[0]?.texts['ua']).toBe('hello');
+    expect(stored[0]?.draft.texts['ua']).toBe('hello');
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0), botTexts.refusalText]);
   });
 
@@ -105,7 +105,7 @@ describe('collecting content', () => {
 
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0), botTexts.textSavedText(0)]);
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
-    expect(open?.texts['ua']).toBe('Привіт!\n\nДругий абзац');
+    expect(open?.draft.texts['ua']).toBe('Привіт!\n\nДругий абзац');
   });
 
   it('a photo stores the largest size as a file_id', async () => {
@@ -113,15 +113,15 @@ describe('collecting content', () => {
 
     expect(sentTexts(calls)).toEqual([botTexts.photoSavedText(1)]);
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
-    expect(open?.photoRefs).toEqual(['large']);
+    expect(open?.draft.photoRefs).toEqual(['large']);
   });
 
   it('a photo caption is collected as text too', async () => {
     await bot.handleUpdate(photoUpdate(allowed.userId, ['p1'], 'Підпис до фото'));
 
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
-    expect(open?.photoRefs).toEqual(['p1']);
-    expect(open?.texts['ua']).toBe('Підпис до фото');
+    expect(open?.draft.photoRefs).toEqual(['p1']);
+    expect(open?.draft.texts['ua']).toBe('Підпис до фото');
   });
 
   it('a JPEG document is collected like a photo', async () => {
@@ -129,7 +129,7 @@ describe('collecting content', () => {
 
     expect(sentTexts(calls)).toEqual([botTexts.photoSavedText(1)]);
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
-    expect(open?.photoRefs).toEqual(['doc-jpeg']);
+    expect(open?.draft.photoRefs).toEqual(['doc-jpeg']);
   });
 
   it('an 11th photo is politely refused and stays out of the draft', async () => {
@@ -140,7 +140,20 @@ describe('collecting content', () => {
 
     expect(sentTexts(calls).at(-1)).toBe(botTexts.photoLimitText(10));
     const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
-    expect(open?.photoRefs).toHaveLength(10);
+    expect(open?.draft.photoRefs).toHaveLength(10);
+  });
+
+  it('an album of photos arriving in parallel lands in one draft, none lost', async () => {
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        bot.handleUpdate(photoUpdate(allowed.userId, [`album-${i}`])),
+      ),
+    );
+
+    expect(await drafts.listByState(allowed.tenantId, 'collecting')).toHaveLength(1);
+    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId));
+    expect(open?.draft.photoRefs).toHaveLength(10);
+    expect(new Set(open?.draft.photoRefs).size).toBe(10);
   });
 });
 
