@@ -10,7 +10,9 @@
   claude-code runs the A1-A9 checklist with him on the test channel and writes README + runbook.
   Switch to live: set `PUBLISH_LIVE = "true"` in `apps/bot/wrangler.toml` and redeploy, only on
   Volodymyr's go. Runbook items: docs/review-notes.md "Runbook (T17)".
-- **Blocked on:** Volodymyr: deploy of T15+T16.
+- **Blocked on:** nothing. Live E2E 2026-10-27: bot publish to test channel worked (run 40525514688)
+  after fixes #25 (Worker load), #26 (GitHub User-Agent), #27 (language order). Bot switched to the
+  LIVE channel (`PUBLISH_LIVE = "true"`) on Volodymyr's go; he redeploys.
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 

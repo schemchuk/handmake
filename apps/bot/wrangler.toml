@@ -19,8 +19,8 @@ crons = ["29 3 * * *"]
 
 # Repository the publish dispatch targets (repository_dispatch → publish.yml).
 # Not a secret; the fine-grained token is a Worker secret (GITHUB_DISPATCH_TOKEN).
-# PUBLISH_LIVE: "true" sends bot dispatches to the LIVE channel; "false" (now,
-# and until Volodymyr's go in the T17 E2E) sends them to the test channel.
+# PUBLISH_LIVE: "true" (since 2026-10-27, Volodymyr's go) sends bot dispatches to the LIVE channel; "false"
+# sends them to the test channel.
 [vars]
 GITHUB_REPO = "schemchuk/handmake"
-PUBLISH_LIVE = "false"
+PUBLISH_LIVE = "true"
