@@ -3,9 +3,18 @@
  * publisher CLI) wires concrete implementations in its composition root.
  */
 
+import type { Provenance } from '../post';
+
 export interface PublishJob {
   tenantId: string;
+  /** Stable id: the draft id doubles as the post id and idempotency key. */
   postId: string;
+  /** Language versions to publish; non-empty, Ukrainian at minimum. */
+  texts: Record<string, string>;
+  /** Opaque photo refs (Telegram file_ids); downloaded inside the pipeline. */
+  fileIds: string[];
+  /** Dominant provenance; the publisher stamps it on every version. */
+  provenance: Provenance;
 }
 
 /** Runs a publish job. GitHub Actions via repository_dispatch now. */

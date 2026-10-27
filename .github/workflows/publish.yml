@@ -21,7 +21,8 @@ on:
       live:
         description: >-
           Publish to the LIVE channel. Leave off to send to the private test
-          channel (repository_dispatch from the bot always goes live).
+          channel (bot dispatches go live only while its PUBLISH_LIVE var is
+          "true", i.e. after the T17 E2E on the test channel).
         required: false
         type: boolean
         default: false
@@ -55,17 +56,22 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Write dispatch payload
+        # client_payload may carry bot-only routing keys (live); the
+        # publisher's payload schema is strict, so strip them here.
         env:
           DISPATCH_PAYLOAD: ${{ inputs.payload || toJson(github.event.client_payload) }}
-        run: printf '%s' "$DISPATCH_PAYLOAD" > "$RUNNER_TEMP/payload.json"
+        run: printf '%s' "$DISPATCH_PAYLOAD" | jq 'del(.live)' > "$RUNNER_TEMP/payload.json"
 
       - name: Publish to channels
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          # Manual runs go to the private test channel unless live is ticked;
-          # the bot's repository_dispatch always publishes to the live channel.
+          # Live channel only when explicitly asked for: the live tick on a
+          # manual run, or client_payload.live from the bot (its PUBLISH_LIVE
+          # var). Everything else — every bot dispatch while PUBLISH_LIVE is
+          # "false" — goes to the private test channel.
           TELEGRAM_CHANNEL_ID: >-
-            ${{ ((github.event_name == 'repository_dispatch' || inputs.live)
+            ${{ (((github.event_name == 'workflow_dispatch' && inputs.live)
+              || (github.event_name == 'repository_dispatch' && github.event.client_payload.live == true))
               && secrets.TELEGRAM_CHANNEL_ID) || secrets.TELEGRAM_TEST_CHANNEL_ID }}
           AUTHOR_CHAT_ID: ${{ secrets.AUTHOR_CHAT_ID }}
           OPERATOR_CHAT_ID: ${{ secrets.OPERATOR_CHAT_ID }}

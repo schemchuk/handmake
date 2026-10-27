@@ -1,5 +1,6 @@
 import type { Bot } from 'grammy';
-import type { TranslationRequest, TranslationResult, Translator } from '@handmake/core';
+import { isUlid } from '@handmake/core';
+import type { PublishJob, TranslationRequest, TranslationResult, Translator } from '@handmake/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createBot } from '../src/bot';
@@ -31,6 +32,9 @@ let translateImpl: (request: TranslationRequest) => Promise<TranslationResult>;
 let translator: Translator;
 /** Background tasks the bot scheduled (production: waitUntil). */
 let backgroundTasks: Promise<void>[];
+/** Publish jobs the fake runner received; swap publishImpl to fail a dispatch. */
+let publishJobs: PublishJob[];
+let publishImpl: (job: PublishJob) => Promise<void>;
 
 /** Awaits everything the bot deferred past the webhook response. */
 async function flushBackground(): Promise<void> {
@@ -48,6 +52,10 @@ beforeEach(async () => {
   drafts = createD1DraftStore(db);
   translateCalls = [];
   backgroundTasks = [];
+  publishJobs = [];
+  publishImpl = async (job) => {
+    publishJobs.push(job);
+  };
   translateImpl = async (request) => ({ text: `DE:${request.text}` });
   translator = {
     translate: async (request) => {
@@ -61,6 +69,9 @@ beforeEach(async () => {
     resolveTenant: (userId) => (userId === allowed.userId ? allowed.tenantId : undefined),
     texts: botTexts,
     translator,
+    publishRunner: {
+      run: async (job) => publishImpl(job),
+    },
     background: (task) => {
       backgroundTasks.push(task());
     },
@@ -332,12 +343,35 @@ describe('preview buttons', () => {
     expect(ready[0]?.draft.texts['de']).toBe('DE:Привіт!');
   });
 
-  it('Publish is not wired yet and says so', async () => {
+  it('Publish asks the face-consent question first (F10)', async () => {
     await makeReadyDraft();
     await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish'));
 
-    expect(sentTexts(calls).at(-1)).toBe(botTexts.publishNotAvailableText);
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.publishConsentText);
+    const keyboard = (
+      lastSendMessage(calls)?.['reply_markup'] as {
+        inline_keyboard: { callback_data: string }[][];
+      }
+    ).inline_keyboard.flat();
+    expect(keyboard.map((b) => b.callback_data)).toEqual([
+      'draft:publish:confirm',
+      'draft:publish:cancel',
+    ]);
+    // Question only: nothing claimed, nothing dispatched.
     expect(await drafts.listByState(allowed.tenantId, 'ready')).toHaveLength(1);
+    expect(publishJobs).toHaveLength(0);
+  });
+
+  it('cancel returns to the preview without touching the draft', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish'));
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:cancel'),
+    );
+
+    expect(sentTexts(calls).at(-1)).toContain(botTexts.previewHeader(0));
+    expect(await drafts.listByState(allowed.tenantId, 'ready')).toHaveLength(1);
+    expect(publishJobs).toHaveLength(0);
   });
 
   it('Discard deletes the draft', async () => {
@@ -352,6 +386,85 @@ describe('preview buttons', () => {
     await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish'));
 
     expect(sentTexts(calls)).toEqual([botTexts.draftNoneText]);
+  });
+});
+
+describe('publishing (T16)', () => {
+  async function makeReadyDraft(): Promise<void> {
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(photoUpdate(allowed.userId, ['p1', 'p2']));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
+  }
+
+  it('confirm claims ready → publishing, answers publishing… and dispatches', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+    await flushBackground();
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.publishingText);
+    expect(publishJobs).toHaveLength(1);
+    expect(publishJobs[0]).toMatchObject({
+      tenantId: allowed.tenantId,
+      texts: { uk: 'Привіт!', de: 'DE:Привіт!' },
+      fileIds: ['p2'],
+      provenance: 'ai-assisted',
+    });
+    // The draft id is the publish idempotency key: it must be a ULID.
+    expect(isUlid(publishJobs[0]!.postId)).toBe(true);
+    expect(await drafts.listByState(allowed.tenantId, 'publishing')).toHaveLength(1);
+  });
+
+  it('a double confirm dispatches exactly once (A4)', async () => {
+    await makeReadyDraft();
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+    await flushBackground();
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.draftBusyText);
+    expect(publishJobs).toHaveLength(1);
+    expect(await drafts.listByState(allowed.tenantId, 'publishing')).toHaveLength(1);
+  });
+
+  it('a confirm on a non-ready draft is refused without a dispatch', async () => {
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Просто текст'));
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.publishNotReadyText);
+    expect(publishJobs).toHaveLength(0);
+  });
+
+  it('a failed dispatch reverts to ready and asks the author to retry', async () => {
+    publishImpl = async () => {
+      throw new Error('GitHub down');
+    };
+    await makeReadyDraft();
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+    await flushBackground();
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.publishFailedText);
+    const ready = await drafts.listByState(allowed.tenantId, 'ready');
+    expect(ready).toHaveLength(1);
+    // The author can retry from the same draft.
+    publishImpl = async (job) => {
+      publishJobs.push(job);
+    };
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish:confirm'),
+    );
+    await flushBackground();
+    expect(publishJobs).toHaveLength(1);
+    expect(await drafts.listByState(allowed.tenantId, 'publishing')).toHaveLength(1);
   });
 });
 

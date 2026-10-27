@@ -10,4 +10,11 @@ export interface Env {
   TELEGRAM_ALLOWED_USER_IDS: string;
   /** Anthropic API key for the draft translator (ADR 004). Secret value. */
   ANTHROPIC_API_KEY: string;
+  /** Fine-grained GitHub token for repository_dispatch (H4/H5). Secret value. */
+  GITHUB_DISPATCH_TOKEN: string;
+  /** "owner/repo" the dispatch targets; a plain var from wrangler.toml. */
+  GITHUB_REPO: string;
+  /** "true" sends bot dispatches to the live channel; anything else (and
+   * until Volodymyr's go in the T17 E2E) keeps them on the test channel. */
+  PUBLISH_LIVE: string;
 }

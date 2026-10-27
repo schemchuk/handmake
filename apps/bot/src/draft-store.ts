@@ -1,10 +1,16 @@
-import { createDraft } from '@handmake/core';
+import { createDraft, newUlid } from '@handmake/core';
 import type { Draft, DraftState } from '@handmake/core';
 
 /** A 'translating' draft older than this may be claimed again: the background
  * task that claimed it died (e.g. runtime cancellation) without recording a
  * result. Two minutes cover any healthy translation with a wide margin. */
 export const translationStaleMs = 2 * 60 * 1000;
+
+/** A 'publishing' draft older than this may be claimed again: the background
+ * dispatch died without a result. Five minutes are far beyond a healthy
+ * `repository_dispatch` round trip; reclaiming re-dispatches the same draft
+ * id, and the pipeline dedupes on it (F11), so a late reclaim is safe. */
+export const publishingStaleMs = 5 * 60 * 1000;
 
 const staleEpoch = new Date(0);
 
@@ -110,6 +116,21 @@ export interface D1DraftStore {
     target: DraftEditTarget | null,
     now: Date,
   ): Promise<boolean>;
+  /**
+   * Claims the draft for publishing: moves it to 'publishing' in a single
+   * statement if it is 'ready', or if it is stuck in 'publishing' since
+   * before `staleBefore` (the background dispatch died). A losing caller gets
+   * undefined — a double press or a webhook retry must never dispatch twice
+   * (A4).
+   */
+  claimPublishing(
+    tenantId: string,
+    draftId: string,
+    now: Date,
+    staleBefore?: Date,
+  ): Promise<StoredDraft | undefined>;
+  /** Moves 'publishing' → 'ready' when the dispatch itself failed. */
+  revertPublishing(tenantId: string, draftId: string, now: Date): Promise<boolean>;
   /**
    * Replaces one language version with the author's message and disarms the
    * edit. Atomic and guarded on the pending target, so a stray message
@@ -265,7 +286,9 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async getOrCreateCollecting(tenantId, chatId, now) {
-      const draft = createDraft(tenantId, crypto.randomUUID(), now);
+      // The draft id must be a ULID: on publish it becomes the post id and
+      // the pipeline's idempotency key, and the publisher refuses non-ULIDs.
+      const draft = createDraft(tenantId, newUlid(now), now);
       try {
         await db
           .prepare(
@@ -317,6 +340,31 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .run();
       return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
+    },
+
+    async claimPublishing(tenantId, draftId, now, staleBefore) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'publishing', updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ?
+             AND (status = 'ready' OR (status = 'publishing' AND updated_at < ?))`,
+        )
+        .bind(now.toISOString(), tenantId, draftId, (staleBefore ?? staleEpoch).toISOString())
+        .run();
+      return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
+    },
+
+    async revertPublishing(tenantId, draftId, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'ready', updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'publishing'`,
+        )
+        .bind(now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes === 1;
     },
 
     async markTranslated(tenantId, draftId, german, now) {

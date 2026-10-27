@@ -1,8 +1,7 @@
-import { createDraft, maxDraftPhotos, transitionDraft } from '@handmake/core';
+import { createDraft, isUlid, maxDraftPhotos, transitionDraft } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
-import { createD1DraftStore } from '../src/draft-store';
-import { translationStaleMs } from '../src/draft-store';
+import { createD1DraftStore, publishingStaleMs, translationStaleMs } from '../src/draft-store';
 import type { D1DraftStore } from '../src/draft-store';
 import { makeD1 } from './helpers';
 
@@ -353,5 +352,85 @@ describe('stale translation claim (B1 recovery)', () => {
     );
     expect(reclaimed?.draft.draftId).toBe(draftId);
     expect(reclaimed?.draft.state).toBe('translating');
+  });
+});
+
+describe('T16 publishing claim (A4)', () => {
+  /** A ready draft, the state the Publish flow claims from. */
+  async function makeReady(store: D1DraftStore): Promise<string> {
+    await appendText(store, tenantA, 'chat-1', 'Привіт!');
+    const stored = await store.findCollectingForChat(tenantA, 'chat-1');
+    const draftId = stored!.draft.draftId;
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
+    await store.markTranslated(tenantA, draftId, 'Hallo!', t1);
+    return draftId;
+  }
+
+  it('new draft ids are ULIDs: the draft id is the publish idempotency key', async () => {
+    const store = await makeStore();
+    const stored = await store.getOrCreateCollecting(tenantA, 'chat-1', t0);
+    expect(isUlid(stored.draft.draftId)).toBe(true);
+  });
+
+  it('claimPublishing lets exactly one caller through', async () => {
+    const store = await makeStore();
+    const draftId = await makeReady(store);
+
+    const [first, second] = await Promise.all([
+      store.claimPublishing(tenantA, draftId, t1),
+      store.claimPublishing(tenantA, draftId, t1),
+    ]);
+
+    expect([first === undefined, second === undefined].filter(Boolean)).toHaveLength(1);
+    const winner = first ?? second;
+    expect(winner?.draft.state).toBe('publishing');
+    // A third press while the dispatch runs finds nothing to claim.
+    expect(await store.claimPublishing(tenantA, draftId, t1)).toBeUndefined();
+  });
+
+  it('claimPublishing refuses drafts that are not ready', async () => {
+    const store = await makeStore();
+    await appendText(store, tenantA, 'chat-1', 'Привіт!');
+    const collecting = await store.findCollectingForChat(tenantA, 'chat-1');
+
+    expect(await store.claimPublishing(tenantA, collecting!.draft.draftId, t1)).toBeUndefined();
+    expect((await store.get(tenantA, collecting!.draft.draftId))?.draft.state).toBe('collecting');
+  });
+
+  it('revertPublishing moves the draft back to ready for a retry', async () => {
+    const store = await makeStore();
+    const draftId = await makeReady(store);
+    await store.claimPublishing(tenantA, draftId, t1);
+
+    expect(await store.revertPublishing(tenantA, draftId, t1)).toBe(true);
+    const stored = await store.get(tenantA, draftId);
+    expect(stored?.draft.state).toBe('ready');
+    // A second revert (racing retry) is a no-op.
+    expect(await store.revertPublishing(tenantA, draftId, t1)).toBe(false);
+  });
+
+  it('a fresh publishing row is not reclaimable; a stale one is', async () => {
+    const db = await makeD1();
+    const store = createD1DraftStore(db);
+    await appendText(store, tenantA, 'chat-1', 'Привіт!');
+    const collecting = await store.findCollectingForChat(tenantA, 'chat-1');
+    const draftId = collecting!.draft.draftId;
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
+    await store.markTranslated(tenantA, draftId, 'Hallo!', t1);
+    const staleBefore = new Date(t1.getTime() - publishingStaleMs);
+
+    await store.claimPublishing(tenantA, draftId, t1, staleBefore);
+    // Fresh claim of the 'publishing' row: nothing is stale yet.
+    expect(await store.claimPublishing(tenantA, draftId, t1, staleBefore)).toBeUndefined();
+
+    // The background dispatch died; the row ages past the stale window and
+    // a later press may re-dispatch (safe: the pipeline dedupes on the id).
+    await db
+      .prepare('UPDATE drafts SET updated_at = ? WHERE id = ?')
+      .bind('2026-10-27T09:59:00.000Z', draftId)
+      .run();
+    const reclaimed = await store.claimPublishing(tenantA, draftId, t1, staleBefore);
+    expect(reclaimed?.draft.draftId).toBe(draftId);
+    expect(reclaimed?.draft.state).toBe('publishing');
   });
 });

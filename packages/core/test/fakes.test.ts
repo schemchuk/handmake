@@ -57,8 +57,22 @@ describe('fakes', () => {
 
   it('FakePublishRunner and FakeNotifier record their calls', async () => {
     const runner = new FakePublishRunner();
-    await runner.run({ tenantId: 't', postId: 'p' });
-    expect(runner.jobs).toEqual([{ tenantId: 't', postId: 'p' }]);
+    await runner.run({
+      tenantId: 't',
+      postId: 'p',
+      texts: { uk: 'Hi' },
+      fileIds: ['file-1'],
+      provenance: 'human',
+    });
+    expect(runner.jobs).toEqual([
+      {
+        tenantId: 't',
+        postId: 'p',
+        texts: { uk: 'Hi' },
+        fileIds: ['file-1'],
+        provenance: 'human',
+      },
+    ]);
 
     const notifier = new FakeNotifier();
     await notifier.notify('operator', 'something failed');

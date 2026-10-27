@@ -17,6 +17,9 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     TELEGRAM_WEBHOOK_SECRET: 'webhook-secret',
     TELEGRAM_ALLOWED_USER_IDS: '{"11":"faden-und-stimmung"}',
     ANTHROPIC_API_KEY: 'test-key',
+    GITHUB_DISPATCH_TOKEN: 'test-dispatch-token',
+    GITHUB_REPO: 'owner/repo',
+    PUBLISH_LIVE: 'false',
     ...overrides,
   };
 }

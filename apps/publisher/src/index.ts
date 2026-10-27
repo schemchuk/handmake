@@ -12,7 +12,7 @@ export type { DispatchPayload } from './payload';
 export { runPublish, PublishError } from './publish';
 export type { PublishDeps, PublishResult } from './publish';
 export { loadTenantConfig } from './tenant-config';
-export { newUlid } from './ulid';
+export { newUlid } from '@handmake/core';
 export { MAX_LONG_SIDE, processPhoto } from './photos/process';
 export type { ProcessedPhoto } from './photos/process';
 export { TelegramMediaSource } from './photos/telegram-media-source';

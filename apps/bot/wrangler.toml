@@ -16,3 +16,11 @@ database_id = "4cae8a3e-9869-4dad-a2b8-ab046365999e"
 # deleted). UTC.
 [triggers]
 crons = ["29 3 * * *"]
+
+# Repository the publish dispatch targets (repository_dispatch → publish.yml).
+# Not a secret; the fine-grained token is a Worker secret (GITHUB_DISPATCH_TOKEN).
+# PUBLISH_LIVE: "true" sends bot dispatches to the LIVE channel; "false" (now,
+# and until Volodymyr's go in the T17 E2E) sends them to the test channel.
+[vars]
+GITHUB_REPO = "schemchuk/handmake"
+PUBLISH_LIVE = "false"
