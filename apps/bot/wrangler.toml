@@ -16,3 +16,8 @@ database_id = "4cae8a3e-9869-4dad-a2b8-ab046365999e"
 # deleted). UTC.
 [triggers]
 crons = ["29 3 * * *"]
+
+# Repository the publish dispatch targets (repository_dispatch → publish.yml).
+# Not a secret; the fine-grained token is a Worker secret (GITHUB_DISPATCH_TOKEN).
+[vars]
+GITHUB_REPO = "schemchuk/handmake"

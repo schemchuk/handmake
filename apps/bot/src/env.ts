@@ -10,4 +10,8 @@ export interface Env {
   TELEGRAM_ALLOWED_USER_IDS: string;
   /** Anthropic API key for the draft translator (ADR 004). Secret value. */
   ANTHROPIC_API_KEY: string;
+  /** Fine-grained GitHub token for repository_dispatch (H4/H5). Secret value. */
+  GITHUB_DISPATCH_TOKEN: string;
+  /** "owner/repo" the dispatch targets; a plain var from wrangler.toml. */
+  GITHUB_REPO: string;
 }

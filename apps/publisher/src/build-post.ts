@@ -1,8 +1,7 @@
-import { isUlid } from '@handmake/core';
+import { isUlid, newUlid } from '@handmake/core';
 import type { Post, TenantConfig } from '@handmake/core';
 
 import type { DispatchPayload } from './payload';
-import { newUlid } from './ulid';
 
 export interface BuildPostDeps {
   now?: Date;

@@ -10,6 +10,7 @@ import type { AppContext } from './context';
 import { createD1DraftStore } from './draft-store';
 import type { Env } from './env';
 import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './processed-updates';
+import { createGitHubActionsRunner } from './publish-runner';
 import type { BotTexts } from './texts';
 
 /** Header Telegram sends when the webhook was registered with a secret token. */
@@ -95,6 +96,10 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         translator: new ClaudeTranslator({
           systemPrompt: humanizeDePromptV1,
           apiKey: env.ANTHROPIC_API_KEY,
+        }),
+        publishRunner: createGitHubActionsRunner({
+          repo: env.GITHUB_REPO,
+          token: env.GITHUB_DISPATCH_TOKEN,
         }),
         background: (task) =>
           executionCtx ? executionCtx.waitUntil(task()) : void task().catch(() => undefined),

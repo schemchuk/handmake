@@ -1,11 +1,11 @@
 import { maxDraftPhotos } from '@handmake/core';
-import type { Translator } from '@handmake/core';
+import type { Draft, PublishJob, PublishRunner, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
 import type { D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
-import { translationStaleMs } from './draft-store';
+import { publishingStaleMs, translationStaleMs } from './draft-store';
 import { buildPreview } from './preview';
 import type { BotTexts } from './texts';
 
@@ -15,6 +15,8 @@ export interface CreateBotOptions {
   resolveTenant: TenantLookup;
   texts: BotTexts;
   translator: Translator;
+  /** Dispatches an approved draft to the publish pipeline (T16). */
+  publishRunner: PublishRunner;
   /**
    * Defers work past the webhook response (Cloudflare ExecutionContext
    * waitUntil in production; a collecting runner in tests). The AI call must
@@ -174,12 +176,53 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
 
     if (data === 'draft:publish') {
-      // T16 wires actual publishing; the draft is approved and waits.
+      // Consent first (F10: no identifiable faces without written consent);
+      // the confirm button re-reads the draft and claims it atomically.
       if (stored.draft.state !== 'ready') {
-        await ctx.reply(texts.regenUnavailableText);
+        await ctx.reply(texts.publishNotReadyText);
         return;
       }
-      await ctx.reply(texts.publishNotAvailableText);
+      await ctx.reply(texts.publishConsentText, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: texts.publishConfirmButton, callback_data: 'draft:publish:confirm' },
+              { text: texts.publishCancelButton, callback_data: 'draft:publish:cancel' },
+            ],
+          ],
+        },
+      });
+      return;
+    }
+
+    if (data === 'draft:publish:cancel') {
+      await sendPreview(ctx, stored);
+      return;
+    }
+
+    if (data === 'draft:publish:confirm') {
+      if (stored.draft.state === 'published') {
+        await ctx.reply(texts.draftFinishedText);
+        return;
+      }
+      // The guarded claim decides, not the state we just read: a fresh
+      // 'publishing' row means a racing press already dispatched (back off),
+      // a stale one means the background dispatch died and may be reclaimed.
+      const now = new Date();
+      const claimed = await ctx.drafts.claimPublishing(
+        ctx.tenantId,
+        stored.draft.draftId,
+        now,
+        publishingStaleCutoff(now),
+      );
+      if (!claimed) {
+        const fresh = await ctx.drafts.get(ctx.tenantId, stored.draft.draftId);
+        await ctx.reply(
+          fresh?.draft.state === 'publishing' ? texts.draftBusyText : texts.publishNotReadyText,
+        );
+        return;
+      }
+      await runPublish(ctx, claimed);
       return;
     }
 
@@ -326,6 +369,28 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     });
   }
 
+  /**
+   * The draft is 'publishing' in D1 before GitHub is touched, so a double
+   * press or a webhook retry can never dispatch twice (A4). The dispatch
+   * runs in `background` (the API round trip must not hold the webhook);
+   * on failure the draft reverts to 'ready' and the author is asked to
+   * retry. On success the pipeline itself notifies the author when the
+   * post is delivered (publisher notifier).
+   */
+  async function runPublish(ctx: AppContext, claimed: StoredDraft): Promise<void> {
+    const targetChat = chatId(ctx);
+    const job = publishJobOf(claimed.draft);
+    await ctx.reply(texts.publishingText);
+    options.background(async () => {
+      try {
+        await options.publishRunner.run(job);
+      } catch {
+        await ctx.drafts.revertPublishing(ctx.tenantId, claimed.draft.draftId, new Date());
+        await bot.api.sendMessage(targetChat, texts.publishFailedText).catch(() => undefined);
+      }
+    });
+  }
+
   /** Sends the author the rendered preview with its action keyboard. */
   async function sendPreview(ctx: AppContext, stored: StoredDraft): Promise<void> {
     const preview = buildPreview(stored.draft, texts);
@@ -464,4 +529,34 @@ function chatId(ctx: AppContext): string {
 /** Cutoff for reclaiming a 'translating' draft whose background task died. */
 function staleCutoff(now: Date): Date {
   return new Date(now.getTime() - translationStaleMs);
+}
+
+/** Cutoff for reclaiming a 'publishing' draft whose background dispatch died. */
+function publishingStaleCutoff(now: Date): Date {
+  return new Date(now.getTime() - publishingStaleMs);
+}
+
+/** Builds the dispatch job from the claimed draft; 'uk' stays the first key
+ * so renderTelegram keeps Ukrainian as the album-caption language. */
+function publishJobOf(draft: Draft): PublishJob {
+  const texts: Record<string, string> = {};
+  const uk = draft.texts['uk'];
+  const de = draft.texts['de'];
+  if (uk !== undefined && uk.trim() !== '') {
+    texts['uk'] = uk;
+  }
+  if (de !== undefined && de.trim() !== '') {
+    texts['de'] = de;
+  }
+  return {
+    tenantId: draft.tenantId,
+    postId: draft.draftId,
+    texts,
+    fileIds: draft.photoRefs,
+    // The payload carries one provenance for all versions; a German version
+    // exists only via the AI translator (or the author's fallback after a
+    // translation failure), so 'ai-assisted' over-reports rather than hides
+    // AI involvement.
+    provenance: texts['de'] !== undefined ? 'ai-assisted' : 'human',
+  };
 }

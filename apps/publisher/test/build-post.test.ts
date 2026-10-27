@@ -1,9 +1,8 @@
-import { parseTenantConfig } from '@handmake/core';
+import { newUlid, parseTenantConfig } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
 import { buildPostFromPayload } from '../src/build-post';
 import type { DispatchPayload } from '../src/payload';
-import { newUlid } from '../src/ulid';
 
 const tenant = parseTenantConfig(`
 id: faden-und-stimmung
