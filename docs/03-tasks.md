@@ -20,6 +20,8 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H4 | Fine-grained GitHub token: this repo only, permission "Contents: read and write" for `repository_dispatch`. | T16 |
 | H5 | Put secrets into GitHub Secrets and Worker secrets (names in `.env.example`). | T11, T16 |
 | H6 | ~~Decide O1 and O2~~ done 2026-10-21. | T05, T00, T10 |
+| H7 | Random `PUBLISH_CALLBACK_SECRET` (e.g. `openssl rand -hex 32`) as GitHub Secret and Worker secret. | T19 |
+| H8 | Instagram: author switches her account to Creator; Meta developer app with Instagram Login API; long-lived token and IG user ID as secrets. | T24 |
 
 ## Tasks
 
@@ -189,8 +191,73 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 - Acceptance: all A1-A9 checked and documented.
 - Tests: the checklist.
 
-## After the MVP (planned, not yet broken down)
-Publish callback and D1 published index (architecture 4.3) · work of the week poll (F19, ADR 008) ·
-Instagram adapter (phase 1b) · F18 announcements and reminders · F19 work of the week ·
+## Phase 1b (planned 2026-10-27, after the MVP went live)
+
+Same rules as above. ADR 009: keep each PR under ~400 changed non-test lines.
+
+### T18 — Published callback endpoint and D1 index (`bot`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T16
+- Change: `POST /callbacks/published` on the Worker, HMAC-SHA256 over the raw body with
+  `PUBLISH_CALLBACK_SECRET` (header `X-Handmake-Signature`, constant-time compare, 401 otherwise).
+  Body: `{tenantId, postId, date, photos: [repo paths], channels: {<channel>: "done" | "failed"}}`.
+  Moves the draft `publishing → published` in one guarded statement (idempotent: a second call is a
+  no-op 200). Migration `0005`: table `published_posts` (tenant_id, post_id, published_at, photos JSON),
+  insert-or-ignore. Old previews then answer `draftFinishedText` instead of "busy".
+- Acceptance: a valid call marks the draft published and indexes it once; bad/missing signature → 401
+  and nothing written; unknown draft → 200, index row still written (posts published by hand).
+- Tests: signature cases, idempotency, D1 transition guard.
+
+### T19 — Publisher sends the callback (`publisher`, workflow)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T18, H7 · Sensitive: touches `.github/workflows/`
+- Change: after the ledger commit, `publish` POSTs the T18 body to `PUBLISH_CALLBACK_URL` (repo variable,
+  the Worker URL) signed with `PUBLISH_CALLBACK_SECRET`. A callback failure never fails the publish: it
+  notifies the operator only. `publish.yml` passes the secret and variable. Remove the "stays publishing"
+  entry from docs/review-notes.md and the README runbook.
+- Acceptance: live publish → draft `published` in D1, one `published_posts` row.
+- Tests: signature matches T18's verifier (shared helper in `core`), callback failure path.
+
+### T20 — Meeting announcement and reminder (F18, `bot`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T18
+- Change: tenant config gets `announcements` (weekday/time for announcement and reminder, UA template
+  text). Worker cron creates a `ready` draft from the template (German via the translator) and sends the
+  author the usual preview; nothing is posted without her 🚀 (same rule as Q6). One draft per meeting
+  date (unique key), so cron retries do not duplicate.
+- Acceptance: on the configured time the author gets exactly one announcement preview and one reminder
+  preview per meeting.
+- Tests: schedule calculation in `Europe/Berlin` incl. DST change, uniqueness, template rendering.
+
+### T21 — Poll capability in the Telegram channel (F19 part 1, `channels`, `publisher`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T19
+- Change: post type `wotw-poll` (candidate photos + options); `renderTelegram` emits album then
+  `sendPoll` replying to it; the ledger stores the poll message ID; `TelegramChannel.closePoll`
+  (`stopPoll`) returns counts. ADR 008.
+- Acceptance: dry-run shows album + poll ops; re-run never sends a second poll.
+- Tests: render ops, ledger resume between album and poll, closePoll parsing.
+
+### T22 — Work-of-the-week candidates and poll draft (F19 part 2, `bot`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T21
+- Change: Monday cron (tenant `workOfWeek.opens`) takes the last 7 days from `published_posts`, one
+  photo per post, newest 10, and creates a `wotw-poll` draft for the author's preview and 🚀. Fewer than
+  2 candidates → no poll, the author is told. Runs only with `featureFlags.wotwPoll: true`.
+- Acceptance: one poll draft per week; feature flag off → nothing.
+- Tests: candidate selection, flag, idempotent cron.
+
+### T23 — Close poll, pick winner, result draft (F19 part 3, `bot`, `ai`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T22
+- Change: closing cron calls `closePoll`; most votes wins; zero votes, unreadable result or a tie →
+  `WinnerPicker` (Claude with the candidate photos, one-line reason). Creates a `wotw-result` draft
+  ("chosen by readers" / "chosen by AI") for the author's 🚀.
+- Acceptance: each case yields exactly one result draft with the right wording.
+- Tests: winner rules incl. ties and zero votes, mocked WinnerPicker.
+
+### T24 — Instagram adapter (phase 1b, `channels`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T19, H8
+- Change: `InstagramChannel` via Instagram Login API (container → publish, carousel for 2-10 photos),
+  German caption by default (tenant setting), 2200-char limit in the preview; channel enabled only when
+  configured (F12). Photos need public URLs: serve them from the repo's raw URLs of the committed post.
+- Acceptance: a live post appears on Instagram once; re-run skips it via the ledger.
+- Tests: mocked Graph API, carousel vs single photo, limit errors.
+
+## Later (not yet broken down)
 Mini App editor · scheduled publishing · website (phase 2) with Impressum / Datenschutzerklärung ·
-presentation slides.
+participant submissions (phase 3, needs Volodymyr's approval: personal data) · presentation slides.

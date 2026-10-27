@@ -1,14 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** post-MVP planning (break down "After the MVP" in docs/03-tasks.md), Dependabot PRs #15-#18
-- **Branch:** none
-- **Last commit:** see `git log -1` (T17 README + docs/e2e-mvp.md)
-- **Next step:** MVP done 2026-10-27: T17 closed (README setup/runbook, A1-A9 in docs/e2e-mvp.md;
-  A2/A6/A8 by automated tests on Volodymyr's call). Bot publishes to the LIVE channel. claude-code
-  triages Dependabot #15-#18 (workflow changes: Volodymyr's OK), then writes T18+ for kimi-code, first:
-  publish callback marks drafts `published` (architecture 4.3; fixes the "busy" reply on old previews).
-- **Blocked on:** nothing.
+- **Active agent:** kimi-code
+- **Current task:** T18 — Published callback endpoint and D1 index (`apps/bot`, docs/03-tasks.md "Phase 1b")
+- **Branch:** feat/T18-published-callback (to be created by kimi-code)
+- **Last commit:** see `git log -1`
+- **Next step:** kimi-code implements T18. MVP live since 2026-10-27 (T17: README, docs/e2e-mvp.md).
+  Phase 1b tasks T18-T24 written 2026-10-27. T19 needs H7 (callback secret) and is sensitive (workflow);
+  T24 needs H8 (Instagram Creator account + Meta app). Dependabot #15-#18 wait for Volodymyr's OK.
+- **Blocked on:** nothing for T18.
 - **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
   strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
