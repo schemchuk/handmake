@@ -2,6 +2,7 @@ import { createDraft, maxDraftPhotos, transitionDraft } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
 import { createD1DraftStore } from '../src/draft-store';
+import { translationStaleMs } from '../src/draft-store';
 import type { D1DraftStore } from '../src/draft-store';
 import { makeD1 } from './helpers';
 
@@ -320,5 +321,37 @@ describe('T15 translation and edit guards', () => {
     await store.claimTranslation(tenantA, draftId, ['collecting'], t1);
 
     expect(await store.setPendingEdit(tenantA, draftId, 'uk', t1)).toBe(false);
+  });
+});
+
+describe('stale translation claim (B1 recovery)', () => {
+  it('a fresh translating row is not reclaimable; a stale one is', async () => {
+    const db = await makeD1();
+    const store = createD1DraftStore(db);
+    await appendText(store, tenantA, 'chat-1', 'Привіт!');
+    const stored = await store.findCollectingForChat(tenantA, 'chat-1');
+    const draftId = stored!.draft.draftId;
+    const staleBefore = new Date(t1.getTime() - translationStaleMs);
+
+    await store.claimTranslation(tenantA, draftId, ['collecting'], t1, staleBefore);
+    // Fresh claim of the 'translating' row: nothing is stale yet.
+    expect(
+      await store.claimTranslation(tenantA, draftId, ['collecting'], t1, staleBefore),
+    ).toBeUndefined();
+
+    // The background task died; the row ages past the stale window.
+    await db
+      .prepare('UPDATE drafts SET updated_at = ? WHERE id = ?')
+      .bind('2026-10-27T10:00:00.000Z', draftId)
+      .run();
+    const reclaimed = await store.claimTranslation(
+      tenantA,
+      draftId,
+      ['collecting'],
+      t1,
+      staleBefore,
+    );
+    expect(reclaimed?.draft.draftId).toBe(draftId);
+    expect(reclaimed?.draft.state).toBe('translating');
   });
 });

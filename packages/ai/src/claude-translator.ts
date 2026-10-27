@@ -8,6 +8,9 @@ import { TranslationError } from './errors';
 
 export const DEFAULT_MODEL = 'claude-opus-5-5';
 export const DEFAULT_PROMPT_VERSION = 'humanize-de@1';
+/** Per-attempt ceiling for one Anthropic call; the Workers waitUntil budget
+ * outlives the webhook response but is not infinite either. */
+export const DEFAULT_TIMEOUT_MS = 60_000;
 
 const outputSchema = z.object({
   text: z.string(),
@@ -33,6 +36,8 @@ export interface ClaudeTranslatorOptions {
   model?: string;
   /** API key from the secret store; ignored when `client` is given. */
   apiKey?: string;
+  /** Per-attempt timeout passed to the Anthropic client (default 60 s). */
+  timeoutMs?: number;
   client?: ParseClient;
 }
 
@@ -52,7 +57,11 @@ export class ClaudeTranslator implements Translator {
     this.#systemPrompt = options.systemPrompt;
     this.#client =
       options.client ??
-      (new Anthropic({ apiKey: options.apiKey, maxRetries: 2 }) as unknown as ParseClient);
+      (new Anthropic({
+        apiKey: options.apiKey,
+        maxRetries: 2,
+        timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      }) as unknown as ParseClient);
   }
 
   async translate(request: TranslationRequest): Promise<TranslationResult> {

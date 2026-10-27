@@ -1,9 +1,8 @@
-import { ClaudeTranslator } from '@handmake/ai';
+import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
 import { draftRetentionDays } from '@handmake/core';
 import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
-import humanizeDePrompt from '../../../packages/ai/prompts/humanize-de@1.md';
 import { createTenantLookup } from './allow-list';
 import type { TenantLookup } from './allow-list';
 import { createBot } from './bot';
@@ -68,8 +67,12 @@ function senderIdOf(body: unknown): number | undefined {
   return typeof from?.id === 'number' ? from.id : undefined;
 }
 
-/** Composition root: wires secrets/bindings to the bot (ADR 007). */
-export function createApp(env: Env, texts: BotTexts): App {
+/** Composition root: wires secrets/bindings to the bot (ADR 007).
+ * `executionCtx` lets the bot finish translations after the webhook response
+ * has been sent (Cloudflare waitUntil); grammY's own webhook timeout is only
+ * 10 s, a translation takes 10-30 s. Callers without one (the scheduled
+ * handler, tests) get a detached fallback — production always passes it. */
+export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionContext): App {
   // The bot is built lazily so the webhook secret is checked BEFORE the
   // allow-list secret is parsed: a malformed allow-list must yield 401, not
   // 500, for unauthenticated callers (PR #19 review note 2).
@@ -90,9 +93,11 @@ export function createApp(env: Env, texts: BotTexts): App {
         resolveTenant: createTenantLookup(env.TELEGRAM_ALLOWED_USER_IDS),
         texts,
         translator: new ClaudeTranslator({
-          systemPrompt: humanizeDePrompt,
+          systemPrompt: humanizeDePromptV1,
           apiKey: env.ANTHROPIC_API_KEY,
         }),
+        background: (task) =>
+          executionCtx ? executionCtx.waitUntil(task()) : void task().catch(() => undefined),
       });
       handleUpdate = webhookCallback(bot, 'cloudflare-mod');
     }

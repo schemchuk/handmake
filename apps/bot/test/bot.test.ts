@@ -29,6 +29,15 @@ let translateCalls: TranslationRequest[];
 /** Swap to make the fake translator fail (AI outage). */
 let translateImpl: (request: TranslationRequest) => Promise<TranslationResult>;
 let translator: Translator;
+/** Background tasks the bot scheduled (production: waitUntil). */
+let backgroundTasks: Promise<void>[];
+
+/** Awaits everything the bot deferred past the webhook response. */
+async function flushBackground(): Promise<void> {
+  while (backgroundTasks.length > 0) {
+    await backgroundTasks.shift();
+  }
+}
 
 function lastSendMessage(calls: SentCall[]): Record<string, unknown> | undefined {
   return calls.filter((call) => call.method === 'sendMessage').at(-1)?.payload;
@@ -38,6 +47,7 @@ beforeEach(async () => {
   db = await makeD1();
   drafts = createD1DraftStore(db);
   translateCalls = [];
+  backgroundTasks = [];
   translateImpl = async (request) => ({ text: `DE:${request.text}` });
   translator = {
     translate: async (request) => {
@@ -51,6 +61,9 @@ beforeEach(async () => {
     resolveTenant: (userId) => (userId === allowed.userId ? allowed.tenantId : undefined),
     texts: botTexts,
     translator,
+    background: (task) => {
+      backgroundTasks.push(task());
+    },
   });
   calls = mockTelegramApi(bot);
   await bot.init();
@@ -203,6 +216,7 @@ describe('/done: translate and preview', () => {
   it('translates the collecting draft and sends a preview with buttons', async () => {
     await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
     await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
 
     const sent = sentTexts(calls);
     expect(sent[0]).toBe(botTexts.textSavedText(0));
@@ -252,6 +266,7 @@ describe('/done: translate and preview', () => {
     };
     await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
     await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
 
     expect(sentTexts(calls).at(-1)).toBe(botTexts.translationFailedText);
     expect(await drafts.listByState(allowed.tenantId, 'failed')).toHaveLength(1);
@@ -268,6 +283,7 @@ describe('/done: translate and preview', () => {
   it('a text beyond the Telegram limit blocks the preview: no Publish button', async () => {
     await bot.handleUpdate(textUpdate(allowed.userId, 'x'.repeat(4100)));
     await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
 
     const sent = sentTexts(calls).at(-1)!;
     expect(sent).toContain('❌');
@@ -285,6 +301,7 @@ describe('preview buttons', () => {
   async function makeReadyDraft(): Promise<void> {
     await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
     await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
   }
 
   it('Edit DE arms the edit; the next text message replaces the German version', async () => {
@@ -306,6 +323,7 @@ describe('preview buttons', () => {
   it('Regenerate DE re-translates and shows a fresh preview', async () => {
     await makeReadyDraft();
     await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:regen-de'));
+    await flushBackground();
 
     expect(sentTexts(calls).at(-2)).toBe(botTexts.translatingText);
     expect(sentTexts(calls).at(-1)).toContain(botTexts.previewHeader(0));
@@ -334,5 +352,96 @@ describe('preview buttons', () => {
     await bot.handleUpdate(callbackQueryUpdate(allowed.userId, allowed.userId, 'draft:publish'));
 
     expect(sentTexts(calls)).toEqual([botTexts.draftNoneText]);
+  });
+});
+
+describe('translation runs past the webhook response (B1)', () => {
+  it('a slow translator never blocks the handler; the preview arrives when done', async () => {
+    let resolveTranslate!: (result: TranslationResult) => void;
+    translateImpl = () =>
+      new Promise<TranslationResult>((resolve) => {
+        resolveTranslate = resolve;
+      });
+
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    // If the AI call ran inside the handler, handleUpdate would still be
+    // pending here and nothing below could execute.
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.translatingText);
+    expect(await drafts.listByState(allowed.tenantId, 'translating')).toHaveLength(1);
+
+    resolveTranslate({ text: 'Langsam aber sicher' });
+    await flushBackground();
+
+    expect(sentTexts(calls).at(-1)).toContain('Langsam aber sicher');
+    expect(await drafts.listByState(allowed.tenantId, 'ready')).toHaveLength(1);
+  });
+
+  it('a second /done while translating is refused without a second AI call', async () => {
+    let resolveTranslate!: (result: TranslationResult) => void;
+    translateImpl = () =>
+      new Promise<TranslationResult>((resolve) => {
+        resolveTranslate = resolve;
+      });
+
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.translateInProgressText);
+    expect(translateCalls).toHaveLength(1);
+
+    resolveTranslate({ text: 'Fertig' });
+    await flushBackground();
+    expect(await drafts.listByState(allowed.tenantId, 'ready')).toHaveLength(1);
+  });
+
+  it('a stale translating draft is reclaimed by the next /done', async () => {
+    let rejectFirst!: (error: Error) => void;
+    translateImpl = () =>
+      new Promise<TranslationResult>((_resolve, reject) => {
+        rejectFirst = reject;
+      });
+
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    rejectFirst(new Error('runtime cancelled the background task'));
+    await flushBackground();
+    expect(await drafts.listByState(allowed.tenantId, 'failed')).toHaveLength(1);
+
+    // A 'translating' row that aged past the stale window is reclaimable;
+    // simulate by moving the failed draft back to translating with an old
+    // timestamp (same state the stale claim guards on).
+    const stuck = await drafts.latestForChat(allowed.tenantId, String(allowed.userId));
+    await db
+      .prepare("UPDATE drafts SET status = 'translating', updated_at = '2026-10-27T10:00:00.000Z'")
+      .run();
+
+    translateImpl = async (request) => ({ text: `DE:${request.text}` });
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
+
+    expect(translateCalls).toHaveLength(2);
+    const ready = await drafts.listByState(allowed.tenantId, 'ready');
+    expect(ready).toHaveLength(1);
+    expect(ready[0]?.draft.draftId).toBe(stuck?.draft.draftId);
+  });
+});
+
+describe('content under a ready draft (m2)', () => {
+  it('a photo re-shows the preview with a hint instead of forking a new draft', async () => {
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Привіт!'));
+    await bot.handleUpdate(textUpdate(allowed.userId, '/done'));
+    await flushBackground();
+    await bot.handleUpdate(photoUpdate(allowed.userId, ['late-photo']));
+
+    expect(sentTexts(calls).at(-2)).toBe(botTexts.photoUnderReadyText);
+    expect(sentTexts(calls).at(-1)).toContain(botTexts.previewHeader(0));
+    // Still exactly one draft, and it has no new photo.
+    const ready = await drafts.listByState(allowed.tenantId, 'ready');
+    expect(ready).toHaveLength(1);
+    expect(ready[0]?.draft.photoRefs).toEqual([]);
+    expect(await drafts.listByState(allowed.tenantId, 'collecting')).toEqual([]);
   });
 });

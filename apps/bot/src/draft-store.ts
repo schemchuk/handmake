@@ -1,6 +1,13 @@
 import { createDraft } from '@handmake/core';
 import type { Draft, DraftState } from '@handmake/core';
 
+/** A 'translating' draft older than this may be claimed again: the background
+ * task that claimed it died (e.g. runtime cancellation) without recording a
+ * result. Two minutes cover any healthy translation with a wide margin. */
+export const translationStaleMs = 2 * 60 * 1000;
+
+const staleEpoch = new Date(0);
+
 /**
  * D1 persistence for drafts (ADR 006: every query is keyed by tenant_id).
  * Rows carry the content columns from migration 0002 (`texts` JSON object,
@@ -77,15 +84,18 @@ export interface D1DraftStore {
   getOrCreateCollecting(tenantId: string, chatId: string, now: Date): Promise<StoredDraft>;
   /**
    * Claims the draft for one translation run: moves it to 'translating' in
-   * a single statement if it is in one of `from`. Returns the claimed row,
-   * or undefined if someone else got there first — the caller then backs
-   * off instead of running a duplicate (paid) AI call.
+   * a single statement if it is in one of `from`, or if it is stuck in
+   * 'translating' since before `staleBefore` (the previous background task
+   * died without a result). Returns the claimed row, or undefined if someone
+   * else got there first — the caller then backs off instead of running a
+   * duplicate (paid) AI call.
    */
   claimTranslation(
     tenantId: string,
     draftId: string,
     from: DraftState[],
     now: Date,
+    staleBefore?: Date,
   ): Promise<StoredDraft | undefined>;
   /** Stores the German text and moves 'translating' → 'ready'. */
   markTranslated(tenantId: string, draftId: string, german: string, now: Date): Promise<boolean>;
@@ -289,15 +299,22 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return row ? toStoredDraft(row) : undefined;
     },
 
-    async claimTranslation(tenantId, draftId, from, now) {
+    async claimTranslation(tenantId, draftId, from, now, staleBefore) {
       const guards = from.map(() => '?').join(', ');
       const result = await db
         .prepare(
           `UPDATE drafts
            SET status = 'translating', updated_at = ?, version = version + 1
-           WHERE tenant_id = ? AND id = ? AND status IN (${guards})`,
+           WHERE tenant_id = ? AND id = ?
+             AND (status IN (${guards}) OR (status = 'translating' AND updated_at < ?))`,
         )
-        .bind(now.toISOString(), tenantId, draftId, ...from)
+        .bind(
+          now.toISOString(),
+          tenantId,
+          draftId,
+          ...from,
+          (staleBefore ?? staleEpoch).toISOString(),
+        )
         .run();
       return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
     },

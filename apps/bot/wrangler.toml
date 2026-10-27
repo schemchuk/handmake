@@ -2,9 +2,6 @@ name = "handmake-bot"
 main = "src/index.ts"
 compatibility_date = "2026-10-26"
 
-# Bundle *.md (the translator prompt) as text modules; imported as strings.
-rules = [{ type = "Text", globs = ["**/*.md"] }]
-
 # Create the database once:
 #   pnpm --filter @handmake/bot exec wrangler d1 create handmake-bot
 # then paste the printed database_id below and apply migrations:
