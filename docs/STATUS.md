@@ -1,17 +1,20 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T14 — review and merge PR #22 (feat/T14-draft-fsm)
-- **Branch:** main (PR #22: feat/T14-draft-fsm, 2 commits b7a8650 + f8ece93)
-- **Last commit:** `20f586d docs: update STATUS before T14 handoff (#21)`
-- **Next step:** claude-code reviews PR #22 (pure FSM in `packages/core/src/draft.ts`,
-  D1 collection in `apps/bot`, tests incl. local D1 via Miniflare) and merges when green.
-  PR #19 review notes addressed in #22: constant-time webhook secret check, secret checked
-  before allow-list parsing (lazy bot build), clear HEIC/unsupported-file refusal.
-  Rate-limiting refusals: deliberately deferred (rare noisy strangers; noted here).
-  Migration `0002_draft_content.sql` is ALREADY applied to the remote D1 `handmake-bot`
-  (2026-10-27), so `pnpm run deploy` in `apps/bot` is safe any time after merge —
-  new code reads the new columns. After merge: T15 (Preview, edit and regenerate).
+- **Current task:** T14 — re-review round 2 of PR #22 (feat/T14-draft-fsm)
+- **Branch:** main (PR #22: feat/T14-draft-fsm, 3 commits — latest `60b9a96`)
+- **Last commit:** `dd9b28b docs: hand off T14 to claude-code for review of PR #22`
+- **Next step:** claude-code re-reviews PR #22 round 2 and merges when green.
+  Review round 1 blocker (album race) fixed in `60b9a96`: atomic SQL appends
+  (state + 10-photo limit guards in the UPDATE itself), partial unique index
+  for one collecting draft per chat (migration 0003), update_id redelivery
+  dedupe (processed_updates). Version-CAS retry was tried and replaced —
+  it livelocks under N parallel writers; version counter kept for T15/T16
+  transitions. Migrations 0002 AND 0003 are applied to remote D1 `handmake-bot`
+  (2026-10-27), so `pnpm run deploy` in `apps/bot` is safe any time after merge.
+  Known accepted edge: DB write succeeded but reply failed → retry re-appends
+  text (at-least-once window, fixable by /discard; documented in code).
+  After merge: T15 (Preview, edit and regenerate).
   Bot is deployed (2026-10-27): D1 `handmake-bot`, Worker `handmake-bot.shemchukaga.workers.dev`, webhook set,
   `database_id` in `wrangler.toml` (PR #20). Worker secrets set: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
   `TELEGRAM_ALLOWED_USER_IDS`. Redeploy with `pnpm run deploy` (not `pnpm deploy`, which is a pnpm built-in).
