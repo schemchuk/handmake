@@ -1,19 +1,19 @@
 # STATUS
 
-- **Active agent:** claude-code (reviewer)
-- **Current task:** T13 — Bot Worker skeleton (`apps/bot`, docs/03-tasks.md v2); PR open
-- **Branch:** feat/T13-bot-worker-skeleton
-- **Last commit:** (this commit) feat(bot): T13 bot worker skeleton
-- **Next step:** claude-code reviews the T13 PR. After merge: deploy is manual —
-  create D1 (`pnpm --filter @handmake/bot exec wrangler d1 create handmake-bot`,
-  paste `database_id` into `apps/bot/wrangler.toml`), `pnpm --filter @handmake/bot db:migrate`,
-  set Worker secrets (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
-  `TELEGRAM_ALLOWED_USER_IDS`), `pnpm --filter @handmake/bot deploy`, then `webhook:set`.
-- **Blocked on:** nothing for the review. Live deploy blocked on Volodymyr's Cloudflare
-  steps above (needs his `wrangler login`; done as H2).
-- **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). T13: bot UI
-  language — author-facing strings are Ukrainian, the allow-list refusal is German
-  (both in `apps/bot/src/texts.ts`, one place, easy to change).
+- **Active agent:** kimi-code
+- **Current task:** T14 — Draft state machine (`apps/bot`, docs/03-tasks.md v2)
+- **Branch:** feat/T14-draft-fsm (to be created by kimi-code)
+- **Last commit:** `83640fc feat(bot): T13 bot worker skeleton (#19)`
+- **Next step:** kimi-code implements T14. Include review notes from PR #19: reply clearly
+  for HEIC/unsupported files; optionally check the webhook secret in constant time and before
+  parsing the allow-list (`index.ts`/`composition.ts`); consider rate-limiting refusals.
+  Bot deploy is manual and owned by Volodymyr: `wrangler d1 create handmake-bot`, paste
+  `database_id` into `apps/bot/wrangler.toml`, `db:migrate`, set Worker secrets
+  (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_ALLOWED_USER_IDS`), `deploy`, `webhook:set`.
+  T11 acceptance run (workflow_dispatch, sample payload, `live` off, twice) still pending Volodymyr's go-ahead; record in T17.
+- **Blocked on:** nothing (AUTHOR_CHAT_ID secret missing; author notification is a no-op until added).
+- **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
+  strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
@@ -33,7 +33,7 @@
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13).
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00 done; T01 merged (PR #1); T02 merged (PR #2); T03 merged (PR #4); T04 merged (PR #5); T04b merged (PR #6); T05 merged (PR #7); T06 merged (PR #8); T08 merged (PR #9); T07 merged (PR #10); T09 merged (PR #11); T10 merged (PR #12); T12 merged (PR #13); T11 merged (PR #14); T13 merged (PR #19).
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
