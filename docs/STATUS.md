@@ -5,7 +5,7 @@
 - **Branch:** none yet (`feat/T22-...`)
 - **Last commit:** see `git log -1`
 - **Next step:** kimi-code starts T22 (read docs/review-notes.md "Polls (T21)").
-  T21 merged as PR #31. Redeploy the bot for the T20 `*/15` cron (Volodymyr).
+  T21 merged as PR #31. Bot redeployed 2026-10-28 (T20 `*/15` cron live, D1 migrations up to date).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   1. T20 config values are placeholders: announcement Tue 18:00, reminder
