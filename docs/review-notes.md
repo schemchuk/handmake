@@ -20,3 +20,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 
 ## Bot drafts (T20)
 - A cron announcement draft becomes the chat's latest draft (`latestForChat` orders by `created_at`). If the author is collecting a post at that moment, her collecting draft is hidden until she publishes or discards the announcement; after a publish, new text starts a fresh draft and the old collecting one is orphaned (deleted by the 30-day cleanup). Fix when it bites: skip or delay the cron draft while a `collecting` draft exists, or look up the collecting draft explicitly (PR #30 review).
+
+## Polls (T21)
+- The poll message id sits at op index 1 or 2 (depends on caption overflow). T22 and the closing cron must find it by op kind (`kind === 'poll'`), not by a fixed index (PR #31 N1).
+- Bot API now allows 1-12 options and media on a poll option (`InputPollOption.media`), which weakens ADR 008's "polls cannot carry images". MVP keeps album + poll; revisit in a later ADR (PR #31 N2).
