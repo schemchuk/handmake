@@ -60,6 +60,14 @@ export interface D1DraftStore {
   /** Insert a new draft, remembering which chat is collecting it. */
   create(draft: Draft, chatId: string): Promise<void>;
   /**
+   * Insert a cron-created draft unless its id already exists (T20): the
+   * deterministic id makes an overlapping or retried cron run a no-op, so
+   * exactly one announcement/reminder draft exists per meeting day. Returns
+   * true when this call inserted the row — only that caller proceeds to
+   * translate and notify.
+   */
+  createIfAbsent(draft: Draft, chatId: string): Promise<boolean>;
+  /**
    * Optimistic update: writes the draft only if the row version still
    * matches. Returns false on interference — re-read and retry. Used for
    * whole-state transitions; content collection goes through the atomic
@@ -224,6 +232,26 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           draft.updatedAt,
         )
         .run();
+    },
+
+    async createIfAbsent(draft, chatId) {
+      const result = await db
+        .prepare(
+          `INSERT OR IGNORE INTO drafts (tenant_id, id, chat_id, status, texts, photos, version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+        )
+        .bind(
+          draft.tenantId,
+          draft.draftId,
+          chatId,
+          draft.state,
+          JSON.stringify(draft.texts),
+          JSON.stringify(draft.photoRefs),
+          draft.createdAt,
+          draft.updatedAt,
+        )
+        .run();
+      return result.meta.changes === 1;
     },
 
     async update(draft, expectedVersion) {

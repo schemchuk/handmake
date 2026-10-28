@@ -95,6 +95,26 @@ export const tenantConfigSchema = z
         closes: weeklyMomentSchema.strict(),
       })
       .strict(),
+    // F18: the bot cron announces each meeting and reminds about it. Times
+    // use meetingSchedule.timezone; templates are Ukrainian (the author's
+    // language) and may use the {weekday}, {date} and {time} placeholders,
+    // filled with the announced meeting in meetingSchedule.timezone.
+    announcements: z
+      .object({
+        schedule: z
+          .object({
+            announcement: weeklyMomentSchema.strict(),
+            reminder: weeklyMomentSchema.strict(),
+          })
+          .strict(),
+        templates: z
+          .object({
+            announcement: z.string().min(1),
+            reminder: z.string().min(1),
+          })
+          .strict(),
+      })
+      .strict(),
     featureFlags: z.record(z.string(), z.boolean()),
     // Commercialization stub — must stay empty for now (spec section 8).
     offerings: z.array(z.never()),
@@ -112,6 +132,8 @@ export const tenantConfigSchema = z
   });
 
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;
+export type WeeklyMoment = z.infer<typeof weeklyMomentSchema>;
+export type MeetingSchedule = z.infer<typeof tenantConfigSchema.shape.meetingSchedule>;
 
 /** A value that smells like an actual secret rather than a config value. */
 const secretValuePatterns: RegExp[] = [

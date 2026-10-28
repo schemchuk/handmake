@@ -93,7 +93,8 @@ or media IDs, timestamps, last error. Kept separate from the post so retries do 
 
 Tenant config `config/tenants/faden-und-stimmung.yaml` holds tenant ID and name, languages and their
 order, enabled channels with per-channel settings (e.g. Instagram language `de`), content store type,
-meeting schedule (Thursday 14:00 Europe/Berlin), work-of-week poll settings, feature flags, an empty
+meeting schedule (Thursday 14:00 Europe/Berlin), announcement/reminder schedule with Ukrainian
+templates (F18), work-of-week poll settings, feature flags, an empty
 `offerings` stub, and *names* of secrets, never values.
 
 ## 4. Flows
