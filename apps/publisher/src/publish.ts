@@ -27,6 +27,8 @@ import { buildPostFromPayload } from './build-post';
 import { createGitCommitter } from './git';
 import type { GitCommitter } from './git';
 import { fetchAndProcessPhotos } from './photos';
+import { createPublishCallbackSender } from './publish-callback';
+import type { PublishCallbackSender } from './publish-callback';
 import { parseDispatchPayload } from './payload';
 import { requiredEnv } from './required-env';
 import { loadTenantConfig } from './tenant-config';
@@ -46,6 +48,10 @@ export interface PublishDeps {
   notifier?: Notifier;
   /** Default: commits under root as the publisher identity. */
   git?: GitCommitter;
+  /** Default: one created from PUBLISH_CALLBACK_URL/SECRET in env. */
+  callback?: PublishCallbackSender;
+  /** Default: global fetch; injectable in tests. */
+  fetchImpl?: typeof fetch;
 }
 
 export interface PublishResult {
@@ -204,5 +210,50 @@ export async function runPublish(
   }
 
   await notify('author', `published ${post.id} to ${Object.keys(delivered).join(', ')}`);
+
+  // T19: report the delivery to the bot so it moves the draft out of
+  // `publishing` and indexes the post. The bot's endpoint is idempotent, so
+  // re-runs of this pipeline re-notify harmlessly. Only a fully delivered
+  // run reports success — any channel failure has already thrown above.
+  const callbackUrl = env['PUBLISH_CALLBACK_URL'];
+  const callbackSecret = env['PUBLISH_CALLBACK_SECRET'];
+  const ledgerEntries = Object.entries(ledger.channels);
+  if (callbackUrl && !callbackSecret) {
+    log('PUBLISH_CALLBACK_SECRET missing; published callback not sent');
+    await notify(
+      'operator',
+      `publish callback for ${post.tenant}/${post.id} not sent: PUBLISH_CALLBACK_SECRET missing`,
+    );
+  } else if (callbackUrl && !ledgerEntries.every(([, entry]) => entry.status === 'done')) {
+    log('published callback skipped: not every channel is done');
+  } else if (callbackUrl) {
+    const channels = Object.fromEntries(
+      ledgerEntries.map(([channel]) => [channel, 'done' as const]),
+    );
+    const sender =
+      deps.callback ??
+      createPublishCallbackSender({
+        url: callbackUrl,
+        secret: callbackSecret as string,
+        fetchImpl: deps.fetchImpl,
+      });
+    try {
+      await sender.send({
+        tenantId: post.tenant,
+        postId: post.id,
+        date: post.date,
+        photos: post.photos,
+        channels,
+      });
+      log(`published callback sent for ${post.id}`);
+    } catch (error) {
+      // A lost callback must never fail an already-published post; the
+      // operator re-fires it by re-running the publish workflow (runbook).
+      await notify(
+        'operator',
+        `publish callback for ${post.tenant}/${post.id} failed: ${safeErrorMessage(error)}`,
+      );
+    }
+  }
   return { post, ledger, delivered, skipped };
 }

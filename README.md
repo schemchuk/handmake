@@ -75,9 +75,11 @@ and network errors are not retried inside a run; the re-run covers them.
 `{"tenantId","draftId","texts","fileIds","provenance"}`. Without the "live" tick it goes to the test
 channel.
 
-**The bot says "Зараз працюю з цією чернеткою" on an old preview.** The draft was already published and
-stays `publishing` until the publish callback exists (post-MVP). Send new text or `/new` to start the
-next post. Pressing 🚀 on the old one again is harmless: the ledger skips it.
+**The bot says "Зараз працюю з цією чернеткою" on an old preview.** The draft is stuck `publishing`:
+its "published" callback never reached the Worker (the run log shows an operator alert). Re-run the
+last successful publish workflow: the ledger skips every delivery and only the callback re-fires
+(the bot's endpoint is idempotent). Sending new text or `/new` starts the next post; pressing 🚀 on
+the old draft is harmless either way — the ledger skips it.
 
 **The bot does not answer.** Check the webhook:
 `curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo"` (look at `last_error_message`

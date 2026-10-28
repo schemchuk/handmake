@@ -2,8 +2,10 @@ name: Publish
 
 # Turns an approved draft (bot repository_dispatch or a manual payload) into a
 # committed post folder, channel deliveries and a ledger, all on main under
-# content/ only (ADR 003, AGENTS.md exception). Idempotent: a re-run resumes
-# from the ledger and never duplicates a delivered operation.
+# content/ only (ADR 003, AGENTS.md exception). After the deliveries it POSTs
+# the signed "published" callback to the bot (T19), which moves the draft out
+# of `publishing`. Idempotent: a re-run resumes from the ledger and never
+# duplicates a delivered operation.
 # Manual runs: start the workflow from the main branch; a run started on
 # another branch pushes content commits to that branch.
 
@@ -75,6 +77,12 @@ jobs:
               && secrets.TELEGRAM_CHANNEL_ID) || secrets.TELEGRAM_TEST_CHANNEL_ID }}
           AUTHOR_CHAT_ID: ${{ secrets.AUTHOR_CHAT_ID }}
           OPERATOR_CHAT_ID: ${{ secrets.OPERATOR_CHAT_ID }}
+          # Publisher -> bot "post is published" callback (T19, H7). The URL is
+          # a repo variable (the Worker URL), the secret a GitHub Secret; the
+          # same secret is a Worker secret. A callback failure never fails the
+          # publish — the publisher alerts the operator instead.
+          PUBLISH_CALLBACK_URL: ${{ vars.PUBLISH_CALLBACK_URL }}
+          PUBLISH_CALLBACK_SECRET: ${{ secrets.PUBLISH_CALLBACK_SECRET }}
           PUBLISHER_GIT_NAME: github-actions[bot]
           PUBLISHER_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
