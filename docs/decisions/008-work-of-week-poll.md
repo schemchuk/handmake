@@ -16,6 +16,8 @@ is no result, AI decides (spec F19).
 Option 1. Telegram polls cannot carry images, so candidates are posted as a numbered album and the poll
 replies to it. Opening and closing are Worker cron jobs; closing calls `closePoll` on the channel adapter.
 `WinnerPicker` (Claude with the candidate photos) decides on zero votes, an unreadable result or a tie.
+Amended 2026-10-28 (Volodymyr, after the v5 review): the author decides these cases with buttons in the
+bot; `WinnerPicker` is not built.
 
 ## Consequences
 - The poll is a channel capability (`capabilities.polls`); channels without it (Instagram) only get
@@ -25,5 +27,5 @@ replies to it. Opening and closing are Worker cron jobs; closing calls `closePol
 - Candidates in phase 1 come from the author's posts (Q7 resolved). Participant submissions arrive later
   through the `SubmissionSource` port: Telegram bot with author moderation and rules/licence consent
   (phase 3); option A (linked discussion group) was rejected as harder to moderate.
-- Confirmed 2026-10-21: Monday 10:00 to Wednesday 20:00 (Q8), AI breaks ties (Q5), author approves
+- Confirmed 2026-10-21: Monday 10:00 to Wednesday 20:00 (Q8), AI breaks ties (Q5; changed 2026-10-28: the author breaks ties), author approves
   poll and result (Q6).

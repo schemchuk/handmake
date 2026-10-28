@@ -2,7 +2,7 @@
 
 How the system is built; major choices are recorded in docs/decisions/.
 
-Status: **draft v3.1 (2026-10-28), review applied, awaiting approval.** v3 implements docs/01-spec.md
+Status: **approved v3.1 (2026-10-28).** v3 implements docs/01-spec.md
 v5: contest entries via the author, website, video, funnel metrics, shop seams (sections 4.4, 4.6-4.9,
 ADR 010-014). v3.1 applies docs/reviews/2026-10-28-v5-review.md (B1-B3, N1-N10). v2 (approved
 2026-10-21) added ports, tenancy and the poll.
@@ -50,7 +50,7 @@ packages/
   core/          schema (zod), limits, ledger, state machines, tenant config, ports/ — no I/O
   channels/      one folder per network (telegram, instagram, …), each a ChannelAdapter + registry
   stores/        ContentStore implementations (git-repo now)
-  ai/            Translator, WinnerPicker, TextGenerator on Claude, versioned prompts
+  ai/            Translator, TextGenerator on Claude, versioned prompts
   video/         HyperFrames templates + VideoRenderer (phase 2b, ADR 012, proposed)
 config/
   tenants/faden-und-stimmung.yaml  tenant config (no secrets)
@@ -181,9 +181,9 @@ messageIds JSON). The poll close and the withdrawal edit read them from there; n
    always "Work No N" otherwise (Instagram). Committed texts keep the placeholders.
 4. **Close.** Worker cron at the closing time reads the poll message ID from `channel_deliveries`
    (callback v2, 4.3) and calls `closePoll` (`stopPoll`) to get the counts.
-5. **Winner.** Most votes; zero votes, unreadable result or tie → `WinnerPicker` (Claude, sees the
-   candidate photos, fetched by a small Worker-side Telegram `getFile` client) chooses with a one-line
-   reason.
+5. **Winner.** Most votes; zero votes, unreadable result or tie → the bot asks the author to pick
+   among the tied candidates with inline buttons (decided 2026-10-28; no `WinnerPicker`, no Worker-side
+   photo download).
 6. **Result.** A `wotw-result` draft goes to the author for Publish, resolved the same way as step 3.
 7. **Withdrawal.** Deleting a display name in D1 triggers an edit of the affected Telegram messages
    (`editMessage` capability: caption or text, the adapter decides; IDs from `channel_deliveries`) and,
@@ -342,7 +342,7 @@ implementations only when needed.**
 | `DraftStore` | drafts, state transitions, published index | D1 | same, sharded by tenant |
 | `PublishRunner` | run a publish job for a post | GitHub Actions via `repository_dispatch` | Cloudflare Queues consumer |
 | `Translator` | UA → DE with humanizer | Claude | other providers |
-| `WinnerPicker` | choose a work of the week from photos | Claude (vision) | — |
+| `WinnerPicker` | choose a work of the week from photos | — (not built: the author breaks ties, 2026-10-28) | — |
 | `MediaSource` | fetch author's photos | Telegram `getFile` | web upload (admin panel) |
 | `Notifier` | messages to author and operator | Telegram bot | e-mail |
 | `SecretResolver` | resolve secret names per tenant | environment / GitHub Secrets | Worker secrets store per tenant |
@@ -356,7 +356,7 @@ implementations only when needed.**
 
 Rule (v3.1, review answer 6): this table is a roadmap. A port or capability gets code only together
 with its first implementation; the unused `openPoll` and `PollSpec.photoIndexes` seam is removed.
-Phase 1b needs `SubmissionSource`, `WinnerPicker`, `editMessage`; phase 2 `TextGenerator`; `video`,
+Phase 1b needs `SubmissionSource`, `editMessage`; phase 2 `TextGenerator`; `video`,
 `MediaStore`, `VideoRenderer` wait for 2b, `metrics` and `EmailList` for 3, `ShopProvider` for 4.
 
 Channel capabilities: `photos`, `polls`, `editMessage` (1b); `video` (2b), `metrics` (3). Rendering and

@@ -100,7 +100,7 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 ### Contest: work of the week (redefined in v5)
 - **F19** Readers of the Telegram channel pick the best participant work of the week.
   - **Entries.** A participant hands a photo of her work to the author (at a meeting or privately).
-    The author sends it to the bot as a **contest entry** (a separate draft type), and confirms with a
+    The author sends it to the bot as a **contest entry** (stored separately from post drafts), and confirms with a
     button that the participant agreed to the work being shown. Optionally she adds the participant's
     first name or nickname (no surname, handle or contact), also by consent (Q13).
   - **Names outside Git.** The display name is stored only in the bot database, never in the content
@@ -111,8 +111,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     Telegram poll "No 1".."No N" replying to it). The author publishes it. Channel polls are anonymous;
     no voter data is collected. (Poll capability: T21, done.)
   - **Close.** At the configured closing time the system stops the poll and reads the final counts.
-  - **Winner.** Most votes. No votes, an unreadable result or a tie: AI picks among the (tied)
-    candidates and the post says so.
+  - **Winner.** Most votes. No votes, an unreadable result or a tie: the author picks among the (tied)
+    candidates with buttons in the bot, and the post says so (changed 2026-10-28, replaces "AI picks").
   - **Result.** A result post announcing the winner is drafted for the author's Publish, for all
     channels (Instagram has no poll API, so it gets the result post only).
   - With fewer than 2 entries in a week, no poll is drafted and the author is told.

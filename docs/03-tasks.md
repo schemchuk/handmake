@@ -2,8 +2,10 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: approved v2 (2026-10-21). v2 adds ports and tenancy (spec v4).
-Scope: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
+Status: **draft v3 (2026-10-28), awaiting approval.** v3 re-plans phase 1b and phase 2 for spec v5 and
+architecture v3.1, from the task split in docs/reviews/2026-10-28-v5-review.md. v2 (approved
+2026-10-21) planned the MVP and T18-T24.
+Scope of v2: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
 Each task: one branch `feat/<id>-<slug>`, one PR, reviewable in 10-15 minutes. Do tasks in order unless
 "Depends on" says otherwise. A task is done when its tests pass in CI, docs are updated, and the reviewer
 agent merged it (AGENTS.md, Git rules; sensitive PRs such as T02 and T11 need Volodymyr's OK first).
@@ -21,7 +23,11 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H5 | Put secrets into GitHub Secrets and Worker secrets (names in `.env.example`). | T11, T16 |
 | H6 | ~~Decide O1 and O2~~ done 2026-10-21. | T05, T00, T10 |
 | H7 | Random `PUBLISH_CALLBACK_SECRET` (e.g. `openssl rand -hex 32`) as GitHub Secret and Worker secret. | T19 |
-| H8 | Instagram: author switches her account to Creator; Meta developer app with Instagram Login API; long-lived token and IG user ID as secrets. | T24 |
+| H8 | Instagram: author switches her account to Creator; Meta developer app with Instagram Login API; long-lived token and IG user ID as secrets. | T32 |
+| H9 | Random `NAMES_ENDPOINT_SECRET` (`openssl rand -hex 32`) as GitHub Secret and Worker secret. | T27 |
+| H10 | Cloudflare Pages project; API token scoped to Pages deploy only; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Secrets. | T38 |
+| H11 | Impressum fields as GitHub Secrets (names in `.env.example`); confirm the legal page texts. | T37, T38 |
+| H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
 
 ## Tasks
 
@@ -234,30 +240,148 @@ Same rules as above. ADR 009: keep each PR under ~400 changed non-test lines.
 - Acceptance: dry-run shows album + poll ops; re-run never sends a second poll.
 - Tests: render ops, ledger resume between album and poll, closePoll parsing.
 
-### T22 — Work-of-the-week candidates and poll draft (F19 part 2, `bot`)
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T21
-- Change: Monday cron (tenant `workOfWeek.opens`) takes the last 7 days from `published_posts`, one
-  photo per post, newest 10, and creates a `wotw-poll` draft for the author's preview and 🚀. Fewer than
-  2 candidates → no poll, the author is told. Runs only with `featureFlags.wotwPoll: true`.
-- Acceptance: one poll draft per week; feature flag off → nothing.
-- Tests: candidate selection, flag, idempotent cron.
+### T22, T23 — superseded by v3
+T22 (candidates from `published_posts`) and T23 (AI winner) are replaced by T25-T31: spec v5 takes the
+candidates from participants' entries, and the author breaks ties (2026-10-28). What T22 had planned
+(window math, deterministic per-week draft id, insert-or-ignore, feature flag, `< 2` rule) moves to T29.
+T24 (Instagram) becomes T32.
 
-### T23 — Close poll, pick winner, result draft (F19 part 3, `bot`, `ai`)
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T22
-- Change: closing cron calls `closePoll`; most votes wins; zero votes, unreadable result or a tie →
-  `WinnerPicker` (Claude with the candidate photos, one-line reason). Creates a `wotw-result` draft
-  ("chosen by readers" / "chosen by AI") for the author's 🚀.
-- Acceptance: each case yields exactly one result draft with the right wording.
-- Tests: winner rules incl. ties and zero votes, mocked WinnerPicker.
+## Tasks v3: phase 1b remainder (contest, Instagram, proof of use)
 
-### T24 — Instagram adapter (phase 1b, `channels`)
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T19, H8
-- Change: `InstagramChannel` via Instagram Login API (container → publish, carousel for 2-10 photos),
-  German caption by default (tenant setting), 2200-char limit in the preview; channel enabled only when
-  configured (F12). Photos need public URLs: serve them from the repo's raw URLs of the committed post.
-- Acceptance: a live post appears on Instagram once; re-run skips it via the ledger.
-- Tests: mocked Graph API, carousel vs single photo, limit errors.
+Rules as above; each PR under ~400 changed non-test lines (ADR 009). Owner kimi-code, reviewer
+claude-code unless stated. Order: T25 → T26 → T27 → T28 → T29 → T30 → T31; T32-T34 may run in between.
+
+### T25 — Draft kinds and type through dispatch (`bot`, `core`)
+- Depends on: T21
+- Change: migration `0006`: `drafts.kind` (`post` | `work`, default `post`), `drafts.type` (post type,
+  default `free`), `drafts.extras` (JSON). `PublishJob` and the dispatch `client_payload` carry `kind`,
+  `type` and `poll?`; T20 announcement and reminder drafts dispatch their real type from now on (no
+  backfill). Explicit per-chat session kind (post, entry, work) so cron drafts and a collecting draft no
+  longer collide (review N2). Remove the unused seams: `ChannelAdapter.openPoll`, `PollSpec.photoIndexes`,
+  `WinnerPicker` port and its fake (review N10, decision 2026-10-28).
+- Acceptance: an announcement published after this task is committed with `type: announcement`; all
+  existing flows unchanged; the publisher accepts the payload unchanged (`payload.ts` already has the
+  fields).
+- Tests: migration defaults, `publishJobOf` per kind/type, session-kind routing.
+
+### T26 — Contest entries (F19 part 2a, `bot`, `core`)
+- Depends on: T25
+- Change: migration: `contest_entries` (entry_id, tenant_id, week, file_id, display_name?, consent_at,
+  status `submitted` | `withdrawn`, created_at). `/entry` session: exactly one photo, optional name
+  (≤ 30 chars, first name or nickname), mandatory consent button. Consent text (UA) states what is shown
+  (the photo and, if given, the name), where (Telegram, Instagram, website) and how to withdraw (tell
+  the author); Instagram never shows names. `AuthorEntrySource` implements `SubmissionSource`: the
+  week's `submitted` entries in submission order, max 10.
+- Acceptance: an entry without consent is never stored; a second photo is refused; names never appear
+  in logs.
+- Tests: session flow, consent required, name length, week bucketing in `Europe/Berlin`, source order.
+
+### T27 — Names endpoint and placeholder resolution (`bot`, `publisher`, `core`)
+- Depends on: T26, H9 · Sensitive: touches `.github/workflows/publish.yml` (passes the secret)
+- Change: `resolveEntryNames(text, names, policy)` in `core` (`{entry:<id>}` → name or "Work No N";
+  malformed token → error). Worker `GET /internal/contest-names?ids=…`: HMAC-SHA256 over
+  `method + path + timestamp` with `NAMES_ENDPOINT_SECRET`, 5-minute window, constant-time compare
+  (architecture 5). Publisher fetches names before rendering, masks each with `::add-mask::`, resolves
+  per channel policy from tenant config (Telegram names allowed, Instagram never). Bot preview resolves
+  from D1 directly. Dry-run uses a fixture instead of the endpoint.
+- Acceptance: committed `index.md` contains placeholders only; Telegram ops contain names; a stale or
+  wrong signature → 401.
+- Tests: resolver table tests, signature/replay cases, publisher with mocked endpoint, masking call.
+
+### T28 — Callback v2 with message IDs (`publisher`, `bot`, `core`)
+- Depends on: T25
+- Change: callback body `channels: { <channel>: { status, messageIds: { main?, poll? } } }`, IDs found
+  by op kind at deliver time. Migration: `channel_deliveries` (tenant_id, post_id, channel, status,
+  message_ids JSON), upsert. The bot accepts the v1 body during the switch-over (one release).
+- Acceptance: after a poll post, D1 holds its poll message ID; re-sent callback changes nothing.
+- Tests: schema v1/v2, op-kind lookup, idempotent upsert.
+
+### T29 — Poll draft cron (F19 part 2b, `bot`)
+- Depends on: T26, T27, T28
+- Change: Monday-open cron (`workOfWeek.opens`) builds a `wotw-poll` draft (kind `post`, extras: poll
+  spec + entry refs) from `AuthorEntrySource`: album 1..N, poll "No 1".."No N", captions with
+  placeholders. `< 2` entries → the author is told, no draft. Deterministic per-week draft id,
+  insert-or-ignore, flag `featureFlags.wotwPoll`.
+- Acceptance: one poll draft per week; flag off → nothing; the author sees names in the preview.
+- Tests: window math incl. DST, `< 2` rule, idempotent cron, flag.
+
+### T30 — Close poll, author breaks ties, result draft (F19 part 3, `bot`)
+- Depends on: T29
+- Change: closing cron reads the poll message ID from `channel_deliveries` and calls `closePoll`. Most
+  votes wins. Zero votes, unreadable result or a tie → the bot sends the author the tied candidates as
+  inline buttons; her choice decides. A `wotw-result` draft ("chosen by readers" / "chosen by the
+  author") follows for her 🚀. Winner flag stored on the entry (needed for retention, T31).
+- Acceptance: each case yields exactly one result draft with the right wording; a second cron run does
+  nothing.
+- Tests: winner rules incl. ties and zero votes, button callback, idempotency.
+
+### T31 — Withdrawal and retention (`bot`, `channels`)
+- Depends on: T28, T30
+- Change: `editMessage` capability on the Telegram adapter (`editMessageCaption` or `editMessageText`,
+  adapter decides). `/entries` lists recent entries with a "withdraw name" button: the name is deleted
+  in D1, the affected Telegram messages are re-rendered and edited using `channel_deliveries`. Daily
+  cron deletes names of non-winning entries 90 days after the result post; winners keep the name until
+  withdrawal (ADR 010). Site rebuild hook is a no-op until T38.
+- Acceptance: after withdrawal the channel shows "Work No N"; Git history never contained the name.
+- Tests: edit caption vs text, retention dates, winner exemption.
+
+### T32 — Instagram adapter (former T24, `channels`)
+- Depends on: T25, T27, H8 · Sensitive: new secrets
+- Change: as T24 above, plus names always resolved anonymously (T27 policy); the poll post goes to
+  Instagram as a carousel without a poll, the result post as usual.
+- Acceptance and tests: as T24.
+
+### T33 — Usage metrics (`bot`)
+- Depends on: T25
+- Change: per draft store `first_ready_at`, edit count (UA, DE, regenerate) and the final delivery
+  status from the callback. Operator command `/stats`: last 4 weeks, posts published, median time from
+  draft to publish, edits per post, delivery success rate. No personal data. Volodymyr uses these
+  numbers to decide when phases 2b-4 start (expert review 2026-10-28); they also go into the README.
+- Acceptance: `/stats` answers only the operator; numbers match a fixture.
+- Tests: aggregation, allow-list.
+
+### T34 — Portfolio pack (docs) · Owner: claude-code · Reviewer: kimi-code
+- Depends on: T33, H12
+- Change: English README rewritten for employers: problem, architecture diagram, demo GIF (H12),
+  real usage numbers from `/stats`, design trade-offs with ADR links; `docs/operations.md`: failure and
+  recovery (API down, partial delivery, re-run), security boundaries, deploy from scratch.
+- Acceptance: a developer can deploy a test tenant from the docs alone (checked by kimi-code).
+- Tests: n/a (docs); links checked.
+
+## Tasks v3: phase 2 (website)
+
+Sizes confirmed when each task starts.
+
+### T35 — Site scaffold (`site`)
+- Depends on: T25
+- Change: Astro static in `apps/site`, `/uk/` and `/de/`, theme from the tenant `site:` section, blog
+  built from the `ContentStore`; manual `wrangler pages deploy` documented.
+- Acceptance: local build renders all published posts in both languages; no tenant-specific code.
+- Tests: build in CI, content loader tests.
+
+### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`)
+- Depends on: T25, T35
+- Change: `/work` session (kind `work`), collection picker; `TextGenerator` port + Claude implementation
+  for UA description and DE version (versioned prompt); `buildWorkFromPayload` and works writer
+  (`content/works/<id>/`, `content/collections/<slug>.md`); optional channel post about the new work.
+- Acceptance: a published work appears in `content/works/` with valid frontmatter; ledger as for posts.
+- Tests: schema, builder, mocked generator.
+
+### T37 — Site pages (`site`)
+- Depends on: T35, T36, T27, H11
+- Change: about, collections and works, contest winners (names via the endpoint, masked), legal pages
+  from secrets. The site stays unpublished until Volodymyr confirms the legal texts.
+- Acceptance: build with fixture names; no name or Impressum value in the build log.
+- Tests: page build tests, masking.
+
+### T38 — Site workflow and go-live (`workflows`) · Sensitive
+- Depends on: T37, H10, H11
+- Change: `site.yml` (`workflow_call` + `workflow_dispatch`, concurrency `site`, checkout `ref: main`,
+  commits nothing); `publish.yml` calls it after publish; T31 rebuild hook becomes real. Go-live
+  checklist: legal texts, Datenschutzerklärung with all processors (incl. Cloudflare for contest names).
+- Acceptance: a publish run updates the live site; a manual rebuild works without a payload.
+- Tests: actionlint; manual run documented in the PR.
 
 ## Later (not yet broken down)
-Mini App editor · scheduled publishing · website (phase 2) with Impressum / Datenschutzerklärung ·
-participant submissions (phase 3, needs Volodymyr's approval: personal data) · presentation slides.
+Phase 2b video (ADR 012), phase 3 metrics and email (ADR 013), phase 4 shop (ADR 014): started only when
+the T33 numbers show the channels are used. Mini App editor, scheduled publishing.
