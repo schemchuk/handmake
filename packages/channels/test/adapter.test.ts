@@ -381,7 +381,7 @@ describe('TelegramAdapter: polls (T21)', () => {
     expect(requests[1]!.json).toMatchObject({
       chat_id: 'chat-1',
       question: 'Яка робота тижня?',
-      options: ['1. Ваза', '2. Шаль'],
+      options: [{ text: '1. Ваза' }, { text: '2. Шаль' }],
       is_anonymous: true,
       reply_parameters: { message_id: 101 },
     });

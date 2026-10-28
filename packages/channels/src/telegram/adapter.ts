@@ -218,7 +218,9 @@ export class TelegramAdapter implements ChannelAdapter {
       const result = (await this.#call('sendPoll', {
         chat_id: chatId,
         question: op.question,
-        options: op.options,
+        // Bot API: Array of InputPollOption; plain strings are an
+        // undocumented legacy form.
+        options: op.options.map((text) => ({ text })),
         is_anonymous: true,
         ...(replyParameters && { reply_parameters: replyParameters }),
       })) as { message_id?: unknown };
