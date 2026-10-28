@@ -2,8 +2,9 @@
 
 How the system is built; major choices are recorded in docs/decisions/.
 
-Status: **draft v3 (2026-10-28), awaiting review.** v3 implements docs/01-spec.md v5: contest entries via
-the author, website, video, funnel metrics, shop seams (sections 4.4, 4.6-4.9, ADR 010-014). v2 (approved
+Status: **draft v3.1 (2026-10-28), review applied, awaiting approval.** v3 implements docs/01-spec.md
+v5: contest entries via the author, website, video, funnel metrics, shop seams (sections 4.4, 4.6-4.9,
+ADR 010-014). v3.1 applies docs/reviews/2026-10-28-v5-review.md (B1-B3, N1-N10). v2 (approved
 2026-10-21) added ports, tenancy and the poll.
 
 ## 1. Overview
@@ -13,7 +14,7 @@ the author, website, video, funnel metrics, shop seams (sections 4.4, 4.6-4.9, A
  ┌───────────┐  webhook   ┌──────────────────────────────┐ dispatch ┌───────────────────────────────┐
  │ Telegram  │ ─────────▶ │ bot Worker                   │ ───────▶ │ Actions                       │
  │ private   │ ◀───────── │  - allow-list, draft FSM     │          │  publish: content -> channels │
- │ chat      │  preview,  │  - drafts: post/entry/work   │ ◀─────── │  site:    Astro build -> Pages│
+ │ chat      │  preview,  │  - drafts: post/work, entries│ ◀─────── │  site:    Astro build -> Pages│
  └───────────┘  buttons   │  - AI translate / describe   │ callback │  render-video (2b): MP4 -> R2 │
                           │  - crons: F18, F19, metrics  │          └──────────────┬────────────────┘
                           │ D1: drafts, entries, index,  │                         │
@@ -59,7 +60,7 @@ content/
   collections/<slug>.md                   groups of works (phase 2)
   ledger/<post-id>.json
 docs/
-.github/workflows/  ci.yml, publish.yml (+ site job), render-video.yml (2b)
+.github/workflows/  ci.yml, publish.yml, site.yml (2), render-video.yml (2b)
 ```
 
 pnpm workspaces, TypeScript strict, Vitest, ESLint + Prettier, secret scanning in CI (see ADR 001).
@@ -96,11 +97,13 @@ versions:
 or media IDs, timestamps, last error. Kept separate from the post so retries do not rewrite the post.
 
 v3 additions:
-- `type` gains no new post types; contest entries are D1 drafts, not content files. Poll and result
-  posts reference entries by placeholder `{entry:<entryId>}` in their texts; the name behind it lives
-  only in D1 (ADR 010).
+- `type` gains no new post types; contest entries are rows in D1 `contest_entries`, not content
+  files. Poll and result posts reference entries by placeholder `{entry:<entryId>}` in their texts; the
+  name behind it lives only in D1 (ADR 010). One shared resolver in `core`
+  (`resolveEntryNames(text, names, policy)`) is used by the publisher and the site: an entry without a
+  name (never given, withdrawn, deleted) becomes "Work No N"; a malformed token fails the render.
 - `content/works/<id>/index.md`: frontmatter `id, tenant, date, collection, photos, video?` (R2 key,
-  2b), `versions` (UA/DE description with provenance), `sale?` (phase 4 only, ADR 014).
+  2b), `versions` (UA/DE description with provenance). No `sale` field before phase 4 (ADR 014).
 - `content/collections/<slug>.md`: `title` and `description` per language, `order`, cover photo.
 
 Tenant config `config/tenants/faden-und-stimmung.yaml` holds tenant ID and name, languages and their
@@ -124,6 +127,10 @@ secrets, never values.
    preview is exactly what will be posted, including limit warnings.
 5. Inline buttons: Edit UA, Edit DE, Regenerate DE, Publish, Discard.
    Edit = the bot asks for the replacement text and the next message replaces that version (ADR 005).
+6. Drafts carry a `kind` (`post` | `work`) and kind extras (JSON: poll spec, entry refs, collection) in
+   D1; `type` (free, announcement, reminder, wotw-poll, wotw-result) is stored and dispatched too.
+7. The chat has an explicit session kind (post, entry, work) so a `/entry` or `/work` flow never
+   attaches messages to a cron-created or collecting post draft (review N2).
 
 ### 4.2 Publish
 
@@ -131,7 +138,8 @@ secrets, never values.
 2. The Worker moves the draft `ready → publishing` in a single D1 statement (`UPDATE ... WHERE
    status = 'ready'`). A second press or a webhook retry finds no `ready` row and does nothing (A4).
 3. The Worker sends `repository_dispatch` (`publish-post`) with the draft ID and payload
-   (texts, photo `file_id`s, provenance), using a fine-grained GitHub token limited to this repo.
+   (`kind`, `type`, texts, photo `file_id`s, provenance, `poll?`), using a fine-grained GitHub token
+   limited to this repo. The payload never carries personal data: contest names stay in D1 (ADR 010).
 4. `publish.yml` runs with `concurrency: publish` (one at a time):
    1. Build the content folder: download photos via Telegram `getFile`, re-encode to JPEG and strip
       all metadata, write `index.md`, validate with the `core` schema.
@@ -151,51 +159,67 @@ HMAC-signed) with the post ID, final ledger and photo list. The Worker marks the
 keeps a small index of published posts per tenant in D1 (needed for the work-of-week poll and, later,
 analytics). The Git repo stays the source of truth; the D1 index can be rebuilt from it.
 
+Callback v2 (review B1): each channel entry becomes `{ status, messageIds: { main?, poll? } }`, where
+the publisher finds the IDs by op kind at deliver time (`main` = first album or text op, `poll` = the
+poll op). The Worker stores them in D1 (`channel_deliveries`: tenantId, postId, channel, status,
+messageIds JSON). The poll close and the withdrawal edit read them from there; nothing re-renders.
+
 ### 4.4 Work of the week (F19, ADR 008 + 010)
 
-1. **Entries.** The author starts an `entry` draft (`/entry`), sends one photo, optionally a first name
-   or nickname, and confirms the participant's consent. The entry is stored in D1
-   (`contest_entries`: tenantId, week, file_id, display_name?, consent_at, status).
-2. **Open.** Worker cron at the opening time (Monday 10:00, config) reads the week's approved entries
-   through `SubmissionSource` (`AuthorEntrySource`). Fewer than 2 → the author is told, no poll.
-   Otherwise it creates a `wotw-poll` draft: album numbered 1..N, poll "No 1".."No N", captions with
-   `{entry:<id>}` placeholders. The author gets the usual preview and Publish.
-3. **Deliver.** The dispatch payload carries the entries' file_ids and display names; the publisher
-   renders names into the Telegram ops but commits texts with placeholders only. The ledger stores the
-   poll message ID; it is found by op kind `poll`, not by index (review note, PR #31).
-4. **Close.** Worker cron at the closing time calls `closePoll` (`stopPoll`) and gets the counts.
+1. **Entries.** The author starts an entry session (`/entry`), sends one photo, optionally a first name
+   or nickname, and confirms the participant's consent. The entry is a row in its own D1 table
+   (`contest_entries`: entryId, tenantId, week, file_id, display_name?, consent_at, status
+   submitted | withdrawn), not a draft: entries are never translated or published on their own.
+2. **Open.** Worker cron at the opening time (Monday 10:00, config) reads the week's entries through
+   `SubmissionSource` (`AuthorEntrySource`), numbered 1..N in submission order. Fewer than 2 → the
+   author is told, no poll. Otherwise it creates a `wotw-poll` draft (kind `post`, extras: poll spec and
+   entry refs): album 1..N, poll "No 1".."No N", captions with `{entry:<id>}` placeholders. The author
+   gets the usual preview (names resolved) and Publish.
+3. **Deliver.** The dispatch payload carries entry IDs only (in the placeholders) and the entries'
+   file_ids. The publisher fetches names from the Worker endpoint `GET /internal/contest-names`
+   (section 5) and resolves them per channel policy: names where the tenant allows them (Telegram),
+   always "Work No N" otherwise (Instagram). Committed texts keep the placeholders.
+4. **Close.** Worker cron at the closing time reads the poll message ID from `channel_deliveries`
+   (callback v2, 4.3) and calls `closePoll` (`stopPoll`) to get the counts.
 5. **Winner.** Most votes; zero votes, unreadable result or tie → `WinnerPicker` (Claude, sees the
-   candidate photos) chooses with a one-line reason.
-6. **Result.** A `wotw-result` draft goes to the author for Publish. Telegram may show the display name;
-   Instagram always shows "Work No N" (ADR 010).
-7. **Withdrawal.** Deleting a display name in D1 triggers a caption edit on Telegram (`editCaption`
-   capability) and a site rebuild. Entries are deleted 90 days after the result post.
+   candidate photos, fetched by a small Worker-side Telegram `getFile` client) chooses with a one-line
+   reason.
+6. **Result.** A `wotw-result` draft goes to the author for Publish, resolved the same way as step 3.
+7. **Withdrawal.** Deleting a display name in D1 triggers an edit of the affected Telegram messages
+   (`editMessage` capability: caption or text, the adapter decides; IDs from `channel_deliveries`) and,
+   from phase 2, a site rebuild. Retention: see ADR 010.
 
 Channel polls are anonymous: no voter data reaches us.
 
 ### 4.6 Works and collections (F24, phase 2)
 
-1. The author starts a `work` draft (`/work`), sends photos and a short note, picks or creates a
+1. The author starts a work session (`/work`): a draft of kind `work` on the existing `drafts` table and
+   FSM (collect → translate → preview → publish). She sends photos and a short note, picks or creates a
    collection (inline buttons).
 2. `TextGenerator` drafts a UA description and the DE version; she edits and approves as with posts.
-3. Publish dispatches to the publish workflow with kind `work`: it writes `content/works/<id>/`,
-   optionally also publishes a channel post about the new work (her choice in the preview).
+3. Publish dispatches with kind `work`: the publisher's `buildWorkFromPayload` and a works writer in
+   the content store write `content/works/<id>/` (ledger path `content/ledger/<id>.json` as for posts),
+   optionally also a channel post about the new work (her choice in the preview).
 4. A work is also the source for a video (4.8), which answers spec Q9 by default: "a new work = a
    `work` draft; `/video` on a published work starts the render".
 
 ### 4.7 Website build (F22-F23, ADR 011)
 
-1. The `site` job runs after every publish job and on manual dispatch.
-2. It reads content from the `ContentStore`, fetches contest display names from
-   `GET /internal/contest-names` (HMAC), reads Impressum fields from secrets, builds Astro per tenant
-   theme, and deploys to Cloudflare Pages.
-3. A failed build alerts the operator; the published channel posts are unaffected.
+1. The site build lives in its own workflow `site.yml` (`workflow_call` + `workflow_dispatch`, own
+   concurrency group `site`). `publish.yml` calls it as a job after the publish job, so a slow Pages
+   deploy never blocks publishing, and a manual rebuild needs no publish payload.
+2. It checks out `ref: main` (the event SHA predates the content commit the publish job just pushed),
+   reads content from the `ContentStore`, fetches contest display names from
+   `GET /internal/contest-names`, reads Impressum fields from secrets, masks every fetched value in the
+   log (`::add-mask::`), builds Astro per tenant theme, and deploys to Cloudflare Pages.
+3. It commits nothing. A failed build alerts the operator; the published channel posts are unaffected.
 
 ### 4.8 Video (F20-F21, phase 2b, ADR 012 proposed)
 
 1. `/video` on a published work → the Worker asks `TextGenerator` for a short UA/DE caption script and
    dispatches `render-video` with work ID, template version and script.
-2. The job renders the HyperFrames template to MP4 deterministically, uploads it to R2
+2. The job (own concurrency group `render-video`, commits nothing) renders the HyperFrames template to
+   MP4 deterministically, uploads it to R2
    (`MediaStore`), and calls back the Worker, which sends the video to the author as a preview.
 3. Publish → the publish workflow delivers a `video` op to every channel with the `video` capability
    (Telegram `sendVideo`; Instagram Reels container with the R2 public URL). Ledger as usual; a retry
@@ -203,15 +227,15 @@ Channel polls are anonymous: no voter data reaches us.
 
 ### 4.9 Audience metrics and email (F25-F27, ADR 013)
 
-1. Weekly Worker cron asks each channel adapter with the `metrics` capability for follower count and
-   recent post stats; stores aggregates in D1 `audience_metrics`; sends a short summary to the author
-   and operator. No personal data.
+1. Phase 3: a weekly Worker cron asks each channel adapter with the `metrics` capability for follower
+   count and recent post stats; stores aggregates in D1 `audience_metrics`; sends a short summary to
+   the author and operator. No personal data. Instagram insights permissions are verified in that task.
 2. Email (later, needs approval): the site form posts to the email service (double opt-in); nothing is
    stored by us.
 3. Monetization (phase 4, ADR 014): a tenant flag; the operator turns it on when the metrics reach the
    configured threshold.
 
-### 4.5 Failure handling (all flows)
+### 4.10 Failure handling (all flows)
 
 - AI failure → the author gets "translation failed, retry or write DE yourself" (F7).
 - Dispatch failure → the draft goes back to `ready` and the author sees an error; nothing was published.
@@ -230,11 +254,17 @@ Channel polls are anonymous: no voter data reaches us.
 - Photos: metadata stripped on publish (F4). Face consent confirmed by the author (F10).
 - The author's Instagram handle and IDs live in secrets, not in the repo (spec section 11).
 - Contest display names (first name or nickname, with consent) are the only personal data we store:
-  D1 only, never in Git or logs, deleted 90 days after the result post (ADR 010).
-- New secrets (v3): `CLOUDFLARE_API_TOKEN` (Pages deploy), `CLOUDFLARE_ACCOUNT_ID`, Impressum fields,
-  `SITE_EXPORT_SECRET` (contest-names endpoint), later R2 keys and the email service key.
-- Third parties that receive data: Telegram, Cloudflare, GitHub, Anthropic (and Meta in 1b). All must
-  appear in the Datenschutzerklärung (phase 2). Flag: Volodymyr checks the DPAs.
+  D1 only, never in Git, dispatch payloads or logs; retention in ADR 010.
+- `GET /internal/contest-names` (Worker): HMAC-SHA256 over `method + path + timestamp` with
+  `NAMES_ENDPOINT_SECRET`, timestamp header valid for 5 minutes (replay window), constant-time compare.
+  Callers: the publisher and the site job; both mask every name with `::add-mask::` on receipt,
+  because Actions logs of this public repo are world-readable.
+- New secrets (v3): `NAMES_ENDPOINT_SECRET` (Worker + GitHub), `CLOUDFLARE_API_TOKEN` (scoped to Pages
+  deploy only), `CLOUDFLARE_ACCOUNT_ID`, Impressum fields; later R2 keys and the email service key.
+- Third parties that receive data: Telegram, Cloudflare (now also as the store of contest names in D1),
+  GitHub, Anthropic (and Meta in 1b). All must appear in the Datenschutzerklärung (phase 2 go-live
+  checklist). Flag: Volodymyr checks the DPAs.
+- R2 video URLs (phase 2b) are unlisted but public; they only ever hold published videos.
 
 ## 6. Testing and CI
 
@@ -307,7 +337,7 @@ implementations only when needed.**
 
 | Port | Responsibility | Implementation now | Later |
 |---|---|---|---|
-| `ChannelAdapter` | `capabilities`, `render(post)`, `deliver(ops)`, optional `openPoll` / `closePoll` | Telegram (MVP), Instagram (1b) | Facebook, Threads, TikTok, YouTube, … |
+| `ChannelAdapter` | `capabilities`, `render(post)`, `deliver(ops)`, optional `closePoll`, `editMessage` | Telegram (MVP), Instagram (1b) | Facebook, Threads, TikTok, YouTube, … |
 | `ContentStore` | save post and media, read/write ledger, list published | Git repo (this repo) | tenant's own repo, object storage (R2) |
 | `DraftStore` | drafts, state transitions, published index | D1 | same, sharded by tenant |
 | `PublishRunner` | run a publish job for a post | GitHub Actions via `repository_dispatch` | Cloudflare Queues consumer |
@@ -324,8 +354,14 @@ implementations only when needed.**
 | `EmailList` | double opt-in subscriptions | — (phase 3, needs approval) | per-tenant provider |
 | `ShopProvider` | products, checkout links | — (phase 4) | per-tenant provider |
 
-Channel capabilities (v3): `photos`, `polls`, `editCaption`, `video`, `metrics`; rendering and flows
-check capabilities, never network names.
+Rule (v3.1, review answer 6): this table is a roadmap. A port or capability gets code only together
+with its first implementation; the unused `openPoll` and `PollSpec.photoIndexes` seam is removed.
+Phase 1b needs `SubmissionSource`, `WinnerPicker`, `editMessage`; phase 2 `TextGenerator`; `video`,
+`MediaStore`, `VideoRenderer` wait for 2b, `metrics` and `EmailList` for 3, `ShopProvider` for 4.
+
+Channel capabilities: `photos`, `polls`, `editMessage` (1b); `video` (2b), `metrics` (3). Rendering and
+flows check capabilities, never network names; per-channel name policy for contest entries is tenant
+config, not a network branch.
 
 ### 11.2 Patterns
 

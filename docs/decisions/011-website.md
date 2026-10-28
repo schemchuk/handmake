@@ -21,12 +21,16 @@ Build trigger:
 2. `workflow_run` on Publish. Works, but splits one logical run into two.
 
 ## Decision
-Astro (static output) in `apps/site`, deployed to **Cloudflare Pages**; built by a `site` job that
-runs after the publish job and on `workflow_dispatch`.
+Astro (static output) in `apps/site`, deployed to **Cloudflare Pages**; built by its own workflow
+`site.yml` (`workflow_call` + `workflow_dispatch`, concurrency group `site`), which `publish.yml` calls
+as a job after the publish job. The job checks out `ref: main` (the event SHA predates the content
+commit) and commits nothing (review N4).
 - Content comes from the `ContentStore` (Git for the circle): posts, works, collections, contest
   results. Pages per language under `/uk/` and `/de/`.
 - Secrets at build time: Impressum fields from GitHub Secrets; contest display names from the Worker
-  endpoint `GET /internal/contest-names` (HMAC, same scheme as the publish callback).
+  endpoint `GET /internal/contest-names` (HMAC over method + path + timestamp, 5-minute window,
+  architecture section 5). Every fetched value is masked with `::add-mask::`, since the Actions logs of
+  this public repo are world-readable (review N5, N6).
 - Tenant theme (`site:` section in tenant config: name, colours, logo path, languages, nav) drives
   layout; no tenant-specific code in `apps/site`.
 - Collections (`content/collections/<slug>.md`) and works (`content/works/<id>/index.md` + photos) are
@@ -34,6 +38,9 @@ runs after the publish job and on `workflow_dispatch`.
 - Legal pages are drafts; the site does not go live until Volodymyr confirms them (spec Q2, 7).
 
 ## Consequences
-- New secrets: `CLOUDFLARE_API_TOKEN` (Pages deploy only), `CLOUDFLARE_ACCOUNT_ID`, Impressum fields.
-- The publish workflow file changes: a sensitive PR (AGENTS.md), needs Volodymyr's OK.
+- New secrets: `CLOUDFLARE_API_TOKEN` (scoped to Pages deploy only), `CLOUDFLARE_ACCOUNT_ID`,
+  `NAMES_ENDPOINT_SECRET`, Impressum fields.
+- Workflow files change: a sensitive PR (AGENTS.md), needs Volodymyr's OK.
+- Go-live checklist: legal texts confirmed, Datenschutzerklärung lists all processors (incl. Cloudflare
+  as the store of contest names).
 - Another tenant gets its own Pages project and config, same code.

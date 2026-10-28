@@ -21,8 +21,10 @@ Email (later):
    personal data and must handle deliverability.
 
 ## Decision
-Metrics: option 1, behind a `MetricsSource` capability on channel adapters (`followerCount`,
+Metrics: option 1, behind a `metrics` capability on channel adapters (`followerCount`,
 `postStats`), results in D1 table `audience_metrics` (tenantId, channel, week, followers, reach).
+Built in phase 3, not earlier; the Instagram insights permissions for the Creator account are verified
+in that task.
 Email: option 1, built only after Volodymyr's explicit approval and the updated Datenschutzerklärung;
 provider chosen at that time (EU hosting and a DPA required).
 

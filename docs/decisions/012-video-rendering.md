@@ -11,8 +11,9 @@ publishing needs a public `video_url`.
 
 ## Options
 Renderer:
-1. **HyperFrames** (HeyGen, open source): HTML/CSS/GSAP → deterministic MP4 via headless Chrome +
-   FFmpeg, npm CLI, agent skills for Claude Code. Licence and server requirements to verify.
+1. **HyperFrames** (HeyGen, open source, github.com/heygen-com/hyperframes): HTML/CSS/GSAP →
+   deterministic MP4 via headless Chrome + FFmpeg, npm CLI, agent skills for Claude Code. Apache-2.0
+   (compatible with resale), Node >= 22 (verified in the v5 review, N8).
 2. Remotion: mature React → MP4. Free for individuals and small companies; a paid company licence is
    needed above a size limit, which matters for reselling to bloggers' businesses.
 3. FFmpeg slideshow scripts: no browser, cheapest, but weak motion/typography; hard to theme.
@@ -34,8 +35,10 @@ config), rendered by a `render-video` Actions job, output stored in R2 via a new
 The AI (`TextGenerator` port) writes the caption script; the author previews the rendered file in the
 bot (sent as a Telegram video) and publishes it like a post. Channels declare `video` capability;
 the ledger records the video op like any other.
-Before accepting: verify the HyperFrames licence, pin a version, check render time per video on an
-Actions runner, and compare with Remotion's licence terms for resale.
+The job has its own concurrency group and commits nothing. R2 URLs are unlisted but public; they
+only hold published videos.
+Before accepting (start of 2b): pin a version, smoke-test render time per video on an Actions runner,
+and check upstream activity (some users move to Remotion).
 
 ## Consequences
 - New ports: `MediaStore`, `VideoRenderer`, `TextGenerator`; new capability `video` on adapters.

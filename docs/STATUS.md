@@ -1,15 +1,15 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** v5 review delivered (docs/reviews/2026-10-28-v5-review.md): approve with changes,
-  blocking findings B1-B3 (poll/message ids to the Worker, names out of the dispatch payload, draft
-  kinds through dispatch). Review only, no code.
+- **Current task:** v5 review processed: architecture v3.1 and ADR 010-014 amended (B1-B3, N1-N10);
+  retention decided (winners' names kept until withdrawal, others deleted after 90 days).
 - **Branch:** main (docs only)
 - **Last commit:** see `git log -1`
-- **Next step:** claude-code processes the v5 review. T22 paused until tasks v3.
-- **Blocked on:** nothing.
+- **Next step:** Volodymyr approves architecture v3.1; then claude-code writes tasks v3 (T25-T36 from
+  the review split). T22 paused until tasks v3.
+- **Blocked on:** Volodymyr's approval of architecture v3.1.
 - **Open questions for Volodymyr:**
-  none.
+  approve architecture v3.1.
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
