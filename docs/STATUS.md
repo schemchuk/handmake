@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** Review of product vision v2: spec v5 (approved) + architecture v3 draft + ADR
-  010-014. Brief: docs/reviews/2026-10-28-v5-brief.md. Review only, no code.
+- **Active agent:** claude-code
+- **Current task:** v5 review delivered (docs/reviews/2026-10-28-v5-review.md): approve with changes,
+  blocking findings B1-B3 (poll/message ids to the Worker, names out of the dispatch payload, draft
+  kinds through dispatch). Review only, no code.
 - **Branch:** main (docs only)
 - **Last commit:** see `git log -1`
-- **Next step:** kimi-code writes docs/reviews/2026-10-28-v5-review.md and hands back to claude-code.
-  T22 paused until tasks v3.
+- **Next step:** claude-code processes the v5 review. T22 paused until tasks v3.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   none.
@@ -27,3 +27,5 @@ Moved to docs/review-notes.md (ADR 009). Read it only when your task touches an 
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md
 - Agent context budget, no code graph: ADR 009 (2026-10-27).
+- Spec v5 approved 2026-10-28; architecture v3 + ADR 010-014 reviewed 2026-10-28:
+  docs/reviews/2026-10-28-v5-review.md (approve with changes, B1-B3).
