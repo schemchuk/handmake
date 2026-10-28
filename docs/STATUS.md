@@ -2,7 +2,7 @@
 
 - **Active agent:** claude-code
 - **Current task:** architecture v3.1 approved (2026-10-28; the author breaks poll ties, no
-  WinnerPicker). Tasks v3 drafted in docs/03-tasks.md (T25-T38).
+  WinnerPicker). Tasks v3 drafted in docs/03-tasks.md (T25-T38; Instagram is T26, right after T25).
 - **Branch:** main (docs only)
 - **Last commit:** see `git log -1`
 - **Next step:** Volodymyr approves tasks v3; then kimi-code starts T25.
