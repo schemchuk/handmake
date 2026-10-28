@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T22 — Work-of-the-week candidates and poll draft (F19 part 2, `bot`); not started
-- **Branch:** none yet (`feat/T22-...`)
+- **Active agent:** claude-code
+- **Current task:** Product vision v2: interview round 5 -> spec v5 -> architecture v3 -> review
+  brief for kimi-code -> tasks v3 (docs/00-interview.md "Round 5").
+- **Branch:** main (docs only)
 - **Last commit:** see `git log -1`
-- **Next step:** kimi-code starts T22 (read docs/review-notes.md "Polls (T21)").
-  T21 merged as PR #31. Bot redeployed 2026-10-28 (T20 `*/15` cron live, D1 migrations up to date).
+- **Next step:** Volodymyr answers interview round 5. T22 paused until spec v5 is approved.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   none.

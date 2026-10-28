@@ -90,3 +90,20 @@ Answered via multiple-choice questions; all recommended options chosen.
 - Both: two separate contests; Instagram monthly with a theme; AI pre-checks Instagram entries, the
   author decides; minimal data retention.
 Details: docs/research/002-contests.md.
+
+## Round 5 — product vision v2 (2026-10-28, open)
+
+Volodymyr's vision, in his words (translated from Ukrainian):
+- One source of truth from which the author runs the Telegram and Instagram accounts; other networks
+  can be connected step by step.
+- A poll in the Telegram channel picks the best work among those submitted by members of the Telegram
+  channel. A video is created from the winning work.
+- The website represents the author's interests and works like a kind of model agency, also presenting
+  collections of works. AI does all of this.
+- A shop can be opened next to or on the website.
+- A designed funnel; once the lead base is large enough, monetization can be switched on.
+- The whole case must be strong as a product to resell to bloggers.
+
+Process: re-run interview -> spec v5 -> architecture v3 -> review brief for kimi-code -> tasks v3,
+each with Volodymyr's gate. T22 is paused until spec v5 is approved, because the vision changes where
+poll candidates come from (participants instead of the author's own posts).
