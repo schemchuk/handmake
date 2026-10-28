@@ -107,3 +107,13 @@ Volodymyr's vision, in his words (translated from Ukrainian):
 Process: re-run interview -> spec v5 -> architecture v3 -> review brief for kimi-code -> tasks v3,
 each with Volodymyr's gate. T22 is paused until spec v5 is approved, because the vision changes where
 poll candidates come from (participants instead of the author's own posts).
+
+Answers, part 1 (2026-10-28):
+- Q1 Participants' works are only shown in media; the contest runs in Telegram. Nothing else is done
+  with them, and they are never sold. (How participants hand in works: still open.)
+- Q2 Video: decided later. Preferred source is a new work of the author, which she hands to the
+  system somehow.
+- Q4 Shop: later, the author's own works only. First build a lead base and entertain it.
+- Business registration: later, country not fixed (may be outside Germany). *Flag: a site run from
+  Germany still needs an Impressum; the country of registration has tax and legal consequences —
+  not legal advice.*
