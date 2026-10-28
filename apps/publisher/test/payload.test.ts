@@ -57,3 +57,55 @@ describe('parseDispatchPayload', () => {
     ).toThrow(PayloadParseError);
   });
 });
+
+describe('dispatch payload: post type and poll (T21)', () => {
+  it('defaults the post type to free', () => {
+    const payload = parseDispatchPayload(validPayload);
+    expect(payload.type).toBe('free');
+    expect(payload.poll).toBeUndefined();
+  });
+
+  it('parses a wotw-poll payload with its poll', () => {
+    const payload = parseDispatchPayload(
+      JSON.stringify({
+        ...JSON.parse(validPayload),
+        type: 'wotw-poll',
+        poll: { question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] },
+      }),
+    );
+    expect(payload.type).toBe('wotw-poll');
+    expect(payload.poll).toEqual({
+      question: 'Яка робота тижня?',
+      options: ['1. Ваза', '2. Шаль'],
+    });
+  });
+
+  it('rejects a wotw-poll payload without a poll', () => {
+    expect(() =>
+      parseDispatchPayload(JSON.stringify({ ...JSON.parse(validPayload), type: 'wotw-poll' })),
+    ).toThrow(/requires a poll/);
+  });
+
+  it('rejects a poll whose options do not match the photo count', () => {
+    expect(() =>
+      parseDispatchPayload(
+        JSON.stringify({
+          ...JSON.parse(validPayload),
+          type: 'wotw-poll',
+          poll: { question: 'q', options: ['1.', '2.', '3.'] },
+        }),
+      ),
+    ).toThrow(/one option per candidate photo/);
+  });
+
+  it('rejects a non-poll payload carrying a poll', () => {
+    expect(() =>
+      parseDispatchPayload(
+        JSON.stringify({
+          ...JSON.parse(validPayload),
+          poll: { question: 'q', options: ['1.', '2.'] },
+        }),
+      ),
+    ).toThrow(/must not carry a poll/);
+  });
+});

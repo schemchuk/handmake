@@ -11,6 +11,12 @@ import type { ChannelCapabilities, Post, SendOperation } from '@handmake/core';
  * (passed via settings) that actually has a text in the post; any remaining
  * post texts follow in file order. Without settings the order of
  * `post.texts` keys is used. Plain text, no parse mode in the MVP.
+ *
+ * `wotw-poll` posts (ADR 008) add one more op right after the album: a poll
+ * replying to the album (Telegram polls cannot carry images, so the numbered
+ * candidates are the album photos and the options reference them). The poll
+ * is a single-language op; its question/options come from the post's `poll`
+ * frontmatter as written. The language replies still target the album.
  */
 
 /** Per-channel settings of the tenant config (`channels.telegram`). */
@@ -26,6 +32,9 @@ export const telegramCapabilities: ChannelCapabilities = {
   captionLimit: 1024,
   messageLimit: 4096,
   polls: true,
+  pollMaxOptions: 10,
+  pollQuestionLimit: 300,
+  pollOptionLimit: 100,
 };
 
 export class TelegramRenderError extends Error {
@@ -61,7 +70,14 @@ function orderLanguages(post: Post, settings?: unknown): string[] {
 }
 
 export function renderTelegram(post: Post, settings?: unknown): SendOperation[] {
-  const { maxPhotos, captionLimit, messageLimit } = telegramCapabilities;
+  const {
+    maxPhotos,
+    captionLimit,
+    messageLimit,
+    pollMaxOptions,
+    pollQuestionLimit,
+    pollOptionLimit,
+  } = telegramCapabilities;
   // Post texts are validated non-empty by the post schema (T03).
   const [primaryLang, ...otherLangs] = orderLanguages(post, settings) as [string, ...string[]];
 
@@ -98,6 +114,34 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
     checkLimit(primaryLang, primaryText);
     ops.push({ kind: 'mediaGroup', photoIndexes });
     ops.push({ kind: 'message', text: primaryText, lang: primaryLang });
+  }
+
+  if (post.type === 'wotw-poll') {
+    const poll = post.poll;
+    // parsePost rejects a wotw-poll without a poll; this guard covers posts
+    // synthesized bypassing the schema (e.g. previews).
+    if (!poll) {
+      throw new TelegramRenderError('wotw-poll requires a poll (question + options)');
+    }
+    if (poll.options.length > pollMaxOptions) {
+      throw new TelegramRenderError(
+        `Telegram allows at most ${pollMaxOptions} poll options; poll has ${poll.options.length}`,
+      );
+    }
+    if (poll.question.length > pollQuestionLimit) {
+      throw new TelegramRenderError(
+        `Telegram poll question limit is ${pollQuestionLimit} chars; question has ${poll.question.length}`,
+      );
+    }
+    const overLimit = poll.options.find((option) => option.length > pollOptionLimit);
+    if (overLimit !== undefined) {
+      throw new TelegramRenderError(
+        `Telegram poll option limit is ${pollOptionLimit} chars; option "${overLimit.slice(0, 20)}…" is too long`,
+      );
+    }
+    // The poll replies to the album (op 0), even when the primary text
+    // overflowed into a separate message (op 1).
+    ops.push({ kind: 'poll', question: poll.question, options: poll.options, replyToOp: 0 });
   }
 
   // Further languages reply to the album (op 0), even if the primary text

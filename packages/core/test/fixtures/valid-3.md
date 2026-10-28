@@ -9,6 +9,11 @@ photos:
   - 02.jpg
 channels:
   - telegram
+poll:
+  question: Яка робота тижня?
+  options:
+    - 1. Ваза
+    - 2. Шаль
 versions:
   uk:
     provenance: ai-generated

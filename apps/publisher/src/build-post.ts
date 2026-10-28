@@ -31,11 +31,12 @@ export function buildPostFromPayload(
     id: isUlid(payload.draftId) ? payload.draftId : (deps.newId?.() ?? newUlid(now)),
     date: now.toISOString(),
     publishAt: 'now',
-    type: 'free',
+    type: payload.type,
     tenant: tenant.id,
     channels: Object.keys(tenant.channels),
     photos: payload.fileIds.map((_, i) => `photo-${i + 1}.jpg`),
     versions: Object.fromEntries(langs.map((lang) => [lang, { provenance: payload.provenance }])),
     texts,
+    ...(payload.poll ? { poll: payload.poll } : {}),
   };
 }

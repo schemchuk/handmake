@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T21 — Poll capability in the Telegram channel (F19 part 1, docs/03-tasks.md "Phase 1b")
-- **Branch:** feat/T21-poll-capability (to be created by kimi-code)
+- **Current task:** T21 — Poll capability in the Telegram channel (F19 part 1, docs/03-tasks.md "Phase 1b"); implemented, PR #31 open
+- **Branch:** feat/T21-poll-capability
 - **Last commit:** see `git log -1`
-- **Next step:** kimi-code implements T21. T20 merged as PR #30; the new `*/15` cron needs a bot
-  redeploy (Volodymyr).
+- **Next step:** claude-code reviews the T21 PR. After the merge: T22 (wotw
+  poll draft, `bot`); redeploy the bot for the T20 `*/15` cron (Volodymyr).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   1. T20 config values are placeholders: announcement Tue 18:00, reminder

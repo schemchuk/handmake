@@ -36,6 +36,7 @@ const callbackUrl = 'https://bot.example.com/callbacks/published';
 const basePayload: DispatchPayload = {
   tenantId,
   draftId,
+  type: 'free',
   texts: { uk: 'Тестовий допис (T19).', de: 'Testbeitrag (T19).' },
   fileIds: ['file-1'],
   provenance: 'human',
