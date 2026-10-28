@@ -35,6 +35,17 @@ workOfWeek:
   closes:
     weekday: tuesday
     time: '12:00'
+announcements:
+  schedule:
+    announcement:
+      weekday: monday
+      time: '09:00'
+    reminder:
+      weekday: tuesday
+      time: '17:00'
+  templates:
+    announcement: 'Treff am {weekday}, {date} um {time}.'
+    reminder: 'Heute um {time}: Treff!'
 featureFlags:
   translation: false
   wotwPoll: true

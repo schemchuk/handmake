@@ -26,6 +26,26 @@ workOfWeek:
     weekday: wednesday
     time: '20:00'
 
+# F18: announcement and reminder for each meeting (bot cron). Times use
+# meetingSchedule.timezone. Templates are Ukrainian; {weekday}, {date} and
+# {time} are filled with the announced meeting (Europe/Berlin wall time).
+announcements:
+  schedule:
+    announcement:
+      weekday: tuesday
+      time: '18:00'
+    reminder:
+      weekday: thursday
+      time: '10:00'
+  templates:
+    announcement: >-
+      🧶 Нагадуємо: наступна зустріч нашого handmade-кола — у {weekday},
+      {date} о {time} у Landshut! Пряжа, чаї та гарна компанія — приходь.
+      Деталі в каналі.
+    reminder: >-
+      🧶 Сьогодні, {date} о {time}, зустріч handmade-кола в Landshut!
+      Не забудь свій проєкт.
+
 featureFlags:
   translation: true
   wotwPoll: false

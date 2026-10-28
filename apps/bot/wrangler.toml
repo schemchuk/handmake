@@ -13,9 +13,11 @@ migrations_dir = "migrations"
 database_id = "4cae8a3e-9869-4dad-a2b8-ab046365999e"
 
 # Daily draft cleanup (architecture section 5: drafts older than 30 days are
-# deleted). UTC.
+# deleted). UTC. Keep this expression in sync with cleanupCron in src/composition.ts.
+# The 15-minute tick drives the F18 announcement/reminder cron; moments are
+# evaluated in the tenant's timezone, so UTC times are fine here.
 [triggers]
-crons = ["29 3 * * *"]
+crons = ["29 3 * * *", "*/15 * * * *"]
 
 # Repository the publish dispatch targets (repository_dispatch → publish.yml).
 # Not a secret; the fine-grained token is a Worker secret (GITHUB_DISPATCH_TOKEN).

@@ -1,14 +1,19 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T20 — F18 announcements and reminders (docs/03-tasks.md "Phase 1b")
-- **Branch:** feat/T20-announcements (to be created by kimi-code)
-- **Last commit:** see `git log -1`
-- **Next step:** kimi-code implements T20. T19 merged as PR #29 (cf8e2eb); repo variable
-  `PUBLISH_CALLBACK_URL` set, Worker endpoint live (unsigned POST → 401).
+- **Active agent:** claude-code (reviewer)
+- **Current task:** T20 — F18 announcements and reminders (PR #30, branch
+  `feat/T20-announcements`); review, then merge per Git rules
+- **Branch:** feat/T20-announcements (kimi-code); main untouched
+- **Last commit:** e787eef feat(bot): meeting announcement and reminder drafts via cron (T20)
+- **Next step:** claude-code reviews PR #30. After merge: deploy the bot to
+  activate the new `*/15 * * * *` cron, then T21 (poll capability) is kimi-code's.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** spec Q2 Impressum address (phase 2). Bot UI language: author-facing
-  strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
+- **Open questions for Volodymyr:**
+  1. T20 config values are placeholders: announcement Tue 18:00, reminder
+     Thu 10:00, and the UA template wording — please confirm/adjust with the
+     author (plain config, `config/tenants/faden-und-stimmung.yaml`).
+  2. Spec Q2 Impressum address (phase 2). Bot UI language: author-facing
+     strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
@@ -21,7 +26,7 @@ Moved to docs/review-notes.md (ADR 009). Read it only when your task touches an 
 - Interview: docs/00-interview.md (rounds 0-4, confirmed).
 - Spec: docs/01-spec.md v4 (approved 2026-10-21): product readiness N1-N9, poll-based work of the week.
 - Architecture: docs/02-architecture.md v2 + ADR 001-008 (approved 2026-10-21).
-- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00-T19 done (MVP live 2026-10-27; T19 merged as PR #29). History: `git log --merges` / GitHub PRs.
+- Tasks: docs/03-tasks.md v2 (approved 2026-10-21). T00-T19 done (MVP live 2026-10-27; T19 merged as PR #29). T20 implemented, PR #30 open. History: `git log --merges` / GitHub PRs.
 - Merge rule (2026-10-22): the reviewer agent merges task PRs; sensitive PRs need Volodymyr's OK (AGENTS.md).
 - Toolchain note (T01): TypeScript pinned to ^5.9 because typescript-eslint does not support TS 7 yet.
 - Research: docs/research/001-market-scan.md, 002-contests.md

@@ -3,7 +3,8 @@ import { draftRetentionDays } from '@handmake/core';
 import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
-import { createTenantLookup } from './allow-list';
+import { runAnnouncementCron } from './announcement-cron';
+import { createTenantLookup, parseAllowList } from './allow-list';
 import type { TenantLookup } from './allow-list';
 import { createBot } from './bot';
 import type { AppContext } from './context';
@@ -12,14 +13,19 @@ import type { Env } from './env';
 import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './processed-updates';
 import { createGitHubActionsRunner } from './publish-runner';
 import { handlePublishedCallback, publishedCallbackPath } from './published-callback';
+import { createGitHubTenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 
 /** Header Telegram sends when the webhook was registered with a secret token. */
 export const secretTokenHeader = 'x-telegram-bot-api-secret-token';
 
+/** The cron that runs retention cleanup; every other tick evaluates F18. */
+export const cleanupCron = '29 3 * * *';
+
 export interface App {
   handle(request: Request): Promise<Response>;
-  /** Daily cleanup: returns the number of expired drafts deleted. */
+  /** Scheduled work: F18 announcement/reminder check on every tick, daily
+   * retention cleanup on the cleanup cron; returns drafts deleted. */
   scheduled(event: ScheduledEvent): Promise<number>;
   /** Exposed for tests; production uses only `handle`. */
   bot: Bot<AppContext>;
@@ -157,12 +163,32 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
 
     async scheduled(event) {
       const drafts = createD1DraftStore(env.DB);
-      const retentionMs = draftRetentionDays * 24 * 60 * 60 * 1000;
-      const updates = createProcessedUpdateTracker(env.DB);
-      const updateRetentionMs = processedUpdateRetentionDays * 24 * 60 * 60 * 1000;
-      const cutoff = new Date(event.scheduledTime - retentionMs);
-      await updates.deleteOlderThan(new Date(event.scheduledTime - updateRetentionMs));
-      return drafts.deleteOlderThan(cutoff);
+      // Retention cleanup runs on its own daily cron — an event without a
+      // cron (as in tests) counts as the cleanup cron and never fetches
+      // tenant config.
+      if (event.cron === undefined || event.cron === cleanupCron) {
+        const retentionMs = draftRetentionDays * 24 * 60 * 60 * 1000;
+        const updates = createProcessedUpdateTracker(env.DB);
+        const updateRetentionMs = processedUpdateRetentionDays * 24 * 60 * 60 * 1000;
+        const cutoff = new Date(event.scheduledTime - retentionMs);
+        await updates.deleteOlderThan(new Date(event.scheduledTime - updateRetentionMs));
+        return drafts.deleteOlderThan(cutoff);
+      }
+      // F18: on every other tick, check whether an announcement/reminder
+      // moment just fired for some tenant. Failures stay inside the cron:
+      // it is a best-effort notifier and drafts are the source of truth.
+      await runAnnouncementCron(new Date(event.scheduledTime), {
+        drafts,
+        translator: new ClaudeTranslator({
+          systemPrompt: humanizeDePromptV1,
+          apiKey: env.ANTHROPIC_API_KEY,
+        }),
+        bot: this.bot,
+        tenantConfigs: createGitHubTenantConfigSource({ repo: env.GITHUB_REPO, ref: 'main' }),
+        allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+        texts,
+      }).catch((error: Error) => console.error('announcement cron failed:', error.message));
+      return 0;
     },
   };
 }

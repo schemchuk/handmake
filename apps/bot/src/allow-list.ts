@@ -16,11 +16,21 @@ export class AllowListError extends Error {
 
 export type TenantLookup = (telegramUserId: number) => string | undefined;
 
+/** The allow-list as a map; the cron needs the inverse (tenant → authors). */
+export type AllowList = ReadonlyMap<number, string>;
+
 const telegramUserIdPattern = /^\d+$/;
 const tenantIdPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /** Parses the TELEGRAM_ALLOWED_USER_IDS secret into a lookup function. */
 export function createTenantLookup(serialized: string): TenantLookup {
+  const map = parseAllowList(serialized);
+  return (telegramUserId) => map.get(telegramUserId);
+}
+
+/** Parses and validates the secret; used directly by the cron, which needs
+ * the raw map to group authors by tenant (its lookup direction is inverted). */
+export function parseAllowList(serialized: string): AllowList {
   if (!serialized) {
     throw new AllowListError(
       'TELEGRAM_ALLOWED_USER_IDS is not set; ' +
@@ -63,5 +73,5 @@ export function createTenantLookup(serialized: string): TenantLookup {
     map.set(Number(key), value);
   }
 
-  return (telegramUserId) => map.get(telegramUserId);
+  return map;
 }

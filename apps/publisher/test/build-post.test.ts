@@ -20,6 +20,13 @@ meetingSchedule:
 workOfWeek:
   opens: { weekday: monday, time: '10:00' }
   closes: { weekday: wednesday, time: '20:00' }
+announcements:
+  schedule:
+    announcement: { weekday: tuesday, time: '18:00' }
+    reminder: { weekday: thursday, time: '10:00' }
+  templates:
+    announcement: 'Ankündigung {weekday} {date} {time}'
+    reminder: 'Erinnerung {date} {time}'
 featureFlags:
   wotwPoll: false
 offerings: []
