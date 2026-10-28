@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Product vision v2: interview round 5 -> spec v5 -> architecture v3 -> review
-  brief for kimi-code -> tasks v3 (docs/00-interview.md "Round 5").
+- **Active agent:** kimi-code
+- **Current task:** Review of product vision v2: spec v5 (approved) + architecture v3 draft + ADR
+  010-014. Brief: docs/reviews/2026-10-28-v5-brief.md. Review only, no code.
 - **Branch:** main (docs only)
 - **Last commit:** see `git log -1`
-- **Next step:** claude-code drafts architecture v3 + ADRs for spec v5. T22 paused until tasks v3.
+- **Next step:** kimi-code writes docs/reviews/2026-10-28-v5-review.md and hands back to claude-code.
+  T22 paused until tasks v3.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   none.
