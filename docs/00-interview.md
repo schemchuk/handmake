@@ -117,3 +117,12 @@ Answers, part 1 (2026-10-28):
 - Business registration: later, country not fixed (may be outside Germany). *Flag: a site run from
   Germany still needs an Impressum; the country of registration has tax and legal consequences —
   not legal advice.*
+
+Answers, part 2 (2026-10-28, multiple choice, all recommended options chosen):
+- Participants hand their works to the author (at a meeting or privately); she obtains consent and
+  uploads them through her bot. The system stores no participant data.
+- Leads at the start: Telegram and Instagram followers only, no personal data on our side. An email
+  list (ready service with double opt-in) comes later, before the shop.
+- The website presents the author and her collections, plus a blog; participants' works appear only
+  in the contest section.
+- Reselling to bloggers: business model decided later; the architecture stays multi-tenant.
