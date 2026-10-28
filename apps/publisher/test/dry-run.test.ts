@@ -23,6 +23,7 @@ const postId = '01JDRYRNT000000000000000BC';
 const basePayload: DispatchPayload = {
   tenantId: 'faden-und-stimmung',
   draftId: 'draft-1',
+  type: 'free',
   texts: { uk: 'Тестовий допис (T09).', de: 'Testbeitrag (T09).' },
   fileIds: ['file-1', 'file-2'],
   provenance: 'human',

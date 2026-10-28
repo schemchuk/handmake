@@ -35,6 +35,7 @@ offerings: []
 const payload: DispatchPayload = {
   tenantId: 'faden-und-stimmung',
   draftId: 'draft-1',
+  type: 'free',
   texts: { uk: 'uk text', de: 'de text' },
   fileIds: ['file-1', 'file-2', 'file-3'],
   provenance: 'ai-assisted',
@@ -98,5 +99,30 @@ describe('buildPostFromPayload', () => {
   it('names no photos for an empty fileIds list', () => {
     const post = buildPostFromPayload({ ...payload, fileIds: [] }, tenant, { now });
     expect(post.photos).toEqual([]);
+  });
+});
+
+describe('buildPostFromPayload: wotw-poll (T21)', () => {
+  it('carries the post type and poll into the post', () => {
+    const post = buildPostFromPayload(
+      {
+        ...payload,
+        draftId: '01JBCA1B2C3D4E5F6G7H8J9K0M',
+        type: 'wotw-poll',
+        texts: { uk: 'Голосуйте!' },
+        fileIds: ['file-1', 'file-2'],
+        poll: { question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] },
+      },
+      tenant,
+      { now },
+    );
+    expect(post.type).toBe('wotw-poll');
+    expect(post.poll).toEqual({ question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] });
+    expect(post.photos).toEqual(['photo-1.jpg', 'photo-2.jpg']);
+  });
+
+  it('omits the poll field for a free post', () => {
+    const post = buildPostFromPayload(payload, tenant, { now });
+    expect(post).not.toHaveProperty('poll');
   });
 });

@@ -12,6 +12,12 @@ export interface ChannelCapabilities {
   captionLimit: number;
   messageLimit: number;
   polls: boolean;
+  /** Max options of one poll; only meaningful when `polls` is true. */
+  pollMaxOptions: number;
+  /** Max chars of a poll question; only meaningful when `polls` is true. */
+  pollQuestionLimit: number;
+  /** Max chars of one poll option; only meaningful when `polls` is true. */
+  pollOptionLimit: number;
 }
 
 /** Identifier of a message (or poll) at the network, e.g. a Telegram message id. */
@@ -30,7 +36,13 @@ export type SendOperation =
       captionLang?: string;
       replyToOp?: number;
     }
-  | { kind: 'message'; text: string; lang: string; replyToOp?: number };
+  | { kind: 'message'; text: string; lang: string; replyToOp?: number }
+  | {
+      kind: 'poll';
+      question: string;
+      options: string[];
+      replyToOp?: number;
+    };
 
 export interface PollSpec {
   question: string;

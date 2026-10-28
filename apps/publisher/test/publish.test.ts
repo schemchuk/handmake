@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
-import { renderTelegram } from '@handmake/channels';
+import { renderTelegram, TelegramAdapter } from '@handmake/channels';
 import { ChannelRegistry, parseLedger } from '@handmake/core';
 import type {
   ChannelAdapter,
@@ -41,6 +41,7 @@ const tenantId = 'faden-und-stimmung';
 const basePayload: DispatchPayload = {
   tenantId,
   draftId,
+  type: 'free',
   texts: { uk: 'Тестовий допис (T10).', de: 'Testbeitrag (T10).' },
   fileIds: ['file-1'],
   provenance: 'human',
@@ -102,6 +103,9 @@ class FlakyAdapter implements ChannelAdapter {
     captionLimit: 1024,
     messageLimit: 4096,
     polls: false,
+    pollMaxOptions: 0,
+    pollQuestionLimit: 0,
+    pollOptionLimit: 0,
   };
   failOnOp: number | null = 1;
   readonly progressReports: number[] = [];
@@ -343,6 +347,87 @@ describe('runPublish', () => {
     expect(rerun.ledger.channels.telegram?.status).toBe('done');
     const postsDir = path.join(repoDir, 'content', 'posts');
     expect(await readdir(postsDir)).toEqual([`2026-10-24-${draftId.toLowerCase()}`]);
+  });
+
+  it('wotw-poll: resumes between album and poll, and a re-run never sends a second poll (T21)', async () => {
+    const { repoDir, payloadPath } = await makeRepo();
+    await writeFile(
+      payloadPath,
+      JSON.stringify({
+        ...basePayload,
+        type: 'wotw-poll',
+        texts: { uk: 'Голосуйте!', de: 'Stimmt ab!' },
+        fileIds: ['file-1', 'file-2'],
+        poll: { question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] },
+      }),
+    );
+    const mediaSource = await mediaSourceWithFixture();
+    mediaSource.photos.set('file-2', new Uint8Array(await readFile(jpegFixturePath)));
+
+    // Real TelegramAdapter against a fake Bot API: album ok, poll fails once.
+    let pollAttempts = 0;
+    const requests: string[] = [];
+    const fetchImpl = (async (input: unknown) => {
+      const url = String(input);
+      requests.push(url);
+      if (url.endsWith('/sendMediaGroup')) {
+        return new Response(JSON.stringify({ ok: true, result: [{ message_id: 100 }] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/sendPoll')) {
+        pollAttempts += 1;
+        if (pollAttempts === 1) {
+          return new Response(
+            JSON.stringify({ ok: false, error_code: 500, description: 'exploded' }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } },
+          );
+        }
+        return new Response(JSON.stringify({ ok: true, result: { message_id: 200 } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ ok: true, result: { message_id: 300 } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as typeof fetch;
+    const adapter = new TelegramAdapter({ token: 'TEST', fetchImpl, sleep: async () => {} });
+    const notifier = new FakeNotifier();
+    const deps = {
+      cwd: repoDir,
+      root: repoDir,
+      env: {},
+      now,
+      mediaSource,
+      registry: makeRegistry(adapter),
+      secrets: { resolve: async () => 'chat-1' },
+      notifier,
+      logger: () => {},
+    };
+
+    await expect(runPublish(payloadPath, deps)).rejects.toThrow(PublishError);
+
+    // The album landed and its message id is in the ledger; the poll did not.
+    const store = new GitRepoContentStore({ rootDir: repoDir });
+    const failed = await store.readLedger(tenantId, draftId);
+    expect(failed?.channels.telegram?.remoteIds).toEqual([100]);
+    expect(requests.filter((u) => u.endsWith('/sendPoll'))).toHaveLength(1);
+
+    // Re-run: only the poll (and the DE reply after it) is delivered — no
+    // second album, and once done, no second poll either.
+    const rerun = await runPublish(payloadPath, deps);
+    expect(rerun.ledger.channels.telegram?.remoteIds).toEqual([100, 200, 300]);
+    expect(rerun.ledger.channels.telegram?.status).toBe('done');
+    expect(requests.filter((u) => u.endsWith('/sendMediaGroup'))).toHaveLength(1);
+    expect(requests.filter((u) => u.endsWith('/sendPoll'))).toHaveLength(2);
+
+    const second = await runPublish(payloadPath, deps);
+    expect(second.skipped).toEqual(['telegram']);
+    expect(requests.filter((u) => u.endsWith('/sendMediaGroup'))).toHaveLength(1);
+    expect(requests.filter((u) => u.endsWith('/sendPoll'))).toHaveLength(2);
   });
 
   it('never lets a failing notifier change the publish outcome', async () => {

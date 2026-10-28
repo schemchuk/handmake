@@ -21,6 +21,17 @@ export const postTypeSchema = z.enum([
 ]);
 export type PostType = z.infer<typeof postTypeSchema>;
 
+/**
+ * A channel poll attached to a `wotw-poll` post (ADR 008): the question and
+ * one option per candidate photo, in album order. Network-agnostic here;
+ * per-network limits are enforced by the channel render.
+ */
+export const pollSchema = z.object({
+  question: z.string().min(1),
+  options: z.array(z.string().min(1)).min(2),
+});
+export type PostPoll = z.infer<typeof pollSchema>;
+
 // Crockford's Base32, 26 chars — https://github.com/ulid/spec
 const ulidRegex = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
@@ -30,18 +41,34 @@ export function isUlid(value: string): boolean {
 
 export const isoDateTime = z.iso.datetime({ offset: true });
 
-export const frontmatterSchema = z.object({
-  id: z.string().regex(ulidRegex, 'id must be a ULID (26 chars, Crockford Base32)'),
-  tenant: z.string().min(1),
-  date: isoDateTime,
-  publishAt: z.union([z.literal('now'), isoDateTime]),
-  type: postTypeSchema,
-  photos: z.array(z.string().min(1)),
-  channels: z.array(z.string().min(1)),
-  versions: z
-    .record(z.string().regex(/^[a-z]{2}$/, 'language key must be a 2-letter code'), versionSchema)
-    .refine((v) => Object.keys(v).length > 0, 'versions must declare at least one language'),
-});
+export const frontmatterSchema = z
+  .object({
+    id: z.string().regex(ulidRegex, 'id must be a ULID (26 chars, Crockford Base32)'),
+    tenant: z.string().min(1),
+    date: isoDateTime,
+    publishAt: z.union([z.literal('now'), isoDateTime]),
+    type: postTypeSchema,
+    photos: z.array(z.string().min(1)),
+    channels: z.array(z.string().min(1)),
+    poll: pollSchema.optional(),
+    versions: z
+      .record(z.string().regex(/^[a-z]{2}$/, 'language key must be a 2-letter code'), versionSchema)
+      .refine((v) => Object.keys(v).length > 0, 'versions must declare at least one language'),
+  })
+  .superRefine((post, ctx) => {
+    if (post.type === 'wotw-poll') {
+      if (!post.poll) {
+        ctx.addIssue({ code: 'custom', message: 'wotw-poll requires a poll (question + options)' });
+      } else if (post.poll.options.length !== post.photos.length) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `poll needs one option per candidate photo: ${post.poll.options.length} options vs ${post.photos.length} photos`,
+        });
+      }
+    } else if (post.poll) {
+      ctx.addIssue({ code: 'custom', message: `post type "${post.type}" must not carry a poll` });
+    }
+  });
 export type PostFrontmatter = z.infer<typeof frontmatterSchema>;
 
 export interface Post extends PostFrontmatter {

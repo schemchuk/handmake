@@ -352,3 +352,126 @@ describe('TelegramAdapter', () => {
     expect(ids).toEqual([1]);
   });
 });
+
+describe('TelegramAdapter: polls (T21)', () => {
+  const pollOp: SendOperation = {
+    kind: 'poll',
+    question: 'Яка робота тижня?',
+    options: ['1. Ваза', '2. Шаль'],
+    replyToOp: 0,
+  };
+
+  it('sends a poll op via sendPoll, anonymous, replying to the album', async () => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+    const ops: SendOperation[] = [
+      { kind: 'mediaGroup', photoIndexes: [0, 1], caption: 'Голосуйте!', captionLang: 'uk' },
+      pollOp,
+    ];
+    const photos = [new Uint8Array([1]), new Uint8Array([2])];
+
+    const ids = await adapter.deliver(ops, makeCtx({ photos }), {
+      startAt: 0,
+      knownIds: [],
+      onDelivered: () => {},
+    });
+
+    expect(ids).toEqual([101, 2]);
+    expect(requests[1]!.url).toBe(`https://api.telegram.org/bot${TOKEN}/sendPoll`);
+    expect(requests[1]!.json).toMatchObject({
+      chat_id: 'chat-1',
+      question: 'Яка робота тижня?',
+      options: ['1. Ваза', '2. Шаль'],
+      is_anonymous: true,
+      reply_parameters: { message_id: 101 },
+    });
+  });
+
+  it('resumes between album and poll: only sendPoll goes out, replying to the known album id', async () => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+    const ops: SendOperation[] = [
+      { kind: 'mediaGroup', photoIndexes: [0, 1], caption: 'Голосуйте!', captionLang: 'uk' },
+      pollOp,
+    ];
+    const photos = [new Uint8Array([1]), new Uint8Array([2])];
+    const reported: { opIndex: number; remoteId: RemoteId }[] = [];
+
+    const ids = await adapter.deliver(ops, makeCtx({ photos }), {
+      startAt: 1,
+      knownIds: [555],
+      onDelivered: (opIndex, remoteId) => {
+        reported.push({ opIndex, remoteId });
+      },
+    });
+
+    // Re-run after the album landed: no second album, no second poll — the
+    // ledger remote id IS the poll message id.
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.url).toMatch(/\/sendPoll$/);
+    expect(requests[0]!.json?.reply_parameters).toEqual({ message_id: 555 });
+    expect(ids).toEqual([555, 1]);
+    expect(reported).toEqual([{ opIndex: 1, remoteId: 1 }]);
+  });
+
+  it('closePoll calls stopPoll and parses per-option and total counts', async () => {
+    const { fetchImpl, requests } = fakeFetch(() =>
+      jsonResponse({
+        ok: true,
+        result: {
+          message_id: 42,
+          options: [
+            { text: '1. Ваза', voter_count: 7 },
+            { text: '2. Шаль', voter_count: 3 },
+          ],
+          total_voter_count: 10,
+        },
+      }),
+    );
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+
+    const result = await adapter.closePoll(42, makeCtx());
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.url).toBe(`https://api.telegram.org/bot${TOKEN}/stopPoll`);
+    expect(requests[0]!.json).toMatchObject({ chat_id: 'chat-1', message_id: 42 });
+    expect(result).toEqual({ optionVotes: [7, 3], totalVotes: 10 });
+  });
+
+  it('closePoll parses a zero-vote poll', async () => {
+    const { fetchImpl } = fakeFetch(() =>
+      jsonResponse({
+        ok: true,
+        result: {
+          options: [
+            { text: '1. Ваза', voter_count: 0 },
+            { text: '2. Шаль', voter_count: 0 },
+          ],
+          total_voter_count: 0,
+        },
+      }),
+    );
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+
+    const result = await adapter.closePoll(7, makeCtx());
+    expect(result).toEqual({ optionVotes: [0, 0], totalVotes: 0 });
+  });
+
+  it('closePoll rejects a malformed stopPoll result', async () => {
+    const { fetchImpl } = fakeFetch(() => jsonResponse({ ok: true, result: { message_id: 42 } }));
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+
+    await expect(adapter.closePoll(42, makeCtx())).rejects.toThrowError(/malformed/);
+  });
+
+  it('closePoll reports Telegram errors without the token', async () => {
+    const { fetchImpl } = fakeFetch(() =>
+      jsonResponse({ ok: false, error_code: 400, description: 'message not found' }, 400),
+    );
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop });
+
+    const attempt = adapter.closePoll(99, makeCtx());
+    await expect(attempt).rejects.toThrowError(/message not found/);
+    await expect(attempt).rejects.not.toThrowError(new RegExp(TOKEN));
+  });
+});

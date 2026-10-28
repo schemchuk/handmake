@@ -2,6 +2,7 @@ import type {
   ChannelAdapter,
   DeliverContext,
   DeliverProgress,
+  PollResult,
   Post,
   RemoteId,
   SendOperation,
@@ -85,7 +86,9 @@ export function parseTelegramChannelSettings(settings: unknown): TelegramChannel
  * `onDelivered`) IS the idempotency mechanism — re-running CI resumes
  * where the ledger says, never re-sending a recorded op. The bot token is
  * never logged and never appears in error messages (fetch failures are
- * reported without the request URL, which embeds the token).
+ * reported without the request URL, which embeds the token). Poll ops go
+ * through `sendPoll` in the normal op loop; `closePoll` is the one channel
+ * action the Worker performs itself (ADR 008).
  */
 export class TelegramAdapter implements ChannelAdapter {
   readonly key = 'telegram';
@@ -142,6 +145,44 @@ export class TelegramAdapter implements ChannelAdapter {
   }
 
   /**
+   * Close a poll via `stopPoll` and return its counts (T21, ADR 008: the
+   * Worker closes the work-of-the-week poll; results are anonymous voter
+   * counts only). `stopPoll` on an already closed poll returns the same
+   * final counts, so a retry is harmless.
+   */
+  async closePoll(pollId: RemoteId, ctx: DeliverContext): Promise<PollResult> {
+    const settings = parseTelegramChannelSettings(ctx.settings);
+    const chatId = await ctx.secrets.resolve(settings.channelId);
+    if (chatId.length === 0) {
+      throw new TelegramAdapterError(`secret "${settings.channelId}" resolved to an empty chat id`);
+    }
+
+    const result = (await this.#call('stopPoll', {
+      chat_id: chatId,
+      message_id: pollId,
+    })) as { options?: unknown; total_voter_count?: unknown };
+    if (
+      typeof result !== 'object' ||
+      result === null ||
+      !Array.isArray(result.options) ||
+      result.options.some(
+        (option) =>
+          typeof option !== 'object' ||
+          option === null ||
+          typeof (option as { voter_count?: unknown }).voter_count !== 'number',
+      ) ||
+      typeof result.total_voter_count !== 'number'
+    ) {
+      throw new TelegramAdapterError('Telegram stopPoll returned a malformed result');
+    }
+    const options = result.options as { voter_count: number }[];
+    return {
+      optionVotes: options.map((option) => option.voter_count),
+      totalVotes: result.total_voter_count,
+    };
+  }
+
+  /**
    * One op, with 429 retries. Deliberately ONLY 429 is retried: a network
    * error after Telegram accepted a message is NOT retried (the send may
    * have landed; retrying blindly could duplicate a post) — the
@@ -173,6 +214,19 @@ export class TelegramAdapter implements ChannelAdapter {
     deliveredIds: RemoteId[],
   ): Promise<RemoteId> {
     const replyParameters = this.#replyParameters(op, deliveredIds);
+    if (op.kind === 'poll') {
+      const result = (await this.#call('sendPoll', {
+        chat_id: chatId,
+        question: op.question,
+        options: op.options,
+        is_anonymous: true,
+        ...(replyParameters && { reply_parameters: replyParameters }),
+      })) as { message_id?: unknown };
+      if (typeof result.message_id !== 'number') {
+        throw new TelegramAdapterError('Telegram sendPoll returned a malformed result');
+      }
+      return result.message_id;
+    }
     if (op.kind === 'mediaGroup') {
       // The Bot API requires 2–10 items in sendMediaGroup; a single photo
       // goes through sendPhoto instead (same op shape from render). render

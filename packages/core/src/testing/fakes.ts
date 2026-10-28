@@ -52,6 +52,9 @@ export class FakeChannelAdapter implements ChannelAdapter {
       captionLimit: 1024,
       messageLimit: 4096,
       polls: true,
+      pollMaxOptions: 10,
+      pollQuestionLimit: 300,
+      pollOptionLimit: 100,
       ...options.capabilities,
     };
     this.renderImpl = options.renderImpl ?? (() => []);

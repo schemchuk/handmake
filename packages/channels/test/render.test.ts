@@ -121,11 +121,11 @@ describe('renderTelegram: layout (O1)', () => {
   it('follows the order of texts in the post for three languages', () => {
     const texts = { uk: 'UA', de: 'DE', en: 'EN' };
     const ops = renderTelegram(makePost({ texts }));
-    expect(ops.map((op) => (op.kind === 'message' ? op.lang : op.captionLang))).toEqual([
-      'uk',
-      'de',
-      'en',
-    ]);
+    expect(
+      ops.map((op) =>
+        op.kind === 'message' ? op.lang : op.kind === 'poll' ? 'poll' : op.captionLang,
+      ),
+    ).toEqual(['uk', 'de', 'en']);
   });
 });
 
@@ -155,11 +155,11 @@ describe('renderTelegram: tenant language order (settings.languages)', () => {
       ...settings,
       languages: ['de'],
     });
-    expect(ops.map((op) => (op.kind === 'message' ? op.lang : op.captionLang))).toEqual([
-      'de',
-      'uk',
-      'en',
-    ]);
+    expect(
+      ops.map((op) =>
+        op.kind === 'message' ? op.lang : op.kind === 'poll' ? 'poll' : op.captionLang,
+      ),
+    ).toEqual(['de', 'uk', 'en']);
   });
 
   it('keeps file order when settings carry no languages', () => {
@@ -172,5 +172,70 @@ describe('renderTelegram: tenant language order (settings.languages)', () => {
     const texts = { de: 'Hallo!', uk: 'Привіт!' };
     const ops = renderTelegram(makePost({ texts }), { channelId: 'X', languages: 'uk' });
     expect(ops[0]).toMatchObject({ kind: 'mediaGroup', captionLang: 'de' });
+  });
+});
+
+describe('renderTelegram: wotw-poll (T21, ADR 008)', () => {
+  const { pollMaxOptions, pollQuestionLimit, pollOptionLimit } = telegramCapabilities;
+
+  const poll = { question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] };
+  const pollPost = (overrides: Partial<Post> = {}): Post =>
+    makePost({ type: 'wotw-poll', poll, ...overrides });
+
+  it('renders album, then a poll replying to the album, then language replies', () => {
+    const ops = renderTelegram(pollPost());
+    expect(ops).toEqual([
+      {
+        kind: 'mediaGroup',
+        photoIndexes: [0, 1],
+        caption: 'Привіт!',
+        captionLang: 'uk',
+      },
+      { kind: 'poll', question: poll.question, options: poll.options, replyToOp: 0 },
+      { kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 },
+    ]);
+  });
+
+  it('still targets the album when the primary caption overflows into a message', () => {
+    const ops = renderTelegram(
+      pollPost({ texts: { uk: 'x'.repeat(captionLimit + 1), de: 'Hallo!' } }),
+    );
+    expect(ops).toHaveLength(4);
+    expect(ops[2]).toEqual({
+      kind: 'poll',
+      question: poll.question,
+      options: poll.options,
+      replyToOp: 0,
+    });
+    expect(ops[3]).toEqual({ kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 });
+  });
+
+  it('rejects a wotw-poll synthesized without a poll (schema bypass)', () => {
+    expect(() => renderTelegram(makePost({ type: 'wotw-poll' }))).toThrowError(TelegramRenderError);
+    expect(() => renderTelegram(makePost({ type: 'wotw-poll' }))).toThrowError(/requires a poll/);
+  });
+
+  it(`rejects more than ${pollMaxOptions} options`, () => {
+    // 11 options cannot pass the post schema (options = photos, album max
+    // 10); reach the guard with a schema-bypassed post (0 photos).
+    const options = Array.from({ length: pollMaxOptions + 1 }, (_, i) => `${i + 1}.`);
+    expect(() =>
+      renderTelegram(makePost({ type: 'wotw-poll', photos: [], poll: { question: 'q', options } })),
+    ).toThrowError(new RegExp(`at most ${pollMaxOptions}`));
+  });
+
+  it(`rejects a question over ${pollQuestionLimit} chars`, () => {
+    const long = { question: 'x'.repeat(pollQuestionLimit + 1), options: poll.options };
+    expect(() => renderTelegram(pollPost({ poll: long }))).toThrowError(
+      new RegExp(`${pollQuestionLimit}`),
+    );
+  });
+
+  it(`rejects an option over ${pollOptionLimit} chars`, () => {
+    const long = {
+      question: poll.question,
+      options: ['1. ' + 'x'.repeat(pollOptionLimit), '2. ок'],
+    };
+    expect(() => renderTelegram(pollPost({ poll: long }))).toThrowError(/option limit/);
   });
 });
