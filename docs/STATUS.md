@@ -5,7 +5,7 @@
   brief for kimi-code -> tasks v3 (docs/00-interview.md "Round 5").
 - **Branch:** main (docs only)
 - **Last commit:** see `git log -1`
-- **Next step:** Volodymyr reviews spec v5 (docs/01-spec.md). T22 paused until spec v5 is approved.
+- **Next step:** claude-code drafts architecture v3 + ADRs for spec v5. T22 paused until tasks v3.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   none.

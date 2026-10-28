@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **draft v5 (2026-10-28), awaiting Volodymyr's review.** Previous: approved v4 (2026-10-21).
+Status: **approved v5 (2026-10-28).** Previous: approved v4 (2026-10-21).
 Source: docs/00-interview.md, rounds 0-5. Changes from v4 are listed in section 14.
 
 ## 1. Problem, vision and goals
@@ -19,7 +19,7 @@ most of the content; the author approves everything before it goes out. A design
 audience first; once it is large enough, monetization (a shop with the author's works) can be switched
 on. The whole case is built so that the same platform can be resold to bloggers.
 
-Goals, in priority order (unchanged from v4, confirm in review):
+Goals, in priority order (unchanged from v4, confirmed 2026-10-28, Q10):
 1. **Portfolio.** Show businesses in Germany/EU that Volodymyr can automate a real process end to end
    as a full-stack developer: bot, AI steps, publishing pipeline, media generation, CI/CD, tests, docs.
 2. **Real use and audience.** Inform and attract participants, entertain and grow a lead base.
@@ -39,8 +39,8 @@ Goals, in priority order (unchanged from v4, confirm in review):
 | Reader | public | read Telegram, Instagram and the website, vote in channel polls |
 
 Only allow-listed Telegram user IDs may use the bot. Everyone else gets a polite refusal and nothing is
-stored. The system stores **no personal data of participants or readers** in any phase of this spec
-except F27, which needs explicit approval (see section 7 and Q13).
+stored. The system stores **no personal data of readers**. Of participants it stores only an optional
+first name or nickname given with consent (F19, Q13), never in Git. F27 (email) needs explicit approval.
 
 ## 3. Core flow (phase 1, live since 2026-10-27)
 
@@ -85,7 +85,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 ### Storage and history
 - **F13** Every published post is stored in the content store as one content folder: a Markdown file
   with frontmatter (id, date, type, languages, provenance, channels, per-channel post IDs) and photos.
-- **F14** The repo never contains secrets, drafts, or personal data of participants or readers.
+- **F14** The repo never contains secrets, drafts, or personal data of participants or readers
+  (including contest display names, see F19).
 
 ### Operations
 - **F15** On any failed publish, render or AI call, the operator receives an alert (private Telegram chat).
@@ -100,8 +101,11 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 - **F19** Readers of the Telegram channel pick the best participant work of the week.
   - **Entries.** A participant hands a photo of her work to the author (at a meeting or privately).
     The author sends it to the bot as a **contest entry** (a separate draft type), and confirms with a
-    button that the participant agreed to the work being shown. The system stores the photo only; no
-    name, handle or contact of the participant (see Q13).
+    button that the participant agreed to the work being shown. Optionally she adds the participant's
+    first name or nickname (no surname, handle or contact), also by consent (Q13).
+  - **Names outside Git.** The display name is stored only in the bot database, never in the content
+    repo; posts and the site get it at render/build time. If a participant withdraws consent, the name
+    is deleted there and the published posts are edited, without rewriting Git history.
   - **Candidates.** The week's approved entries, max 10, numbered 1..N in submission order.
   - **Poll.** At the configured opening time the bot drafts the poll post (album of candidates plus a
     Telegram poll "No 1".."No N" replying to it). The author publishes it. Channel polls are anonymous;
@@ -224,15 +228,15 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
 - **Q3** Resolved in architecture (ADR 006): AI provider for translation.
 - **Q9** Open (phase 2b): how the author hands a new work to the system for a video (photos, a clip,
   or both; one message or a guided flow).
-- **Q10** Open (this review): goal priority. v5 keeps v4's order (portfolio first); the resale goal may
-  argue for moving "resellable product" up.
+- **Q10** Resolved (2026-10-28): goal priority unchanged (portfolio first).
 - **Q11** Open (phase P): business model for bloggers (done-for-you setup vs self-service). Decides
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
 - **Q12** Open (before phase 4): country and form of business registration.
-- **Q13** Open (before F19 goes live): may a contest post name the participant (with her consent), or
-  are entries always anonymous ("Work No 3")? Default in v5: anonymous; a name would be personal data
-  in public posts and the public repo.
+- **Q13** Resolved (2026-10-28): a contest post may show the participant's first name or nickname
+  (no surname), only with her consent; without it the entry is anonymous ("Work No 3"). Names stay out
+  of Git (F19). *Flag: a first name with a photo is still personal data; consent and withdrawal must be
+  possible — not legal advice.*
 
 ## 11. Decisions from spec reviews
 
@@ -289,9 +293,10 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 
 - Vision rewritten (section 1): contest of participants' works, videos, author showcase site, funnel,
   monetization switch, resale to bloggers.
-- New role Participant; participants never use the system and their data is never stored.
+- New role Participant; participants never use the system; only an optional consented first name or
+  nickname is stored, outside Git.
 - F19 redefined: candidates are participant entries uploaded by the author, not the author's own posts.
 - New F20-F29: video, website, audience metrics, email capture, monetization switch, shop.
 - Phases re-cut (section 6). The v4 phase 3 participant bot is dropped.
 - N1, N2, N4, N6, N9 extended; N10 added.
-- New open questions Q9-Q13.
+- New open questions Q9, Q11, Q12; Q10 and Q13 resolved in review.
