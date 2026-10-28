@@ -2,7 +2,7 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: **draft v3 (2026-10-28), awaiting approval.** v3 re-plans phase 1b and phase 2 for spec v5 and
+Status: **approved v3 (2026-10-28).** v3 re-plans phase 1b and phase 2 for spec v5 and
 architecture v3.1, from the task split in docs/reviews/2026-10-28-v5-review.md. v2 (approved
 2026-10-21) planned the MVP and T18-T24.
 Scope of v2: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
