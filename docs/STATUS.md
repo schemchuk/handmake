@@ -8,10 +8,7 @@
   T21 merged as PR #31. Bot redeployed 2026-10-28 (T20 `*/15` cron live, D1 migrations up to date).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
-  1. T20 config values are placeholders: announcement Tue 18:00, reminder
-     Thu 10:00, and the UA template wording — please confirm/adjust with the
-     author (plain config, `config/tenants/faden-und-stimmung.yaml`).
-  2. Spec Q2 Impressum address (phase 2). Bot UI language: author-facing
+  1. Spec Q2 Impressum address (phase 2). Bot UI language: author-facing
      strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
 
 ## Reminders
