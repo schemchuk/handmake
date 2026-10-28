@@ -167,9 +167,10 @@ Deferred: out of the MVP, but planned as possible later features. The architectu
 ## 10. Open questions
 
 - **Q1** Resolved (2026-10-21): Instagram is the author's **personal** account. See section 11.
-- **Q2** Impressum address: wife's home address vs c/o or service address (legal check by Volodymyr).
-  Decided handling: Impressum data is never committed to the repo; it is injected at site build time
-  from secrets (phase 2), so a later address change leaves no trace in Git history.
+- **Q2** Resolved (2026-10-28): Impressum uses the author's home address (option A; c/o and service
+  address rejected). Impressum data is never committed to the repo; it is injected at site build time
+  from secrets (phase 2), so a later address change leaves no trace in Git history. The author confirms
+  before the site goes live.
 - **Q3** Which AI provider and model for translation (decided in architecture, within the budget).
 - **Q5** Resolved (2026-10-21): on a tie, AI picks among the tied candidates.
 - **Q6** Resolved (2026-10-21): the poll and the result post both need the author's Publish.

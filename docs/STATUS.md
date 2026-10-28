@@ -8,8 +8,7 @@
   T21 merged as PR #31. Bot redeployed 2026-10-28 (T20 `*/15` cron live, D1 migrations up to date).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
-  1. Spec Q2 Impressum address (phase 2). Bot UI language: author-facing
-     strings Ukrainian, refusal German (`apps/bot/src/texts.ts`).
+  none.
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
