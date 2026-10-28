@@ -1,7 +1,7 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T21 — Poll capability in the Telegram channel (F19 part 1, docs/03-tasks.md "Phase 1b"); implemented, PR open
+- **Current task:** T21 — Poll capability in the Telegram channel (F19 part 1, docs/03-tasks.md "Phase 1b"); implemented, PR #31 open
 - **Branch:** feat/T21-poll-capability
 - **Last commit:** see `git log -1`
 - **Next step:** claude-code reviews the T21 PR. After the merge: T22 (wotw
