@@ -39,12 +39,12 @@ announcements:
       time: '10:00'
   templates:
     announcement: >-
-      🧶 Нагадуємо: наступна зустріч нашого handmade-кола — у {weekday},
-      {date} о {time} у Landshut! Пряжа, чаї та гарна компанія — приходь.
+      🧶 Нагадуємо: наступна зустріч нашого гуртка — у {weekday}, {date} о {time},
+      у Landshut, Niedermayerstr. 85! Пряжа, чаї та гарна компанія — позитив з усіх боків.
       Деталі в каналі.
     reminder: >-
-      🧶 Сьогодні, {date} о {time}, зустріч handmade-кола в Landshut!
-      Не забудь свій проєкт.
+      🧶 Сьогодні о {time} зустріч нашого гуртка, як і завжди, в Landshut, Niedermayerstr. 85!
+      Не забудь хороший настрій.
 
 featureFlags:
   translation: true
