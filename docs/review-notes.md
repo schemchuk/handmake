@@ -18,8 +18,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 ## CI
 - gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.
 
-## Bot drafts (T20)
-- A cron announcement draft becomes the chat's latest draft (`latestForChat` orders by `created_at`). If the author is collecting a post at that moment, her collecting draft is hidden until she publishes or discards the announcement; after a publish, new text starts a fresh draft and the old collecting one is orphaned (deleted by the 30-day cleanup). Fix when it bites: skip or delay the cron draft while a `collecting` draft exists, or look up the collecting draft explicitly (PR #30 review).
+## Bot drafts (T25)
+- Drafts created before migration 0006 have no `chat_sessions` row: `/done` and legacy buttons on such a draft answer "no draft" until the author sends new text or photos (which re-attaches the collecting draft). Production had no collecting or ready drafts at merge time (2026-10-30), so this only matters for a restored backup (PR #32 review).
+- Two drafts from 2026-10-27 (before the T19 published callback) are stuck in `publishing` although their posts and ledgers exist. Harmless; delete them by hand or let a cleanup that covers `publishing` remove them.
 
 ## Polls (T21)
 - The poll message id sits at op index 1 or 2 (depends on caption overflow). T22 and the closing cron must find it by op kind (`kind === 'poll'`), not by a fixed index (PR #31 N1).
