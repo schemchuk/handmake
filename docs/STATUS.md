@@ -9,8 +9,14 @@
   0cd39437). Product discussion with Volodymyr: own website as the primary source, networks as copies
   (POSSE). It may reorder T26-T38.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:**
-  own-site-first (POSSE): does it change the phase order (website before Instagram)?
+- **Open questions for Volodymyr** (POSSE discussion, round 1, asked 2026-10-30):
+  1. Why own-site-first: (a) independence from Meta/Telegram, (b) Google search for local people in
+     Landshut, (c) the author's future business (collections, shop), (d) portfolio? Claude recommends b + a.
+  2. Domain: one of Volodymyr's three domains, or a new one (e.g. fadenundstimmung.de)?
+  Findings so far: content already lands in Git first and the site is planned from it (ADR 011), so
+  POSSE means (1) moving T35 site scaffold ahead of T26-T34, (2) a new feature: every channel post links
+  to its canonical site URL (post id is stable, URL known before the rebuild), (3) a custom domain.
+  Fediverse adapter is a later option. Outcome goes into spec/tasks after Volodymyr's answers.
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
