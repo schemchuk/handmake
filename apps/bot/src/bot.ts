@@ -238,12 +238,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
 
     if (action === 'publish:confirm') {
-      // Build the job before claiming: a draft that can never be dispatched
-      // (a wotw-poll without a valid poll in extras) is refused here and
-      // stays ready instead of getting stuck in 'publishing'.
-      let job: PublishJob;
+      // Validate before claiming: a draft that can never be dispatched (a
+      // wotw-poll without a valid poll in extras) is refused here and stays
+      // ready instead of getting stuck in 'publishing'.
       try {
-        job = publishJobOf(stored.draft);
+        publishJobOf(stored.draft);
       } catch {
         await ctx.reply(texts.publishInvalidText);
         return;
@@ -271,7 +270,9 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         );
         return;
       }
-      await runPublish(ctx, claimed, job);
+      // Dispatch the draft as claimed, not as read above: an edit that landed
+      // in between (replaceText works on ready drafts) must be published.
+      await runPublish(ctx, claimed, publishJobOf(claimed.draft));
       return;
     }
 

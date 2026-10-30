@@ -415,6 +415,24 @@ describe('publishing (T16)', () => {
     return ready[0]!.draft.draftId;
   }
 
+  it('dispatches the draft as claimed, including an edit that landed after the read', async () => {
+    const draftId = await makeReadyDraft();
+    const claim = drafts.claimPublishing.bind(drafts);
+    drafts.claimPublishing = async (...args) => {
+      await db
+        .prepare(`UPDATE drafts SET texts = json_set(texts, '$.de', ?) WHERE id = ?`)
+        .bind('Frisch bearbeitet', draftId)
+        .run();
+      return claim(...args);
+    };
+    await bot.handleUpdate(
+      callbackQueryUpdate(allowed.userId, allowed.userId, `draft:${draftId}:publish:confirm`),
+    );
+    await flushBackground();
+
+    expect(publishJobs[0]?.texts['de']).toBe('Frisch bearbeitet');
+  });
+
   it('confirm claims ready → publishing, answers publishing… and dispatches', async () => {
     const draftId = await makeReadyDraft();
     await bot.handleUpdate(
