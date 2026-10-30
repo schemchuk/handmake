@@ -5,10 +5,11 @@
   claude-code while kimi-code was out of usage limits).
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** apply D1 migration 0006 (`pnpm --filter @handmake/bot db:migrate`), then redeploy the
-  bot (`pnpm --filter @handmake/bot deploy`), in that order. Then a product discussion with Volodymyr:
+- **Next step:** D1 migration 0006 applied to production (2026-10-30). Redeploy the bot from the repo:
+  `cd apps/bot && pnpm run deploy` (not `pnpm deploy`, which is a built-in pnpm command). Then a
+  product discussion with Volodymyr:
   own website as the primary source, networks as copies (POSSE). It may reorder T26-T38.
-- **Blocked on:** Volodymyr's OK for the production migration and deploy.
+- **Blocked on:** the bot redeploy (Volodymyr runs it).
 - **Open questions for Volodymyr:**
   own-site-first (POSSE): does it change the phase order (website before Instagram)?
 
