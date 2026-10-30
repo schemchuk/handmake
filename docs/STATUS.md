@@ -45,8 +45,9 @@
 - **Round 9 answered (2026-10-30):** 2-3 fixed fictional adult models for now; models and their
   number must be changeable (config, not code). Looks and names decided in the show-pipeline task.
 - **Discussion closed.** Next: spec v6 + tasks v4 from rounds 1-9 for Volodymyr's approval.
-  Domain fadenundstimmung.de registered by Volodymyr at INWX (2026-10-30). Next human step: add the
-  zone in Cloudflare (Free plan), then set Cloudflare's two nameservers in INWX.
+  Domain fadenundstimmung.de registered by Volodymyr at INWX (2026-10-30). Zone added in Cloudflare
+  (Free) and nameservers switched at INWX to dahlia/khalid.ns.cloudflare.com (2026-10-30, verified
+  with dig). Next: confirm zone Active in Cloudflare, then spec v6 + tasks v4.
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
