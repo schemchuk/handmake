@@ -6,7 +6,7 @@
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
 - **Next step:** T25 is live (D1 migration 0006 applied, bot redeployed 2026-10-30, version
-  0cd39437). spec v6 and tasks v4 drafted (2026-10-30), awaiting Volodymyr's approval; then T35 starts.
+  0cd39437). spec v6 and tasks v4 approved (2026-10-30); T35 (site scaffold) is next. H13 (photos) agreed by Volodymyr.
 - **Blocked on:** nothing.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

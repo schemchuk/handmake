@@ -2,7 +2,7 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: **draft v4 (2026-10-30), awaiting Volodymyr's approval.** v4 re-orders the work for spec v6
+Status: **approved v4 (2026-10-30).** v4 re-orders the work for spec v6
 (POSSE: site first, then AI shows, then Instagram and contest) and adds T39-T46; see "Order of work (v4)".
 v3 (approved 2026-10-28) re-plans phase 1b and phase 2 for spec v5 and
 architecture v3.1, from the task split in docs/reviews/2026-10-28-v5-review.md. v2 (approved

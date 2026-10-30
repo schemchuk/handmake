@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **draft v6 (2026-10-30), awaiting Volodymyr's approval.** Previous: approved v5 (2026-10-28).
+Status: **approved v6 (2026-10-30).** Previous: approved v5 (2026-10-28).
 Source: docs/00-interview.md, rounds 0-5, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
 Changes from v5 are listed in section 14.
 
