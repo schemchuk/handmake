@@ -43,6 +43,11 @@ export const botTexts = {
   translationFailedText:
     'Не вийшло перекласти німецькою 😔 Спробуй ще раз /done, або надішли свій німецький текст — ' +
     'я збережу його як є.',
+  // Cron drafts live outside the author's chat session, so the /done retry
+  // advice of translationFailedText does not apply to them (T25).
+  cronTranslationFailedText:
+    'Не вийшло перекласти автоматичний допис німецькою 😔 Його чернетка лишилася без перекладу ' +
+    'і буде видалена автоматично. Якщо допис потрібен — надішли текст як звичайно.',
   deSavedText: 'Збережено твій німецький текст. Ось як виглядатиме допис:',
   editPromptText: (lang: 'uk' | 'de', current: string) =>
     `Надішли новий текст ${lang === 'uk' ? 'українською' : 'німецькою'} — він повністю замінить поточний:\n\n${current}`,
@@ -64,6 +69,9 @@ export const botTexts = {
   publishingText: '⏳ Публікую… Це займе кілька хвилин, результат прийде сюди повідомленням.',
   publishFailedText:
     'Не вийшло запустити публікацію 😔 Чернетка знову готова — натисни 🚀 ще раз, і я повторю.',
+  publishInvalidText:
+    'Не можу опублікувати цю чернетку: в ній бракує обовʼязкових даних (схоже на технічну помилку). ' +
+    'Чернетка лишилася готовою — нічого не втрачено.',
 
   // --- Preview message (built by preview.ts) ----------------------------------
   previewHeader: (photoCount: number) => `🧵 Перегляд допису (${photoCount} фото)`,

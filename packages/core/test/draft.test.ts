@@ -25,11 +25,25 @@ describe('createDraft', () => {
       tenantId,
       draftId: 'draft-1',
       state: 'collecting',
+      kind: 'post',
+      type: 'free',
+      extras: {},
       texts: {},
       photoRefs: [],
       createdAt: t0.toISOString(),
       updatedAt: t0.toISOString(),
     });
+  });
+
+  it('takes kind, type and extras from the init argument (T25)', () => {
+    const typed = createDraft(tenantId, 'typed', t0, {
+      kind: 'work',
+      type: 'announcement',
+      extras: { poll: { question: 'q', options: ['a', 'b'] } },
+    });
+    expect(typed.kind).toBe('work');
+    expect(typed.type).toBe('announcement');
+    expect(typed.extras).toEqual({ poll: { question: 'q', options: ['a', 'b'] } });
   });
 });
 

@@ -3,18 +3,25 @@
  * publisher CLI) wires concrete implementations in its composition root.
  */
 
-import type { Provenance } from '../post';
+import type { PostPoll, PostType, Provenance } from '../post';
+import type { DraftKind } from './store';
 
 export interface PublishJob {
   tenantId: string;
   /** Stable id: the draft id doubles as the post id and idempotency key. */
   postId: string;
+  /** What the pipeline builds; only 'post' is implemented (works: phase 2). */
+  kind: DraftKind;
+  /** Post type: announcement/reminder drafts dispatch their real type (T25). */
+  type: PostType;
   /** Language versions to publish; non-empty, Ukrainian at minimum. */
   texts: Record<string, string>;
   /** Opaque photo refs (Telegram file_ids); downloaded inside the pipeline. */
   fileIds: string[];
   /** Dominant provenance; the publisher stamps it on every version. */
   provenance: Provenance;
+  /** Poll spec for a wotw-poll draft (produced by the poll cron, T30). */
+  poll?: PostPoll;
 }
 
 /** Runs a publish job. GitHub Actions via repository_dispatch now. */
@@ -38,22 +45,6 @@ export interface TranslationResult {
 
 export interface Translator {
   translate(request: TranslationRequest): Promise<TranslationResult>;
-}
-
-export interface WinnerCandidate {
-  id: string;
-  photoRef: string;
-}
-
-export interface WinnerPick {
-  winnerId: string;
-  reason: string;
-  chosenBy: 'votes' | 'ai';
-}
-
-/** Picks the work of the week; Claude with vision as the fallback. */
-export interface WinnerPicker {
-  pick(candidates: WinnerCandidate[]): Promise<WinnerPick>;
 }
 
 /** Fetches the author's photos by opaque reference (Telegram file_id now). */

@@ -1,5 +1,5 @@
-import { createDraft, newUlid } from '@handmake/core';
-import type { Draft, DraftState } from '@handmake/core';
+import { createDraft, newUlid, postTypeSchema } from '@handmake/core';
+import type { Draft, DraftKind, DraftState } from '@handmake/core';
 
 /** A 'translating' draft older than this may be claimed again: the background
  * task that claimed it died (e.g. runtime cancellation) without recording a
@@ -46,6 +46,19 @@ export interface StoredDraft {
 /** Which language version an edit replaces; the canonical draft keys. */
 export type DraftEditTarget = 'uk' | 'de';
 
+/**
+ * The chat's explicit flow kind (T25, architecture 4.1.7): which flow the
+ * author's messages and commands belong to. Entry sessions (T27) never own a
+ * draft; post and work sessions point at their current draft.
+ */
+export type SessionKind = 'post' | 'entry' | 'work';
+
+export interface ChatSession {
+  kind: SessionKind;
+  /** The session's current draft; null when the session has none. */
+  draftId: string | null;
+}
+
 const editTargetPattern = /^[a-z]{2}$/;
 
 function editJsonPath(lang: string): string {
@@ -91,11 +104,24 @@ export interface D1DraftStore {
   appendText(tenantId: string, draftId: string, text: string, now: Date): Promise<boolean>;
   delete(tenantId: string, draftId: string): Promise<void>;
   listByState(tenantId: string, state: DraftState): Promise<StoredDraft[]>;
-  findCollectingForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
-  /** The chat's most recent draft in any state, for /done and the buttons. */
-  latestForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
-  /** One collecting draft per chat, created on the spot if missing. */
-  getOrCreateCollecting(tenantId: string, chatId: string, now: Date): Promise<StoredDraft>;
+  findCollectingForChat(
+    tenantId: string,
+    chatId: string,
+    kind: DraftKind,
+  ): Promise<StoredDraft | undefined>;
+  /** One collecting draft per chat and kind, created on the spot if missing. */
+  getOrCreateCollecting(
+    tenantId: string,
+    chatId: string,
+    kind: DraftKind,
+    now: Date,
+  ): Promise<StoredDraft>;
+  /** The chat's session (T25), or undefined when the chat never started one. */
+  getChatSession(tenantId: string, chatId: string): Promise<ChatSession | undefined>;
+  /** Upserts the chat's session pointer. */
+  setChatSession(tenantId: string, chatId: string, session: ChatSession, now: Date): Promise<void>;
+  /** The chat's draft with an armed reply-based edit, if one is waiting. */
+  findPendingEditForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
   /**
    * Claims the draft for one translation run: moves it to 'translating' in
    * a single statement if it is in one of `from`, or if it is stuck in
@@ -178,6 +204,9 @@ interface DraftRow {
   id: string;
   chat_id: string;
   status: string;
+  kind: string;
+  type: string;
+  extras: string;
   texts: string;
   photos: string;
   version: number;
@@ -195,7 +224,10 @@ const draftStates: ReadonlySet<string> = new Set([
   'failed',
 ]);
 
-const selectDraft = `SELECT tenant_id, id, chat_id, status, texts, photos, version, pending_edit, created_at, updated_at
+const draftKinds: ReadonlySet<string> = new Set(['post', 'work']);
+const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work']);
+
+const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, created_at, updated_at
   FROM drafts WHERE tenant_id = ?`;
 
 /** D1/SQLite report UNIQUE violations with this message; we treat them as
@@ -218,14 +250,17 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     async create(draft, chatId) {
       await db
         .prepare(
-          `INSERT INTO drafts (tenant_id, id, chat_id, status, texts, photos, version, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          `INSERT INTO drafts (tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
         )
         .bind(
           draft.tenantId,
           draft.draftId,
           chatId,
           draft.state,
+          draft.kind,
+          draft.type,
+          JSON.stringify(draft.extras),
           JSON.stringify(draft.texts),
           JSON.stringify(draft.photoRefs),
           draft.createdAt,
@@ -237,14 +272,17 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     async createIfAbsent(draft, chatId) {
       const result = await db
         .prepare(
-          `INSERT OR IGNORE INTO drafts (tenant_id, id, chat_id, status, texts, photos, version, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          `INSERT OR IGNORE INTO drafts (tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
         )
         .bind(
           draft.tenantId,
           draft.draftId,
           chatId,
           draft.state,
+          draft.kind,
+          draft.type,
+          JSON.stringify(draft.extras),
           JSON.stringify(draft.texts),
           JSON.stringify(draft.photoRefs),
           draft.createdAt,
@@ -321,48 +359,84 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return (result.results ?? []).map(toStoredDraft);
     },
 
-    async findCollectingForChat(tenantId, chatId) {
+    async findCollectingForChat(tenantId, chatId, kind) {
       const row = await db
         .prepare(
-          `${selectDraft} AND chat_id = ? AND status = 'collecting' ORDER BY created_at DESC LIMIT 1`,
+          `${selectDraft} AND chat_id = ? AND kind = ? AND status = 'collecting' ORDER BY created_at DESC LIMIT 1`,
         )
-        .bind(tenantId, chatId)
+        .bind(tenantId, chatId, kind)
         .first<DraftRow>();
       return row ? toStoredDraft(row) : undefined;
     },
 
-    async getOrCreateCollecting(tenantId, chatId, now) {
+    async getOrCreateCollecting(tenantId, chatId, kind, now) {
       // The draft id must be a ULID: on publish it becomes the post id and
       // the pipeline's idempotency key, and the publisher refuses non-ULIDs.
-      const draft = createDraft(tenantId, newUlid(now), now);
+      const draft = createDraft(tenantId, newUlid(now), now, { kind });
       try {
         await db
           .prepare(
-            `INSERT INTO drafts (tenant_id, id, chat_id, status, texts, photos, version, created_at, updated_at)
-             VALUES (?, ?, ?, ?, '{}', '[]', 0, ?, ?)`,
+            `INSERT INTO drafts (tenant_id, id, chat_id, status, kind, texts, photos, version, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, '{}', '[]', 0, ?, ?)`,
           )
-          .bind(tenantId, draft.draftId, chatId, draft.state, draft.createdAt, draft.updatedAt)
+          .bind(
+            tenantId,
+            draft.draftId,
+            chatId,
+            draft.state,
+            kind,
+            draft.createdAt,
+            draft.updatedAt,
+          )
           .run();
         return { draft, version: 0, pendingEdit: null };
       } catch (error) {
         if (!isUniqueViolation(error)) {
           throw error;
         }
-        // Another request created the chat's collecting draft first; the
-        // unique index guarantees it exists (discards between the failed
-        // INSERT and this SELECT are a race we accept: the caller's update
-        // then fails its version check and retries from a fresh read).
-        const existing = await this.findCollectingForChat(tenantId, chatId);
+        // Another request created the chat's collecting draft of this kind
+        // first; the unique index guarantees it exists (discards between the
+        // failed INSERT and this SELECT are a race we accept: the caller's
+        // update then fails its version check and retries from a fresh read).
+        const existing = await this.findCollectingForChat(tenantId, chatId, kind);
         if (!existing) {
-          throw new Error(`no collecting draft for chat ${chatId} after unique conflict`);
+          throw new Error(`no collecting ${kind} draft for chat ${chatId} after unique conflict`);
         }
         return existing;
       }
     },
 
-    async latestForChat(tenantId, chatId) {
+    async getChatSession(tenantId, chatId) {
       const row = await db
-        .prepare(`${selectDraft} AND chat_id = ? ORDER BY created_at DESC LIMIT 1`)
+        .prepare('SELECT kind, draft_id FROM chat_sessions WHERE tenant_id = ? AND chat_id = ?')
+        .bind(tenantId, chatId)
+        .first<{ kind: string; draft_id: string | null }>();
+      if (!row) {
+        return undefined;
+      }
+      if (!sessionKinds.has(row.kind)) {
+        throw new Error(`chat session has unknown kind "${row.kind}"`);
+      }
+      return { kind: row.kind as SessionKind, draftId: row.draft_id };
+    },
+
+    async setChatSession(tenantId, chatId, session, now) {
+      await db
+        .prepare(
+          `INSERT INTO chat_sessions (tenant_id, chat_id, kind, draft_id, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (tenant_id, chat_id)
+           DO UPDATE SET kind = excluded.kind, draft_id = excluded.draft_id, updated_at = excluded.updated_at`,
+        )
+        .bind(tenantId, chatId, session.kind, session.draftId, now.toISOString())
+        .run();
+    },
+
+    async findPendingEditForChat(tenantId, chatId) {
+      const row = await db
+        .prepare(
+          `${selectDraft} AND chat_id = ? AND pending_edit IS NOT NULL ORDER BY updated_at DESC LIMIT 1`,
+        )
         .bind(tenantId, chatId)
         .first<DraftRow>();
       return row ? toStoredDraft(row) : undefined;
@@ -510,11 +584,20 @@ function toStoredDraft(row: DraftRow): StoredDraft {
   if (!draftStates.has(row.status)) {
     throw new Error(`draft row has unknown status "${row.status}"`);
   }
+  if (!draftKinds.has(row.kind)) {
+    throw new Error(`draft row has unknown kind "${row.kind}"`);
+  }
+  if (!(postTypeSchema.options as readonly string[]).includes(row.type)) {
+    throw new Error(`draft row has unknown type "${row.type}"`);
+  }
   return {
     draft: {
       tenantId: row.tenant_id,
       draftId: row.id,
       state: row.status as DraftState,
+      kind: row.kind as DraftKind,
+      type: row.type as Draft['type'],
+      extras: parseExtras(row.extras),
       texts: parseTexts(row.texts),
       photoRefs: parsePhotos(row.photos),
       createdAt: row.created_at,
@@ -523,6 +606,14 @@ function toStoredDraft(row: DraftRow): StoredDraft {
     version: row.version,
     pendingEdit: row.pending_edit === 'uk' || row.pending_edit === 'de' ? row.pending_edit : null,
   };
+}
+
+function parseExtras(json: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(json);
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('draft row has invalid extras JSON');
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function parseTexts(json: string): Record<string, string> {

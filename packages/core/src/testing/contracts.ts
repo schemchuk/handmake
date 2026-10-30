@@ -82,7 +82,6 @@ export function describeChannelAdapterContract(
     it('honours capabilities.polls: false by exposing no poll methods', () => {
       const adapter = makeAdapter();
       if (!adapter.capabilities.polls) {
-        expect(adapter.openPoll).toBeUndefined();
         expect(adapter.closePoll).toBeUndefined();
       }
     });

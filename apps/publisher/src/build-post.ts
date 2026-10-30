@@ -12,12 +12,17 @@ export interface BuildPostDeps {
  * Turn a dispatch payload into a post ready for the content store. A draftId
  * that is already a ULID is reused as the post id, so re-running the publish
  * with the same payload finds the same post (and its ledger) again.
+ * Works (kind 'work') land with the website phase — until then they fail
+ * here instead of silently becoming a post folder.
  */
 export function buildPostFromPayload(
   payload: DispatchPayload,
   tenant: TenantConfig,
   deps: BuildPostDeps = {},
 ): Post {
+  if (payload.kind !== 'post') {
+    throw new Error(`payload kind "${payload.kind}" is not supported yet (works: phase 2)`);
+  }
   const now = deps.now ?? new Date();
   // Key order decides the primary language (album caption) in renderTelegram.
   // The dispatch payload's order is not reliable (GitHub's toJson sorts keys,

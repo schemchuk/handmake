@@ -3,9 +3,10 @@ import type { PublishJob, PublishRunner } from '@handmake/core';
 /**
  * GitHubActionsRunner (ADR 003): fires `publish.yml` via repository_dispatch.
  * The workflow reads `client_payload` as the publisher's dispatch payload, so
- * the job fields are mirrored 1:1 (`postId` → `draftId`). Success is HTTP 204
- * with an empty body. The token is sent as a header and never appears in
- * logs, errors or the payload.
+ * the job fields are mirrored 1:1 (`postId` → `draftId`); `kind`, `type` and
+ * `poll?` have been part of the payload since T25. Success is HTTP 204 with
+ * an empty body. The token is sent as a header and never appears in logs,
+ * errors or the payload.
  */
 
 export interface GitHubActionsRunnerOptions {
@@ -40,9 +41,12 @@ export function createGitHubActionsRunner(options: GitHubActionsRunnerOptions): 
           client_payload: {
             tenantId: job.tenantId,
             draftId: job.postId,
+            kind: job.kind,
+            type: job.type,
             texts: job.texts,
             fileIds: job.fileIds,
             provenance: job.provenance,
+            ...(job.poll !== undefined ? { poll: job.poll } : {}),
             live: options.live,
           },
         }),

@@ -1,11 +1,13 @@
 # STATUS
 
-- **Active agent:** kimi-code
+- **Active agent:** claude-code (review)
 - **Current task:** T25 (draft kinds and type through dispatch), docs/03-tasks.md v3.
-- **Branch:** `feat/T25-draft-kinds` (to be created by kimi-code)
+- **Branch:** `feat/T25-draft-kinds`
 - **Last commit:** see `git log -1`
-- **Next step:** kimi-code implements T25 and opens a PR; claude-code reviews. Then T26 (Instagram,
-  needs H8 from Volodymyr).
+- **Next step:** claude-code reviews the T25 PR and merges on green CI. kimi-code wrote T25 but ran
+  out of usage limits before committing; claude-code committed it unchanged as `Agent: kimi-code`
+  (approved by Volodymyr 2026-10-30). After merge: apply D1 migration 0006 and redeploy the bot.
+  Then T26 (Instagram, needs H8 from Volodymyr).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   none.

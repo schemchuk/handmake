@@ -48,7 +48,7 @@ function draftAsPost(draft: Draft, now: Date): Post {
     tenant: draft.tenantId,
     date: now.toISOString(),
     publishAt: 'now',
-    type: 'free',
+    type: draft.type,
     photos: draft.photoRefs,
     channels: ['telegram'],
     versions: {
@@ -59,19 +59,24 @@ function draftAsPost(draft: Draft, now: Date): Post {
   };
 }
 
-function keyboard(texts: BotTexts, blocked: boolean): PreviewKeyboardButton[][] {
+/**
+ * The preview keyboard (T25): every button carries the draft id, so a press
+ * always acts on the draft this preview was sent for — never on a newer
+ * draft or a cron-created one sharing the chat.
+ */
+function keyboard(draftId: string, texts: BotTexts, blocked: boolean): PreviewKeyboardButton[][] {
   const rows: PreviewKeyboardButton[][] = [
     [
-      { text: texts.editUkButton, callback_data: 'draft:edit:uk' },
-      { text: texts.editDeButton, callback_data: 'draft:edit:de' },
-      { text: texts.regenDeButton, callback_data: 'draft:regen-de' },
+      { text: texts.editUkButton, callback_data: `draft:${draftId}:edit:uk` },
+      { text: texts.editDeButton, callback_data: `draft:${draftId}:edit:de` },
+      { text: texts.regenDeButton, callback_data: `draft:${draftId}:regen-de` },
     ],
   ];
   const second: PreviewKeyboardButton[] = [];
   if (!blocked) {
-    second.push({ text: texts.publishButton, callback_data: 'draft:publish' });
+    second.push({ text: texts.publishButton, callback_data: `draft:${draftId}:publish` });
   }
-  second.push({ text: texts.discardButton, callback_data: 'draft:discard' });
+  second.push({ text: texts.discardButton, callback_data: `draft:${draftId}:discard` });
   rows.push(second);
   return rows;
 }
@@ -123,6 +128,6 @@ export function buildPreview(draft: Draft, texts: BotTexts, now = new Date()): P
 
   return {
     text: lines.join('\n'),
-    keyboard: { inline_keyboard: keyboard(texts, blockedError !== undefined) },
+    keyboard: { inline_keyboard: keyboard(draft.draftId, texts, blockedError !== undefined) },
   };
 }

@@ -1,10 +1,10 @@
-import { maxDraftPhotos } from '@handmake/core';
-import type { Draft, PublishJob, PublishRunner, Translator } from '@handmake/core';
+import { isUlid, maxDraftPhotos, pollSchema } from '@handmake/core';
+import type { Draft, PostPoll, PublishJob, PublishRunner, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
-import type { D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
+import type { ChatSession, D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
 import { publishingStaleMs, translationStaleMs } from './draft-store';
 import { buildPreview } from './preview';
 import type { BotTexts } from './texts';
@@ -56,17 +56,23 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   });
 
   bot.command('new', async (ctx) => {
-    const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx));
+    const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx), 'post');
     if (existing) {
       await ctx.reply(texts.draftExistsText(existing.draft.photoRefs.length));
       return;
     }
-    const created = await ctx.drafts.getOrCreateCollecting(ctx.tenantId, chatId(ctx), new Date());
+    const created = await ctx.drafts.getOrCreateCollecting(
+      ctx.tenantId,
+      chatId(ctx),
+      'post',
+      new Date(),
+    );
+    await setSession(ctx, { kind: 'post', draftId: created.draft.draftId });
     await ctx.reply(texts.draftCreatedText(created.draft.photoRefs.length));
   });
 
   bot.command('discard', async (ctx) => {
-    const existing = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    const existing = await sessionDraft(ctx);
     if (!existing) {
       await ctx.reply(texts.discardNothingText);
       return;
@@ -80,6 +86,8 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
     await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId);
+    const session = await sessionOf(ctx);
+    await setSession(ctx, { kind: session.kind, draftId: null });
     await ctx.reply(texts.discardDoneText);
   });
 
@@ -87,7 +95,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   // presses cannot trigger two paid AI calls) and answer immediately; the
   // translation itself runs in `background`, past the webhook response.
   bot.command('done', async (ctx) => {
-    const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    const stored = await sessionDraft(ctx);
     if (!stored) {
       await ctx.reply(texts.draftNoneText);
       return;
@@ -125,15 +133,20 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     await runTranslation(ctx, claimed);
   });
 
-  // Preview buttons. All actions re-read the latest draft — the keyboard in
-  // an old preview message must not operate on stale state.
+  // Preview buttons. Every button carries its draft id and acts on exactly
+  // that draft (T25): a cron-created preview can never hijack the author's
+  // own draft, and an old keyboard never operates on a newer draft. Buttons
+  // on pre-T25 previews carry no id and fall back to the session draft.
   bot.on('callback_query:data', async (ctx) => {
-    const data = ctx.callbackQuery.data;
-    if (!data.startsWith('draft:')) {
+    const parsed = parseDraftCallback(ctx.callbackQuery.data);
+    if (!parsed) {
       return;
     }
     await ctx.answerCallbackQuery();
-    const stored = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    const stored =
+      parsed.draftId !== undefined
+        ? await ctx.drafts.get(ctx.tenantId, parsed.draftId)
+        : await sessionDraft(ctx);
     if (!stored) {
       await ctx.reply(texts.draftNoneText);
       return;
@@ -145,14 +158,12 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
 
-    if (data === 'draft:edit:uk' || data === 'draft:edit:de') {
-      const target: DraftEditTarget = data === 'draft:edit:uk' ? 'uk' : 'de';
-      const armed = await ctx.drafts.setPendingEdit(
-        ctx.tenantId,
-        stored.draft.draftId,
-        target,
-        new Date(),
-      );
+    const { action } = parsed;
+    const draftId = stored.draft.draftId;
+
+    if (action === 'edit:uk' || action === 'edit:de') {
+      const target: DraftEditTarget = action === 'edit:uk' ? 'uk' : 'de';
+      const armed = await ctx.drafts.setPendingEdit(ctx.tenantId, draftId, target, new Date());
       if (!armed) {
         await ctx.reply(texts.editConflictText);
         return;
@@ -164,11 +175,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
 
-    if (data === 'draft:regen-de') {
+    if (action === 'regen-de') {
       const now = new Date();
       const claimed = await ctx.drafts.claimTranslation(
         ctx.tenantId,
-        stored.draft.draftId,
+        draftId,
         ['ready'],
         now,
         staleCutoff(now),
@@ -185,7 +196,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
 
-    if (data === 'draft:publish') {
+    if (action === 'publish') {
       // Consent first (F10: no identifiable faces without written consent);
       // the confirm button re-reads the draft and claims it atomically.
       if (stored.draft.state !== 'ready') {
@@ -196,8 +207,14 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: texts.publishConfirmButton, callback_data: 'draft:publish:confirm' },
-              { text: texts.publishCancelButton, callback_data: 'draft:publish:cancel' },
+              {
+                text: texts.publishConfirmButton,
+                callback_data: `draft:${draftId}:publish:confirm`,
+              },
+              {
+                text: texts.publishCancelButton,
+                callback_data: `draft:${draftId}:publish:cancel`,
+              },
             ],
           ],
         },
@@ -205,26 +222,35 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
 
-    if (data === 'draft:publish:cancel') {
+    if (action === 'publish:cancel') {
       await sendPreview(ctx, stored);
       return;
     }
 
-    if (data === 'draft:publish:confirm') {
+    if (action === 'publish:confirm') {
+      // Validate before claiming: a draft that can never be dispatched (a
+      // wotw-poll without a valid poll in extras) is refused here and stays
+      // ready instead of getting stuck in 'publishing'.
+      try {
+        publishJobOf(stored.draft);
+      } catch {
+        await ctx.reply(texts.publishInvalidText);
+        return;
+      }
       // The guarded claim decides, not the state we just read: a fresh
       // 'publishing' row means a racing press already dispatched (back off),
       // a stale one means the background dispatch died and may be reclaimed.
       const now = new Date();
       const claimed = await ctx.drafts.claimPublishing(
         ctx.tenantId,
-        stored.draft.draftId,
+        draftId,
         now,
         publishingStaleCutoff(now),
       );
       if (!claimed) {
         // The callback may have landed between the read above and the claim:
         // a now-'published' draft answers "finished", not "not ready".
-        const fresh = await ctx.drafts.get(ctx.tenantId, stored.draft.draftId);
+        const fresh = await ctx.drafts.get(ctx.tenantId, draftId);
         await ctx.reply(
           fresh?.draft.state === 'published'
             ? texts.draftFinishedText
@@ -234,16 +260,23 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         );
         return;
       }
-      await runPublish(ctx, claimed);
+      // Dispatch the draft as claimed, not as read above: an edit that landed
+      // in between (replaceText works on ready drafts) must be published.
+      await runPublish(ctx, claimed, publishJobOf(claimed.draft));
       return;
     }
 
-    if (data === 'draft:discard') {
+    if (action === 'discard') {
       if (stored.draft.state === 'publishing') {
         await ctx.reply(texts.draftBusyText);
         return;
       }
-      await ctx.drafts.delete(ctx.tenantId, stored.draft.draftId);
+      await ctx.drafts.delete(ctx.tenantId, draftId);
+      // Drop the session pointer if it aimed at the draft just deleted.
+      const session = await sessionOf(ctx);
+      if (session.draftId === draftId) {
+        await setSession(ctx, { kind: session.kind, draftId: null });
+      }
       await ctx.reply(texts.discardDoneText);
       return;
     }
@@ -280,21 +313,24 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
   /**
    * A plain text message can mean four things, checked in this order:
-   * 1. an armed reply-based edit (ADR 005) replaces that language version;
-   * 2. after a failed translation the author's own German text is taken as-is
-   *    (failed -> ready);
-   * 3. under a ready draft it just re-sends the preview (nothing is collected
-   *    into an approved draft);
-   * 4. otherwise the text is collected into the collecting draft.
+   * 1. an armed reply-based edit (ADR 005) replaces that language version of
+   *    the draft that armed it, wherever the session points now;
+   * 2. after a failed translation of the session draft the author's own German
+   *    text is taken as-is (failed -> ready);
+   * 3. under a ready session draft it just re-sends the preview (nothing is
+   *    collected into an approved draft);
+   * 4. otherwise the text is collected into the session's collecting draft.
+   * Cron-created drafts never intercept anything here: they are reachable only
+   * through their own preview buttons, which carry the draft id (T25).
    */
   async function handleText(ctx: AppContext, text: string): Promise<void> {
-    const latest = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    const pending = await ctx.drafts.findPendingEditForChat(ctx.tenantId, chatId(ctx));
 
-    if (latest?.pendingEdit) {
-      const target = latest.pendingEdit;
+    if (pending?.pendingEdit) {
+      const target = pending.pendingEdit;
       const applied = await ctx.drafts.replaceText(
         ctx.tenantId,
-        latest.draft.draftId,
+        pending.draft.draftId,
         target,
         text,
         new Date(),
@@ -304,17 +340,21 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         return;
       }
       await ctx.reply(texts.editSavedText(target));
-      const fresh = await ctx.drafts.get(ctx.tenantId, latest.draft.draftId);
+      const fresh = await ctx.drafts.get(ctx.tenantId, pending.draft.draftId);
       if (fresh?.draft.state === 'ready') {
         await sendPreview(ctx, fresh);
       }
       return;
     }
 
-    if (latest?.draft.state === 'failed') {
+    const session = await sessionOf(ctx);
+    const stored =
+      session.draftId !== null ? await ctx.drafts.get(ctx.tenantId, session.draftId) : undefined;
+
+    if (stored?.draft.state === 'failed') {
       const applied = await ctx.drafts.writeGermanByHand(
         ctx.tenantId,
-        latest.draft.draftId,
+        stored.draft.draftId,
         text,
         new Date(),
       );
@@ -323,20 +363,20 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         return;
       }
       await ctx.reply(texts.deSavedText);
-      const fresh = await ctx.drafts.get(ctx.tenantId, latest.draft.draftId);
+      const fresh = await ctx.drafts.get(ctx.tenantId, stored.draft.draftId);
       if (fresh) {
         await sendPreview(ctx, fresh);
       }
       return;
     }
 
-    if (latest?.draft.state === 'ready') {
-      await sendPreview(ctx, latest);
+    if (stored?.draft.state === 'ready') {
+      await sendPreview(ctx, stored);
       return;
     }
 
-    const stored = await appendTextToOpenDraft(ctx, text);
-    await ctx.reply(texts.textSavedText(stored.draft.photoRefs.length));
+    const appended = await appendTextToOpenDraft(ctx, session, text);
+    await ctx.reply(texts.textSavedText(appended.draft.photoRefs.length));
   }
 
   /**
@@ -389,9 +429,8 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
    * retry. On success the pipeline itself notifies the author when the
    * post is delivered (publisher notifier).
    */
-  async function runPublish(ctx: AppContext, claimed: StoredDraft): Promise<void> {
+  async function runPublish(ctx: AppContext, claimed: StoredDraft, job: PublishJob): Promise<void> {
     const targetChat = chatId(ctx);
-    const job = publishJobOf(claimed.draft);
     await ctx.reply(texts.publishingText);
     options.background(async () => {
       try {
@@ -423,13 +462,14 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     if (!largest) {
       throw new Error('photo message carries no photo sizes');
     }
-    let stored = await appendPhotoToOpenDraft(ctx, largest.file_id);
+    const session = await sessionOf(ctx);
+    let stored = await appendPhotoToOpenDraft(ctx, session, largest.file_id);
     if (stored === 'limit') {
       await ctx.reply(texts.photoLimitText(maxDraftPhotos));
       return;
     }
     if (caption) {
-      stored = await appendTextToOpenDraft(ctx, caption);
+      stored = await appendTextToOpenDraft(ctx, session, caption);
     }
     await ctx.reply(texts.photoSavedText(stored.draft.photoRefs.length));
   }
@@ -448,7 +488,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       await ctx.reply(texts.unsupportedFileText(document.file_name ?? 'без назви'));
       return;
     }
-    const stored = await appendPhotoToOpenDraft(ctx, document.file_id);
+    const stored = await appendPhotoToOpenDraft(ctx, await sessionOf(ctx), document.file_id);
     if (stored === 'limit') {
       await ctx.reply(texts.photoLimitText(maxDraftPhotos));
       return;
@@ -457,12 +497,12 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   }
 
   /**
-   * Photo (or document) under a ready draft: mirror the text behaviour
-   * (review m2) — re-show the preview with a hint instead of silently
-   * forking a new collecting draft next to the approved one.
+   * Photo (or document) under a ready session draft: mirror the text
+   * behaviour (review m2) — re-show the preview with a hint instead of
+   * silently forking a new collecting draft next to the approved one.
    */
   async function readyDraftRepliesPreview(ctx: AppContext): Promise<boolean> {
-    const latest = await ctx.drafts.latestForChat(ctx.tenantId, chatId(ctx));
+    const latest = await sessionDraft(ctx);
     if (latest?.draft.state !== 'ready') {
       return false;
     }
@@ -472,18 +512,19 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   }
 
   /**
-   * Append one photo to the chat's collecting draft and return the draft as
-   * stored. The append is a single atomic D1 statement — parallel album
+   * Append one photo to the session's collecting draft and return the draft
+   * as stored. The append is a single atomic D1 statement — parallel album
    * messages serialize at SQLite and cannot lose each other or bypass the
    * limit. Only a racing /discard (draft vanished) triggers one recreate
    * and retry.
    */
   async function appendPhotoToOpenDraft(
     ctx: AppContext,
+    session: ChatSession,
     fileId: string,
   ): Promise<StoredDraft | 'limit'> {
     for (let attempt = 0; ; attempt++) {
-      const stored = await ctx.drafts.getOrCreateCollecting(ctx.tenantId, chatId(ctx), new Date());
+      const stored = await collectingDraftOf(ctx, session);
       const result = await ctx.drafts.appendPhoto(
         ctx.tenantId,
         stored.draft.draftId,
@@ -503,9 +544,13 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
   }
 
-  async function appendTextToOpenDraft(ctx: AppContext, text: string): Promise<StoredDraft> {
+  async function appendTextToOpenDraft(
+    ctx: AppContext,
+    session: ChatSession,
+    text: string,
+  ): Promise<StoredDraft> {
     for (let attempt = 0; ; attempt++) {
-      const stored = await ctx.drafts.getOrCreateCollecting(ctx.tenantId, chatId(ctx), new Date());
+      const stored = await collectingDraftOf(ctx, session);
       const applied = await ctx.drafts.appendText(
         ctx.tenantId,
         stored.draft.draftId,
@@ -519,6 +564,55 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         throw new Error('collecting draft keeps vanishing; giving up');
       }
     }
+  }
+
+  /**
+   * The draft new content goes to: the session's own collecting draft, or —
+   * when the session has none any more (published, discarded, never started)
+   * — a fresh collecting draft of the session's kind, which the session then
+   * points at.
+   */
+  async function collectingDraftOf(ctx: AppContext, session: ChatSession): Promise<StoredDraft> {
+    if (session.draftId !== null) {
+      const current = await ctx.drafts.get(ctx.tenantId, session.draftId);
+      if (current?.draft.state === 'collecting') {
+        return current;
+      }
+    }
+    const kind = session.kind === 'work' ? 'work' : 'post';
+    const stored = await ctx.drafts.getOrCreateCollecting(
+      ctx.tenantId,
+      chatId(ctx),
+      kind,
+      new Date(),
+    );
+    if (session.draftId !== stored.draft.draftId) {
+      await setSession(ctx, { kind: session.kind, draftId: stored.draft.draftId });
+    }
+    return stored;
+  }
+
+  /** The chat's session, defaulting to a post session with no draft yet. */
+  async function sessionOf(ctx: AppContext): Promise<ChatSession> {
+    return (
+      (await ctx.drafts.getChatSession(ctx.tenantId, chatId(ctx))) ?? {
+        kind: 'post',
+        draftId: null,
+      }
+    );
+  }
+
+  /** The draft the chat's session points at, if it still exists. */
+  async function sessionDraft(ctx: AppContext): Promise<StoredDraft | undefined> {
+    const session = await sessionOf(ctx);
+    if (session.draftId === null) {
+      return undefined;
+    }
+    return ctx.drafts.get(ctx.tenantId, session.draftId);
+  }
+
+  async function setSession(ctx: AppContext, session: ChatSession): Promise<void> {
+    await ctx.drafts.setChatSession(ctx.tenantId, chatId(ctx), session, new Date());
   }
 
   /** Re-read a just-written draft so replies report current counts. */
@@ -560,9 +654,11 @@ function publishJobOf(draft: Draft): PublishJob {
   if (de !== undefined && de.trim() !== '') {
     texts['de'] = de;
   }
-  return {
+  const job: PublishJob = {
     tenantId: draft.tenantId,
     postId: draft.draftId,
+    kind: draft.kind,
+    type: draft.type,
     texts,
     fileIds: draft.photoRefs,
     // The payload carries one provenance for all versions; a German version
@@ -571,4 +667,49 @@ function publishJobOf(draft: Draft): PublishJob {
     // AI involvement.
     provenance: texts['de'] !== undefined ? 'ai-assisted' : 'human',
   };
+  const poll = pollOf(draft);
+  if (poll !== undefined) {
+    job.poll = poll;
+  }
+  return job;
+}
+
+/** The poll spec of a wotw-poll draft, from its kind extras (written by the
+ * poll cron, T30). The post type is the source of truth: extras of other
+ * kinds are ignored, so a stray poll can never land on a non-poll payload.
+ * A wotw-poll draft without a valid poll must never be dispatched — the
+ * publisher would reject the payload anyway, but here the author gets a
+ * clear error instead of a failed pipeline run. */
+function pollOf(draft: Draft): PostPoll | undefined {
+  if (draft.type !== 'wotw-poll') {
+    return undefined;
+  }
+  const raw = draft.extras['poll'];
+  if (raw === undefined) {
+    throw new Error(`draft ${draft.draftId} is wotw-poll but has no poll in extras`);
+  }
+  const parsed = pollSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(`draft ${draft.draftId} extras poll is invalid`);
+  }
+  return parsed.data;
+}
+
+/**
+ * Parses preview-button callback data: `draft:<draftId>:<action>` (current
+ * previews) or legacy `draft:<action>` (previews sent before T25). Actions
+ * themselves may contain colons (`publish:confirm`). Returns undefined for
+ * data that does not belong to a draft preview at all.
+ */
+function parseDraftCallback(
+  data: string,
+): { draftId: string | undefined; action: string } | undefined {
+  if (!data.startsWith('draft:')) {
+    return undefined;
+  }
+  const parts = data.split(':');
+  if (isUlid(parts[1] ?? '')) {
+    return { draftId: parts[1], action: parts.slice(2).join(':') };
+  }
+  return { draftId: undefined, action: parts.slice(1).join(':') };
 }

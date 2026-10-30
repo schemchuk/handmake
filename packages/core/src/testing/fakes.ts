@@ -5,7 +5,6 @@ import type {
   DeliverContext,
   DeliverProgress,
   PollResult,
-  PollSpec,
   RemoteId,
   SendOperation,
 } from '../ports/channel';
@@ -20,9 +19,6 @@ import type {
   TranslationRequest,
   TranslationResult,
   Translator,
-  WinnerCandidate,
-  WinnerPick,
-  WinnerPicker,
 } from '../ports/services';
 import type { ContentStore, Draft, DraftState, DraftStore, PublishLedger } from '../ports/store';
 
@@ -40,7 +36,6 @@ export class FakeChannelAdapter implements ChannelAdapter {
 
   readonly deliveries: { ops: SendOperation[]; idempotencyKeys: string[] }[] = [];
   readonly progressCalls: { opIndex: number; remoteId: RemoteId }[] = [];
-  readonly pollsOpened: { poll: PollSpec; idempotencyKey: string }[] = [];
   readonly pollsClosed: RemoteId[] = [];
   /** Preset for the next closePoll result. */
   pollResult: PollResult = { optionVotes: [1], totalVotes: 1 };
@@ -86,11 +81,6 @@ export class FakeChannelAdapter implements ChannelAdapter {
       await progress?.onDelivered(i, remoteId);
     }
     return [...known, ...newIds];
-  }
-
-  async openPoll(poll: PollSpec, ctx: DeliverContext): Promise<RemoteId> {
-    this.pollsOpened.push({ poll, idempotencyKey: `${ctx.idempotencyBase}:poll` });
-    return `${this.key}-poll-${this.pollsOpened.length}`;
   }
 
   async closePoll(pollId: RemoteId): Promise<PollResult> {
@@ -187,18 +177,6 @@ export class FakeTranslator implements Translator {
     }
     this.requests.push(request);
     return { text: `[${request.targetLang}] ${request.text}`, notes: 'fake translation' };
-  }
-}
-
-/** Deterministic WinnerPicker: picks the configured id, or the first candidate. */
-export class FakeWinnerPicker implements WinnerPicker {
-  winnerId: string | null = null;
-  reason = 'fake pick';
-
-  async pick(candidates: WinnerCandidate[]): Promise<WinnerPick> {
-    const winnerId = this.winnerId ?? candidates[0]?.id;
-    if (!winnerId) throw new Error('FakeWinnerPicker: no candidates');
-    return { winnerId, reason: this.reason, chosenBy: 'ai' };
   }
 }
 

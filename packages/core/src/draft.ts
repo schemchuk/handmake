@@ -54,11 +54,19 @@ export class DraftLimitError extends Error {
   }
 }
 
-export function createDraft(tenantId: string, draftId: string, now: Date): Draft {
+export function createDraft(
+  tenantId: string,
+  draftId: string,
+  now: Date,
+  init: { kind?: Draft['kind']; type?: Draft['type']; extras?: Record<string, unknown> } = {},
+): Draft {
   return {
     tenantId,
     draftId,
     state: 'collecting',
+    kind: init.kind ?? 'post',
+    type: init.type ?? 'free',
+    extras: init.extras ?? {},
     texts: {},
     photoRefs: [],
     createdAt: now.toISOString(),

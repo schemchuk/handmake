@@ -6,6 +6,8 @@ import { createGitHubActionsRunner } from '../src/publish-runner';
 const job: PublishJob = {
   tenantId: 'faden-und-stimmung',
   postId: '01JBCA1B2C3D4E5F6G7H8J9K0M',
+  kind: 'post',
+  type: 'free',
   texts: { uk: 'Привіт!', de: 'Hallo!' },
   fileIds: ['file-1', 'file-2'],
   provenance: 'ai-assisted',
@@ -43,11 +45,39 @@ describe('createGitHubActionsRunner', () => {
       client_payload: {
         tenantId: job.tenantId,
         draftId: job.postId,
+        kind: 'post',
+        type: 'free',
         texts: job.texts,
         fileIds: job.fileIds,
         provenance: job.provenance,
         live: true,
       },
+    });
+  });
+
+  it('mirrors kind, type and poll of a wotw-poll job (T25)', async () => {
+    const fetchImpl = mockFetch(204);
+    const runner = createGitHubActionsRunner({
+      repo: 'owner/repo',
+      token: 'secret-token',
+      live: true,
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+    const pollJob: PublishJob = {
+      ...job,
+      type: 'wotw-poll',
+      poll: { question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] },
+    };
+
+    await runner.run(pollJob);
+
+    const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    const payload = JSON.parse(init.body as string)['client_payload'] as Record<string, unknown>;
+    expect(payload['kind']).toBe('post');
+    expect(payload['type']).toBe('wotw-poll');
+    expect(payload['poll']).toEqual({
+      question: 'Яка робота тижня?',
+      options: ['1. Ваза', '2. Шаль'],
     });
   });
 
