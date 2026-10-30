@@ -5,16 +5,17 @@
   claude-code while kimi-code was out of usage limits).
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** D1 migration 0006 applied to production (2026-10-30). Redeploy the bot from the repo:
-  `cd apps/bot && pnpm run deploy` (not `pnpm deploy`, which is a built-in pnpm command). Then a
-  product discussion with Volodymyr:
-  own website as the primary source, networks as copies (POSSE). It may reorder T26-T38.
-- **Blocked on:** the bot redeploy (Volodymyr runs it).
+- **Next step:** T25 is live (D1 migration 0006 applied, bot redeployed 2026-10-30, version
+  0cd39437). Product discussion with Volodymyr: own website as the primary source, networks as copies
+  (POSSE). It may reorder T26-T38.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:**
   own-site-first (POSSE): does it change the phase order (website before Instagram)?
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
+- Bot deploy: `cd apps/bot && pnpm run deploy` (`pnpm deploy` is a built-in pnpm command). Apply D1
+  migrations first: `pnpm run db:migrate`.
 - pnpm is not in /usr/bin on this machine; Kimi Code uses `~/.local/bin/pnpm` (12.14.0). Node is v22.23.2 (`.nvmrc` = 22).
 
 ## Review notes carried forward
