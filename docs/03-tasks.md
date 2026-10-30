@@ -2,7 +2,9 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: **approved v3 (2026-10-28).** v3 re-plans phase 1b and phase 2 for spec v5 and
+Status: **draft v4 (2026-10-30), awaiting Volodymyr's approval.** v4 re-orders the work for spec v6
+(POSSE: site first, then AI shows, then Instagram and contest) and adds T39-T46; see "Order of work (v4)".
+v3 (approved 2026-10-28) re-plans phase 1b and phase 2 for spec v5 and
 architecture v3.1, from the task split in docs/reviews/2026-10-28-v5-review.md. v2 (approved
 2026-10-21) planned the MVP and T18-T24.
 Scope of v2: MVP (spec section 5), Telegram only, built on the ports from architecture section 11.
@@ -25,8 +27,9 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H7 | Random `PUBLISH_CALLBACK_SECRET` (e.g. `openssl rand -hex 32`) as GitHub Secret and Worker secret. | T19 |
 | H8 | Instagram: author switches her account to Creator; Meta developer app with Instagram Login API; long-lived token and IG user ID as secrets. | T26 |
 | H9 | Random `NAMES_ENDPOINT_SECRET` (`openssl rand -hex 32`) as GitHub Secret and Worker secret. | T28 |
-| H10 | Cloudflare Pages project; API token scoped to Pages deploy only; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Secrets. | T38 |
-| H11 | Impressum fields as GitHub Secrets (names in `.env.example`); confirm the legal page texts. | T37, T38 |
+| H10 | Cloudflare Pages project; API token scoped to Pages deploy only; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Secrets. Domain fadenundstimmung.de is registered (INWX) and its zone is active on Cloudflare (done 2026-10-30); attaching it to Pages is part of T39. | T39 |
+| H11 | Impressum fields as GitHub Secrets (names in `.env.example`); confirm the legal page texts. | T41 |
+| H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
 
 ## Tasks
@@ -249,7 +252,7 @@ T24 (Instagram) becomes T26.
 ## Tasks v3: phase 1b remainder (contest, Instagram, proof of use)
 
 Rules as above; each PR under ~400 changed non-test lines (ADR 009). Owner kimi-code, reviewer
-claude-code unless stated. Order: T25 → T26 (Instagram) → T27 → T28 → T29 → T30 → T31 → T32; T33-T34 may run in between.
+claude-code unless stated. Order here is superseded by "Order of work (v4)" below (Instagram and the contest now follow the site and the shows). Old order: T25 → T26 (Instagram) → T27 → T28 → T29 → T30 → T31 → T32; T33-T34 may run in between.
 
 ### T25 — Draft kinds and type through dispatch (`bot`, `core`)
 - Depends on: T21
@@ -333,7 +336,7 @@ claude-code unless stated. Order: T25 → T26 (Instagram) → T27 → T28 → T2
   adapter decides). `/entries` lists recent entries with a "withdraw name" button: the name is deleted
   in D1, the affected Telegram messages are re-rendered and edited using `channel_deliveries`. Daily
   cron deletes names of non-winning entries 90 days after the result post; winners keep the name until
-  withdrawal (ADR 010). Site rebuild hook is a no-op until T38.
+  withdrawal (ADR 010). Site rebuild hook is a no-op until T39.
 - Acceptance: after withdrawal the channel shows "Work No N"; Git history never contained the name.
 - Tests: edit caption vs text, retention dates, winner exemption.
 
@@ -354,24 +357,113 @@ claude-code unless stated. Order: T25 → T26 (Instagram) → T27 → T28 → T2
 - Acceptance: a developer can deploy a test tenant from the docs alone (checked by kimi-code).
 - Tests: n/a (docs); links checked.
 
-## Tasks v3: phase 2 (website)
+## Order of work (v4)
 
-Sizes confirmed when each task starts.
+T35 → T39 → T40 → T41 (site live on fadenundstimmung.de, channel posts link to it) → T42 (cost
+ledger) → T36 → T43 (spike, ADR 015) → T44 → T45 → T46 (AI shows) → T26 (Instagram) → T27-T32
+(contest) → T33, T34. T33-T34 may run in between. Superseded: T37 and T38 (replaced by T39-T41; the
+site no longer shows contest winners, so T28 and T32 lose their site parts). Owner kimi-code,
+reviewer claude-code unless stated; each PR under ~400 changed non-test lines (ADR 009).
 
-### T35 — Site scaffold (`site`)
+## Tasks v4: phase 2 (site first, POSSE)
+
+### T35 — Site scaffold (`site`) · revised in v4
 - Depends on: T25
-- Change: Astro static in `apps/site`, `/uk/` and `/de/`, theme from the tenant `site:` section, blog
-  built from the `ContentStore`; manual `wrangler pages deploy` documented.
-- Acceptance: local build renders all published posts in both languages; no tenant-specific code.
-- Tests: build in CI, content loader tests.
+- Change: Astro static in `apps/site`: German default at `/`, Ukrainian under `/uk/`; theme and brand
+  («Faden und Stimmung») from the tenant `site:` section; blog from the `ContentStore`; `/kreis/` page
+  from tenant config (what, when, where, Telegram link); manual `wrangler pages deploy` documented.
+- Acceptance: local build renders all published posts in both languages and the circle page; no
+  tenant-specific code in the scaffold.
+- Tests: build in CI, content loader tests, language routing.
 
-### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`)
-- Depends on: T25, T35
-- Change: `/work` session (kind `work`), collection picker; `TextGenerator` port + Claude implementation
-  for UA description and DE version (versioned prompt); `buildWorkFromPayload` and works writer
-  (`content/works/<id>/`, `content/collections/<slug>.md`); optional channel post about the new work.
-- Acceptance: a published work appears in `content/works/` with valid frontmatter; ledger as for posts.
-- Tests: schema, builder, mocked generator.
+### T39 — Site workflow, Pages and domain (`workflows`) · Sensitive
+- Depends on: T35, H10
+- Change: `site.yml` (`workflow_call` + `workflow_dispatch`, concurrency `site`, checkout `ref: main`,
+  commits nothing); `publish.yml` calls it after publish. Attach fadenundstimmung.de and `www` (redirect
+  to the apex) to the Pages project; DNS records in the Cloudflare zone. The site stays behind a
+  non-indexed state (`noindex`, no sitemap) until T41 go-live.
+- Acceptance: a publish run updates the site on the custom domain over HTTPS; a manual rebuild works
+  without a payload.
+- Tests: actionlint; manual run documented in the PR.
+
+### T40 — Canonical links in channel posts (F31, `core`, `publisher`, `channels`)
+- Depends on: T39
+- Change: `canonicalUrl(post)` from the post id and tenant site base URL; the renderers append "Mehr
+  auf der Website: <url>" (UA/DE per language) to Telegram posts; Instagram captions get the text
+  without a clickable link (bio link instead). Flag `featureFlags.canonicalLinks` so posts made before
+  the site is live stay unchanged.
+- Acceptance: a published post links to a page that exists after the rebuild; flag off → unchanged ops.
+- Tests: URL builder, render per channel, flag.
+
+### T41 — Legal pages and go-live (`site`) · Sensitive
+- Depends on: T40, H11
+- Change: Impressum from secrets (never committed, absent from the build log), Datenschutzerklärung
+  listing all processors (Cloudflare, GitHub, Telegram, Anthropic, image/video providers once chosen,
+  INWX as registrar), about page. Go-live checklist; Volodymyr and the author confirm the legal texts,
+  then `noindex` is removed and the sitemap enabled.
+- Acceptance: build with fixture secrets shows no Impressum value in logs; go-live only after both
+  confirmations.
+- Tests: page build tests, masking.
+
+### T42 — AI cost ledger and cost command (F32, `bot`, `core`)
+- Depends on: T25
+- Change: migration `ai_costs` (tenant_id, at, service, unit, amount_eur, ref); a `recordCost` helper
+  used by every AI call (the existing translation call is the first user); config `ai.monthlyTargetEur`
+  (20) and `ai.toleranceEur` (5); operator `/cost` (month total, per show, per service, left); warning
+  at the target, a hard stop for new shows above target + tolerance; summary on the 1st by cron.
+- Acceptance: a fixture month yields the right totals; above the cap a new show is refused with a clear
+  message; only the operator can call `/cost`.
+- Tests: aggregation, thresholds, month boundaries in `Europe/Berlin`, allow-list.
+
+### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`) · revised in v4
+- Depends on: T25, T35, T42
+- Change: as v3 (kind `work`, `/work` session, `TextGenerator` port, UA description plus DE version,
+  works writer `content/works/<id>/`, `content/collections/<slug>.md`), plus a `kind` field on the work
+  (`worn` | `closeup` | `interior`) used to pick the show template; text calls book their cost (T42).
+  Site pages for works and collections.
+- Acceptance: a published work appears in `content/works/` and on the site with valid frontmatter.
+- Tests: schema, builder, mocked generator, site build.
+
+### T43 — Show pipeline spike and ADR 015 (docs and scripts) · Owner: claude-code · Reviewer: kimi-code
+- Depends on: T42, H13 · Resolves Q15
+- Change: run 3 real works through 2-3 try-on/compositing and short-video providers; compare quality
+  (does the embroidery stay unchanged?), cost per image and per video, licence terms for commercial use,
+  AI-marking support. Output: `docs/decisions/015-ai-show-pipeline.md` and a short report with the
+  images; the monthly cost estimate for F32. Scripts stay out of `main` unless useful.
+- Acceptance: a decision with provider, template prompts, per-show cost; the author has looked at the
+  results.
+- Tests: n/a (spike); costs recorded in the ledger by hand.
+
+### T44 — Show generation (F30, `bot`, `ai`, `core`)
+- Depends on: T43, T36
+- Change: draft kind `show`; `/show` session (2-3 photos of a work, or pick an existing work);
+  `ShowGenerator` port with the provider from ADR 015; templates worn/closeup/interior; models from
+  tenant config (`models:` list: id, name, look description, reference image); AI marker on every
+  image; cost booked per call; preview shows the original next to the result with 🔁 regenerate; result
+  stored as a content item with its images and video.
+- Acceptance: a show draft goes from photos to an approvable preview and is committed as content on
+  approval; models are changed by config only.
+- Tests: session flow, template choice, mocked generator, cap respected, marker present.
+
+### T45 — Shows on the site (F30, `site`)
+- Depends on: T44, T41
+- Change: shows list and show pages (images, video, work link, model name, "KI-generiertes Model"
+  label), home page highlights the latest show, German default and `/uk/`.
+- Acceptance: a published show appears on the site after the rebuild; every generated image is labelled
+  on the page.
+- Tests: page build tests, label presence.
+
+### T46 — Show copies to channels (F30-F31, `publisher`, `channels`)
+- Depends on: T45, T40
+- Change: a show publishes to the site first, then Telegram (album + video + canonical link) and, once
+  T26 exists, Instagram (carousel and Reels). A failed copy never blocks the site.
+- Acceptance: a show post links to its page; a re-run does not duplicate.
+- Tests: render per channel, ledger resume.
+
+## Tasks v3: phase 2 (website), superseded in v4
+
+T35 was revised above. T36 was revised above. **T37 and T38 are superseded** by T39-T41, T45 (contest
+winners are no longer on the site). The text below is kept for history.
 
 ### T37 — Site pages (`site`)
 - Depends on: T35, T36, T28, H11

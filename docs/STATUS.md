@@ -6,7 +6,7 @@
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
 - **Next step:** T25 is live (D1 migration 0006 applied, bot redeployed 2026-10-30, version
-  0cd39437). POSSE discussion closed (rounds 1-9 below); write spec v6 + tasks v4.
+  0cd39437). spec v6 and tasks v4 drafted (2026-10-30), awaiting Volodymyr's approval; then T35 starts.
 - **Blocked on:** nothing.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -47,7 +47,7 @@
 - **Discussion closed.** Next: spec v6 + tasks v4 from rounds 1-9 for Volodymyr's approval.
   Domain fadenundstimmung.de registered by Volodymyr at INWX (2026-10-30). Zone added in Cloudflare
   (Free) and nameservers switched at INWX to dahlia/khalid.ns.cloudflare.com (2026-10-30, verified
-  with dig). Next: confirm zone Active in Cloudflare, then spec v6 + tasks v4.
+  with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.

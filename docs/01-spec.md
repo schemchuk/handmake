@@ -2,8 +2,9 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v5 (2026-10-28).** Previous: approved v4 (2026-10-21).
-Source: docs/00-interview.md, rounds 0-5. Changes from v4 are listed in section 14.
+Status: **draft v6 (2026-10-30), awaiting Volodymyr's approval.** Previous: approved v5 (2026-10-28).
+Source: docs/00-interview.md, rounds 0-5, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
+Changes from v5 are listed in section 14.
 
 ## 1. Problem, vision and goals
 
@@ -18,6 +19,15 @@ short videos. A website presents the author and her collections like a small age
 most of the content; the author approves everything before it goes out. A designed funnel grows an
 audience first; once it is large enough, monetization (a shop with the author's works) can be switched
 on. The whole case is built so that the same platform can be resold to bloggers.
+
+**Product vision (v6, POSSE).** The author's own website is the primary source; Telegram and Instagram
+carry copies that link back to it (publish on your own site, syndicate elsewhere). The brand is
+**Faden und Stimmung** (domain fadenundstimmung.de, registered at INWX, DNS on Cloudflare) and it is the
+author's future business and a portfolio piece. The site works like a small model agency: every one to
+two weeks a **show** presents one real work of the author (clothing with her embroidery, embroidered
+pillows and embroideries, small appliqués and accessories) on AI-generated, fictional models. Only real
+works are shown; every generated image is labelled. The audience is the whole German-speaking area
+(DE/AT/CH); the circle in Landshut is one small page on the site.
 
 Goals, in priority order (unchanged from v4, confirmed 2026-10-28, Q10):
 1. **Portfolio.** Show businesses in Germany/EU that Volodymyr can automate a real process end to end
@@ -117,6 +127,25 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     channels (Instagram has no poll API, so it gets the result post only).
   - With fewer than 2 entries in a week, no poll is drafted and the author is told.
 
+### Shows and AI budget (phase 2a, after the site)
+- **F30** A **show** presents one real work: 3-5 images and one short video, every 1-2 weeks. The
+  author sends 2-3 photos of the work to the bot and approves the result like any post. Three
+  templates: *worn* (clothing with embroidery, on a model), *close-up* (appliqués, small accessories,
+  held or sewn on), *interior* (pillows, embroideries; a model is optional). The bot picks the template
+  from the work type and the author can change it. Models are 2-3 fixed, named, fictional adult
+  personas with a stable look, defined in tenant config; the models and their number can be changed
+  without code changes. The show is published to the site first, then copied to Telegram and Instagram
+  with a canonical link (F31).
+  - **Real works only.** The work in every image comes from the author's photo (try-on or compositing);
+    nothing is generated from a description. Before approval the preview shows the original photo next
+    to the result, because the author checks that the embroidery pattern is unchanged.
+  - **Labelling.** Every generated image carries a visible and machine-readable AI marker (EU AI Act
+    art. 50); captions say "KI-generiertes Model".
+- **F32** AI cost budget per tenant: a monthly target of 20 EUR with a 5 EUR tolerance. At 20 EUR the
+  operator is warned; at 25 EUR new shows wait until next month. Every AI call (text, image, video) is
+  booked in the ledger with its cost. The operator has a cost command (spent this month, per show, per
+  service, left) and gets a summary on the 1st. Prices are verified in the pipeline task (Q15).
+
 ### Video (phase 2b)
 - **F20** The author marks a new work of hers as **video source** (photos and/or a short clip sent to
   the bot; the exact hand-over is Q9). The system produces a short vertical video (about 15-30 s) with
@@ -126,17 +155,23 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   template, so a re-render gives the same result and a failed publish can be retried without a
   re-render. Rendering runs outside the bot Worker.
 
-### Website (phase 2)
-- **F22** A bilingual (UA/DE) static website, built from the content store, presents the author:
-  - **About**: the author and the circle.
-  - **Collections**: the author's works grouped into collections, each with AI-drafted, author-approved
-    descriptions.
+### Website (phase 2, now first: POSSE)
+- **F22** A bilingual static website, built from the content store, presents the author. German is the
+  default language (`/`), Ukrainian lives under `/uk/` (same translation step as the channels, no
+  English for now). Sections:
+  - **Shows** (F30): the agency core, newest first.
+  - **Works and collections**: the author's real works grouped into collections, each with AI-drafted,
+    author-approved descriptions.
+  - **About**: the author and the brand.
+  - **Circle** (`/kreis/`): one page (what, when, where in Landshut, link to the Telegram channel). No
+    participants' works and no contest results on the site (changed v6; consent and brand focus).
   - **Blog**: published posts.
-  - **Contest**: winners of the work of the week (participants' works appear only here).
   - **Legal**: Impressum and Datenschutzerklärung (drafts for Volodymyr to verify, see Q2).
-- **F23** The site is rebuilt and deployed automatically after each publish. Site look and texts come
-  from tenant configuration (theme, logo, languages), so another tenant gets its own site without code
-  changes.
+- **F23** The site is rebuilt and deployed automatically after each publish, on the custom domain
+  fadenundstimmung.de. Site look and texts come from tenant configuration (theme, logo, languages), so
+  another tenant gets its own site without code changes.
+- **F31** Canonical links (POSSE): every channel post of a site-worthy item links to its page on the
+  site. The post id is stable, so the URL is known before the site rebuild.
 - **F24** Collections and works are content types in the content store, created through the bot like
   posts (the author sends photos and a short note; AI drafts the description; she approves).
 
@@ -166,9 +201,10 @@ met (docs/e2e-mvp.md). Acceptance criteria for later phases are defined in the t
 | Phase | Content | Status |
 |---|---|---|
 | 1 | MVP: bot, translation, Telegram publishing, content repo | done |
-| 1b | F18 recurring posts (done), F19 contest, Instagram adapter | in progress |
-| 2 | F22-F24 website: author showcase, collections, blog, contest, legal pages | next |
-| 2b | F20-F21 video from the author's new works | after 2 |
+| 1b | F18 recurring posts (done), Instagram adapter, F19 contest (both after phase 2a) | in progress |
+| 2 | F22-F24, F31 website on fadenundstimmung.de: site, canonical links, legal pages | next (first) |
+| 2a | F30, F32 AI shows on virtual models, cost budget | after 2 |
+| 2b | F20-F21 video from the author's new works (the show video of F30 is the first use) | after 2a |
 | 3 | F25-F26 audience metrics and cross-promotion; F27 email capture (needs approval) | later |
 | 4 | F28-F29 monetization switch and shop | when the audience is large enough |
 | P | Offering for bloggers (business model decided after the circle case works, Q11) | later |
@@ -207,6 +243,12 @@ Presentation: a slide deck built from the author's photos and a guided Q&A, no t
 Not built now, but supported by design (a new channel = a new adapter, no core changes):
 - Facebook, Threads, TikTok, YouTube, X, Mastodon/Bluesky, nebenan.de, Meetup and others.
 
+Non-goals in v6 (in addition to v5):
+- No fully AI-generated works or product images; only real works are shown (F30).
+- AI models are fictional; never a likeness of a real person.
+- Participants' works and contest results are not shown on the site.
+- No English site version for now.
+
 Non-goals in v5:
 - Participants never use the bot and are never contacted by the system.
 - Participants' works are never sold, licensed or used outside the contest and its posts.
@@ -226,6 +268,12 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
 - **Q2** Resolved (2026-10-28): Impressum uses the author's home address. It is never committed to the
   repo; it is injected at site build time from secrets. The author confirms before the site goes live.
 - **Q3** Resolved in architecture (ADR 006): AI provider for translation.
+- **Q14** Resolved (2026-10-30): site purpose = the author's future business and portfolio; brand
+  «Faden und Stimmung»; domain fadenundstimmung.de; DACH audience. *Flag, not legal advice: AI labels
+  (AI Act art. 50), UWG (product image must match the product) and, for Switzerland, customs/VAT at
+  shop time.*
+- **Q15** Open (before the show pipeline): which try-on and video providers give acceptable quality
+  for knitted/embroidered items, and what a show really costs. Decided in a spike with real photos.
 - **Q9** Open (phase 2b): how the author hands a new work to the system for a video (photos, a clip,
   or both; one message or a guided flow).
 - **Q10** Resolved (2026-10-28): goal priority unchanged (portfolio first).
@@ -289,7 +337,15 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (content, contest, videos) -> engage (channel, weekly contest) -> capture (email,
   phase 3) -> convert (shop, phase 4).
 
-## 14. Changes from v4
+## 14. Changes from v5 (v6)
+
+- Vision v6 (POSSE): own site first, channels as linked copies; brand «Faden und Stimmung»; AI shows.
+- F22 rewritten (German default, `/uk/`, shows, `/kreis/` page; contest winners removed from the site).
+- F23 domain; new F31 canonical links, F30 shows, F32 AI cost budget (20 EUR, +5 tolerance).
+- Phases re-cut: site (2) before shows (2a) before Instagram and contest (1b remainder).
+- Q14 resolved, Q15 opened. Non-goals extended.
+
+## 14b. Changes from v4 (v5)
 
 - Vision rewritten (section 1): contest of participants' works, videos, author showcase site, funnel,
   monetization switch, resale to bloggers.
