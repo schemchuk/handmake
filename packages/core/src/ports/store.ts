@@ -1,4 +1,4 @@
-import type { Post } from '../post';
+import type { Post, PostType } from '../post';
 import type { RemoteId } from './channel';
 
 /**
@@ -40,10 +40,18 @@ export interface ContentStore {
 export type DraftState =
   'collecting' | 'translating' | 'ready' | 'publishing' | 'published' | 'failed';
 
+/** What a draft becomes on publish (T25): a channel post, or a work (phase 2). */
+export type DraftKind = 'post' | 'work';
+
 export interface Draft {
   tenantId: string;
   draftId: string;
   state: DraftState;
+  kind: DraftKind;
+  /** Post type (free, announcement, reminder, wotw-poll, wotw-result). */
+  type: PostType;
+  /** Kind-specific extras as opaque JSON: poll spec, entry refs, collection. */
+  extras: Record<string, unknown>;
   texts: Record<string, string>;
   /** Opaque photo references (Telegram file_ids), not binary data. */
   photoRefs: string[];

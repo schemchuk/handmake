@@ -41,6 +41,7 @@ const tenantId = 'faden-und-stimmung';
 const basePayload: DispatchPayload = {
   tenantId,
   draftId,
+  kind: 'post',
   type: 'free',
   texts: { uk: 'Тестовий допис (T10).', de: 'Testbeitrag (T10).' },
   fileIds: ['file-1'],

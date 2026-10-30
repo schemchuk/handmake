@@ -44,12 +44,6 @@ export type SendOperation =
       replyToOp?: number;
     };
 
-export interface PollSpec {
-  question: string;
-  options: string[];
-  photoIndexes?: number[];
-}
-
 export interface PollResult {
   /** Votes per option, in the order the options were given. */
   optionVotes: number[];
@@ -104,7 +98,6 @@ export interface ChannelAdapter {
     ctx: DeliverContext,
     progress?: DeliverProgress,
   ): Promise<RemoteId[]>;
-  openPoll?(poll: PollSpec, ctx: DeliverContext): Promise<RemoteId>;
   closePoll?(pollId: RemoteId, ctx: DeliverContext): Promise<PollResult>;
 }
 

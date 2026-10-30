@@ -27,8 +27,9 @@ export type AnnouncementKind = 'announcement' | 'reminder';
  * Idempotency: the draft id is a deterministic ULID seeded with tenant, kind
  * and meeting day, inserted with INSERT OR IGNORE and created already in
  * 'translating'. An overlapping or retried cron tick hits the same id and
- * stops; a crash between insert and markTranslated leaves a stale
- * 'translating' row that /done reclaims, so no state needs a cron retry.
+ * stops. A crash between insert and markTranslated leaves a 'translating'
+ * row no preview button points at — T25 sessions scope /done to the author's
+ * own draft, so it lingers until the 30-day retention cleanup.
  */
 export interface AnnouncementCronOptions {
   drafts: D1DraftStore;
@@ -101,6 +102,11 @@ async function createDraftAndPreview(
     tenantId,
     draftId,
     state: 'translating' as const,
+    // T25: the type rides through the dispatch, so an announcement or
+    // reminder is committed to the content repo as what it is, not 'free'.
+    kind: 'post' as const,
+    type: kind,
+    extras: {},
     texts: { uk: renderTemplate(config.announcements.templates[kind], meeting, timeZone) },
     photoRefs: [],
     createdAt: now.toISOString(),
@@ -124,7 +130,7 @@ async function createDraftAndPreview(
     ).text;
   } catch {
     await options.drafts.markTranslationFailed(tenantId, draftId, new Date());
-    await notifyAll(options, authorIds, options.texts.translationFailedText);
+    await notifyAll(options, authorIds, options.texts.cronTranslationFailedText);
     return;
   }
   await options.drafts.markTranslated(tenantId, draftId, german, new Date());

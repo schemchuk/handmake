@@ -13,7 +13,6 @@ import {
   FakePublishRunner,
   FakeSecretResolver,
   FakeTranslator,
-  FakeWinnerPicker,
 } from '../src/testing';
 
 describeChannelAdapterContract('fake', () => new FakeChannelAdapter());
@@ -60,6 +59,8 @@ describe('fakes', () => {
     await runner.run({
       tenantId: 't',
       postId: 'p',
+      kind: 'post',
+      type: 'free',
       texts: { uk: 'Hi' },
       fileIds: ['file-1'],
       provenance: 'human',
@@ -68,6 +69,8 @@ describe('fakes', () => {
       {
         tenantId: 't',
         postId: 'p',
+        kind: 'post',
+        type: 'free',
         texts: { uk: 'Hi' },
         fileIds: ['file-1'],
         provenance: 'human',
@@ -79,17 +82,10 @@ describe('fakes', () => {
     expect(notifier.messages).toEqual([{ target: 'operator', message: 'something failed' }]);
   });
 
-  it('FakeMediaSource and FakeWinnerPicker behave deterministically', async () => {
+  it('FakeMediaSource behaves deterministically', async () => {
     const media = new FakeMediaSource();
     media.photos.set('ref-1', new Uint8Array([42]));
     expect(await media.fetchPhoto('ref-1')).toEqual(new Uint8Array([42]));
     await expect(media.fetchPhoto('missing')).rejects.toThrowError(/unknown photo ref/);
-
-    const picker = new FakeWinnerPicker();
-    const pick = await picker.pick([
-      { id: 'a', photoRef: 'ref-1' },
-      { id: 'b', photoRef: 'ref-2' },
-    ]);
-    expect(pick.winnerId).toBe('a');
   });
 });

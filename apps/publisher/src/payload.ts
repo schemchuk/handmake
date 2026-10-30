@@ -6,13 +6,16 @@ import { pollSchema, postTypeSchema, provenanceSchema } from '@handmake/core';
  * Dispatch payload (T09): what the bot hands to the publisher when an author
  * approves a draft — texts per language plus opaque photo references, no
  * binary data and no secrets. `wotw-poll` drafts additionally carry the
- * `poll` (question + one option per candidate photo, T21).
+ * `poll` (question + one option per candidate photo, T21). Since T25 the
+ * payload also carries the draft `kind` and post `type`.
  */
 
 export const dispatchPayloadSchema = z
   .object({
     tenantId: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'tenantId must be kebab-case'),
     draftId: z.string().min(1),
+    /** What the pipeline builds; 'work' lands with the website phase (T36). */
+    kind: z.enum(['post', 'work']).default('post'),
     type: postTypeSchema.default('free'),
     texts: z
       .record(

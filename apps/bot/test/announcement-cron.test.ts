@@ -110,6 +110,11 @@ describe('runAnnouncementCron', () => {
 
     const stored = await createD1DraftStore(fx.db).listByState(TENANT, 'ready');
     expect(stored).toHaveLength(1);
+    // T25: the announcement draft carries its real kind and type through to
+    // the dispatch payload.
+    expect(stored[0]!.draft.kind).toBe('post');
+    expect(stored[0]!.draft.type).toBe('announcement');
+    expect(stored[0]!.draft.extras).toEqual({});
     expect(stored[0]!.draft.texts['uk']).toBe('Анонс: зустріч у четвер, 29 жовтня о 14:00');
     expect(stored[0]!.draft.texts['de']).toBe('DE: Анонс: зустріч у четвер, 29 жовтня о 14:00');
     expect(stored[0]!.draft.photoRefs).toEqual([]);
@@ -124,7 +129,8 @@ describe('runAnnouncementCron', () => {
       inline_keyboard: { callback_data: string }[][];
     };
     const callbackData = markup.inline_keyboard.flat().map((button) => button.callback_data);
-    expect(callbackData).toContain('draft:publish');
+    const [draftId] = await fx.draftIds();
+    expect(callbackData).toContain(`draft:${draftId}:publish`);
   });
 
   it('is idempotent: overlapping ticks never create a second draft or preview', async () => {
@@ -144,6 +150,7 @@ describe('runAnnouncementCron', () => {
     expect(drafts).toHaveLength(2);
     const reminder = drafts.find((d) => d.draft.texts['uk']!.startsWith('Нагадування'))!;
     expect(reminder.draft.texts['uk']).toBe('Нагадування: сьогодні 29 жовтня о 14:00');
+    expect(reminder.draft.type).toBe('reminder');
     // One preview per draft, not per tick.
     expect(sentTexts(fx.calls)).toHaveLength(2);
   });

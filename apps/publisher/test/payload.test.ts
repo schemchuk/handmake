@@ -58,6 +58,25 @@ describe('parseDispatchPayload', () => {
   });
 });
 
+describe('dispatch payload: kind (T25)', () => {
+  it('defaults kind to post', () => {
+    expect(parseDispatchPayload(validPayload).kind).toBe('post');
+  });
+
+  it('accepts kind work', () => {
+    const payload = parseDispatchPayload(
+      JSON.stringify({ ...JSON.parse(validPayload), kind: 'work' }),
+    );
+    expect(payload.kind).toBe('work');
+  });
+
+  it('rejects an unknown kind', () => {
+    expect(() =>
+      parseDispatchPayload(JSON.stringify({ ...JSON.parse(validPayload), kind: 'story' })),
+    ).toThrow(PayloadParseError);
+  });
+});
+
 describe('dispatch payload: post type and poll (T21)', () => {
   it('defaults the post type to free', () => {
     const payload = parseDispatchPayload(validPayload);

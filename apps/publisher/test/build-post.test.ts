@@ -35,6 +35,7 @@ offerings: []
 const payload: DispatchPayload = {
   tenantId: 'faden-und-stimmung',
   draftId: 'draft-1',
+  kind: 'post',
   type: 'free',
   texts: { uk: 'uk text', de: 'de text' },
   fileIds: ['file-1', 'file-2', 'file-3'],
@@ -99,6 +100,12 @@ describe('buildPostFromPayload', () => {
   it('names no photos for an empty fileIds list', () => {
     const post = buildPostFromPayload({ ...payload, fileIds: [] }, tenant, { now });
     expect(post.photos).toEqual([]);
+  });
+
+  it('refuses kind "work" until the website phase (T25)', () => {
+    expect(() => buildPostFromPayload({ ...payload, kind: 'work' }, tenant, { now })).toThrow(
+      /not supported/,
+    );
   });
 });
 

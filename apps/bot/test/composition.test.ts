@@ -134,7 +134,7 @@ describe('webhook retry dedupe', () => {
     // One answer, one stored copy of the text.
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0)]);
     const store = createD1DraftStore(db);
-    const open = await store.findCollectingForChat('faden-und-stimmung', '11');
+    const open = await store.findCollectingForChat('faden-und-stimmung', '11', 'post');
     expect(open?.draft.texts['uk']).toBe('hello');
   });
 
