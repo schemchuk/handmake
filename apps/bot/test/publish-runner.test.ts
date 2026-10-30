@@ -75,7 +75,10 @@ describe('createGitHubActionsRunner', () => {
     const payload = JSON.parse(init.body as string)['client_payload'] as Record<string, unknown>;
     expect(payload['kind']).toBe('post');
     expect(payload['type']).toBe('wotw-poll');
-    expect(payload['poll']).toEqual({ question: 'Яка робота тижня?', options: ['1. Ваза', '2. Шаль'] });
+    expect(payload['poll']).toEqual({
+      question: 'Яка робота тижня?',
+      options: ['1. Ваза', '2. Шаль'],
+    });
   });
 
   it('carries live=false as long as the PUBLISH_LIVE var stays off', async () => {

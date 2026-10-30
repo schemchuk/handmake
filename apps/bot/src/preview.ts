@@ -64,11 +64,7 @@ function draftAsPost(draft: Draft, now: Date): Post {
  * always acts on the draft this preview was sent for — never on a newer
  * draft or a cron-created one sharing the chat.
  */
-function keyboard(
-  draftId: string,
-  texts: BotTexts,
-  blocked: boolean,
-): PreviewKeyboardButton[][] {
+function keyboard(draftId: string, texts: BotTexts, blocked: boolean): PreviewKeyboardButton[][] {
   const rows: PreviewKeyboardButton[][] = [
     [
       { text: texts.editUkButton, callback_data: `draft:${draftId}:edit:uk` },

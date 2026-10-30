@@ -148,7 +148,11 @@ describe('collecting content', () => {
     await bot.handleUpdate(textUpdate(allowed.userId, 'Другий абзац'));
 
     expect(sentTexts(calls)).toEqual([botTexts.textSavedText(0), botTexts.textSavedText(0)]);
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.texts['uk']).toBe('Привіт!\n\nДругий абзац');
   });
 
@@ -156,14 +160,22 @@ describe('collecting content', () => {
     await bot.handleUpdate(photoUpdate(allowed.userId, ['small', 'large']));
 
     expect(sentTexts(calls)).toEqual([botTexts.photoSavedText(1)]);
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.photoRefs).toEqual(['large']);
   });
 
   it('a photo caption is collected as text too', async () => {
     await bot.handleUpdate(photoUpdate(allowed.userId, ['p1'], 'Підпис до фото'));
 
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.photoRefs).toEqual(['p1']);
     expect(open?.draft.texts['uk']).toBe('Підпис до фото');
   });
@@ -172,7 +184,11 @@ describe('collecting content', () => {
     await bot.handleUpdate(documentUpdate(allowed.userId, 'doc-jpeg', 'image/jpeg', 'work.jpeg'));
 
     expect(sentTexts(calls)).toEqual([botTexts.photoSavedText(1)]);
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.photoRefs).toEqual(['doc-jpeg']);
   });
 
@@ -183,7 +199,11 @@ describe('collecting content', () => {
     await bot.handleUpdate(photoUpdate(allowed.userId, ['p10']));
 
     expect(sentTexts(calls).at(-1)).toBe(botTexts.photoLimitText(10));
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.photoRefs).toHaveLength(10);
   });
 
@@ -195,7 +215,11 @@ describe('collecting content', () => {
     );
 
     expect(await drafts.listByState(allowed.tenantId, 'collecting')).toHaveLength(1);
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.photoRefs).toHaveLength(10);
     expect(new Set(open?.draft.photoRefs).size).toBe(10);
   });
@@ -244,7 +268,9 @@ describe('/done: translate and preview', () => {
       }
     ).inline_keyboard.flat();
     // T25: every button names the draft it belongs to.
-    expect(keyboard.map((b) => b.callback_data)).toContain(`draft:${ready[0]!.draft.draftId}:publish`);
+    expect(keyboard.map((b) => b.callback_data)).toContain(
+      `draft:${ready[0]!.draft.draftId}:publish`,
+    );
 
     expect(translateCalls).toHaveLength(1);
     expect(translateCalls[0]).toMatchObject({
@@ -304,9 +330,9 @@ describe('/done: translate and preview', () => {
         inline_keyboard: { callback_data: string; text: string }[][];
       }
     ).inline_keyboard.flat();
-    expect(
-      keyboard.map((b) => b.callback_data).some((data) => data.endsWith(':publish')),
-    ).toBe(false);
+    expect(keyboard.map((b) => b.callback_data).some((data) => data.endsWith(':publish'))).toBe(
+      false,
+    );
     expect(keyboard.map((b) => b.text)).toContain(botTexts.discardButton);
   });
 });
@@ -567,7 +593,11 @@ describe('published drafts (T18)', () => {
 
     expect(sentTexts(calls).at(-1)).toBe(botTexts.textSavedText(0));
     expect(await drafts.listByState(allowed.tenantId, 'published')).toHaveLength(1);
-    const open = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const open = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(open?.draft.texts['uk']).toBe('Новий допис');
   });
 });
@@ -716,7 +746,11 @@ describe('cron drafts never hijack the author flow (T25, review N2)', () => {
       texts: { uk: 'Автоматичний допис', de: 'DE: автоматика' },
     });
     // Her collecting draft was never touched.
-    const own = await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post');
+    const own = await drafts.findCollectingForChat(
+      allowed.tenantId,
+      String(allowed.userId),
+      'post',
+    );
     expect(own?.draft.texts['uk']).toBe('Мій допис');
   });
 

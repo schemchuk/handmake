@@ -119,12 +119,7 @@ export interface D1DraftStore {
   /** The chat's session (T25), or undefined when the chat never started one. */
   getChatSession(tenantId: string, chatId: string): Promise<ChatSession | undefined>;
   /** Upserts the chat's session pointer. */
-  setChatSession(
-    tenantId: string,
-    chatId: string,
-    session: ChatSession,
-    now: Date,
-  ): Promise<void>;
+  setChatSession(tenantId: string, chatId: string, session: ChatSession, now: Date): Promise<void>;
   /** The chat's draft with an armed reply-based edit, if one is waiting. */
   findPendingEditForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
   /**
@@ -384,7 +379,15 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
             `INSERT INTO drafts (tenant_id, id, chat_id, status, kind, texts, photos, version, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, '{}', '[]', 0, ?, ?)`,
           )
-          .bind(tenantId, draft.draftId, chatId, draft.state, kind, draft.createdAt, draft.updatedAt)
+          .bind(
+            tenantId,
+            draft.draftId,
+            chatId,
+            draft.state,
+            kind,
+            draft.createdAt,
+            draft.updatedAt,
+          )
           .run();
         return { draft, version: 0, pendingEdit: null };
       } catch (error) {

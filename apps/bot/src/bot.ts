@@ -4,12 +4,7 @@ import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
-import type {
-  ChatSession,
-  D1DraftStore,
-  DraftEditTarget,
-  StoredDraft,
-} from './draft-store';
+import type { ChatSession, D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
 import { publishingStaleMs, translationStaleMs } from './draft-store';
 import { buildPreview } from './preview';
 import type { BotTexts } from './texts';
@@ -168,12 +163,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
     if (action === 'edit:uk' || action === 'edit:de') {
       const target: DraftEditTarget = action === 'edit:uk' ? 'uk' : 'de';
-      const armed = await ctx.drafts.setPendingEdit(
-        ctx.tenantId,
-        draftId,
-        target,
-        new Date(),
-      );
+      const armed = await ctx.drafts.setPendingEdit(ctx.tenantId, draftId, target, new Date());
       if (!armed) {
         await ctx.reply(texts.editConflictText);
         return;
