@@ -1,15 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code (final review of T42 review-3 fixes)
-- **Current task:** review T42 (AI cost ledger and cost command), PR #34:
-  https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
-- **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `e18dabb` — fix: address final AI cost ledger review
-- **Next step:** review completed review-3 fixes: model selection stays in code, diagnostic logs carry
-  operation and tenant context with secrets redacted, monthly reports check notice existence before
-  aggregation and skip zero spending. Deferred findings are in docs/review-notes.md.
-  Validation: bot 171, core 124 and AI 25 tests pass; lint and workspace typecheck pass.
-  After merge: `db:migrate`, then `deploy` in `apps/bot` in one sitting (strict `ai:` schema).
+- **Active agent:** none
+- **Current task:** none. T42 merged as PR #34 (codex; reviewed by claude-code in three rounds).
+- **Branch:** `main`
+- **Last commit:** see `git log -1`
+- **Next step:** Volodymyr: `cd apps/bot && pnpm run db:migrate && pnpm run deploy` NOW (migration
+  0007_ai_costs, new `ai:` section in the tenant YAML). Then T39 (needs H10) or T36 (T25, T35, T42 done).
+  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.
 - **POSSE discussion, round 1 answered (2026-10-30):**
