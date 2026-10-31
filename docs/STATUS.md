@@ -4,11 +4,10 @@
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `80470b0` — feat: track translation costs and add operator reports
-  (last implementation commit; this handoff follows).
+- **Last commit:** `a7760ed` — fix: preserve translation for tenants without AI budgets
 - **Next step:** address PR #34 review findings in separate commits, then return to claude-code.
-  B1 fixed: tenants without `ai:` use the default translator without cost accounting.
-  Remaining: bookkeeping failures, cron isolation, `/cost` error replies, notification path and notes.
+  B1/B2/N5 fixed: no-ai fallback, non-fatal bookkeeping errors, preserved invalid-JSON cause.
+  Remaining: cron isolation, `/cost` error replies, notification path and review notes.
   Deployment after merge remains `db:migrate`, then `deploy` in `apps/bot` in one sitting.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.

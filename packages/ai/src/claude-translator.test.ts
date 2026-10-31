@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { describeTranslatorContract } from '@handmake/core/testing';
 
@@ -7,6 +7,8 @@ import { ClaudeTranslator } from './claude-translator';
 import type { MessageClient } from './claude-translator';
 import { TranslationError } from './errors';
 import { loadPrompt } from './prompts';
+
+afterEach(() => vi.restoreAllMocks());
 
 interface Reply {
   stop_reason: string | null;
@@ -145,18 +147,43 @@ describe('paid usage reporting', () => {
     },
   );
 
-  it('does not return success when cost bookkeeping fails', async () => {
-    const { client } = fakeClient({ ...ok, usage: { input_tokens: 1, output_tokens: 1 } });
-    const translator = new ClaudeTranslator({
-      systemPrompt: 'P',
-      client,
-      onUsage: async () => {
-        throw new Error('D1 unavailable');
-      },
-    });
+  it.each(['end_turn', 'refusal', 'max_tokens'])(
+    'preserves the %s outcome when cost bookkeeping fails',
+    async (stop_reason) => {
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { client } = fakeClient({
+        ...ok,
+        stop_reason,
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+      const translator = new ClaudeTranslator({
+        systemPrompt: 'P',
+        client,
+        onUsage: async () => {
+          throw new Error('sensitive ledger failure');
+        },
+      });
+      const result = translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' });
+      if (stop_reason === 'end_turn')
+        await expect(result).resolves.toEqual({ text: 'Hallo zusammen!' });
+      else
+        await expect(result).rejects.toMatchObject({
+          code: stop_reason === 'refusal' ? 'refused' : 'truncated',
+        });
+      expect(log).toHaveBeenCalledExactlyOnceWith('AI cost bookkeeping failed');
+    },
+  );
+
+  it('returns the translation and logs when usage is missing', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onUsage = vi.fn();
     await expect(
-      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
-    ).rejects.toThrow('D1 unavailable');
+      new ClaudeTranslator({ systemPrompt: 'P', client: fakeClient(ok).client, onUsage }).translate(
+        { text: 'UA', sourceLang: 'uk', targetLang: 'de' },
+      ),
+    ).resolves.toEqual({ text: 'Hallo zusammen!' });
+    expect(onUsage).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledExactlyOnceWith('AI cost bookkeeping failed');
   });
 });
 
@@ -170,6 +197,6 @@ it('books a paid response before rejecting malformed JSON', async () => {
   const translator = new ClaudeTranslator({ systemPrompt: 'P', client, onUsage });
   await expect(
     translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
-  ).rejects.toMatchObject({ code: 'invalid-output' });
+  ).rejects.toMatchObject({ code: 'invalid-output', cause: expect.any(SyntaxError) });
   expect(onUsage).toHaveBeenCalledOnce();
 });

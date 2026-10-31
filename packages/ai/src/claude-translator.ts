@@ -95,8 +95,12 @@ export class ClaudeTranslator implements Translator {
     }
 
     if (this.#onUsage) {
-      if (!response.usage) throw new Error('AI response is missing usage');
-      await this.#onUsage(response.usage);
+      try {
+        if (!response.usage) throw new Error('AI response is missing usage');
+        await this.#onUsage(response.usage);
+      } catch {
+        console.error('AI cost bookkeeping failed');
+      }
     }
     if (response.stop_reason === 'refusal') {
       throw new TranslationError('refused', 'model refused to translate the post');
@@ -108,8 +112,10 @@ export class ClaudeTranslator implements Translator {
     try {
       const text = response.content.find((block) => block.type === 'text')?.text ?? '';
       parsed = outputSchema.parse(JSON.parse(text));
-    } catch {
-      // Usage is already booked; invalid JSON is still a paid response.
+    } catch (cause) {
+      throw new TranslationError('invalid-output', 'model returned invalid translation JSON', {
+        cause,
+      });
     }
     if (!parsed || parsed.text.trim() === '') {
       throw new TranslationError('invalid-output', 'model returned no usable translation');
