@@ -125,6 +125,96 @@ describe('parseTenantConfig', () => {
     expect(() => parseTenantConfig(withOffering)).toThrowError(/offerings/);
   });
 
+  describe('site section', () => {
+    it('parses the real site section', () => {
+      const site = parseTenantConfig(realConfig()).site;
+      expect(site?.baseUrl).toBe('https://fadenundstimmung.de');
+      expect(site?.defaultLanguage).toBe('de');
+      expect(site?.theme.colors).toEqual({
+        paper: '#F0F0EC',
+        ink: '#1A1B20',
+        muted: '#6F7077',
+        rule: '#B3362B',
+      });
+      expect(site?.theme.fonts).toEqual({ display: 'Familjen Grotesk', body: 'Familjen Grotesk' });
+      expect(Object.keys(site?.circle?.texts ?? {}).sort()).toEqual(['de', 'uk']);
+    });
+
+    it('is optional: a tenant without a site still parses', () => {
+      expect(parseTenantConfig(secondTenant).site).toBeUndefined();
+    });
+
+    it('accepts a site without a circle page', () => {
+      const withSite = secondTenant.replace(
+        'featureFlags:',
+        [
+          'site:',
+          '  baseUrl: https://woll.example',
+          '  defaultLanguage: de',
+          '  theme:',
+          '    colors: { paper: "#FFFFFF", ink: "#000000", muted: "#777777", rule: "#123456" }',
+          '    fonts: { display: Inter, body: Inter }',
+          'featureFlags:',
+        ].join('\n'),
+      );
+      const site = parseTenantConfig(withSite).site;
+      expect(site?.baseUrl).toBe('https://woll.example');
+      expect(site?.circle).toBeUndefined();
+    });
+
+    it('rejects a defaultLanguage outside the tenant languages', () => {
+      const bad = realConfig().replace('defaultLanguage: de', 'defaultLanguage: fr');
+      expect(() => parseTenantConfig(bad)).toThrowError(/site\.defaultLanguage/);
+    });
+
+    it.each([
+      'http://fadenundstimmung.de',
+      'https://fadenundstimmung.de/',
+      'https://fadenundstimmung.de/blog',
+      'fadenundstimmung.de',
+    ])('rejects baseUrl %s', (baseUrl) => {
+      const bad = realConfig().replace(
+        'baseUrl: https://fadenundstimmung.de',
+        `baseUrl: ${baseUrl}`,
+      );
+      expect(() => parseTenantConfig(bad)).toThrowError(/baseUrl/);
+    });
+
+    it('rejects a colour that is not #RRGGBB', () => {
+      const bad = realConfig().replace("paper: '#F0F0EC'", 'paper: white');
+      expect(() => parseTenantConfig(bad)).toThrowError(/colour/);
+    });
+
+    it('rejects an unknown theme key', () => {
+      const bad = realConfig().replace(
+        "      rule: '#B3362B'",
+        "      rule: '#B3362B'\n      accent: '#000000'",
+      );
+      expect(() => parseTenantConfig(bad)).toThrowError(/accent/);
+    });
+
+    it('rejects circle texts that miss a tenant language', () => {
+      const bad = realConfig().replace(/\n {6}uk:\n {8}title:[\s\S]*?where: [^\n]*/, '');
+      expect(() => parseTenantConfig(bad)).toThrowError(/circle\.texts/);
+    });
+
+    it('rejects a non-https join link', () => {
+      const bad = realConfig().replace(
+        'joinUrl: https://t.me/REPLACE_WITH_PUBLIC_CHANNEL_LINK',
+        'joinUrl: http://t.me/channel',
+      );
+      expect(() => parseTenantConfig(bad)).toThrowError(/joinUrl/);
+    });
+
+    it('still refuses a secret-looking value inside the site section', () => {
+      const bad = realConfig().replace(
+        '  defaultLanguage: de',
+        '  defaultLanguage: de\n  apiKey: lowercase-secret-value',
+      );
+      expect(() => parseTenantConfig(bad)).toThrowError(/secret/);
+    });
+  });
+
   it('knownChannelKeys matches the channels schema keys', () => {
     expect(knownChannelKeys).toEqual(Object.keys(channelsSchema.shape));
   });
