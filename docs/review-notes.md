@@ -27,3 +27,8 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 ## Polls (T21)
 - The poll message id sits at op index 1 or 2 (depends on caption overflow). T22 and the closing cron must find it by op kind (`kind === 'poll'`), not by a fixed index (PR #31 N1).
 - Bot API now allows 1-12 options and media on a poll option (`InputPollOption.media`), which weakens ADR 008's "polls cannot carry images". MVP keeps album + poll; revisit in a later ADR (PR #31 N2).
+
+## AI cost ledger (T42, PR #34)
+- Monthly summaries run only on the 1st in Europe/Berlin; a missed first-day run has no catch-up.
+- T44 must call `assertCanStartShow` before starting a new show; T42 has no show entry point yet.
+- All existing allow-listed users are operators (Volodymyr, 2026-10-31); no separate operator role.
