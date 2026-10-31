@@ -69,6 +69,82 @@ export const channelsSchema = z
 export const knownChannelKeys = Object.keys(channelsSchema.shape);
 export type ChannelKey = keyof typeof channelsSchema.shape;
 
+const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'colour must be #RRGGBB');
+
+// An origin only (scheme + host, no path, no trailing slash), so canonical
+// URLs are always `${baseUrl}${path}` (T40).
+const baseUrlSchema = z.string().superRefine((value, ctx) => {
+  let url: URL | undefined;
+  try {
+    url = new URL(value);
+  } catch {
+    // reported below
+  }
+  if (!url || url.protocol !== 'https:' || url.origin !== value) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'baseUrl must be an https origin without path or trailing slash',
+    });
+  }
+});
+
+const httpsUrlSchema = z.url({ protocol: /^https$/ });
+
+/**
+ * Website section (ADR 011, ADR 016). Optional: a tenant may use the bot and
+ * channels without a site; the site build refuses a tenant without it.
+ * Tenant-agnostic on purpose: colour roles and font names, never brand-
+ * specific keys. Per-work accent colours belong to works (T36), not here.
+ */
+export const siteSchema = z
+  .object({
+    baseUrl: baseUrlSchema,
+    // Served at `/`; every other tenant language under `/<lang>/`.
+    defaultLanguage: languageCodeSchema,
+    theme: z
+      .object({
+        colors: z
+          .object({
+            paper: hexColorSchema, // page background
+            ink: hexColorSchema, // main text
+            muted: hexColorSchema, // secondary text, captions, meta
+            rule: hexColorSchema, // dividers and decorative lines
+          })
+          .strict(),
+        fonts: z
+          .object({
+            // Font family names; the site self-hosts the files (no font CDN).
+            display: z.string().min(1),
+            body: z.string().min(1),
+          })
+          .strict(),
+      })
+      .strict(),
+    // The circle page. Optional: a blogger tenant has no circle. "When" is
+    // rendered from meetingSchedule, never duplicated here.
+    circle: z
+      .object({
+        // Public link to join, e.g. the Telegram channel.
+        joinUrl: httpsUrlSchema,
+        // One entry per tenant language (checked below).
+        texts: z.record(
+          languageCodeSchema,
+          z
+            .object({
+              title: z.string().min(1),
+              what: z.string().min(1),
+              where: z.string().min(1),
+            })
+            .strict(),
+        ),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+export type SiteConfig = z.infer<typeof siteSchema>;
+
 export const tenantConfigSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'tenant id must be kebab-case'),
@@ -115,12 +191,32 @@ export const tenantConfigSchema = z
           .strict(),
       })
       .strict(),
+    site: siteSchema.optional(),
     featureFlags: z.record(z.string(), z.boolean()),
     // Commercialization stub — must stay empty for now (spec section 8).
     offerings: z.array(z.never()),
   })
   .strict()
   .superRefine((config, ctx) => {
+    const site = config.site;
+    if (site && !config.languages.includes(site.defaultLanguage)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['site', 'defaultLanguage'],
+        message: `site.defaultLanguage "${site.defaultLanguage}" is not in languages [${config.languages.join(', ')}]`,
+      });
+    }
+    if (site?.circle) {
+      const textLangs = Object.keys(site.circle.texts).sort();
+      const tenantLangs = [...config.languages].sort();
+      if (textLangs.join(',') !== tenantLangs.join(',')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['site', 'circle', 'texts'],
+          message: `site.circle.texts must have exactly the tenant languages [${config.languages.join(', ')}], got [${textLangs.join(', ')}]`,
+        });
+      }
+    }
     const instagram = config.channels.instagram;
     if (instagram && !config.languages.includes(instagram.language)) {
       ctx.addIssue({

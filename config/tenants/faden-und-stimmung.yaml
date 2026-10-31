@@ -46,6 +46,41 @@ announcements:
       🧶 Сьогодні о {time} зустріч нашого гуртка, як і завжди, в Landshut, Niedermayerstr. 85!
       Не забудь хороший настрій.
 
+# Website (ADR 011, ADR 016). German at `/`, Ukrainian under `/uk/`.
+# Theme "Lookbook": cool white paper, near-black ink, grey meta text,
+# madder-red running-stitch dividers; one wide grotesk for everything.
+site:
+  baseUrl: https://fadenundstimmung.de
+  defaultLanguage: de
+  theme:
+    colors:
+      paper: '#F0F0EC'
+      ink: '#1A1B20'
+      muted: '#6F7077'
+      rule: '#B3362B'
+    fonts:
+      display: Familjen Grotesk
+      body: Familjen Grotesk
+  # The /kreis/ page; "when" comes from meetingSchedule.
+  circle:
+    # PLACEHOLDER: the public channel link is not in the repo yet. Replace with
+    # the real https://t.me/<channel> link before the site goes live (T41).
+    joinUrl: https://t.me/REPLACE_WITH_PUBLIC_CHANNEL_LINK
+    # DRAFT texts: the author confirms or rewrites them.
+    texts:
+      de:
+        title: Handarbeitskreis
+        what: >-
+          Ein offener Kreis für Handarbeit: Wir sticken, stricken und nähen zusammen, tauschen
+          Ideen aus und trinken Tee. Bring dein Projekt mit oder fang ein neues an.
+        where: Niedermayerstr. 85, Landshut
+      uk:
+        title: Гурток рукоділля
+        what: >-
+          Відкритий гурток рукоділля: вишиваємо, в'яжемо і шиємо разом, ділимося ідеями та
+          п'ємо чай. Принось свій проєкт або почни новий.
+        where: Niedermayerstr. 85, Landshut
+
 featureFlags:
   translation: true
   wotwPoll: false

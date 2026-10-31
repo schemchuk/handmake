@@ -1,0 +1,58 @@
+---
+import Base from '../../layouts/Base.astro';
+import Stitch from '../../components/Stitch.astro';
+import { uiStrings } from '../../lib/i18n';
+import { langParam, mediaPath, pagePath, postPage } from '../../lib/paths';
+import { loadSiteData, postsIn } from '../../lib/site-data';
+import { excerpt } from '../../lib/text';
+
+export async function getStaticPaths() {
+  const { tenant, site } = await loadSiteData();
+  return tenant.languages.map((lang) => ({
+    params: { lang: langParam(lang, site.defaultLanguage) },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.props;
+const data = await loadSiteData();
+const def = data.site.defaultLanguage;
+const ui = uiStrings(lang);
+const posts = postsIn(data, lang);
+const date = new Intl.DateTimeFormat(lang, {
+  dateStyle: 'long',
+  timeZone: data.tenant.meetingSchedule.timezone,
+});
+const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code, pagePath(code, def)]));
+---
+
+<Base lang={lang} title={data.tenant.name} alternates={alternates} current="home">
+  <div class="wrap">
+    <section class="hero">
+      <h1>{data.tenant.name}</h1>
+    </section>
+    <Stitch draw />
+    <h2 class="visually-hidden">{ui.postsHeading}</h2>
+    {
+      posts.length === 0 ? (
+        <p class="empty">{ui.noPosts}</p>
+      ) : (
+        <ol class="feed">
+          {posts.map(({ post }) => {
+            const text = post.texts[lang]!;
+            const photo = post.photos[0];
+            return (
+              <li class="entry">
+                <a href={pagePath(lang, def, postPage(post.id))}>
+                  {photo && <img src={mediaPath(post.id, photo)} alt="" loading="lazy" />}
+                  <time datetime={post.date}>{date.format(new Date(post.date))}</time>
+                  <p class="entry-text">{excerpt(text, 220)}</p>
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      )
+    }
+  </div>
+</Base>

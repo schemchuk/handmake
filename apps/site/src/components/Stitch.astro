@@ -1,0 +1,11 @@
+---
+interface Props {
+  /** Draw the stitch from left to right once on page load. Use on one element per page. */
+  draw?: boolean;
+}
+const { draw = false } = Astro.props;
+---
+
+<svg class:list={['stitch', { 'stitch--draw': draw }]} viewBox="0 0 400 6" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <line x1="1.5" y1="3" x2="398.5" y2="3" vector-effect="non-scaling-stroke"></line>
+</svg>

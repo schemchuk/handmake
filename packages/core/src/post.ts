@@ -175,3 +175,17 @@ export function serializePost(post: Post): string {
   }
   return out;
 }
+
+/**
+ * Sort order of `ContentStore.listPosts`: newest first by `date` (compared as
+ * instants, since dates carry offsets), then by id descending, so every
+ * store returns the same order for the same posts.
+ */
+export function compareNewestFirst(
+  a: Pick<Post, 'date' | 'id'>,
+  b: Pick<Post, 'date' | 'id'>,
+): number {
+  const byDate = Date.parse(b.date) - Date.parse(a.date);
+  if (byDate !== 0) return byDate;
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+}

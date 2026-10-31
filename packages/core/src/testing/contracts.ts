@@ -108,6 +108,53 @@ export function describeContentStoreContract(name: string, makeStore: () => Cont
       expect(await store.readLedger('tenant', post.id)).toBeUndefined();
     });
 
+    const listed = (id: string, date: string, tenant = 'tenant') => ({
+      id,
+      tenant,
+      date,
+      publishAt: 'now' as const,
+      type: 'free' as const,
+      photos: [],
+      channels: ['telegram'],
+      versions: { uk: { provenance: 'human' as const } },
+      texts: { uk: `text ${id}` },
+    });
+
+    it("lists a tenant's posts newest first, by instant and then id", async () => {
+      const store = makeStore();
+      const older = listed('01JBCA1B2C3D4E5F6G7H8J9K0A', '2026-10-20T10:00:00+02:00');
+      // Same instant as `sameInstantLow`, written with another offset.
+      const sameInstantHigh = listed('01JBCA1B2C3D4E5F6G7H8J9K0Z', '2026-10-22T08:00:00Z');
+      const sameInstantLow = listed('01JBCA1B2C3D4E5F6G7H8J9K0B', '2026-10-22T10:00:00+02:00');
+      const newest = listed('01JBCA1B2C3D4E5F6G7H8J9K0C', '2026-10-23T09:00:00+02:00');
+      const foreign = listed('01JBCA1B2C3D4E5F6G7H8J9K0D', '2026-10-24T09:00:00+02:00', 'other');
+      for (const post of [sameInstantLow, older, foreign, newest, sameInstantHigh]) {
+        await store.savePost(post, []);
+      }
+      expect(await store.listPosts('tenant')).toEqual([
+        newest,
+        sameInstantHigh,
+        sameInstantLow,
+        older,
+      ]);
+      expect(await store.listPosts('nobody')).toEqual([]);
+    });
+
+    it('reads back declared photos of a post and nothing else', async () => {
+      const store = makeStore();
+      const post = {
+        ...listed('01JBCA1B2C3D4E5F6G7H8J9K0E', '2026-10-23T09:00:00Z'),
+        photos: ['a.jpg'],
+      };
+      await store.savePost(post, [{ fileName: 'a.jpg', data: new Uint8Array([7, 8]) }]);
+      expect(await store.readPostPhoto('tenant', post.id, 'a.jpg')).toEqual(new Uint8Array([7, 8]));
+      expect(await store.readPostPhoto('tenant', post.id, 'b.jpg')).toBeUndefined();
+      expect(await store.readPostPhoto('other', post.id, 'a.jpg')).toBeUndefined();
+      expect(
+        await store.readPostPhoto('tenant', '01JBCA1B2C3D4E5F6G7H8J9K0F', 'a.jpg'),
+      ).toBeUndefined();
+    });
+
     it('persists ledgers keyed by tenant and post', async () => {
       const store = makeStore();
       const ledger = {

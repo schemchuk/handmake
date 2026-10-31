@@ -29,10 +29,27 @@ export interface PhotoFile {
   data: Uint8Array;
 }
 
-/** Where published content lives. Git repo now; tenant repos or R2 later. */
+/**
+ * Where published content lives. Git repo now; tenant repos or R2 later.
+ * A post is in the store only after the author approved it and the publish
+ * run saved it, so "in the store" means "published" (channel delivery
+ * status is the ledger's business, not the site's).
+ *
+ * Photos are addressed by (tenantId, postId, fileName), where fileName is
+ * one of `post.photos`; readers never see store paths (ADR 016). Works and
+ * collections (T36) get their own list/read pair in the same shape.
+ */
 export interface ContentStore {
   savePost(post: Post, photos: PhotoFile[]): Promise<void>;
   readPost(tenantId: string, postId: string): Promise<Post | undefined>;
+  /** All posts of a tenant, newest first (by `date`, then by id descending). */
+  listPosts(tenantId: string): Promise<Post[]>;
+  /** Bytes of one photo of a post; undefined if the post or the file is absent. */
+  readPostPhoto(
+    tenantId: string,
+    postId: string,
+    fileName: string,
+  ): Promise<Uint8Array | undefined>;
   readLedger(tenantId: string, postId: string): Promise<PublishLedger | undefined>;
   writeLedger(ledger: PublishLedger): Promise<void>;
 }

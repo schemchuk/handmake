@@ -1,0 +1,56 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { uiStrings } from '../../../lib/i18n';
+import { langParam, mediaPath, pagePath, postPage } from '../../../lib/paths';
+import { loadSiteData, postsIn } from '../../../lib/site-data';
+import { excerpt, paragraphs } from '../../../lib/text';
+
+export async function getStaticPaths() {
+  const data = await loadSiteData();
+  const def = data.site.defaultLanguage;
+  return data.tenant.languages.flatMap((lang) =>
+    postsIn(data, lang).map(({ post }) => ({
+      params: { lang: langParam(lang, def), id: post.id.toLowerCase() },
+      props: { lang, postId: post.id },
+    })),
+  );
+}
+
+const { lang, postId } = Astro.props;
+const data = await loadSiteData();
+const def = data.site.defaultLanguage;
+const ui = uiStrings(lang);
+const { post, languages } = data.posts.find((p) => p.post.id === postId)!;
+const text = post.texts[lang]!;
+const photo = post.photos[0];
+const provenance = post.versions[lang]?.provenance;
+const aiNote =
+  provenance === 'ai-assisted' ? ui.aiAssisted : provenance === 'ai-generated' ? ui.aiGenerated : undefined;
+const date = new Intl.DateTimeFormat(lang, {
+  dateStyle: 'long',
+  timeZone: data.tenant.meetingSchedule.timezone,
+}).format(new Date(post.date));
+const alternates = Object.fromEntries(
+  languages.map((code) => [code, pagePath(code, def, postPage(post.id))]),
+);
+const [lead, ...rest] = paragraphs(text);
+---
+
+<Base lang={lang} title={excerpt(text, 60)} description={excerpt(text)} alternates={alternates}>
+  <article class="wrap page">
+    {
+      photo && (
+        <figure class="page-figure">
+          <img src={mediaPath(post.id, photo)} alt={excerpt(text, 100)} />
+        </figure>
+      )
+    }
+    <div class:list={['page-body', { 'page-body--with-figure': photo }]}>
+      <time class="meta" datetime={post.date}>{date}</time>
+      <p class="lead">{lead}</p>
+      {rest.map((paragraph) => <p>{paragraph}</p>)}
+      {aiNote && <p class="meta">{aiNote}</p>}
+      <a class="back" href={pagePath(lang, def)}>{ui.back}</a>
+    </div>
+  </article>
+</Base>

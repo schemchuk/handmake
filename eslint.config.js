@@ -2,7 +2,14 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', 'docs/**', '.remember/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.astro/**',
+      'docs/**',
+      '.remember/**',
+      '.playwright-mcp/**',
+    ],
   },
   {
     rules: {

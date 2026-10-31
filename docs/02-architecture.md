@@ -315,6 +315,7 @@ Channel polls are anonymous: no voter data reaches us.
 | [012](decisions/012-video-rendering.md) | Video: HyperFrames → MP4 in Actions, R2 storage (proposed) |
 | [013](decisions/013-funnel-metrics-email.md) | Anonymous audience metrics; email via ready service later |
 | [014](decisions/014-shop.md) | Shop behind a ShopProvider port and monetization flag (proposed) |
+| [016](decisions/016-site-content-and-config.md) | Site reads posts via `ContentStore.listPosts`/`readPostPhoto`; optional strict tenant `site:` section |
 
 ## 10. Open questions
 

@@ -1,0 +1,20 @@
+{
+  "name": "@handmake/site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/familjen-grotesk": "^5.3.0",
+    "@fontsource-variable/onest": "^5.3.1",
+    "@handmake/core": "workspace:*",
+    "@handmake/stores": "workspace:*",
+    "astro": "^6.4.8"
+  }
+}

@@ -9,3 +9,6 @@ pnpm-lock.yaml
 *.md
 docs/
 content/
+
+# Astro generated state
+.astro/
