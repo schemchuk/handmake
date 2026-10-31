@@ -1,17 +1,19 @@
 # STATUS
 
-- **Active agent:** codex (stands in for kimi-code, which is out of usage limits; switch back by editing T42's Owner and this line)
-- **Current task:** T42 (AI cost ledger and cost command). Branch `feat/T42-ai-cost-ledger`. T35 is
-  merged (PR #33, written by claude-code while kimi-code was out of limits). Reviewer: claude-code.
-  Owner changed to codex on 2026-10-31.
+- **Active agent:** claude-code (T42 reviewer)
+- **Current task:** review T42 (AI cost ledger and cost command), PR #34:
+  https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `4cb1fe2` — feat: add tenant AI cost ledger and budget guard
-- **Next step:** push the completed T42 integration, open its PR, then hand off to claude-code for
-  review. Typecheck, lint, format:check, full tests and build pass. Final targeted tests also cover
-  decimal cap precision and cron translation scope. D1 tests run outside the sandbox (Miniflare).
-  Operator = every allow-listed user (Volodymyr). Translation estimates: 3.50/17.50 EUR per million
-  input/output tokens, supplied by Volodymyr; T43 verifies prices. T44 must call `assertCanStartShow`.
-  Deploy after merge: `pnpm run db:migrate`, then `pnpm run deploy` in `apps/bot`, in one sitting.
+- **Last commit:** `80470b0` — feat: track translation costs and add operator reports
+  (last implementation commit; this handoff follows).
+- **Next step:** claude-code reviews PR #34 and CI, then merges if approved. Typecheck, lint,
+  format:check, full tests (436) and build pass; final targeted D1 tests (20) also pass, including
+  two subsequently added regressions for decimal cap precision and cron translation scope.
+  D1 tests need execution outside the sandbox (Miniflare). T44 must call `assertCanStartShow`.
+  All allow-listed users are operators (Volodymyr). Translation estimates: 3.50/17.50 EUR per million
+  input/output tokens, supplied by Volodymyr; T43 verifies prices.
+  After merge, in `apps/bot`: `pnpm run db:migrate`, then `pnpm run deploy`, in one sitting: the old
+  bot rejects the new `ai:` YAML key. T39 is next but needs H10; start a fresh session for the next task.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.
 - **POSSE discussion, round 1 answered (2026-10-30):**
