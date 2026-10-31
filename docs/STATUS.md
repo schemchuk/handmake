@@ -1,16 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code (T42 re-review)
+- **Active agent:** codex (T42 review-2 fixes requested by Volodymyr)
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `25030a5` — fix: keep cost notifications off the translation path
-  (last code commit; this review handoff follows).
-- **Next step:** claude-code re-reviews PR #34; B1-B4 and N5-N7 addressed in separate commits.
-  Typecheck, lint, format:check and build pass; all 447 tests pass sequentially with
-  `pnpm -r --workspace-concurrency=1 test` (parallel test/build run hit timeouts).
-  Remaining design notes are in `docs/review-notes.md`. PR is not merged.
-  After merge, run `db:migrate`, then `deploy` in `apps/bot` in one sitting (strict `ai:` schema).
+- **Last commit:** `3c7a097` — docs: hand off T42 review fixes
+- **Next step:** address PR #34 review-2. Restored `messages.parse` and public `ParseClient`;
+  usage and response id come from the same SDK response. Next: config resilience, grouped notices,
+  monthly catch-up, stable cost ids, centralized bot texts and review notes.
+  After merge: `db:migrate`, then `deploy` in `apps/bot` in one sitting (strict `ai:` schema).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.
 - **POSSE discussion, round 1 answered (2026-10-30):**

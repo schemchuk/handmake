@@ -18,12 +18,13 @@ const outputSchema = z.object({
 });
 
 /** The one SDK call the translator needs; tests pass a fake. */
-export interface MessageClient {
+export interface ParseClient {
   messages: {
-    create(params: Record<string, unknown>): Promise<{
+    parse(params: Record<string, unknown>): Promise<{
       usage?: { input_tokens: number; output_tokens: number };
       stop_reason: string | null;
-      content: { type: string; text?: string }[];
+      parsed_output: z.infer<typeof outputSchema> | null;
+      id?: string;
     }>;
   };
 }
@@ -39,9 +40,12 @@ export interface ClaudeTranslatorOptions {
   apiKey?: string;
   /** Per-attempt timeout passed to the Anthropic client (default 60 s). */
   timeoutMs?: number;
-  client?: MessageClient;
+  client?: ParseClient;
   /** Books paid usage even when the model refuses or returns unusable output. */
-  onUsage?: (usage: { input_tokens: number; output_tokens: number }) => Promise<void>;
+  onUsage?: (
+    usage: { input_tokens: number; output_tokens: number },
+    responseId?: string,
+  ) => Promise<void>;
 }
 
 /**
@@ -52,7 +56,7 @@ export class ClaudeTranslator implements Translator {
   readonly model: string;
   readonly promptVersion: string;
   readonly #systemPrompt: string;
-  readonly #client: MessageClient;
+  readonly #client: ParseClient;
   readonly #onUsage: ClaudeTranslatorOptions['onUsage'];
 
   constructor(options: ClaudeTranslatorOptions) {
@@ -66,7 +70,7 @@ export class ClaudeTranslator implements Translator {
         apiKey: options.apiKey,
         maxRetries: 2,
         timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      }) as unknown as MessageClient);
+      }) as unknown as ParseClient);
   }
 
   async translate(request: TranslationRequest): Promise<TranslationResult> {
@@ -82,7 +86,7 @@ export class ClaudeTranslator implements Translator {
 
     let response;
     try {
-      response = await this.#client.messages.create({
+      response = await this.#client.messages.parse({
         model: this.model,
         max_tokens: 16000,
         // Thinking is always on for this model; effort is the only control.
@@ -97,7 +101,7 @@ export class ClaudeTranslator implements Translator {
     if (this.#onUsage) {
       try {
         if (!response.usage) throw new Error('AI response is missing usage');
-        await this.#onUsage(response.usage);
+        await this.#onUsage(response.usage, response.id);
       } catch {
         console.error('AI cost bookkeeping failed');
       }
@@ -108,15 +112,7 @@ export class ClaudeTranslator implements Translator {
     if (response.stop_reason === 'max_tokens') {
       throw new TranslationError('truncated', 'translation hit max_tokens');
     }
-    let parsed: z.infer<typeof outputSchema> | undefined;
-    try {
-      const text = response.content.find((block) => block.type === 'text')?.text ?? '';
-      parsed = outputSchema.parse(JSON.parse(text));
-    } catch (cause) {
-      throw new TranslationError('invalid-output', 'model returned invalid translation JSON', {
-        cause,
-      });
-    }
+    const parsed = response.parsed_output;
     if (!parsed || parsed.text.trim() === '') {
       throw new TranslationError('invalid-output', 'model returned no usable translation');
     }

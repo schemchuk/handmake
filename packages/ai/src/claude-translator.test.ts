@@ -4,40 +4,32 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { describeTranslatorContract } from '@handmake/core/testing';
 
 import { ClaudeTranslator } from './claude-translator';
-import type { MessageClient } from './claude-translator';
+import type { ParseClient } from './index';
 import { TranslationError } from './errors';
 import { loadPrompt } from './prompts';
 
 afterEach(() => vi.restoreAllMocks());
 
-interface Reply {
-  stop_reason: string | null;
-  parsed_output: { text: string; notes: string } | null;
-  usage?: { input_tokens: number; output_tokens: number };
-  rawText?: string;
-}
+type Reply = Awaited<ReturnType<ParseClient['messages']['parse']>>;
 
 function fakeClient(reply: Reply | Error): {
-  client: MessageClient;
+  client: ParseClient;
   parse: ReturnType<typeof vi.fn>;
 } {
   const parse = vi.fn(async (_params: Record<string, unknown>) => {
     if (reply instanceof Error) throw reply;
-    return {
-      stop_reason: reply.stop_reason,
-      usage: reply.usage,
-      content: [{ type: 'text', text: reply.rawText ?? JSON.stringify(reply.parsed_output) }],
-    };
+    return reply;
   });
-  return { client: { messages: { create: parse } }, parse };
+  return { client: { messages: { parse } }, parse };
 }
 
 const ok: Reply = {
+  id: 'msg_ok',
   stop_reason: 'end_turn',
   parsed_output: { text: ' Hallo zusammen! ', notes: '  ' },
 };
 
-function make(client: MessageClient): ClaudeTranslator {
+function make(client: ParseClient): ClaudeTranslator {
   return new ClaudeTranslator({ systemPrompt: 'PROMPT', client });
 }
 
@@ -143,7 +135,7 @@ describe('paid usage reporting', () => {
       });
       if (stop_reason === 'end_turn') await pending;
       else await expect(pending).rejects.toBeInstanceOf(TranslationError);
-      expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage);
+      expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage, 'msg_ok');
     },
   );
 
@@ -187,16 +179,16 @@ describe('paid usage reporting', () => {
   });
 });
 
-it('books a paid response before rejecting malformed JSON', async () => {
-  const onUsage = vi.fn(async () => {});
-  const { client } = fakeClient({
-    ...ok,
-    rawText: '{broken',
-    usage: { input_tokens: 1, output_tokens: 2 },
-  });
-  const translator = new ClaudeTranslator({ systemPrompt: 'P', client, onUsage });
+it('preserves the SDK parse failure as the translation error cause', async () => {
+  const cause = new SyntaxError('structured output failed');
+  const { client } = fakeClient(cause);
+  const onUsage = vi.fn();
   await expect(
-    translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
-  ).rejects.toMatchObject({ code: 'invalid-output', cause: expect.any(SyntaxError) });
-  expect(onUsage).toHaveBeenCalledOnce();
+    new ClaudeTranslator({ systemPrompt: 'P', client, onUsage }).translate({
+      text: 'UA',
+      sourceLang: 'uk',
+      targetLang: 'de',
+    }),
+  ).rejects.toMatchObject({ code: 'api-error', cause });
+  expect(onUsage).not.toHaveBeenCalled();
 });
