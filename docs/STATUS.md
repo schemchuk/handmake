@@ -5,7 +5,7 @@
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
 - **Next step:** Volodymyr: `cd apps/bot && pnpm run db:migrate && pnpm run deploy` NOW (migration
-  0007_ai_costs, new `ai:` section in the tenant YAML). Then T39 (needs H10) or T36 (T25, T35, T42 done).
+  0007_ai_costs, new `ai:` section in the tenant YAML). Then T39 (H10 done 2026-10-31: Pages project `fadenundstimmung`, secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`) or T36 (T25, T35, T42 done).
   Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.
