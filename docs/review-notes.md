@@ -13,7 +13,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Bot: a DB write that succeeded with a failed reply lets a Telegram retry re-append text (at-least-once window, PR #22).
 
 ## Content store
-- F19 (work of the week): add "list published" to `ContentStore` when candidates are built (PR #6 review note 3).
+- F19 (work of the week): `ContentStore.listPosts` now exists (T35, ADR 016); use it when candidates are built (PR #6 review note 3).
+- Site: a post with no German text is not shown on `/` (no language fallback); a work without a translation needs the same decision (T35 review).
+- Site: photos are published unresized; add an optimization step before the show pipeline (T35 review).
 
 ## CI
 - gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.

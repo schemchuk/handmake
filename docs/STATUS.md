@@ -1,13 +1,15 @@
 # STATUS
 
-- **Active agent:** claude-code (planning)
-- **Current task:** none. T35 merged as PR #33 (written by claude-code because kimi-code is out of
-  usage limits; reviewed by a fresh claude-code review agent, merged with Volodymyr's OK).
+- **Active agent:** kimi-code (when its usage limit resets; until then nobody is active)
+- **Current task:** T42 (AI cost ledger and cost command). Branch `feat/T42-ai-cost-ledger`. T35 is
+  merged (PR #33, written by claude-code while kimi-code was out of limits). Reviewer: claude-code.
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** redeploy the bot NOW (`cd apps/bot && pnpm run deploy`): the tenant YAML on `main` has
-  a `site:` section that the deployed bot's strict schema rejects. Then T39 (needs H10). Open before
-  go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
+- **Next step:** kimi-code implements T42 (no human step needed). T39 is next after it but needs H10
+  (Volodymyr). T42 touches the tenant config schema (`ai:` section) and adds a D1 migration: the bot
+  reads the tenant YAML from `main` with a strict schema, so merge, apply `pnpm run db:migrate`, then
+  `pnpm run deploy` in `apps/bot` in one sitting (same trap as the `site:` section in T35).
+  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
 - **Blocked on:** nothing.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
