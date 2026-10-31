@@ -92,6 +92,26 @@ describe('AI cost runtime', () => {
     expect(constructed).toHaveBeenCalledWith(expect.objectContaining({ model: 'fixture-model' }));
   });
 
+  it('books the threshold-crossing call without awaiting notices, then warns via cron', async () => {
+    const { runtime, send, configs } = setup(vi.fn(() => new Promise<void>(() => {})));
+    await book(17, new Date());
+    const translator = await runtime.translatorFor('one', 'post:abc');
+    await expect(
+      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+    ).resolves.toEqual({ text: 'DE' });
+    expect((await ledger.summary('one', new Date())).total).toBe(20);
+    expect(send).not.toHaveBeenCalled();
+    expect(configs.load).toHaveBeenCalledOnce();
+    send.mockResolvedValue(undefined);
+    await runtime.notices(new Date());
+    expect(send.mock.calls.some(([id, text]) => id === 11 && text.includes('Досягнуто'))).toBe(
+      true,
+    );
+    expect(send.mock.calls.some(([id, text]) => id === 12 && text.includes('Досягнуто'))).toBe(
+      true,
+    );
+  });
+
   it('warns each operator of the tenant once at the target, retrying failed delivery', async () => {
     const { runtime, send } = setup();
     await book(19.99);

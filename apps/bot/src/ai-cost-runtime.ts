@@ -12,6 +12,7 @@ export function createAiCostRuntime(
   apiKey: string,
   send: (userId: number, text: string) => Promise<unknown>,
 ) {
+  /** Cron-only: threshold checks and reports never delay a translation. */
   async function notices(now: Date) {
     for (const [userId, tenantId] of operators) {
       try {
@@ -64,7 +65,6 @@ export function createAiCostRuntime(
                 usage.output_tokens * pricing.outputEurPerMillion) /
               1_000_000,
           });
-          await notices(new Date());
         },
       });
     },

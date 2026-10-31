@@ -30,7 +30,8 @@ export function costMonth(now: Date, offset = 0) {
 
 export function createAiCostLedger(db: D1Database) {
   return {
-    /** A stable call id makes retries of the bookkeeping write idempotent. */
+    /** Deduplicates writes only if callers reuse (id, unit). Each new usage
+     * report gets a fresh id; regeneration is not deduplicated by ref. */
     async recordCost(tenantId: string, cost: AiCost) {
       if (!Number.isFinite(cost.amountEur) || cost.amountEur < 0) {
         throw new Error('AI cost must be a finite non-negative EUR amount');
