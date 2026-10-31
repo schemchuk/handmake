@@ -1,7 +1,13 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { parseLedger, parsePost, serializeLedger, serializePost } from '@handmake/core';
+import {
+  compareNewestFirst,
+  parseLedger,
+  parsePost,
+  serializeLedger,
+  serializePost,
+} from '@handmake/core';
 import type { ContentStore, PhotoFile, Post, PublishLedger } from '@handmake/core';
 
 export interface GitRepoContentStoreOptions {
@@ -41,26 +47,71 @@ export class GitRepoContentStore implements ContentStore {
   }
 
   async readPost(tenantId: string, postId: string): Promise<Post | undefined> {
+    return (await this.#findPost(tenantId, postId))?.post;
+  }
+
+  async listPosts(tenantId: string): Promise<Post[]> {
+    const posts = (await this.#scanPosts()).map((entry) => entry.post);
+    return posts.filter((post) => post.tenant === tenantId).sort(compareNewestFirst);
+  }
+
+  async readPostPhoto(
+    tenantId: string,
+    postId: string,
+    fileName: string,
+  ): Promise<Uint8Array | undefined> {
+    const found = await this.#findPost(tenantId, postId);
+    // Only photos the post declares: never index.md or a path outside the folder.
+    if (!found || unsafeFileName.test(fileName) || !found.post.photos.includes(fileName)) {
+      return undefined;
+    }
+    try {
+      return new Uint8Array(await readFile(path.join(found.dir, fileName)));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+  }
+
+  async #findPost(
+    tenantId: string,
+    postId: string,
+  ): Promise<{ dir: string; post: Post } | undefined> {
+    const entries = await this.#scanPosts();
+    return entries.find((entry) => entry.post.tenant === tenantId && entry.post.id === postId);
+  }
+
+  /** Every parseable post folder; a folder without index.md is skipped. */
+  async #scanPosts(): Promise<{ dir: string; post: Post }[]> {
     const postsDir = path.join(this.#rootDir, 'content', 'posts');
     let entries;
     try {
       entries = await readdir(postsDir, { withFileTypes: true });
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
       throw error;
     }
+    const found: { dir: string; post: Post }[] = [];
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
+      const dir = path.join(postsDir, entry.name);
+      let markdown: string;
       try {
-        const markdown = await readFile(path.join(postsDir, entry.name, 'index.md'), 'utf8');
-        const post = parsePost(markdown);
-        if (post.tenant === tenantId && post.id === postId) return post;
+        markdown = await readFile(path.join(dir, 'index.md'), 'utf8');
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
         throw error;
       }
+      try {
+        found.push({ dir, post: parsePost(markdown) });
+      } catch (error) {
+        // Name the folder: a broken post must fail the build loudly and findably.
+        throw new Error(`content/posts/${entry.name}/index.md: ${(error as Error).message}`, {
+          cause: error,
+        });
+      }
     }
-    return undefined;
+    return found;
   }
 
   async readLedger(tenantId: string, postId: string): Promise<PublishLedger | undefined> {

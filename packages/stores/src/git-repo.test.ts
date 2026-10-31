@@ -1,5 +1,5 @@
 import { mkdtempSync, rmSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -88,5 +88,29 @@ describe('GitRepoContentStore', () => {
 
     expect(await store.readLedger('tenant', samplePost.id)).toEqual(ledger);
     expect(await store.readLedger('other-tenant', samplePost.id)).toBeUndefined();
+  });
+
+  it('lists nothing when the content folder does not exist yet', async () => {
+    const store = new GitRepoContentStore({ rootDir: freshRoot() });
+    expect(await store.listPosts('tenant')).toEqual([]);
+  });
+
+  it('never serves index.md or a path outside the post folder as a photo', async () => {
+    const rootDir = freshRoot();
+    const store = new GitRepoContentStore({ rootDir });
+    await store.savePost(samplePost, [{ fileName: 'photo-1.jpg', data: new Uint8Array([1]) }]);
+    expect(await store.readPostPhoto('tenant', samplePost.id, 'index.md')).toBeUndefined();
+    expect(await store.readPostPhoto('tenant', samplePost.id, '../photo-1.jpg')).toBeUndefined();
+    // Declared in the frontmatter but missing on disk.
+    expect(await store.readPostPhoto('tenant', samplePost.id, 'photo-2.jpg')).toBeUndefined();
+  });
+
+  it('names the folder of a broken post when listing', async () => {
+    const rootDir = freshRoot();
+    const brokenDir = path.join(rootDir, 'content', 'posts', '2026-10-24-broken');
+    await mkdir(brokenDir, { recursive: true });
+    await writeFile(path.join(brokenDir, 'index.md'), 'not a post');
+    const store = new GitRepoContentStore({ rootDir });
+    await expect(store.listPosts('tenant')).rejects.toThrow(/2026-10-24-broken\/index\.md/);
   });
 });

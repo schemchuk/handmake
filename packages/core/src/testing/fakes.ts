@@ -1,3 +1,4 @@
+import { compareNewestFirst } from '../post';
 import type { Post } from '../post';
 import type {
   ChannelAdapter,
@@ -109,6 +110,18 @@ export class FakeContentStore implements ContentStore {
 
   async readPost(tenantId: string, postId: string): Promise<Post | undefined> {
     return this.posts.get(FakeContentStore.key(tenantId, postId));
+  }
+
+  async listPosts(tenantId: string): Promise<Post[]> {
+    return [...this.posts.values()].filter((p) => p.tenant === tenantId).sort(compareNewestFirst);
+  }
+
+  async readPostPhoto(
+    tenantId: string,
+    postId: string,
+    fileName: string,
+  ): Promise<Uint8Array | undefined> {
+    return this.photos.get(FakeContentStore.key(tenantId, postId))?.get(fileName);
   }
 
   async readLedger(tenantId: string, postId: string): Promise<PublishLedger | undefined> {
