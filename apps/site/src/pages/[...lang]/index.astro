@@ -44,7 +44,7 @@ const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code,
             return (
               <li class="entry">
                 <a href={pagePath(lang, def, postPage(post.id))}>
-                  {photo && <img src={mediaPath(post.id, photo)} alt="" width="800" height="1000" loading="lazy" />}
+                  {photo && <img src={mediaPath(post.id, photo)} alt="" loading="lazy" />}
                   <time datetime={post.date}>{date.format(new Date(post.date))}</time>
                   <p class="entry-text">{excerpt(text, 220)}</p>
                 </a>

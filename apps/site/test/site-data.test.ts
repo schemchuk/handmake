@@ -4,7 +4,14 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { findRepoRoot, postsIn, readTenantConfig, visiblePosts } from '../src/lib/site-data';
+import {
+  assertBundledFonts,
+  assertNoPlaceholders,
+  findRepoRoot,
+  postsIn,
+  readTenantConfig,
+  visiblePosts,
+} from '../src/lib/site-data';
 import type { Post } from '@handmake/core';
 
 function post(id: string, type: Post['type'], langs: string[]): Post {
@@ -31,15 +38,44 @@ describe('visiblePosts', () => {
   ];
 
   it('keeps only blog posts and records their languages', () => {
-    const visible = visiblePosts(posts);
+    const visible = visiblePosts(posts, ['de', 'uk']);
     expect(visible.map((p) => p.post.id)).toEqual(['A', 'E']);
     expect(visible[0]!.languages).toEqual(['de', 'uk']);
   });
 
   it('lists a post only in languages it has text for', () => {
-    const visible = visiblePosts(posts);
+    const visible = visiblePosts(posts, ['de', 'uk']);
     expect(postsIn({ posts: visible }, 'de').map((p) => p.post.id)).toEqual(['A']);
     expect(postsIn({ posts: visible }, 'uk').map((p) => p.post.id)).toEqual(['A', 'E']);
+  });
+});
+
+describe('visiblePosts languages', () => {
+  it('ignores languages the tenant does not serve', () => {
+    const visible = visiblePosts([post('A', 'free', ['en', 'uk'])], ['de', 'uk']);
+    expect(visible[0]!.languages).toEqual(['uk']);
+  });
+});
+
+describe('assertBundledFonts', () => {
+  const tenant = readTenantConfig(findRepoRoot(__dirname), 'faden-und-stimmung');
+
+  it('accepts the bundled family', () => {
+    expect(() => assertBundledFonts(tenant.site!)).not.toThrow();
+  });
+  it('rejects a family without bundled files', () => {
+    const site = {
+      ...tenant.site!,
+      theme: { ...tenant.site!.theme, fonts: { display: 'Inter', body: 'Inter' } },
+    };
+    expect(() => assertBundledFonts(site)).toThrow(/not bundled/);
+  });
+});
+
+describe('assertNoPlaceholders', () => {
+  it('rejects a placeholder join link for an indexable site', () => {
+    const tenant = readTenantConfig(findRepoRoot(__dirname), 'faden-und-stimmung');
+    expect(() => assertNoPlaceholders(tenant.site!)).toThrow(/placeholder/);
   });
 });
 

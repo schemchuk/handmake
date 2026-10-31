@@ -60,7 +60,7 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <style is:inline set:html={fontFaceCss()}></style>
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
+    <a class="skip" href="#main">{ui.skip}</a>
     <div class="wrap">
       <header class="site-header">
         <a class="wordmark" href={pagePath(lang, def)}>{tenant.name}</a>

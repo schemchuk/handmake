@@ -5,6 +5,8 @@ import { parseTenantConfig } from '@handmake/core';
 import type { Post, SiteConfig, TenantConfig } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 
+import { bundledLatinFamily } from './font-families';
+
 /** Post types that belong on the public blog; announcements, reminders and polls stay in channels. */
 export const siteVisibleTypes: ReadonlySet<Post['type']> = new Set(['free']);
 
@@ -46,15 +48,43 @@ export function readTenantConfig(root: string, tenantId = process.env.SITE_TENAN
   return parseTenantConfig(readFileSync(path.join(dir, file), 'utf8'));
 }
 
-export function visiblePosts(posts: Post[]): SitePost[] {
+/** `languages` are the tenant's: a text in a language the site does not serve gets no page. */
+export function visiblePosts(posts: Post[], tenantLanguages: string[]): SitePost[] {
   return posts
     .filter((post) => siteVisibleTypes.has(post.type))
-    .map((post) => ({ post, languages: Object.keys(post.texts) }));
+    .map((post) => ({
+      post,
+      languages: tenantLanguages.filter((lang) => lang in post.texts),
+    }));
+}
+
+/** A configured family without bundled files would silently fall back; fail the build instead. */
+export function assertBundledFonts(site: SiteConfig): void {
+  for (const family of new Set([site.theme.fonts.display, site.theme.fonts.body])) {
+    if (family !== bundledLatinFamily) {
+      throw new Error(
+        `font "${family}" is not bundled; add its files to apps/site/src/lib/fonts.ts (bundled: ${bundledLatinFamily})`,
+      );
+    }
+  }
+}
+
+const placeholderMarker = 'REPLACE_';
+
+/** A site that search engines may index must not carry placeholder values (go-live, T41). */
+export function assertNoPlaceholders(site: SiteConfig): void {
+  if (site.circle?.joinUrl.includes(placeholderMarker)) {
+    throw new Error(
+      'SITE_INDEXABLE=true but site.circle.joinUrl is still a placeholder; set the real link first',
+    );
+  }
 }
 
 let cached: Promise<SiteData> | undefined;
 
 export function loadSiteData(): Promise<SiteData> {
+  // Cached for one build; the dev server re-reads content on every request.
+  if (process.env.NODE_ENV === 'development') cached = undefined;
   cached ??= (async () => {
     const root = process.env.SITE_REPO_ROOT ?? findRepoRoot(process.cwd());
     const tenant = readTenantConfig(root);
@@ -62,12 +92,15 @@ export function loadSiteData(): Promise<SiteData> {
       throw new Error(`tenant "${tenant.id}" has no "site:" section; the site cannot be built`);
     }
     const store = new GitRepoContentStore({ rootDir: root });
+    assertBundledFonts(tenant.site);
+    const indexable = process.env.SITE_INDEXABLE === 'true';
+    if (indexable) assertNoPlaceholders(tenant.site);
     return {
       tenant,
       site: tenant.site,
-      posts: visiblePosts(await store.listPosts(tenant.id)),
+      posts: visiblePosts(await store.listPosts(tenant.id), tenant.languages),
       store,
-      indexable: process.env.SITE_INDEXABLE === 'true',
+      indexable,
     };
   })();
   return cached;

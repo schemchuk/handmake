@@ -41,7 +41,7 @@ const [lead, ...rest] = paragraphs(text);
     {
       photo && (
         <figure class="page-figure">
-          <img src={mediaPath(post.id, photo)} alt={excerpt(text, 100)} width="1200" height="1500" />
+          <img src={mediaPath(post.id, photo)} alt={excerpt(text, 100)} />
         </figure>
       )
     }

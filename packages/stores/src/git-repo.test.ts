@@ -113,4 +113,14 @@ describe('GitRepoContentStore', () => {
     const store = new GitRepoContentStore({ rootDir });
     await expect(store.listPosts('tenant')).rejects.toThrow(/2026-10-24-broken\/index\.md/);
   });
+
+  it('reads one post even when an unrelated post folder is broken', async () => {
+    const rootDir = freshRoot();
+    const store = new GitRepoContentStore({ rootDir });
+    await store.savePost(samplePost, []);
+    const brokenDir = path.join(rootDir, 'content', 'posts', '2026-10-24-broken');
+    await mkdir(brokenDir, { recursive: true });
+    await writeFile(path.join(brokenDir, 'index.md'), 'not a post');
+    expect((await store.readPost('tenant', samplePost.id))?.id).toBe(samplePost.id);
+  });
 });

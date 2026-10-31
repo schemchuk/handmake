@@ -2,7 +2,7 @@
 
 - **Active agent:** claude-code (planning)
 - **Current task:** T35 (site scaffold), written by claude-code at Volodymyr's request (task owner
-  is kimi-code). Contracts decided in ADR 016 (Opus), layout in `apps/site` (Sonnet). Review by kimi-code.
+  is kimi-code). Contracts decided in ADR 016 (Opus), layout in `apps/site` (Sonnet). Kimi is out of usage limits: independent review by a fresh claude-code review agent (done, findings fixed) plus Volodymyr's OK before merge.
 - **Branch:** `feat/T35-site-contracts`
 - **Last commit:** see `git log -1`
 - **Next step:** T25 is live (D1 migration 0006 applied, bot redeployed 2026-10-30, version

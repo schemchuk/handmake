@@ -33,6 +33,10 @@ export class GitRepoContentStore implements ContentStore {
     this.#rootDir = options.rootDir;
   }
 
+  get #postsDir(): string {
+    return path.join(this.#rootDir, 'content', 'posts');
+  }
+
   async savePost(post: Post, photos: PhotoFile[]): Promise<void> {
     const normalized = parsePost(serializePost(post));
     const postDir = path.join(this.#rootDir, 'content', 'posts', postFolderName(post));
@@ -77,41 +81,54 @@ export class GitRepoContentStore implements ContentStore {
     tenantId: string,
     postId: string,
   ): Promise<{ dir: string; post: Post } | undefined> {
-    const entries = await this.#scanPosts();
-    return entries.find((entry) => entry.post.tenant === tenantId && entry.post.id === postId);
+    // Folder names end with the lowercased id (postFolderName), so only matching folders are
+    // parsed: an unrelated broken post must not block reading this one (the publish path).
+    const suffix = `-${postId.toLowerCase()}`;
+    const names = await this.#postFolderNames();
+    for (const name of names.filter((n) => n.endsWith(suffix))) {
+      const entry = await this.#readPostFolder(name);
+      if (entry && entry.post.tenant === tenantId && entry.post.id === postId) return entry;
+    }
+    return undefined;
   }
 
-  /** Every parseable post folder; a folder without index.md is skipped. */
-  async #scanPosts(): Promise<{ dir: string; post: Post }[]> {
-    const postsDir = path.join(this.#rootDir, 'content', 'posts');
-    let entries;
+  async #postFolderNames(): Promise<string[]> {
     try {
-      entries = await readdir(postsDir, { withFileTypes: true });
+      const entries = await readdir(this.#postsDir, { withFileTypes: true });
+      return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
       throw error;
     }
+  }
+
+  /** Every parseable post folder; a folder without index.md is skipped. */
+  async #scanPosts(): Promise<{ dir: string; post: Post }[]> {
     const found: { dir: string; post: Post }[] = [];
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const dir = path.join(postsDir, entry.name);
-      let markdown: string;
-      try {
-        markdown = await readFile(path.join(dir, 'index.md'), 'utf8');
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
-        throw error;
-      }
-      try {
-        found.push({ dir, post: parsePost(markdown) });
-      } catch (error) {
-        // Name the folder: a broken post must fail the build loudly and findably.
-        throw new Error(`content/posts/${entry.name}/index.md: ${(error as Error).message}`, {
-          cause: error,
-        });
-      }
+    for (const name of await this.#postFolderNames()) {
+      const entry = await this.#readPostFolder(name);
+      if (entry) found.push(entry);
     }
     return found;
+  }
+
+  async #readPostFolder(name: string): Promise<{ dir: string; post: Post } | undefined> {
+    const dir = path.join(this.#postsDir, name);
+    let markdown: string;
+    try {
+      markdown = await readFile(path.join(dir, 'index.md'), 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+    try {
+      return { dir, post: parsePost(markdown) };
+    } catch (error) {
+      // Name the folder: a broken post must fail the build loudly and findably.
+      throw new Error(`content/posts/${name}/index.md: ${(error as Error).message}`, {
+        cause: error,
+      });
+    }
   }
 
   async readLedger(tenantId: string, postId: string): Promise<PublishLedger | undefined> {

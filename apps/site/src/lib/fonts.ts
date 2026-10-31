@@ -1,3 +1,4 @@
+import { bundledLatinFamily } from './font-families';
 import cyrillic from '@fontsource-variable/onest/files/onest-cyrillic-wght-normal.woff2?url';
 import cyrillicExt from '@fontsource-variable/onest/files/onest-cyrillic-ext-wght-normal.woff2?url';
 import latin from '@fontsource-variable/familjen-grotesk/files/familjen-grotesk-latin-wght-normal.woff2?url';
@@ -18,8 +19,6 @@ const cyrillicExtRange = 'U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F
 function face(family: string, url: string, range: string): string {
   return `@font-face{font-family:'${family}';font-style:normal;font-weight:100 900;font-display:swap;src:url(${url}) format('woff2');unicode-range:${range}}`;
 }
-
-export const bundledLatinFamily = 'Familjen Grotesk';
 
 /** CSS for all bundled faces. */
 export function fontFaceCss(): string {

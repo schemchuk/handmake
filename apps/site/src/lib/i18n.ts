@@ -1,8 +1,7 @@
 /** UI strings per language. A tenant language without an entry here fails the build. */
 export interface UiStrings {
-  navHome: string;
+  skip: string;
   navCircle: string;
-  navPosts: string;
   postsHeading: string;
   noPosts: string;
   back: string;
@@ -18,9 +17,8 @@ export interface UiStrings {
 
 const strings: Record<string, UiStrings> = {
   de: {
-    navHome: 'Start',
+    skip: 'Zum Inhalt springen',
     navCircle: 'Kreis',
-    navPosts: 'Beiträge',
     postsHeading: 'Beiträge',
     noPosts: 'Noch keine Beiträge.',
     back: 'Alle Beiträge',
@@ -34,9 +32,8 @@ const strings: Record<string, UiStrings> = {
     language: 'Sprache',
   },
   uk: {
-    navHome: 'Головна',
+    skip: 'Перейти до вмісту',
     navCircle: 'Гурток',
-    navPosts: 'Дописи',
     postsHeading: 'Дописи',
     noPosts: 'Поки що немає дописів.',
     back: 'Усі дописи',
