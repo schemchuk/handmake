@@ -42,12 +42,12 @@ Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of
 | Area | Owner | Reviewer |
 |---|---|---|
 | Repo setup, docs, interview, spec, architecture, task planning | Claude Code | Volodymyr |
-| Implementing tasks from docs/03-tasks.md | Kimi Code (unless the task says otherwise) | Claude Code |
+| Implementing tasks from docs/03-tasks.md | Kimi Code or Codex, as the task's `Owner:` says (Kimi Code by default; Codex while Kimi Code is out of usage limits, set 2026-10-31) | Claude Code |
 | Code review | the agent that did NOT write the code | n/a |
 | Commit and push of a session's work | the Active agent in docs/STATUS.md | n/a |
 | Merge of a task PR to `main` | the reviewer agent (never the author), see Git rules | Volodymyr (veto) |
 | Secrets, legal/personal-data decisions, OK for sensitive merges | Volodymyr only | n/a |
-Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a task you do not own. If Kimi Code does not read AGENTS.md automatically, I will paste it in.
+Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a task you do not own. If Kimi Code does not read AGENTS.md automatically, I will paste it in (Codex reads it by itself).
 
 ## Handoff protocol
 `docs/STATUS.md` is the single source of truth. Fields: Active agent, Current task, Branch, Last commit (hash + message), Next step, Blocked on, Open questions for Volodymyr.
@@ -64,7 +64,7 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
 
 ## Git rules
 - The Active agent is responsible for committing and pushing. After EVERY logical block (one coherent unit of work): update STATUS.md, stage only relevant files, commit, `git push`, then tell me the hash and a one-line summary. Never batch several blocks into one commit.
-- Commit format: Conventional Commits (docs:, feat:, fix:, chore:, test:), imperative, under 72 chars, plus a trailer line `Agent: claude-code` or `Agent: kimi-code`.
+- Commit format: Conventional Commits (docs:, feat:, fix:, chore:, test:), imperative, under 72 chars, plus a trailer line `Agent: claude-code`, `Agent: kimi-code` or `Agent: codex`.
 - Docs and setup commits may go to `main`. Code goes on `feat/<task-id>-<slug>` branches, one PR per task.
 - Merge (amended 2026-10-22): the reviewer agent merges the PR after CI is green and the review has no
   blocking findings: `gh pr merge --squash --delete-branch`, then updates STATUS.md on `main`. The author

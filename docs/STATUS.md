@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** kimi-code (when its usage limit resets; until then nobody is active)
+- **Active agent:** codex (stands in for kimi-code, which is out of usage limits; switch back by editing T42's Owner and this line)
 - **Current task:** T42 (AI cost ledger and cost command). Branch `feat/T42-ai-cost-ledger`. T35 is
   merged (PR #33, written by claude-code while kimi-code was out of limits). Reviewer: claude-code.
+  Owner changed to codex on 2026-10-31.
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** kimi-code implements T42 (no human step needed). T39 is next after it but needs H10
+- **Next step:** codex implements T42 (no human step needed). T39 is next after it but needs H10
   (Volodymyr). T42 touches the tenant config schema (`ai:` section) and adds a D1 migration: the bot
   reads the tenant YAML from `main` with a strict schema, so merge, apply `pnpm run db:migrate`, then
   `pnpm run deploy` in `apps/bot` in one sitting (same trap as the `site:` section in T35).

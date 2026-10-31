@@ -405,7 +405,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   confirmations.
 - Tests: page build tests, masking.
 
-### T42 — AI cost ledger and cost command (F32, `bot`, `core`)
+### T42 — AI cost ledger and cost command (F32, `bot`, `core`) · Owner: codex (Kimi Code out of limits) · Reviewer: claude-code
 - Depends on: T25
 - Change: migration `ai_costs` (tenant_id, at, service, unit, amount_eur, ref); a `recordCost` helper
   used by every AI call (the existing translation call is the first user); config `ai.monthlyTargetEur`
