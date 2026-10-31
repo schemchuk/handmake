@@ -1,8 +1,9 @@
 import { botTexts } from './texts';
-import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
+import { ClaudeTranslator, DEFAULT_MODEL, humanizeDePromptV1 } from '@handmake/ai';
+import { safeErrorMessage } from '@handmake/core';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { AllowList } from './allow-list';
-import { formatCosts } from './ai-costs';
+import { costMonth, formatCosts } from './ai-costs';
 import type { AiCostLedger } from './ai-costs';
 
 /** The existing allow-list is also the operator list (Volodymyr, T42). */
@@ -25,6 +26,12 @@ export function createAiCostRuntime(
       try {
         const budget = (await configs.load(tenantId)).ai;
         if (!budget) continue;
+        const monthlyKey = `summary:${costMonth(now, -1).key}`;
+        const pendingUsers: number[] = [];
+        for (const userId of users) {
+          if (!(await ledger.hasNotice(tenantId, `${monthlyKey}:${userId}`)))
+            pendingUsers.push(userId);
+        }
         const current = await ledger.summary(tenantId, now);
         const messages: [string, string][] = [];
         if (current.total >= budget.monthlyTargetEur) {
@@ -33,21 +40,32 @@ export function createAiCostRuntime(
             `${botTexts.costTargetText}\n${formatCosts(current, budget)}`,
           ]);
         }
-        const previous = await ledger.summary(tenantId, now, -1);
-        messages.push([`summary:${previous.month}`, formatCosts(previous, budget)]);
+        if (pendingUsers.length) {
+          const previous = await ledger.summary(tenantId, now, -1);
+          if (previous.total > 0) messages.push([monthlyKey, formatCosts(previous, budget)]);
+        }
         for (const [key, text] of messages) {
           for (const userId of users) {
             const notice = `${key}:${userId}`;
             if (!(await ledger.claimNotice(tenantId, notice))) continue;
             try {
               await send(userId, text);
-            } catch {
+            } catch (error) {
+              console.error('AI cost notification delivery failed', {
+                tenantId,
+                operation: 'sendNotice',
+                message: safeErrorMessage(error, [apiKey]),
+              });
               await ledger.releaseNotice(tenantId, notice);
             }
           }
         }
-      } catch {
-        console.error('AI cost notification failed');
+      } catch (error) {
+        console.error('AI cost notification failed', {
+          tenantId,
+          operation: 'notices',
+          message: safeErrorMessage(error, [apiKey]),
+        });
       }
     }
   }
@@ -57,17 +75,24 @@ export function createAiCostRuntime(
       const pricing = await configs
         .load(tenantId)
         .then((config) => config.ai?.translation)
-        .catch(() => {
+        .catch((error) => {
           console.warn(
             'Tenant config unavailable; using default translator without cost accounting',
+            {
+              tenantId,
+              operation: 'loadTranslationPricing',
+              message: safeErrorMessage(error, [apiKey]),
+            },
           );
           return undefined;
         });
-      if (!pricing) return new ClaudeTranslator({ apiKey, systemPrompt: humanizeDePromptV1 });
+      if (!pricing)
+        return new ClaudeTranslator({ apiKey, tenantId, systemPrompt: humanizeDePromptV1 });
       return new ClaudeTranslator({
         apiKey,
+        tenantId,
         systemPrompt: humanizeDePromptV1,
-        model: pricing.model,
+        model: DEFAULT_MODEL,
         onUsage: async (usage, responseId) => {
           await ledger.recordCost(tenantId, {
             id: responseId ?? crypto.randomUUID(),

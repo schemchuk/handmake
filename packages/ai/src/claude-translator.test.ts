@@ -162,7 +162,14 @@ describe('paid usage reporting', () => {
         await expect(result).rejects.toMatchObject({
           code: stop_reason === 'refusal' ? 'refused' : 'truncated',
         });
-      expect(log).toHaveBeenCalledExactlyOnceWith('AI cost bookkeeping failed');
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        'AI cost bookkeeping failed',
+        expect.objectContaining({
+          tenantId: 'unknown',
+          operation: 'recordTranslationUsage',
+          message: expect.any(String),
+        }),
+      );
     },
   );
 
@@ -175,20 +182,39 @@ describe('paid usage reporting', () => {
       ),
     ).resolves.toEqual({ text: 'Hallo zusammen!' });
     expect(onUsage).not.toHaveBeenCalled();
-    expect(log).toHaveBeenCalledExactlyOnceWith('AI cost bookkeeping failed');
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      'AI cost bookkeeping failed',
+      expect.objectContaining({
+        tenantId: 'unknown',
+        operation: 'recordTranslationUsage',
+        message: expect.any(String),
+      }),
+    );
   });
 });
 
 it('preserves the SDK parse failure as the translation error cause', async () => {
-  const cause = new SyntaxError('structured output failed');
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const cause = new SyntaxError('structured output failed: fixture-key');
   const { client } = fakeClient(cause);
   const onUsage = vi.fn();
   await expect(
-    new ClaudeTranslator({ systemPrompt: 'P', client, onUsage }).translate({
+    new ClaudeTranslator({
+      systemPrompt: 'P',
+      client,
+      onUsage,
+      tenantId: 'one',
+      apiKey: 'fixture-key',
+    }).translate({
       text: 'UA',
       sourceLang: 'uk',
       targetLang: 'de',
     }),
   ).rejects.toMatchObject({ code: 'api-error', cause });
   expect(onUsage).not.toHaveBeenCalled();
+  expect(log).toHaveBeenCalledExactlyOnceWith('AI translation failed', {
+    tenantId: 'one',
+    operation: 'messages.parse',
+    message: 'structured output failed: [REDACTED]',
+  });
 });

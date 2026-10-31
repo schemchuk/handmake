@@ -300,7 +300,10 @@ describe('scheduled wiring', () => {
         scheduledTime: new Date('2026-10-27T12:00:00Z').getTime(),
       } as ScheduledEvent),
     ).resolves.toBe(0);
-    expect(log).toHaveBeenCalledWith('AI cost notification failed');
+    expect(log).toHaveBeenCalledWith(
+      'AI cost notification failed',
+      expect.objectContaining({ message: 'notices unavailable', tenantId: TENANT }),
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`config/tenants/${TENANT}.yaml`),
     );
@@ -317,7 +320,14 @@ describe('scheduled wiring', () => {
         scheduledTime: new Date('2026-10-27T12:00:00Z').getTime(),
       } as ScheduledEvent),
     ).resolves.toBe(0);
-    expect(log).toHaveBeenCalledWith('announcement cron failed');
+    expect(log).toHaveBeenCalledWith(
+      'announcement cron failed',
+      expect.objectContaining({
+        tenantId: 'unknown',
+        operation: 'announcement cron failed',
+        message: expect.any(String),
+      }),
+    );
     expect(log.mock.calls.flat().join(' ')).not.toContain(env.TELEGRAM_ALLOWED_USER_IDS);
     expect(fetchMock).not.toHaveBeenCalled();
   });

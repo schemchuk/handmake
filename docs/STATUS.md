@@ -1,18 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code (review T42 review-2 fixes)
+- **Active agent:** claude-code (final review of T42 review-3 fixes)
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `0315796` — fix: make AI cost accounting resilient and catch up reports
-- **Next step:** review the completed PR #34 review-2 fixes. Restored `messages.parse` and public `ParseClient`;
-  usage and response id come from the same SDK response. Config cache has a five-minute TTL and
-  uses last-known settings on refresh failure; cold failures use the default translator with a warning.
-  Cost ids now use API response ids; replayed usage is deduplicated, regeneration is charged.
-  Notices are grouped by tenant, run after announcements, and catch up monthly reports after a
-  missed first day. Cost texts are centralized; remaining limitations are in docs/review-notes.md.
-  Validation: 457 tests pass (bot tests require execution outside the sandbox); lint, typecheck,
-  formatting and diff checks pass.
+- **Last commit:** `7881526` — docs: record T42 review handoff commit
+- **Next step:** review completed review-3 fixes: model selection stays in code, diagnostic logs carry
+  operation and tenant context with secrets redacted, monthly reports check notice existence before
+  aggregation and skip zero spending. Deferred findings are in docs/review-notes.md.
+  Validation: bot 171, core 124 and AI 25 tests pass; lint and workspace typecheck pass.
   After merge: `db:migrate`, then `deploy` in `apps/bot` in one sitting (strict `ai:` schema).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.

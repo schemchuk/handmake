@@ -1,5 +1,5 @@
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
-import { draftRetentionDays } from '@handmake/core';
+import { draftRetentionDays, safeErrorMessage } from '@handmake/core';
 import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
@@ -58,11 +58,14 @@ interface TelegramUpdateBody {
 }
 
 /** Parses the webhook body once; every guard below reads the same object. */
-async function bodyOf(request: Request): Promise<unknown> {
+async function bodyOf(request: Request, onError: (error: unknown) => void): Promise<unknown> {
   return request
     .clone()
     .json()
-    .catch(() => undefined);
+    .catch((error) => {
+      onError(error);
+      return undefined;
+    });
 }
 
 function updateIdOf(body: unknown): number | undefined {
@@ -83,6 +86,20 @@ function senderIdOf(body: unknown): number | undefined {
  * 10 s, a translation takes 10-30 s. Callers without one (the scheduled
  * handler, tests) get a detached fallback — production always passes it. */
 export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionContext): App {
+  function logError(operation: string, error: unknown, tenantId = 'unknown') {
+    console.error(operation, {
+      tenantId,
+      operation,
+      message: safeErrorMessage(error, [
+        env.ANTHROPIC_API_KEY,
+        env.TELEGRAM_BOT_TOKEN,
+        env.TELEGRAM_WEBHOOK_SECRET,
+        env.TELEGRAM_ALLOWED_USER_IDS,
+        env.GITHUB_DISPATCH_TOKEN,
+        env.PUBLISH_CALLBACK_SECRET,
+      ]),
+    });
+  }
   // The bot is built lazily so the webhook secret is checked BEFORE the
   // allow-list secret is parsed: a malformed allow-list must yield 401, not
   // 500, for unauthenticated callers (PR #19 review note 2).
@@ -128,7 +145,9 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
           live: env.PUBLISH_LIVE === 'true',
         }),
         background: (task) =>
-          executionCtx ? executionCtx.waitUntil(task()) : void task().catch(() => undefined),
+          executionCtx
+            ? executionCtx.waitUntil(task())
+            : void task().catch((error) => logError('background task failed', error)),
       });
       handleUpdate = webhookCallback(bot, 'cloudflare-mod');
     }
@@ -164,7 +183,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       //
       // The dedupe write is scoped to allow-listed senders: a refused
       // stranger must leave no trace in D1 (A6, PR #22 review note).
-      const body = await bodyOf(request);
+      const body = await bodyOf(request, (error) => logError('parse webhook body', error));
       const updateId = updateIdOf(body);
       const senderId = senderIdOf(body);
       const allowListed = senderId !== undefined && lookup()(senderId) !== undefined;
@@ -195,7 +214,9 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // F18: on every other tick, check whether an announcement/reminder
       // moment just fired for some tenant. Failures stay inside the cron:
       // it is a best-effort notifier and drafts are the source of truth.
+      let tenantId = 'unknown';
       try {
+        tenantId = [...new Set(parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS).values())].join(',');
         await runAnnouncementCron(new Date(event.scheduledTime), {
           translatorFor: aiRuntime().translatorFor,
           drafts,
@@ -208,13 +229,13 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
           allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
           texts,
         });
-      } catch {
-        console.error('announcement cron failed');
+      } catch (error) {
+        logError('announcement cron failed', error, tenantId);
       }
       try {
         await aiRuntime().notices(new Date(event.scheduledTime));
-      } catch {
-        console.error('AI cost notification failed');
+      } catch (error) {
+        logError('AI cost notification failed', error, tenantId);
       }
       return 0;
     },

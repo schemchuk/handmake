@@ -11,6 +11,7 @@ afterEach(() => vi.restoreAllMocks());
 const constructed = vi.hoisted(() => vi.fn());
 vi.mock('@handmake/ai', () => ({
   humanizeDePromptV1: 'test prompt',
+  DEFAULT_MODEL: 'code-model',
   ClaudeTranslator: class {
     constructor(
       public options: {
@@ -99,6 +100,7 @@ describe('AI cost runtime', () => {
     expect(record).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledExactlyOnceWith(
       'Tenant config unavailable; using default translator without cost accounting',
+      { tenantId: 'one', operation: 'loadTranslationPricing', message: 'GitHub unavailable' },
     );
   });
 
@@ -112,7 +114,7 @@ describe('AI cost runtime', () => {
     expect(summary.total).toBe(6);
     expect(summary.services).toEqual({ 'translation:fixture-model': 6 });
     expect(summary.shows).toEqual({});
-    expect(constructed).toHaveBeenCalledWith(expect.objectContaining({ model: 'fixture-model' }));
+    expect(constructed).toHaveBeenCalledWith(expect.objectContaining({ model: 'code-model' }));
   });
 
   it('deduplicates the same API response but books a regeneration separately', async () => {
@@ -164,13 +166,22 @@ describe('AI cost runtime', () => {
   it('catches up after a missed first day and summarizes once per tenant', async () => {
     const { runtime, send, configs } = setup();
     const summary = vi.spyOn(ledger, 'summary');
+    const hasNotice = vi.spyOn(ledger, 'hasNotice');
     await book(3);
     await runtime.notices(new Date('2026-11-03T12:00:00Z'));
     await runtime.notices(new Date('2026-11-04T12:00:00Z'));
     expect(configs.load).toHaveBeenCalledTimes(4);
-    expect(summary).toHaveBeenCalledTimes(8);
-    expect(send).toHaveBeenCalledTimes(3);
+    expect(hasNotice.mock.invocationCallOrder[0]).toBeLessThan(
+      summary.mock.invocationCallOrder[0]!,
+    );
+    expect(summary.mock.calls.filter((call) => call[0] === 'one' && call[2] === -1)).toHaveLength(
+      1,
+    );
+    expect(summary.mock.calls.filter((call) => call[0] === 'other' && call[2] === -1)).toHaveLength(
+      2,
+    );
+    expect(send).toHaveBeenCalledTimes(2);
     expect(send.mock.calls[0]![1]).toContain('2026-10\nВитрачено: 3.0000 EUR');
-    expect(send.mock.calls[2]![1]).toContain('Витрачено: 0.0000 EUR');
+    expect(send.mock.calls.every(([id]) => id === 11 || id === 12)).toBe(true);
   });
 });

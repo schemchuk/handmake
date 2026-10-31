@@ -34,5 +34,9 @@ it('runs announcements before notices and catches notification failures separate
     app.scheduled({ cron: '* * * * *', scheduledTime: Date.now() } as ScheduledEvent),
   ).resolves.toBe(0);
   expect(calls).toEqual(['announcement', 'notices']);
-  expect(error).toHaveBeenCalledExactlyOnceWith('AI cost notification failed');
+  expect(error).toHaveBeenCalledExactlyOnceWith('AI cost notification failed', {
+    tenantId: 'one',
+    operation: 'AI cost notification failed',
+    message: 'offline',
+  });
 });

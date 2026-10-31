@@ -64,6 +64,14 @@ export function createAiCostLedger(db: D1Database) {
       }
       return { month: month.key, total: Number(total.toFixed(9)), services, shows };
     },
+    async hasNotice(tenantId: string, notice: string) {
+      return (
+        (await db
+          .prepare('SELECT 1 FROM ai_cost_notices WHERE tenant_id = ? AND notice = ?')
+          .bind(tenantId, notice)
+          .first()) !== null
+      );
+    },
     async claimNotice(tenantId: string, notice: string) {
       const result = await db
         .prepare('INSERT OR IGNORE INTO ai_cost_notices (tenant_id, notice) VALUES (?, ?)')

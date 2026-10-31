@@ -29,7 +29,11 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Bot API now allows 1-12 options and media on a poll option (`InputPollOption.media`), which weakens ADR 008's "polls cannot carry images". MVP keeps album + poll; revisit in a later ADR (PR #31 N2).
 
 ## AI cost ledger (T42, PR #34)
-- T44 must call `assertCanStartShow` before starting a new show; T42 has no show entry point yet.
+- `assertCanStartShow` and `costLimitText` are not invoked by a production flow until T44 adds the show entry point and budget gate.
 - All existing allow-listed users are operators (Volodymyr, 2026-10-31); no separate operator role.
 - Notices claim before sending: a crash between claim and delivery can lose a notification; consider expiring claims in a later task.
 - Translation model and configured prices are not validated against each other.
+- When SDK `messages.parse` throws, paid usage is not recorded because no parsed response reaches the usage hook.
+- Any tenant-config refresh failure uses the last-known config without notifying the operator; cold failures fall back to the default translator without accounting. Diagnostic warnings are logged.
+- `aiRuntime()` is constructed three times along the scheduled path; consolidate in a later task.
+- Prompt-cache read/write tokens are not accounted for; EUR prices are entered manually and need verification in T43.
