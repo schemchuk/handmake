@@ -4,7 +4,7 @@
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `14ecde9` — fix: restore the public translator parse client
+- **Last commit:** `0315796` — fix: make AI cost accounting resilient and catch up reports
 - **Next step:** review the completed PR #34 review-2 fixes. Restored `messages.parse` and public `ParseClient`;
   usage and response id come from the same SDK response. Config cache has a five-minute TTL and
   uses last-known settings on refresh failure; cold failures use the default translator with a warning.
