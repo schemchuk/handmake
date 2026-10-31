@@ -1,19 +1,15 @@
 # STATUS
 
-- **Active agent:** claude-code (T42 reviewer)
+- **Active agent:** codex (T42 review fixes requested by Volodymyr)
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
 - **Last commit:** `80470b0` — feat: track translation costs and add operator reports
   (last implementation commit; this handoff follows).
-- **Next step:** claude-code reviews PR #34 and CI, then merges if approved. Typecheck, lint,
-  format:check, full tests (436) and build pass; final targeted D1 tests (20) also pass, including
-  two subsequently added regressions for decimal cap precision and cron translation scope.
-  D1 tests need execution outside the sandbox (Miniflare). T44 must call `assertCanStartShow`.
-  All allow-listed users are operators (Volodymyr). Translation estimates: 3.50/17.50 EUR per million
-  input/output tokens, supplied by Volodymyr; T43 verifies prices.
-  After merge, in `apps/bot`: `pnpm run db:migrate`, then `pnpm run deploy`, in one sitting: the old
-  bot rejects the new `ai:` YAML key. T39 is next but needs H10; start a fresh session for the next task.
+- **Next step:** address PR #34 review findings in separate commits, then return to claude-code.
+  B1 fixed: tenants without `ai:` use the default translator without cost accounting.
+  Remaining: bookkeeping failures, cron isolation, `/cost` error replies, notification path and notes.
+  Deployment after merge remains `db:migrate`, then `deploy` in `apps/bot` in one sitting.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.
 - **POSSE discussion, round 1 answered (2026-10-30):**

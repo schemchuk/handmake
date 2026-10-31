@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { parseTenantConfig } from '@handmake/core';
+import type { TenantConfig } from '@handmake/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAiCostLedger } from '../src/ai-costs';
 import { createAiCostRuntime } from '../src/ai-cost-runtime';
@@ -11,13 +12,13 @@ vi.mock('@handmake/ai', () => ({
   ClaudeTranslator: class {
     constructor(
       public options: {
-        onUsage: (usage: { input_tokens: number; output_tokens: number }) => Promise<void>;
+        onUsage?: (usage: { input_tokens: number; output_tokens: number }) => Promise<void>;
       },
     ) {
       constructed(options);
     }
     async translate() {
-      await this.options.onUsage({ input_tokens: 1_000_000, output_tokens: 100_000 });
+      await this.options.onUsage?.({ input_tokens: 1_000_000, output_tokens: 100_000 });
       return { text: 'DE' };
     }
   },
@@ -37,7 +38,7 @@ beforeEach(async () => {
   constructed.mockClear();
 });
 function setup(send = vi.fn(async (_id: number, _text: string) => {})) {
-  const configs = { load: vi.fn(async () => ({ ...fixture, ai: budget })) };
+  const configs = { load: vi.fn(async (): Promise<TenantConfig> => ({ ...fixture, ai: budget })) };
   const runtime = createAiCostRuntime(
     ledger,
     configs,
@@ -64,6 +65,20 @@ async function book(amountEur: number, at = now) {
 }
 
 describe('AI cost runtime', () => {
+  it('translates without bookkeeping when the tenant has no ai section', async () => {
+    const { runtime, configs, send } = setup();
+    const { ai: _ai, ...withoutAi } = fixture;
+    configs.load.mockResolvedValueOnce(withoutAi);
+    const record = vi.spyOn(ledger, 'recordCost');
+    const translator = await runtime.translatorFor('legacy', 'post:abc');
+    await expect(
+      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+    ).resolves.toEqual({ text: 'DE' });
+    expect(constructed.mock.calls[0]![0]).not.toHaveProperty('onUsage');
+    expect(record).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it('books token usage using tenant pricing, with a distinct record for each regeneration', async () => {
     const { runtime } = setup();
     for (let i = 0; i < 2; i++) {

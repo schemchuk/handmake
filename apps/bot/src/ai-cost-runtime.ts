@@ -47,7 +47,7 @@ export function createAiCostRuntime(
     notices,
     async translatorFor(tenantId: string, ref: string) {
       const pricing = (await configs.load(tenantId)).ai?.translation;
-      if (!pricing) throw new Error('Translation pricing is not configured');
+      if (!pricing) return new ClaudeTranslator({ apiKey, systemPrompt: humanizeDePromptV1 });
       return new ClaudeTranslator({
         apiKey,
         systemPrompt: humanizeDePromptV1,
