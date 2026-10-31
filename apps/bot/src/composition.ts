@@ -196,11 +196,6 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // moment just fired for some tenant. Failures stay inside the cron:
       // it is a best-effort notifier and drafts are the source of truth.
       try {
-        await aiRuntime().notices(new Date(event.scheduledTime));
-      } catch {
-        console.error('AI cost notification failed');
-      }
-      try {
         await runAnnouncementCron(new Date(event.scheduledTime), {
           translatorFor: aiRuntime().translatorFor,
           drafts,
@@ -215,6 +210,11 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         });
       } catch {
         console.error('announcement cron failed');
+      }
+      try {
+        await aiRuntime().notices(new Date(event.scheduledTime));
+      } catch {
+        console.error('AI cost notification failed');
       }
       return 0;
     },

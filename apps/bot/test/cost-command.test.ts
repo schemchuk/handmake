@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { ClaudeTranslator } from '@handmake/ai';
+import { createAiCostRuntime } from '../src/ai-cost-runtime';
 import { parseTenantConfig } from '@handmake/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createBot } from '../src/bot';
@@ -84,6 +86,44 @@ it.each(['config', 'ledger'])('replies clearly when the %s backend fails', async
 });
 
 describe('translation cost scope', () => {
+  it('keeps an author draft ready when GitHub config loading fails', async () => {
+    const db = await makeD1();
+    const drafts = createD1DraftStore(db);
+    const tasks: Promise<void>[] = [];
+    vi.spyOn(ClaudeTranslator.prototype, 'translate').mockResolvedValue({ text: 'DE' });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const runtime = createAiCostRuntime(
+      createAiCostLedger(db),
+      {
+        load: vi.fn().mockRejectedValue(new Error('GitHub unavailable')),
+      },
+      new Map([[11, 'one']]),
+      'fixture-key',
+      vi.fn(),
+    );
+    const bot = createBot({
+      token: 'TEST_TOKEN',
+      drafts,
+      texts: botTexts,
+      resolveTenant: () => 'one',
+      translator: { translate: vi.fn() },
+      translatorFor: runtime.translatorFor,
+      publishRunner: { run: vi.fn() },
+      background: (task) => {
+        tasks.push(task());
+      },
+    });
+    mockTelegramApi(bot);
+    await bot.init();
+    const update = textUpdate(11, 'UA');
+    delete update.message!.entities;
+    await bot.handleUpdate(update);
+    await bot.handleUpdate(textUpdate(11, '/done'));
+    await Promise.all(tasks);
+    expect(await drafts.listByState('one', 'ready')).toHaveLength(1);
+    expect(await drafts.listByState('one', 'failed')).toEqual([]);
+  });
+
   it('passes the tenant and draft reference to the paid translator factory', async () => {
     const drafts = createD1DraftStore(await makeD1());
     const tasks: Promise<void>[] = [];

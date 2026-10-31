@@ -1,3 +1,4 @@
+import { botTexts } from './texts';
 import { zonedTimeToUtc } from './announcements';
 
 export interface AiCost {
@@ -30,26 +31,18 @@ export function costMonth(now: Date, offset = 0) {
 
 export function createAiCostLedger(db: D1Database) {
   return {
-    /** Deduplicates writes only if callers reuse (id, unit). Each new usage
-     * report gets a fresh id; regeneration is not deduplicated by ref. */
+    /** Deduplicates caller-supplied (id, unit), never the post reference. */
     async recordCost(tenantId: string, cost: AiCost) {
       if (!Number.isFinite(cost.amountEur) || cost.amountEur < 0) {
         throw new Error('AI cost must be a finite non-negative EUR amount');
       }
+      const { id, at, service, unit, amountEur, ref } = cost;
       await db
         .prepare(
           `INSERT OR IGNORE INTO ai_costs
         (tenant_id, id, at, service, unit, amount_eur, ref) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
-        .bind(
-          tenantId,
-          cost.id,
-          cost.at.toISOString(),
-          cost.service,
-          cost.unit,
-          cost.amountEur,
-          cost.ref,
-        )
+        .bind(tenantId, id, at.toISOString(), service, unit, amountEur, ref)
         .run();
     },
     async summary(tenantId: string, now: Date, offset = 0) {
@@ -101,7 +94,7 @@ export async function assertCanStartShow(
 ) {
   const { total } = await ledger.summary(tenantId, now);
   if (total >= budget.monthlyTargetEur + budget.toleranceEur) {
-    throw new Error('Ліміт витрат на ШІ вичерпано. Нові покази доступні наступного місяця.');
+    throw new Error(botTexts.costLimitText);
   }
 }
 
@@ -109,15 +102,5 @@ export function formatCosts(
   summary: Awaited<ReturnType<AiCostLedger['summary']>>,
   budget: AiBudget,
 ) {
-  const eur = (n: number) => `${n.toFixed(4)} EUR`;
-  const group = (rows: Record<string, number>) =>
-    Object.entries(rows)
-      .map(([key, n]) => `${key}: ${eur(n)}`)
-      .join('\n') || '—';
-  return (
-    `ШІ · ${summary.month}\nВитрачено: ${eur(summary.total)}\n` +
-    `До цілі: ${eur(Math.max(0, budget.monthlyTargetEur - summary.total))}\n` +
-    `До ліміту: ${eur(Math.max(0, budget.monthlyTargetEur + budget.toleranceEur - summary.total))}\n` +
-    `За сервісами:\n${group(summary.services)}\nЗа показами:\n${group(summary.shows)}`
-  );
+  return botTexts.costReport(summary, budget);
 }

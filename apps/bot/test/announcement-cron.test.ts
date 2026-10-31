@@ -1,3 +1,5 @@
+import { ClaudeTranslator } from '@handmake/ai';
+import { createAiCostLedger } from '../src/ai-costs';
 import { parseTenantConfig } from '@handmake/core';
 import type { TenantConfig, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
@@ -101,6 +103,40 @@ async function makeCron(translator?: Translator): Promise<CronFixture> {
 }
 
 describe('runAnnouncementCron', () => {
+  afterEach(() => vi.restoreAllMocks());
+  it('keeps the cron draft ready when pricing config fails after the schedule was loaded', async () => {
+    const db = await makeD1();
+    const drafts = createD1DraftStore(db);
+    const configs = {
+      load: vi
+        .fn()
+        .mockResolvedValueOnce(tenantConfig)
+        .mockRejectedValue(new Error('GitHub unavailable')),
+    };
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(ClaudeTranslator.prototype, 'translate').mockResolvedValue({ text: 'DE' });
+    const runtime = aiCostRuntime.createAiCostRuntime(
+      createAiCostLedger(db),
+      configs,
+      new Map([[AUTHOR, TENANT]]),
+      'fixture-key',
+      vi.fn(),
+    );
+    const bot = new Bot<AppContext>('test-token');
+    mockTelegramApi(bot);
+    await runAnnouncementCron(ANNOUNCEMENT_TICK, {
+      drafts,
+      bot,
+      tenantConfigs: configs,
+      allowList: new Map([[AUTHOR, TENANT]]),
+      texts: botTexts,
+      translator: failingTranslator,
+      translatorFor: runtime.translatorFor,
+    });
+    expect(await drafts.listByState(TENANT, 'ready')).toHaveLength(1);
+    expect(await drafts.listByState(TENANT, 'failed')).toEqual([]);
+  });
+
   let fx: CronFixture;
   beforeEach(async () => {
     fx = await makeCron();
@@ -254,7 +290,7 @@ describe('scheduled wiring', () => {
     const app = createApp(envWith(await makeD1()), botTexts);
     mockTelegramApi(app.bot);
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(aiCostRuntime, 'createAiCostRuntime').mockReturnValueOnce({
+    vi.spyOn(aiCostRuntime, 'createAiCostRuntime').mockReturnValue({
       notices: vi.fn().mockRejectedValue(new Error('notices unavailable')),
       translatorFor: vi.fn(),
     });

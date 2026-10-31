@@ -29,6 +29,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Bot API now allows 1-12 options and media on a poll option (`InputPollOption.media`), which weakens ADR 008's "polls cannot carry images". MVP keeps album + poll; revisit in a later ADR (PR #31 N2).
 
 ## AI cost ledger (T42, PR #34)
-- Monthly summaries run only on the 1st in Europe/Berlin; a missed first-day run has no catch-up.
 - T44 must call `assertCanStartShow` before starting a new show; T42 has no show entry point yet.
 - All existing allow-listed users are operators (Volodymyr, 2026-10-31); no separate operator role.
+- Notices claim before sending: a crash between claim and delivery can lose a notification; consider expiring claims in a later task.
+- Translation model and configured prices are not validated against each other.

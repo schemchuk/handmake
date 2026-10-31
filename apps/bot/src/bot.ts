@@ -8,7 +8,6 @@ import type { ChatSession, D1DraftStore, DraftEditTarget, StoredDraft } from './
 import { publishingStaleMs, translationStaleMs } from './draft-store';
 import { buildPreview } from './preview';
 import type { AiCostLedger } from './ai-costs';
-import { formatCosts } from './ai-costs';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 
@@ -58,15 +57,15 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   });
 
   bot.command('cost', async (ctx) => {
-    let reply = 'Облік витрат на ШІ не налаштовано.';
+    let reply: string = texts.costUnavailableText;
     try {
       const costs = options.costs;
       const budget = (await costs?.tenantConfigs.load(ctx.tenantId))?.ai;
       if (costs && budget)
-        reply = formatCosts(await costs.ledger.summary(ctx.tenantId, new Date()), budget);
+        reply = texts.costReport(await costs.ledger.summary(ctx.tenantId, new Date()), budget);
     } catch {
       console.error('AI cost report failed');
-      reply = 'Не вдалося отримати витрати на ШІ. Спробуй /cost пізніше.';
+      reply = texts.costFailedText;
     }
     await ctx.reply(reply);
   });
