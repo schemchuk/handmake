@@ -414,6 +414,10 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 - Acceptance: a fixture month yields the right totals; above the cap a new show is refused with a clear
   message; only the operator can call `/cost`.
 - Tests: aggregation, thresholds, month boundaries in `Europe/Berlin`, allow-list.
+- Implementation contract: all existing allow-listed users are operators (Volodymyr, 2026-10-31).
+  `assertCanStartShow` is the budget gate for T44's future `/show` entry point; T42 has no show flow.
+  Book shows with `ref: show:<id>` and other translations with `ref: post:<id>`. EUR translation
+  estimates are operator-supplied in tenant config; T43 verifies them. No participant data is stored.
 
 ### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`) · revised in v4
 - Depends on: T25, T35, T42

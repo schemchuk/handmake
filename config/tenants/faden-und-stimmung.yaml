@@ -81,6 +81,15 @@ site:
           п'ємо чай. Принось свій проєкт або почни новий.
         where: Niedermayerstr. 85, Landshut
 
+# F32: EUR estimates supplied by the operator; T43 verifies service prices.
+ai:
+  monthlyTargetEur: 20
+  toleranceEur: 5
+  translation:
+    model: claude-opus-5-5
+    inputEurPerMillion: 3.5
+    outputEurPerMillion: 17.5
+
 featureFlags:
   translation: true
   wotwPoll: false

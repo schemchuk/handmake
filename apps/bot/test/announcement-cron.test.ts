@@ -1,8 +1,11 @@
+import { ClaudeTranslator } from '@handmake/ai';
+import { createAiCostLedger } from '../src/ai-costs';
 import { parseTenantConfig } from '@handmake/core';
 import type { TenantConfig, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as aiCostRuntime from '../src/ai-cost-runtime';
 import { runAnnouncementCron } from '../src/announcement-cron';
 import { createD1DraftStore } from '../src/draft-store';
 import type { AppContext } from '../src/context';
@@ -100,6 +103,40 @@ async function makeCron(translator?: Translator): Promise<CronFixture> {
 }
 
 describe('runAnnouncementCron', () => {
+  afterEach(() => vi.restoreAllMocks());
+  it('keeps the cron draft ready when pricing config fails after the schedule was loaded', async () => {
+    const db = await makeD1();
+    const drafts = createD1DraftStore(db);
+    const configs = {
+      load: vi
+        .fn()
+        .mockResolvedValueOnce(tenantConfig)
+        .mockRejectedValue(new Error('GitHub unavailable')),
+    };
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(ClaudeTranslator.prototype, 'translate').mockResolvedValue({ text: 'DE' });
+    const runtime = aiCostRuntime.createAiCostRuntime(
+      createAiCostLedger(db),
+      configs,
+      new Map([[AUTHOR, TENANT]]),
+      'fixture-key',
+      vi.fn(),
+    );
+    const bot = new Bot<AppContext>('test-token');
+    mockTelegramApi(bot);
+    await runAnnouncementCron(ANNOUNCEMENT_TICK, {
+      drafts,
+      bot,
+      tenantConfigs: configs,
+      allowList: new Map([[AUTHOR, TENANT]]),
+      texts: botTexts,
+      translator: failingTranslator,
+      translatorFor: runtime.translatorFor,
+    });
+    expect(await drafts.listByState(TENANT, 'ready')).toHaveLength(1);
+    expect(await drafts.listByState(TENANT, 'failed')).toEqual([]);
+  });
+
   let fx: CronFixture;
   beforeEach(async () => {
     fx = await makeCron();
@@ -140,6 +177,29 @@ describe('runAnnouncementCron', () => {
 
     expect(await fx.draftIds()).toHaveLength(1);
     expect(sentTexts(fx.calls)).toHaveLength(1);
+  });
+
+  it('resolves a scoped paid translator once for a cron draft', async () => {
+    const drafts = createD1DraftStore(fx.db);
+    const bot = new Bot<AppContext>('test-token');
+    mockTelegramApi(bot);
+    const translate = vi.fn(async () => ({ text: 'DE' }));
+    const translatorFor = vi.fn(async () => ({ translate }));
+    const options = {
+      drafts,
+      bot,
+      translator: failingTranslator,
+      translatorFor,
+      tenantConfigs: configSource,
+      allowList: new Map([[AUTHOR, TENANT]]),
+      texts: botTexts,
+    };
+    await runAnnouncementCron(ANNOUNCEMENT_TICK, options);
+    await runAnnouncementCron(ANNOUNCEMENT_TICK, options);
+    const [draftId] = await fx.draftIds();
+    expect(translatorFor).toHaveBeenCalledExactlyOnceWith(TENANT, `post:${draftId}`);
+    expect(translate).toHaveBeenCalledOnce();
+    expect(await drafts.listByState(TENANT, 'ready')).toHaveLength(1);
   });
 
   it('creates a separate reminder draft for the same meeting on the reminder tick', async () => {
@@ -184,6 +244,7 @@ describe('runAnnouncementCron', () => {
 describe('scheduled wiring', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   /** Serves the tenant config for the Worker's config fetch. */
@@ -222,6 +283,53 @@ describe('scheduled wiring', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`config/tenants/${TENANT}.yaml`),
     );
+  });
+
+  it('still evaluates announcements when cost notices reject', async () => {
+    const fetchMock = stubConfigFetch();
+    const app = createApp(envWith(await makeD1()), botTexts);
+    mockTelegramApi(app.bot);
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(aiCostRuntime, 'createAiCostRuntime').mockReturnValue({
+      notices: vi.fn().mockRejectedValue(new Error('notices unavailable')),
+      translatorFor: vi.fn(),
+    });
+    await expect(
+      app.scheduled({
+        cron: '*/15 * * * *',
+        scheduledTime: new Date('2026-10-27T12:00:00Z').getTime(),
+      } as ScheduledEvent),
+    ).resolves.toBe(0);
+    expect(log).toHaveBeenCalledWith(
+      'AI cost notification failed',
+      expect.objectContaining({ message: 'notices unavailable', tenantId: TENANT }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(`config/tenants/${TENANT}.yaml`),
+    );
+  });
+
+  it('catches malformed allow-list errors inside the scheduled handler', async () => {
+    const fetchMock = stubConfigFetch();
+    const env = envWith(await makeD1());
+    env.TELEGRAM_ALLOWED_USER_IDS = 'malformed-sensitive-value';
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(
+      createApp(env, botTexts).scheduled({
+        cron: '*/15 * * * *',
+        scheduledTime: new Date('2026-10-27T12:00:00Z').getTime(),
+      } as ScheduledEvent),
+    ).resolves.toBe(0);
+    expect(log).toHaveBeenCalledWith(
+      'announcement cron failed',
+      expect.objectContaining({
+        tenantId: 'unknown',
+        operation: 'announcement cron failed',
+        message: expect.any(String),
+      }),
+    );
+    expect(log.mock.calls.flat().join(' ')).not.toContain(env.TELEGRAM_ALLOWED_USER_IDS);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('keeps daily cleanup on the cleanup cron, without any config fetch', async () => {

@@ -1,3 +1,5 @@
+import type { AiBudget, AiCostLedger } from './ai-costs';
+
 /**
  * User-facing bot strings, in one place so the language can be adjusted or
  * i18n'd later without touching the handlers. Author-facing texts are
@@ -5,6 +7,23 @@
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  costUnavailableText: 'Облік витрат на ШІ не налаштовано.',
+  costFailedText: 'Не вдалося отримати витрати на ШІ. Спробуй /cost пізніше.',
+  costLimitText: 'Ліміт витрат на ШІ вичерпано. Нові покази доступні наступного місяця.',
+  costTargetText: 'Досягнуто місячну ціль витрат на ШІ.',
+  costReport: (summary: Awaited<ReturnType<AiCostLedger['summary']>>, budget: AiBudget) => {
+    const eur = (n: number) => `${n.toFixed(4)} EUR`;
+    const group = (rows: Record<string, number>) =>
+      Object.entries(rows)
+        .map(([key, n]) => `${key}: ${eur(n)}`)
+        .join('\n') || '—';
+    return (
+      `ШІ · ${summary.month}\nВитрачено: ${eur(summary.total)}\n` +
+      `До цілі: ${eur(Math.max(0, budget.monthlyTargetEur - summary.total))}\n` +
+      `До ліміту: ${eur(Math.max(0, budget.monthlyTargetEur + budget.toleranceEur - summary.total))}\n` +
+      `За сервісами:\n${group(summary.services)}\nЗа показами:\n${group(summary.shows)}`
+    );
+  },
   startText:
     'Привіт! Я — бот «Faden und Stimmung». ' +
     'Надсилай текст і фото — я складу з них чернетку допису, а далі перекладу й покажу, що вийде. ' +

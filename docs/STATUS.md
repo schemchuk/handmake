@@ -1,17 +1,17 @@
 # STATUS
 
-- **Active agent:** codex (stands in for kimi-code, which is out of usage limits; switch back by editing T42's Owner and this line)
-- **Current task:** T42 (AI cost ledger and cost command). Branch `feat/T42-ai-cost-ledger`. T35 is
-  merged (PR #33, written by claude-code while kimi-code was out of limits). Reviewer: claude-code.
-  Owner changed to codex on 2026-10-31.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T42 (no human step needed). T39 is next after it but needs H10
-  (Volodymyr). T42 touches the tenant config schema (`ai:` section) and adds a D1 migration: the bot
-  reads the tenant YAML from `main` with a strict schema, so merge, apply `pnpm run db:migrate`, then
-  `pnpm run deploy` in `apps/bot` in one sitting (same trap as the `site:` section in T35).
-  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
+- **Active agent:** claude-code (final review of T42 review-3 fixes)
+- **Current task:** review T42 (AI cost ledger and cost command), PR #34:
+  https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
+- **Branch:** `feat/T42-ai-cost-ledger`
+- **Last commit:** `e18dabb` — fix: address final AI cost ledger review
+- **Next step:** review completed review-3 fixes: model selection stays in code, diagnostic logs carry
+  operation and tenant context with secrets redacted, monthly reports check notice existence before
+  aggregation and skip zero spending. Deferred findings are in docs/review-notes.md.
+  Validation: bot 171, core 124 and AI 25 tests pass; lint and workspace typecheck pass.
+  After merge: `db:migrate`, then `deploy` in `apps/bot` in one sitting (strict `ai:` schema).
 - **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none for T42.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

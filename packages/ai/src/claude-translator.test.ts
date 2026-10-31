@@ -1,12 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { describeTranslatorContract } from '@handmake/core/testing';
 
 import { ClaudeTranslator } from './claude-translator';
-import type { ParseClient } from './claude-translator';
+import type { ParseClient } from './index';
 import { TranslationError } from './errors';
 import { loadPrompt } from './prompts';
+
+afterEach(() => vi.restoreAllMocks());
 
 type Reply = Awaited<ReturnType<ParseClient['messages']['parse']>>;
 
@@ -22,6 +24,7 @@ function fakeClient(reply: Reply | Error): {
 }
 
 const ok: Reply = {
+  id: 'msg_ok',
   stop_reason: 'end_turn',
   parsed_output: { text: ' Hallo zusammen! ', notes: '  ' },
 };
@@ -115,5 +118,103 @@ describe('loadPrompt', () => {
 
   it('rejects path-like versions', () => {
     expect(() => loadPrompt('../../etc/passwd')).toThrow();
+  });
+});
+
+describe('paid usage reporting', () => {
+  it.each(['end_turn', 'refusal', 'max_tokens'])(
+    'reports usage before handling %s',
+    async (stop_reason) => {
+      const onUsage = vi.fn(async () => {});
+      const usage = { input_tokens: 150, output_tokens: 20 };
+      const { client } = fakeClient({ ...ok, stop_reason, usage });
+      const pending = new ClaudeTranslator({ systemPrompt: 'P', client, onUsage }).translate({
+        text: 'UA',
+        sourceLang: 'uk',
+        targetLang: 'de',
+      });
+      if (stop_reason === 'end_turn') await pending;
+      else await expect(pending).rejects.toBeInstanceOf(TranslationError);
+      expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage, 'msg_ok');
+    },
+  );
+
+  it.each(['end_turn', 'refusal', 'max_tokens'])(
+    'preserves the %s outcome when cost bookkeeping fails',
+    async (stop_reason) => {
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { client } = fakeClient({
+        ...ok,
+        stop_reason,
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+      const translator = new ClaudeTranslator({
+        systemPrompt: 'P',
+        client,
+        onUsage: async () => {
+          throw new Error('sensitive ledger failure');
+        },
+      });
+      const result = translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' });
+      if (stop_reason === 'end_turn')
+        await expect(result).resolves.toEqual({ text: 'Hallo zusammen!' });
+      else
+        await expect(result).rejects.toMatchObject({
+          code: stop_reason === 'refusal' ? 'refused' : 'truncated',
+        });
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        'AI cost bookkeeping failed',
+        expect.objectContaining({
+          tenantId: 'unknown',
+          operation: 'recordTranslationUsage',
+          message: expect.any(String),
+        }),
+      );
+    },
+  );
+
+  it('returns the translation and logs when usage is missing', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onUsage = vi.fn();
+    await expect(
+      new ClaudeTranslator({ systemPrompt: 'P', client: fakeClient(ok).client, onUsage }).translate(
+        { text: 'UA', sourceLang: 'uk', targetLang: 'de' },
+      ),
+    ).resolves.toEqual({ text: 'Hallo zusammen!' });
+    expect(onUsage).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      'AI cost bookkeeping failed',
+      expect.objectContaining({
+        tenantId: 'unknown',
+        operation: 'recordTranslationUsage',
+        message: expect.any(String),
+      }),
+    );
+  });
+});
+
+it('preserves the SDK parse failure as the translation error cause', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const cause = new SyntaxError('structured output failed: fixture-key');
+  const { client } = fakeClient(cause);
+  const onUsage = vi.fn();
+  await expect(
+    new ClaudeTranslator({
+      systemPrompt: 'P',
+      client,
+      onUsage,
+      tenantId: 'one',
+      apiKey: 'fixture-key',
+    }).translate({
+      text: 'UA',
+      sourceLang: 'uk',
+      targetLang: 'de',
+    }),
+  ).rejects.toMatchObject({ code: 'api-error', cause });
+  expect(onUsage).not.toHaveBeenCalled();
+  expect(log).toHaveBeenCalledExactlyOnceWith('AI translation failed', {
+    tenantId: 'one',
+    operation: 'messages.parse',
+    message: 'structured output failed: [REDACTED]',
   });
 });

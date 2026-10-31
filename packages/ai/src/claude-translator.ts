@@ -3,6 +3,7 @@ import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 
 import type { TranslationRequest, TranslationResult, Translator } from '@handmake/core';
+import { safeErrorMessage } from '@handmake/core';
 
 import { TranslationError } from './errors';
 
@@ -21,8 +22,10 @@ const outputSchema = z.object({
 export interface ParseClient {
   messages: {
     parse(params: Record<string, unknown>): Promise<{
+      usage?: { input_tokens: number; output_tokens: number };
       stop_reason: string | null;
       parsed_output: z.infer<typeof outputSchema> | null;
+      id?: string;
     }>;
   };
 }
@@ -39,6 +42,13 @@ export interface ClaudeTranslatorOptions {
   /** Per-attempt timeout passed to the Anthropic client (default 60 s). */
   timeoutMs?: number;
   client?: ParseClient;
+  /** Tenant context for diagnostic messages; never contains participant data. */
+  tenantId?: string;
+  /** Books paid usage even when the model refuses or returns unusable output. */
+  onUsage?: (
+    usage: { input_tokens: number; output_tokens: number },
+    responseId?: string,
+  ) => Promise<void>;
 }
 
 /**
@@ -50,8 +60,14 @@ export class ClaudeTranslator implements Translator {
   readonly promptVersion: string;
   readonly #systemPrompt: string;
   readonly #client: ParseClient;
+  readonly #onUsage: ClaudeTranslatorOptions['onUsage'];
+  readonly #tenantId: string;
+  readonly #apiKey: string | undefined;
 
   constructor(options: ClaudeTranslatorOptions) {
+    this.#onUsage = options.onUsage;
+    this.#tenantId = options.tenantId ?? 'unknown';
+    this.#apiKey = options.apiKey;
     this.model = options.model ?? DEFAULT_MODEL;
     this.promptVersion = options.promptVersion ?? DEFAULT_PROMPT_VERSION;
     this.#systemPrompt = options.systemPrompt;
@@ -86,9 +102,26 @@ export class ClaudeTranslator implements Translator {
         messages: [{ role: 'user', content: `<post>\n${request.text}\n</post>` }],
       });
     } catch (error) {
+      console.error('AI translation failed', {
+        tenantId: this.#tenantId,
+        operation: 'messages.parse',
+        message: safeErrorMessage(error, [this.#apiKey]),
+      });
       throw toTranslationError(error);
     }
 
+    if (this.#onUsage) {
+      try {
+        if (!response.usage) throw new Error('AI response is missing usage');
+        await this.#onUsage(response.usage, response.id);
+      } catch (error) {
+        console.error('AI cost bookkeeping failed', {
+          tenantId: this.#tenantId,
+          operation: 'recordTranslationUsage',
+          message: safeErrorMessage(error, [this.#apiKey]),
+        });
+      }
+    }
     if (response.stop_reason === 'refusal') {
       throw new TranslationError('refused', 'model refused to translate the post');
     }

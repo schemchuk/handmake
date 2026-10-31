@@ -34,6 +34,8 @@ export type AnnouncementKind = 'announcement' | 'reminder';
 export interface AnnouncementCronOptions {
   drafts: D1DraftStore;
   translator: Translator;
+  /** Production resolves tenant pricing and books each paid call by reference. */
+  translatorFor?: (tenantId: string, ref: string) => Promise<Translator>;
   bot: Bot<AppContext>;
   tenantConfigs: TenantConfigSource;
   /** The parsed allow-list, grouped here by tenant: cron needs tenant → authors. */
@@ -121,8 +123,10 @@ async function createDraftAndPreview(
 
   let german: string;
   try {
+    const translator =
+      (await options.translatorFor?.(tenantId, `post:${draftId}`)) ?? options.translator;
     german = (
-      await options.translator.translate({
+      await translator.translate({
         text: created.texts.uk,
         sourceLang: 'uk',
         targetLang: 'de',

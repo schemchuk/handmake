@@ -191,6 +191,20 @@ export const tenantConfigSchema = z
           .strict(),
       })
       .strict(),
+    ai: z
+      .object({
+        monthlyTargetEur: z.number().positive(),
+        toleranceEur: z.number().nonnegative(),
+        translation: z
+          .object({
+            model: z.string().min(1),
+            inputEurPerMillion: z.number().nonnegative(),
+            outputEurPerMillion: z.number().nonnegative(),
+          })
+          .strict(),
+      })
+      .strict()
+      .optional(),
     site: siteSchema.optional(),
     featureFlags: z.record(z.string(), z.boolean()),
     // Commercialization stub — must stay empty for now (spec section 8).

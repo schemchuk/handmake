@@ -219,3 +219,29 @@ describe('parseTenantConfig', () => {
     expect(knownChannelKeys).toEqual(Object.keys(channelsSchema.shape));
   });
 });
+
+describe('AI budget config', () => {
+  const ai = `
+ai:
+  monthlyTargetEur: 20
+  toleranceEur: 5
+  translation:
+    model: fixture-model
+    inputEurPerMillion: 2
+    outputEurPerMillion: 10
+`;
+  it('accepts tenant-local budgets and tariffs while keeping ai optional', () => {
+    expect(parseTenantConfig(secondTenant).ai).toBeUndefined();
+    expect(parseTenantConfig(secondTenant + ai).ai?.monthlyTargetEur).toBe(20);
+  });
+  it.each([
+    ai.replace('monthlyTargetEur: 20', 'monthlyTargetEur: 0'),
+    ai.replace('toleranceEur: 5', 'toleranceEur: -1'),
+    ai.replace('inputEurPerMillion: 2', 'inputEurPerMillion: -2'),
+    ai.replace('inputEurPerMillion: 2', 'inputEurPerMillion: .inf'),
+    ai.replace('inputEurPerMillion: 2', 'inputEurPerMillion: 2\n    unknown: 1'),
+    ai.replace('toleranceEur: 5', 'toleranceEur: 5\n  unknown: true'),
+  ])('rejects malformed or unknown ai fields', (section) => {
+    expect(() => parseTenantConfig(secondTenant + section)).toThrow(TenantConfigError);
+  });
+});
