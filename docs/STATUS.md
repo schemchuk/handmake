@@ -4,14 +4,15 @@
 - **Current task:** T42 (AI cost ledger and cost command). Branch `feat/T42-ai-cost-ledger`. T35 is
   merged (PR #33, written by claude-code while kimi-code was out of limits). Reviewer: claude-code.
   Owner changed to codex on 2026-10-31.
-- **Branch:** `main`
+- **Branch:** `feat/T42-ai-cost-ledger`
 - **Last commit:** see `git log -1`
-- **Next step:** codex implements T42 (no human step needed). T39 is next after it but needs H10
-  (Volodymyr). T42 touches the tenant config schema (`ai:` section) and adds a D1 migration: the bot
-  reads the tenant YAML from `main` with a strict schema, so merge, apply `pnpm run db:migrate`, then
-  `pnpm run deploy` in `apps/bot` in one sitting (same trap as the `site:` section in T35).
-  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
-- **Blocked on:** nothing.
+- **Next step:** finish T42 integration: scoped translation costs, operator `/cost`, target warnings
+  and first-day summaries. Ledger migration, Berlin month aggregation and show-cap guard implemented;
+  10 ledger tests and bot typecheck pass. D1 tests need execution outside the sandbox (Miniflare).
+  Deploy after merge: `pnpm run db:migrate`, then `pnpm run deploy` in `apps/bot`.
+- **Blocked on:** operator identity and translation tariff decisions requested from Volodymyr.
+- **Open questions for Volodymyr:** separate operator allow-list or existing authors; EUR translation
+  tariffs or block paid calls until T43 supplies them.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
