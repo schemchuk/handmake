@@ -3,6 +3,7 @@ import type { TenantConfig, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as aiCostRuntime from '../src/ai-cost-runtime';
 import { runAnnouncementCron } from '../src/announcement-cron';
 import { createD1DraftStore } from '../src/draft-store';
 import type { AppContext } from '../src/context';
@@ -207,6 +208,7 @@ describe('runAnnouncementCron', () => {
 describe('scheduled wiring', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   /** Serves the tenant config for the Worker's config fetch. */
@@ -245,6 +247,43 @@ describe('scheduled wiring', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`config/tenants/${TENANT}.yaml`),
     );
+  });
+
+  it('still evaluates announcements when cost notices reject', async () => {
+    const fetchMock = stubConfigFetch();
+    const app = createApp(envWith(await makeD1()), botTexts);
+    mockTelegramApi(app.bot);
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(aiCostRuntime, 'createAiCostRuntime').mockReturnValueOnce({
+      notices: vi.fn().mockRejectedValue(new Error('notices unavailable')),
+      translatorFor: vi.fn(),
+    });
+    await expect(
+      app.scheduled({
+        cron: '*/15 * * * *',
+        scheduledTime: new Date('2026-10-27T12:00:00Z').getTime(),
+      } as ScheduledEvent),
+    ).resolves.toBe(0);
+    expect(log).toHaveBeenCalledWith('AI cost notification failed');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(`config/tenants/${TENANT}.yaml`),
+    );
+  });
+
+  it('catches malformed allow-list errors inside the scheduled handler', async () => {
+    const fetchMock = stubConfigFetch();
+    const env = envWith(await makeD1());
+    env.TELEGRAM_ALLOWED_USER_IDS = 'malformed-sensitive-value';
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(
+      createApp(env, botTexts).scheduled({
+        cron: '*/15 * * * *',
+        scheduledTime: new Date('2026-10-27T12:00:00Z').getTime(),
+      } as ScheduledEvent),
+    ).resolves.toBe(0);
+    expect(log).toHaveBeenCalledWith('announcement cron failed');
+    expect(log.mock.calls.flat().join(' ')).not.toContain(env.TELEGRAM_ALLOWED_USER_IDS);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('keeps daily cleanup on the cleanup cron, without any config fetch', async () => {

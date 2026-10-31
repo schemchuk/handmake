@@ -195,19 +195,27 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // F18: on every other tick, check whether an announcement/reminder
       // moment just fired for some tenant. Failures stay inside the cron:
       // it is a best-effort notifier and drafts are the source of truth.
-      await aiRuntime().notices(new Date(event.scheduledTime));
-      await runAnnouncementCron(new Date(event.scheduledTime), {
-        translatorFor: aiRuntime().translatorFor,
-        drafts,
-        translator: new ClaudeTranslator({
-          systemPrompt: humanizeDePromptV1,
-          apiKey: env.ANTHROPIC_API_KEY,
-        }),
-        bot: this.bot,
-        tenantConfigs,
-        allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
-        texts,
-      }).catch((error: Error) => console.error('announcement cron failed:', error.message));
+      try {
+        await aiRuntime().notices(new Date(event.scheduledTime));
+      } catch {
+        console.error('AI cost notification failed');
+      }
+      try {
+        await runAnnouncementCron(new Date(event.scheduledTime), {
+          translatorFor: aiRuntime().translatorFor,
+          drafts,
+          translator: new ClaudeTranslator({
+            systemPrompt: humanizeDePromptV1,
+            apiKey: env.ANTHROPIC_API_KEY,
+          }),
+          bot: this.bot,
+          tenantConfigs,
+          allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+          texts,
+        });
+      } catch {
+        console.error('announcement cron failed');
+      }
       return 0;
     },
   };
