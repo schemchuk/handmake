@@ -4,11 +4,12 @@
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `a944fbc` — fix: preserve paid translations when accounting fails
+- **Last commit:** `daa6420` — fix: isolate cost notices from announcement cron
 - **Next step:** address PR #34 review findings in separate commits, then return to claude-code.
-  B1/B2/B3/N5 fixed: no-ai fallback, non-fatal bookkeeping errors, preserved invalid-JSON cause.
+  B1-B4/N5 fixed: no-ai fallback, non-fatal bookkeeping errors, preserved invalid-JSON cause.
   Cron notices cannot block announcements; malformed allow-lists stay inside the cron catch.
-  Remaining: `/cost` error replies, notification path and review notes.
+  `/cost` now returns a safe retry message on config or ledger failure.
+  Remaining: notification path, idempotency wording and review notes.
   Deployment after merge remains `db:migrate`, then `deploy` in `apps/bot` in one sitting.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none for T42.

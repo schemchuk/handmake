@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { parseTenantConfig } from '@handmake/core';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createBot } from '../src/bot';
 import { createAiCostLedger } from '../src/ai-costs';
 import { createD1DraftStore } from '../src/draft-store';
 import { botTexts } from '../src/texts';
 import { makeD1, mockTelegramApi, sentTexts, textUpdate } from './helpers';
+
+afterEach(() => vi.restoreAllMocks());
 
 it('allows /cost only after the allow-list gate and scopes totals to that tenant', async () => {
   const db = await makeD1();
@@ -48,6 +50,37 @@ it('allows /cost only after the allow-list gate and scopes totals to that tenant
   await bot.handleUpdate(textUpdate(11, '/cost'));
   expect(load).toHaveBeenCalledExactlyOnceWith('one');
   expect(sentTexts(calls).at(-1)).toContain('Витрачено: 0.0000 EUR');
+});
+
+it.each(['config', 'ledger'])('replies clearly when the %s backend fails', async (failure) => {
+  const db = await makeD1();
+  const ledger = createAiCostLedger(db);
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const config = parseTenantConfig(
+    readFileSync(
+      new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
+      'utf8',
+    ),
+  );
+  const error = new Error('sensitive backend details');
+  const load = vi.fn(async () => config);
+  if (failure === 'config') load.mockRejectedValueOnce(error);
+  else vi.spyOn(ledger, 'summary').mockRejectedValueOnce(error);
+  const bot = createBot({
+    token: 'TEST_TOKEN',
+    drafts: createD1DraftStore(db),
+    resolveTenant: () => 'one',
+    texts: botTexts,
+    translator: { translate: vi.fn() },
+    publishRunner: { run: vi.fn() },
+    background: vi.fn(),
+    costs: { ledger, tenantConfigs: { load } },
+  });
+  const calls = mockTelegramApi(bot);
+  await bot.init();
+  await expect(bot.handleUpdate(textUpdate(11, '/cost'))).resolves.toBeUndefined();
+  expect(sentTexts(calls)).toEqual(['Не вдалося отримати витрати на ШІ. Спробуй /cost пізніше.']);
+  expect(log).toHaveBeenCalledExactlyOnceWith('AI cost report failed');
 });
 
 describe('translation cost scope', () => {

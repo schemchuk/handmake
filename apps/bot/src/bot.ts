@@ -58,13 +58,17 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   });
 
   bot.command('cost', async (ctx) => {
-    const costs = options.costs;
-    const budget = (await costs?.tenantConfigs.load(ctx.tenantId))?.ai;
-    await ctx.reply(
-      costs && budget
-        ? formatCosts(await costs.ledger.summary(ctx.tenantId, new Date()), budget)
-        : 'Облік витрат на ШІ не налаштовано.',
-    );
+    let reply = 'Облік витрат на ШІ не налаштовано.';
+    try {
+      const costs = options.costs;
+      const budget = (await costs?.tenantConfigs.load(ctx.tenantId))?.ai;
+      if (costs && budget)
+        reply = formatCosts(await costs.ledger.summary(ctx.tenantId, new Date()), budget);
+    } catch {
+      console.error('AI cost report failed');
+      reply = 'Не вдалося отримати витрати на ШІ. Спробуй /cost пізніше.';
+    }
+    await ctx.reply(reply);
   });
 
   bot.command('start', async (ctx) => {
