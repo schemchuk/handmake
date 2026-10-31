@@ -4,7 +4,7 @@
 - **Current task:** review T42 (AI cost ledger and cost command), PR #34:
   https://github.com/schemchuk/handmake/pull/34. Author: codex. Implementation complete; not merged.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** `7881526` — docs: record T42 review handoff commit
+- **Last commit:** `e18dabb` — fix: address final AI cost ledger review
 - **Next step:** review completed review-3 fixes: model selection stays in code, diagnostic logs carry
   operation and tenant context with secrets redacted, monthly reports check notice existence before
   aggregation and skip zero spending. Deferred findings are in docs/review-notes.md.
