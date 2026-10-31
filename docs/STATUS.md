@@ -1,12 +1,13 @@
 # STATUS
 
 - **Active agent:** claude-code (planning)
-- **Current task:** T35 (site scaffold), written by claude-code at Volodymyr's request (task owner
-  is kimi-code). Contracts decided in ADR 016 (Opus), layout in `apps/site` (Sonnet). Kimi is out of usage limits: independent review by a fresh claude-code review agent (done, findings fixed) plus Volodymyr's OK before merge.
-- **Branch:** `feat/T35-site-contracts`
+- **Current task:** none. T35 merged as PR #33 (written by claude-code because kimi-code is out of
+  usage limits; reviewed by a fresh claude-code review agent, merged with Volodymyr's OK).
+- **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** T25 is live (D1 migration 0006 applied, bot redeployed 2026-10-30, version
-  0cd39437). spec v6 and tasks v4 approved (2026-10-30); T35 (site scaffold) is next. H13 (photos) agreed by Volodymyr.
+- **Next step:** redeploy the bot NOW (`cd apps/bot && pnpm run deploy`): the tenant YAML on `main` has
+  a `site:` section that the deployed bot's strict schema rejects. Then T39 (needs H10). Open before
+  go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
 - **Blocked on:** nothing.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
