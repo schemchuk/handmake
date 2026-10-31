@@ -1,0 +1,43 @@
+---
+import Base from '../../layouts/Base.astro';
+import { uiStrings } from '../../lib/i18n';
+import { langParam, pagePath } from '../../lib/paths';
+import { formatMeeting } from '../../lib/schedule';
+import { loadSiteData } from '../../lib/site-data';
+import { excerpt, paragraphs } from '../../lib/text';
+
+export async function getStaticPaths() {
+  const { tenant, site } = await loadSiteData();
+  if (!site.circle) return [];
+  return tenant.languages.map((lang) => ({
+    params: { lang: langParam(lang, site.defaultLanguage) },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.props;
+const data = await loadSiteData();
+const def = data.site.defaultLanguage;
+const ui = uiStrings(lang);
+const circle = data.site.circle!;
+const texts = circle.texts[lang]!;
+const alternates = Object.fromEntries(
+  data.tenant.languages.map((code) => [code, pagePath(code, def, 'kreis')]),
+);
+---
+
+<Base lang={lang} title={texts.title} description={excerpt(texts.what)} alternates={alternates} current="circle">
+  <div class="wrap page">
+    <div class="page-body">
+      <h1>{texts.title}</h1>
+      {paragraphs(texts.what).map((paragraph) => <p class="lead">{paragraph}</p>)}
+      <dl class="facts">
+        <dt>{ui.when}</dt>
+        <dd>{formatMeeting(data.tenant.meetingSchedule, lang)}</dd>
+        <dt>{ui.where}</dt>
+        <dd>{texts.where}</dd>
+      </dl>
+      <a class="button" href={circle.joinUrl} rel="noopener">{ui.join}</a>
+    </div>
+  </div>
+</Base>

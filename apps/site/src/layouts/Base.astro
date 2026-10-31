@@ -1,0 +1,96 @@
+---
+import '../styles/global.css';
+import Stitch from '../components/Stitch.astro';
+import { fontFaceCss, fontStack } from '../lib/fonts';
+import { languageName, uiStrings } from '../lib/i18n';
+import { absoluteUrl, pagePath } from '../lib/paths';
+import { loadSiteData } from '../lib/site-data';
+
+interface Props {
+  lang: string;
+  title: string;
+  description?: string;
+  /** Path of this page in each language it exists in, e.g. { de: '/kreis/', uk: '/uk/kreis/' }. */
+  alternates: Record<string, string>;
+  /** Which nav entry is current. */
+  current?: 'home' | 'circle';
+}
+
+const { lang, title, description, alternates, current } = Astro.props;
+const data = await loadSiteData();
+const { tenant, site } = data;
+const ui = uiStrings(lang);
+const def = site.defaultLanguage;
+const { colors, fonts } = site.theme;
+const style = [
+  `--paper:${colors.paper}`,
+  `--ink:${colors.ink}`,
+  `--muted:${colors.muted}`,
+  `--rule:${colors.rule}`,
+  `--font-display:${fontStack(fonts.display)}`,
+  `--font-body:${fontStack(fonts.body)}`,
+].join(';');
+const self = alternates[lang];
+const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name}`;
+---
+
+<!doctype html>
+<html lang={lang} style={style}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {!data.indexable && <meta name="robots" content="noindex, nofollow" />}
+    {self && <link rel="canonical" href={absoluteUrl(site.baseUrl, self)} />}
+    {
+      Object.entries(alternates).map(([code, path]) => (
+        <link rel="alternate" hreflang={code} href={absoluteUrl(site.baseUrl, path)} />
+      ))
+    }
+    {
+      alternates[def] && (
+        <link rel="alternate" hreflang="x-default" href={absoluteUrl(site.baseUrl, alternates[def]!)} />
+      )
+    }
+    <meta property="og:site_name" content={tenant.name} />
+    <meta property="og:title" content={fullTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta name="theme-color" content={colors.paper} />
+    <style is:inline set:html={fontFaceCss()}></style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="wrap">
+      <header class="site-header">
+        <a class="wordmark" href={pagePath(lang, def)}>{tenant.name}</a>
+        <nav class="nav" aria-label="Main">
+          {site.circle && (
+            <a href={pagePath(lang, def, 'kreis')} aria-current={current === 'circle' ? 'page' : undefined}>
+              {ui.navCircle}
+            </a>
+          )}
+          <div class="langs" role="group" aria-label={ui.language}>
+            {
+              [def, ...tenant.languages.filter((code) => code !== def)].map((code) => {
+                const href = alternates[code] ?? pagePath(code, def);
+                return (
+                  <a href={href} hreflang={code} lang={code} aria-current={code === lang ? 'true' : undefined}>
+                    {code.toUpperCase()}
+                  </a>
+                );
+              })
+            }
+          </div>
+        </nav>
+      </header>
+    </div>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="wrap site-footer">
+      <Stitch />
+      <span>{tenant.name}</span>
+    </footer>
+  </body>
+</html>

@@ -34,3 +34,7 @@ __pycache__/
 # actionlint binary downloaded by the CI workflow lint step
 /actionlint
 .dev.vars
+
+# Astro and Playwright local state
+.astro/
+.playwright-mcp/

@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** claude-code (planning)
-- **Current task:** none. T25 merged as PR #32 (written by kimi-code, committed and reviewed by
-  claude-code while kimi-code was out of usage limits).
-- **Branch:** `main`
+- **Current task:** T35 (site scaffold), written by claude-code at Volodymyr's request (task owner
+  is kimi-code). Contracts decided in ADR 016 (Opus), layout in `apps/site` (Sonnet). Review by kimi-code.
+- **Branch:** `feat/T35-site-contracts`
 - **Last commit:** see `git log -1`
 - **Next step:** T25 is live (D1 migration 0006 applied, bot redeployed 2026-10-30, version
   0cd39437). spec v6 and tasks v4 approved (2026-10-30); T35 (site scaffold) is next. H13 (photos) agreed by Volodymyr.
