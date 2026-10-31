@@ -51,6 +51,13 @@ describe('AI cost ledger', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('does not let floating point summation bypass the cap', async () => {
+    for (let i = 0; i < 35; i++) await book(String(i), 0.7);
+    await book('remainder', 0.5);
+    expect((await ledger.summary('one', now)).total).toBe(25);
+    await expect(assertCanStartShow(ledger, 'one', budget, now)).rejects.toThrow();
+  });
+
   it('claims each notice once per tenant, with retry after delivery failure', async () => {
     expect(await ledger.claimNotice('one', 'target:2026-10')).toBe(true);
     expect(await ledger.claimNotice('one', 'target:2026-10')).toBe(false);

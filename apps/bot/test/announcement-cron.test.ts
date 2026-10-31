@@ -142,6 +142,29 @@ describe('runAnnouncementCron', () => {
     expect(sentTexts(fx.calls)).toHaveLength(1);
   });
 
+  it('resolves a scoped paid translator once for a cron draft', async () => {
+    const drafts = createD1DraftStore(fx.db);
+    const bot = new Bot<AppContext>('test-token');
+    mockTelegramApi(bot);
+    const translate = vi.fn(async () => ({ text: 'DE' }));
+    const translatorFor = vi.fn(async () => ({ translate }));
+    const options = {
+      drafts,
+      bot,
+      translator: failingTranslator,
+      translatorFor,
+      tenantConfigs: configSource,
+      allowList: new Map([[AUTHOR, TENANT]]),
+      texts: botTexts,
+    };
+    await runAnnouncementCron(ANNOUNCEMENT_TICK, options);
+    await runAnnouncementCron(ANNOUNCEMENT_TICK, options);
+    const [draftId] = await fx.draftIds();
+    expect(translatorFor).toHaveBeenCalledExactlyOnceWith(TENANT, `post:${draftId}`);
+    expect(translate).toHaveBeenCalledOnce();
+    expect(await drafts.listByState(TENANT, 'ready')).toHaveLength(1);
+  });
+
   it('creates a separate reminder draft for the same meeting on the reminder tick', async () => {
     await fx.run(ANNOUNCEMENT_TICK);
     await fx.run(REMINDER_TICK);

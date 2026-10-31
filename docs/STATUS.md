@@ -5,14 +5,15 @@
   merged (PR #33, written by claude-code while kimi-code was out of limits). Reviewer: claude-code.
   Owner changed to codex on 2026-10-31.
 - **Branch:** `feat/T42-ai-cost-ledger`
-- **Last commit:** see `git log -1`
-- **Next step:** finish T42 integration: scoped translation costs, operator `/cost`, target warnings
-  and first-day summaries. Ledger migration, Berlin month aggregation and show-cap guard implemented;
-  10 ledger tests and bot typecheck pass. D1 tests need execution outside the sandbox (Miniflare).
-  Deploy after merge: `pnpm run db:migrate`, then `pnpm run deploy` in `apps/bot`.
-- **Blocked on:** operator identity and translation tariff decisions requested from Volodymyr.
-- **Open questions for Volodymyr:** separate operator allow-list or existing authors; EUR translation
-  tariffs or block paid calls until T43 supplies them.
+- **Last commit:** `4cb1fe2` — feat: add tenant AI cost ledger and budget guard
+- **Next step:** push the completed T42 integration, open its PR, then hand off to claude-code for
+  review. Typecheck, lint, format:check, full tests and build pass. Final targeted tests also cover
+  decimal cap precision and cron translation scope. D1 tests run outside the sandbox (Miniflare).
+  Operator = every allow-listed user (Volodymyr). Translation estimates: 3.50/17.50 EUR per million
+  input/output tokens, supplied by Volodymyr; T43 verifies prices. T44 must call `assertCanStartShow`.
+  Deploy after merge: `pnpm run db:migrate`, then `pnpm run deploy` in `apps/bot`, in one sitting.
+- **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none for T42.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

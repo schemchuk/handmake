@@ -3,6 +3,8 @@ import { draftRetentionDays } from '@handmake/core';
 import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
+import { createAiCostLedger } from './ai-costs';
+import { createAiCostRuntime } from './ai-cost-runtime';
 import { runAnnouncementCron } from './announcement-cron';
 import { createTenantLookup, parseAllowList } from './allow-list';
 import type { TenantLookup } from './allow-list';
@@ -93,10 +95,26 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     tenantLookup ??= createTenantLookup(env.TELEGRAM_ALLOWED_USER_IDS);
     return tenantLookup;
   }
+  const costs = createAiCostLedger(env.DB);
+  const tenantConfigs = createGitHubTenantConfigSource({ repo: env.GITHUB_REPO, ref: 'main' });
+  function aiRuntime() {
+    return createAiCostRuntime(
+      costs,
+      tenantConfigs,
+      parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+      env.ANTHROPIC_API_KEY,
+      (id, text) => {
+        build();
+        return bot!.api.sendMessage(String(id), text);
+      },
+    );
+  }
   function build(): (request: Request) => Promise<Response> {
     if (!handleUpdate) {
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        costs: { ledger: costs, tenantConfigs },
+        translatorFor: aiRuntime().translatorFor,
         drafts: createD1DraftStore(env.DB),
         resolveTenant: createTenantLookup(env.TELEGRAM_ALLOWED_USER_IDS),
         texts,
@@ -177,14 +195,16 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // F18: on every other tick, check whether an announcement/reminder
       // moment just fired for some tenant. Failures stay inside the cron:
       // it is a best-effort notifier and drafts are the source of truth.
+      await aiRuntime().notices(new Date(event.scheduledTime));
       await runAnnouncementCron(new Date(event.scheduledTime), {
+        translatorFor: aiRuntime().translatorFor,
         drafts,
         translator: new ClaudeTranslator({
           systemPrompt: humanizeDePromptV1,
           apiKey: env.ANTHROPIC_API_KEY,
         }),
         bot: this.bot,
-        tenantConfigs: createGitHubTenantConfigSource({ repo: env.GITHUB_REPO, ref: 'main' }),
+        tenantConfigs,
         allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
         texts,
       }).catch((error: Error) => console.error('announcement cron failed:', error.message));

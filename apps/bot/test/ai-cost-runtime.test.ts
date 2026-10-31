@@ -1,0 +1,105 @@
+import { readFileSync } from 'node:fs';
+import { parseTenantConfig } from '@handmake/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAiCostLedger } from '../src/ai-costs';
+import { createAiCostRuntime } from '../src/ai-cost-runtime';
+import { makeD1 } from './helpers';
+
+const constructed = vi.hoisted(() => vi.fn());
+vi.mock('@handmake/ai', () => ({
+  humanizeDePromptV1: 'test prompt',
+  ClaudeTranslator: class {
+    constructor(
+      public options: {
+        onUsage: (usage: { input_tokens: number; output_tokens: number }) => Promise<void>;
+      },
+    ) {
+      constructed(options);
+    }
+    async translate() {
+      await this.options.onUsage({ input_tokens: 1_000_000, output_tokens: 100_000 });
+      return { text: 'DE' };
+    }
+  },
+}));
+const fixture = parseTenantConfig(
+  readFileSync(new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url), 'utf8'),
+);
+// Synthetic EUR prices, unrelated to the live service tariff.
+const budget = {
+  monthlyTargetEur: 20,
+  toleranceEur: 5,
+  translation: { model: 'fixture-model', inputEurPerMillion: 2, outputEurPerMillion: 10 },
+};
+let ledger: ReturnType<typeof createAiCostLedger>;
+beforeEach(async () => {
+  ledger = createAiCostLedger(await makeD1());
+  constructed.mockClear();
+});
+function setup(send = vi.fn(async (_id: number, _text: string) => {})) {
+  const configs = { load: vi.fn(async () => ({ ...fixture, ai: budget })) };
+  const runtime = createAiCostRuntime(
+    ledger,
+    configs,
+    new Map([
+      [11, 'one'],
+      [12, 'one'],
+      [13, 'other'],
+    ]),
+    'fixture-key',
+    send,
+  );
+  return { runtime, send, configs };
+}
+const now = new Date('2026-10-31T12:00:00Z');
+async function book(amountEur: number, at = now) {
+  await ledger.recordCost('one', {
+    id: crypto.randomUUID(),
+    at,
+    amountEur,
+    ref: 'show:a',
+    service: 'image',
+    unit: 'image',
+  });
+}
+
+describe('AI cost runtime', () => {
+  it('books token usage using tenant pricing, with a distinct record for each regeneration', async () => {
+    const { runtime } = setup();
+    for (let i = 0; i < 2; i++) {
+      const translator = await runtime.translatorFor('one', 'post:abc');
+      await translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' });
+    }
+    const summary = await ledger.summary('one', new Date());
+    expect(summary.total).toBe(6);
+    expect(summary.services).toEqual({ 'translation:fixture-model': 6 });
+    expect(summary.shows).toEqual({});
+    expect(constructed).toHaveBeenCalledWith(expect.objectContaining({ model: 'fixture-model' }));
+  });
+
+  it('warns each operator of the tenant once at the target, retrying failed delivery', async () => {
+    const { runtime, send } = setup();
+    await book(19.99);
+    await runtime.notices(now);
+    expect(send).not.toHaveBeenCalled();
+    await book(0.01);
+    send.mockRejectedValueOnce(new Error('offline'));
+    await runtime.notices(now);
+    await runtime.notices(now);
+    await runtime.notices(now);
+    expect(send.mock.calls.map(([id]) => id)).toEqual([11, 12, 11]);
+    expect(send.mock.calls[0]![1]).toContain('Досягнуто');
+  });
+
+  it('summarizes the previous month once on the Berlin first day, including empty tenants', async () => {
+    const { runtime, send } = setup();
+    await book(3);
+    await runtime.notices(new Date('2026-10-31T22:59:59Z'));
+    expect(send).not.toHaveBeenCalled();
+    await runtime.notices(new Date('2026-10-31T23:00:00Z'));
+    await runtime.notices(new Date('2026-11-01T12:00:00Z'));
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(send.mock.calls[0]![1]).toContain('2026-10\nВитрачено: 3.0000 EUR');
+    expect(send.mock.calls[2]![1]).toContain('Витрачено: 0.0000 EUR');
+  });
+});

@@ -4,21 +4,30 @@ import { describe, expect, it, vi } from 'vitest';
 import { describeTranslatorContract } from '@handmake/core/testing';
 
 import { ClaudeTranslator } from './claude-translator';
-import type { ParseClient } from './claude-translator';
+import type { MessageClient } from './claude-translator';
 import { TranslationError } from './errors';
 import { loadPrompt } from './prompts';
 
-type Reply = Awaited<ReturnType<ParseClient['messages']['parse']>>;
+interface Reply {
+  stop_reason: string | null;
+  parsed_output: { text: string; notes: string } | null;
+  usage?: { input_tokens: number; output_tokens: number };
+  rawText?: string;
+}
 
 function fakeClient(reply: Reply | Error): {
-  client: ParseClient;
+  client: MessageClient;
   parse: ReturnType<typeof vi.fn>;
 } {
   const parse = vi.fn(async (_params: Record<string, unknown>) => {
     if (reply instanceof Error) throw reply;
-    return reply;
+    return {
+      stop_reason: reply.stop_reason,
+      usage: reply.usage,
+      content: [{ type: 'text', text: reply.rawText ?? JSON.stringify(reply.parsed_output) }],
+    };
   });
-  return { client: { messages: { parse } }, parse };
+  return { client: { messages: { create: parse } }, parse };
 }
 
 const ok: Reply = {
@@ -26,7 +35,7 @@ const ok: Reply = {
   parsed_output: { text: ' Hallo zusammen! ', notes: '  ' },
 };
 
-function make(client: ParseClient): ClaudeTranslator {
+function make(client: MessageClient): ClaudeTranslator {
   return new ClaudeTranslator({ systemPrompt: 'PROMPT', client });
 }
 
@@ -116,4 +125,51 @@ describe('loadPrompt', () => {
   it('rejects path-like versions', () => {
     expect(() => loadPrompt('../../etc/passwd')).toThrow();
   });
+});
+
+describe('paid usage reporting', () => {
+  it.each(['end_turn', 'refusal', 'max_tokens'])(
+    'reports usage before handling %s',
+    async (stop_reason) => {
+      const onUsage = vi.fn(async () => {});
+      const usage = { input_tokens: 150, output_tokens: 20 };
+      const { client } = fakeClient({ ...ok, stop_reason, usage });
+      const pending = new ClaudeTranslator({ systemPrompt: 'P', client, onUsage }).translate({
+        text: 'UA',
+        sourceLang: 'uk',
+        targetLang: 'de',
+      });
+      if (stop_reason === 'end_turn') await pending;
+      else await expect(pending).rejects.toBeInstanceOf(TranslationError);
+      expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage);
+    },
+  );
+
+  it('does not return success when cost bookkeeping fails', async () => {
+    const { client } = fakeClient({ ...ok, usage: { input_tokens: 1, output_tokens: 1 } });
+    const translator = new ClaudeTranslator({
+      systemPrompt: 'P',
+      client,
+      onUsage: async () => {
+        throw new Error('D1 unavailable');
+      },
+    });
+    await expect(
+      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+    ).rejects.toThrow('D1 unavailable');
+  });
+});
+
+it('books a paid response before rejecting malformed JSON', async () => {
+  const onUsage = vi.fn(async () => {});
+  const { client } = fakeClient({
+    ...ok,
+    rawText: '{broken',
+    usage: { input_tokens: 1, output_tokens: 2 },
+  });
+  const translator = new ClaudeTranslator({ systemPrompt: 'P', client, onUsage });
+  await expect(
+    translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+  ).rejects.toMatchObject({ code: 'invalid-output' });
+  expect(onUsage).toHaveBeenCalledOnce();
 });

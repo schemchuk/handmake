@@ -7,14 +7,20 @@ import type { AppContext } from './context';
 import type { ChatSession, D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
 import { publishingStaleMs, translationStaleMs } from './draft-store';
 import { buildPreview } from './preview';
+import type { AiCostLedger } from './ai-costs';
+import { formatCosts } from './ai-costs';
+import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 
 export interface CreateBotOptions {
   token: string;
+  costs?: { ledger: AiCostLedger; tenantConfigs: TenantConfigSource };
   drafts: D1DraftStore;
   resolveTenant: TenantLookup;
   texts: BotTexts;
   translator: Translator;
+  /** Production resolves tenant pricing and books each paid call by reference. */
+  translatorFor?: (tenantId: string, ref: string) => Promise<Translator>;
   /** Dispatches an approved draft to the publish pipeline (T16). */
   publishRunner: PublishRunner;
   /**
@@ -49,6 +55,16 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     ctx.tenantId = tenantId;
     ctx.drafts = options.drafts;
     await next();
+  });
+
+  bot.command('cost', async (ctx) => {
+    const costs = options.costs;
+    const budget = (await costs?.tenantConfigs.load(ctx.tenantId))?.ai;
+    await ctx.reply(
+      costs && budget
+        ? formatCosts(await costs.ledger.summary(ctx.tenantId, new Date()), budget)
+        : 'Облік витрат на ШІ не налаштовано.',
+    );
   });
 
   bot.command('start', async (ctx) => {
@@ -394,7 +410,10 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     options.background(async () => {
       let german: string;
       try {
-        const result = await options.translator.translate({
+        const translator =
+          (await options.translatorFor?.(ctx.tenantId, `post:${claimed.draft.draftId}`)) ??
+          options.translator;
+        const result = await translator.translate({
           text: ukText,
           sourceLang: 'uk',
           targetLang: 'de',

@@ -68,7 +68,7 @@ export function createAiCostLedger(db: D1Database) {
         services[row.service] = (services[row.service] ?? 0) + row.amount;
         if (row.ref.startsWith('show:')) shows[row.ref] = (shows[row.ref] ?? 0) + row.amount;
       }
-      return { month: month.key, total, services, shows };
+      return { month: month.key, total: Number(total.toFixed(9)), services, shows };
     },
     async claimNotice(tenantId: string, notice: string) {
       const result = await db
