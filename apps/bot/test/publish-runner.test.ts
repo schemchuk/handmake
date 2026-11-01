@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { showSchema } from '@handmake/core';
 import type { PublishJob } from '@handmake/core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -154,4 +156,46 @@ it('mirrors the approved work job metadata without reducing per-language provena
   await runner.run(workJob);
   const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
   expect(JSON.parse(init.body as string).client_payload.work).toEqual(workJob.work);
+});
+
+it('mirrors approved show metadata and opaque generated media references in dispatch', async () => {
+  const show = showSchema.parse(
+    JSON.parse(
+      readFileSync(
+        new URL('../../../packages/core/test/fixtures/show.json', import.meta.url),
+        'utf8',
+      ),
+    ),
+  );
+  const details = {
+    show,
+    media: [...show.images, show.video].map(({ fileName }) => ({
+      fileName,
+      ref: 'opaque-file-id',
+    })),
+  };
+  const fetchImpl = mockFetch(204);
+  await createGitHubActionsRunner({
+    repo: 'owner/repo',
+    token: 'fixture-token',
+    live: false,
+    fetchImpl: fetchImpl as typeof fetch,
+  }).run({
+    tenantId: show.tenant,
+    postId: show.id,
+    kind: 'show',
+    type: 'free',
+    provenance: show.provenance,
+    texts: Object.fromEntries(
+      Object.entries(show.versions).map(([lang, version]) => [lang, version.description]),
+    ),
+    fileIds: [],
+    show: details,
+  });
+  const init = fetchImpl.mock.calls[0]![1] as RequestInit;
+  expect(JSON.parse(init.body as string).client_payload).toMatchObject({
+    kind: 'show',
+    show: details,
+    fileIds: [],
+  });
 });

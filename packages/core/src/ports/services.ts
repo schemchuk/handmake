@@ -1,3 +1,4 @@
+import type { ShowPublication } from '../show';
 /**
  * Service ports (architecture section 11.1). Each runtime (bot Worker,
  * publisher CLI) wires concrete implementations in its composition root.
@@ -27,7 +28,11 @@ interface PublishJobBase {
 }
 
 export type PublishJob = PublishJobBase &
-  ({ kind: 'post'; work?: never } | { kind: 'work'; work: WorkPublication });
+  (
+    | { kind: 'post'; work?: never; show?: never }
+    | { kind: 'work'; work: WorkPublication; show?: never }
+    | { kind: 'show'; show: ShowPublication; work?: never }
+  );
 
 /** Runs a publish job. GitHub Actions via repository_dispatch now. */
 export interface PublishRunner {
@@ -96,4 +101,9 @@ export interface SecretResolver {
 
 export interface Clock {
   now(): Date;
+}
+
+/** Downloads generated images or video without altering their AI markers. */
+export interface ShowMediaSource {
+  fetchMedia(ref: string): Promise<Uint8Array>;
 }

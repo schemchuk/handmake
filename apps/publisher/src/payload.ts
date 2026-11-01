@@ -5,6 +5,7 @@ import {
   postTypeSchema,
   provenanceSchema,
   workPublicationSchema,
+  showPublicationSchema,
   isUlid,
 } from '@handmake/core';
 
@@ -21,7 +22,7 @@ export const dispatchPayloadSchema = z
     tenantId: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'tenantId must be kebab-case'),
     draftId: z.string().min(1),
     /** Work dispatches additionally require approved work metadata. */
-    kind: z.enum(['post', 'work']).default('post'),
+    kind: z.enum(['post', 'work', 'show']).default('post'),
     type: postTypeSchema.default('free'),
     texts: z
       .record(
@@ -33,9 +34,35 @@ export const dispatchPayloadSchema = z
     poll: pollSchema.optional(),
     provenance: provenanceSchema,
     work: workPublicationSchema.optional(),
+    show: showPublicationSchema.optional(),
   })
   .strict()
   .superRefine((payload, ctx) => {
+    if (payload.kind === 'show') {
+      const show = payload.show?.show;
+      if (
+        !show ||
+        show.id !== payload.draftId ||
+        show.tenant !== payload.tenantId ||
+        payload.type !== 'free' ||
+        payload.fileIds.length ||
+        payload.work ||
+        payload.poll ||
+        payload.provenance !== show.provenance ||
+        JSON.stringify(Object.keys(payload.texts).sort()) !==
+          JSON.stringify(Object.keys(show.versions).sort()) ||
+        Object.entries(show.versions).some(
+          ([lang, version]) => version.description !== payload.texts[lang],
+        )
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'show identity, versions and approved payload must match',
+        });
+      }
+    } else if (payload.show) {
+      ctx.addIssue({ code: 'custom', message: 'only a show may carry show metadata' });
+    }
     if (payload.kind === 'work') {
       if (
         !payload.work ||

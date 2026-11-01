@@ -601,6 +601,7 @@ All subtasks: **Owner: codex · Reviewer: claude-code**.
   model changes require config only; existing tenants remain valid with shows disabled.
   Tests: valid/invalid shows and config, template defaults/override, port purity.
 - **T44b — Show storage and approval publication** (depends on T44a).
+  Implemented on `feat/t44b-show-publication`; awaiting claude-code review.
   Change: persist show documents, original references, generated images/video and marking metadata;
   extend the publish job and idempotent content writer for approved shows. No channel copies (T46).
   Acceptance: retrying approval does not duplicate content or alter an already committed show;

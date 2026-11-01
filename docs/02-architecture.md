@@ -462,3 +462,27 @@ raw bytes) before continuing. EUR rates are operator configuration estimates, no
 claim; T44d must reconcile them with billing. Uncertain outcomes require reconciliation rather
 than a blind retry. T44b-T44e add storage, orchestration, marking and the author session;
 T44a does not add a publish-job variant or change existing draft routing.
+
+### Show persistence and approval publication (T44b)
+
+`ShowContentStore` is a separate capability implemented by `GitRepoContentStore`:
+`content/shows/<ULID>/index.md` with generated media beside it. Original photo references
+resolve within the linked work. Reads are tenant-scoped; flat identity collisions fail.
+Saves require the linked work and every original byte, exactly the declared nonempty media,
+and unchanged metadata/bytes on retry. Files are written before an atomic manifest rename;
+folders without a manifest are incomplete and omitted from listings. The publish workflow's
+existing concurrency serializes checkout writers; this adapter does not provide a distributed lock.
+
+A `kind: show` publish job carries `show: { show, media: [{ fileName, ref }] }`, empty `fileIds`,
+and texts matching the approved versions. The generated metadata field is `promptVersion`,
+matching the generator port. The publisher requires exact tenant-language coverage, downloads
+opaque references through `ShowMediaSource`, checks image format/dimensions and the MP4 container
+header, and preserves bytes verbatim. Full decoding/marking verification remains T44d; a declaration
+or MP4 header alone is not proof of valid markers or playable video. The default transport uses
+existing media file ids; no provider URLs or credentials are needed in dispatch.
+
+Show approval commits only show content and an empty delivery ledger, then sends a `kind: show`
+callback. The callback completes the draft without indexing a blog post. T44e wires the author
+session/approval button; the legacy post approval path explicitly rejects show drafts. T45 renders
+shows and T46 adds channel copies. The existing dry-run supports posts/works only and rejects shows;
+show publication is verified through isolated store/publisher integration tests. No deployment here.

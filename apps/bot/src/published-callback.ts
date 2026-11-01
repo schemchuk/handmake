@@ -66,7 +66,7 @@ export async function handlePublishedCallback(
   const draft = await store.get(tenantId, postId);
   const kind = parsed.data.kind ?? 'post';
   if (draft && draft.draft.kind !== kind) return new Response('kind mismatch', { status: 409 });
-  if (kind === 'work' && Object.values(parsed.data.channels).some((status) => status !== 'done')) {
+  if (kind !== 'post' && Object.values(parsed.data.channels).some((status) => status !== 'done')) {
     return new Response('work delivery incomplete', { status: 409 });
   }
   if (kind === 'post') await store.indexPublished({ tenantId, postId, publishedAt: date, photos });

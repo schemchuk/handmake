@@ -32,6 +32,11 @@ export class TelegramMediaSource implements MediaSource {
   }
 
   async fetchPhoto(ref: string): Promise<Uint8Array> {
+    return this.fetchMedia(ref);
+  }
+
+  /** The same opaque file-id transport also preserves generated video and image bytes. */
+  async fetchMedia(ref: string): Promise<Uint8Array> {
     const filePath = await this.#resolveFilePath(ref);
     const url = `${this.#apiBase}/file/bot${this.#token}/${filePath}`;
     const response = await this.#fetch(url, { redirect: 'follow' });

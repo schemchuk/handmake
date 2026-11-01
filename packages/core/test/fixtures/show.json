@@ -1,0 +1,83 @@
+{
+  "id": "01JBCA1B2C3D4E5F6G7H8J9K0Z",
+  "tenant": "faden-und-stimmung",
+  "date": "2026-11-01T10:00:00Z",
+  "workId": "01JBCA1B2C3D4E5F6G7H8J9K0M",
+  "template": "interior",
+  "provenance": "ai-assisted",
+  "originals": [
+    {
+      "fileName": "original.jpg",
+      "provenance": "human"
+    }
+  ],
+  "images": [
+    {
+      "provenance": "ai-generated",
+      "model": "fixture-model",
+      "promptVersion": "interior@1",
+      "callId": "image-0",
+      "marker": {
+        "visible": "KI-generiertes Model",
+        "machineReadable": {
+          "format": "xmp",
+          "value": "trainedAlgorithmicMedia"
+        }
+      },
+      "fileName": "image-0.png"
+    },
+    {
+      "provenance": "ai-generated",
+      "model": "fixture-model",
+      "promptVersion": "interior@1",
+      "callId": "image-1",
+      "marker": {
+        "visible": "KI-generiertes Model",
+        "machineReadable": {
+          "format": "xmp",
+          "value": "trainedAlgorithmicMedia"
+        }
+      },
+      "fileName": "image-1.png"
+    },
+    {
+      "provenance": "ai-generated",
+      "model": "fixture-model",
+      "promptVersion": "interior@1",
+      "callId": "image-2",
+      "marker": {
+        "visible": "KI-generiertes Model",
+        "machineReadable": {
+          "format": "xmp",
+          "value": "trainedAlgorithmicMedia"
+        }
+      },
+      "fileName": "image-2.png"
+    }
+  ],
+  "video": {
+    "provenance": "ai-generated",
+    "model": "fixture-model",
+    "promptVersion": "interior@1",
+    "callId": "fixture-call",
+    "marker": {
+      "visible": "KI-generiertes Model",
+      "machineReadable": {
+        "format": "xmp",
+        "value": "trainedAlgorithmicMedia"
+      }
+    },
+    "fileName": "clip.mp4",
+    "durationSeconds": 5
+  },
+  "versions": {
+    "uk": {
+      "description": "Fixture UA",
+      "provenance": "human"
+    },
+    "de": {
+      "description": "Fixture DE",
+      "provenance": "human"
+    }
+  }
+}
