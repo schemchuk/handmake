@@ -1,4 +1,5 @@
 import type { Post, PostType } from '../post';
+import type { Collection, Work } from '../work';
 import type { RemoteId } from './channel';
 
 /**
@@ -37,9 +38,23 @@ export interface PhotoFile {
  *
  * Photos are addressed by (tenantId, postId, fileName), where fileName is
  * one of `post.photos`; readers never see store paths (ADR 016). Works and
- * collections (T36) get their own list/read pair in the same shape.
+ * collections use typed methods with the same tenant isolation (T36a).
  */
 export interface ContentStore {
+  /** Approved works only; supplied photos must be declared. Foreign identity collisions fail. */
+  saveWork(work: Work, photos: PhotoFile[]): Promise<void>;
+  readWork(tenantId: string, workId: string): Promise<Work | undefined>;
+  /** Newest first by instant, then id descending (compareNewestFirst). */
+  listWorks(tenantId: string): Promise<Work[]>;
+  readWorkPhoto(
+    tenantId: string,
+    workId: string,
+    fileName: string,
+  ): Promise<Uint8Array | undefined>;
+  saveCollection(collection: Collection): Promise<void>;
+  readCollection(tenantId: string, slug: string): Promise<Collection | undefined>;
+  /** Configured order ascending, then slug ascending (compareCollections). */
+  listCollections(tenantId: string): Promise<Collection[]>;
   savePost(post: Post, photos: PhotoFile[]): Promise<void>;
   readPost(tenantId: string, postId: string): Promise<Post | undefined>;
   /** All posts of a tenant, newest first (by `date`, then by id descending). */

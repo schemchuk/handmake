@@ -83,6 +83,14 @@ describe('work and collection documents', () => {
     expect(collectionSchema.safeParse({ ...collection, ...patch }).success).toBe(false);
   });
 
+  it('preserves author whitespace rather than rewriting descriptions', () => {
+    const value = {
+      ...work,
+      versions: { uk: { ...work.versions.uk, description: '  Fixture\n' } },
+    };
+    expect(parseWork(serializeWork(value))).toEqual(value);
+  });
+
   it('fails on missing/malformed YAML or divergent body text', () => {
     expect(() => parseWork('not markdown')).toThrow();
     expect(() => parseCollection('---\nversions: [\n---\n')).toThrow();

@@ -3,8 +3,8 @@
 - **Active agent:** codex
 - **Current task:** T36a — work/collection contracts, builder and content store. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
 - **Branch:** `feat/T36a-work-content`
-- **Last commit:** this commit (`feat: add work schemas and deterministic builder`); parent `5af093c`.
-- **Next step:** extend ContentStore, Git adapter and reusable contracts. Schemas/builder tests (217), targeted typecheck and repository lint pass. No deployment.
+- **Last commit:** `5d874c9` — feat: add work schemas and deterministic builder; content-store changes in this commit.
+- **Next step:** open the T36a PR after final checks; hand off to claude-code for review. Full test suites pass (bot requires Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

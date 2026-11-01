@@ -31,7 +31,15 @@ Tenant config:
 - `ContentStore.readPostPhoto(tenantId, postId, fileName): Promise<Uint8Array | undefined>`: photos are
   addressed by the names in `post.photos`; the store serves only declared names and never exposes
   paths. The site copies the bytes into its build output and makes its own URLs.
-- Works and collections get their own `listWorks`/`readWorkPhoto`-style pair when T36 adds the types.
+- T36a adds `saveWork`/`readWork`/`listWorks`/`readWorkPhoto` and
+  `saveCollection`/`readCollection`/`listCollections` with strict work/collection types.
+  Work listing uses `compareNewestFirst`; collection listing uses `compareCollections` (ascending
+  `order`, then slug). Reads and listings filter by tenant; malformed documents fail with their path.
+  Work photos use declared plain image filenames; missing bytes return undefined, symlinks fail.
+  Flat Git paths require globally unique work IDs and collection slugs: foreign-owner writes fail.
+  A save may supply a subset of declared photos; omitted bytes are preserved for retries, while
+  undeclared bytes are never served. Collection covers are `{ workId, fileName }` references, resolved
+  through the same tenant's work photo API; referential existence is checked by consumers.
 - `site:` is optional in `TenantConfig` (type `SiteConfig`); the site build refuses a tenant without it.
   Keys: `baseUrl` (https origin, no path or trailing slash; T40 builds canonical URLs from it),
   `defaultLanguage` (must be a tenant language; served at `/`, other languages under `/<lang>/`),

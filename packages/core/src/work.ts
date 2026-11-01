@@ -7,7 +7,7 @@ export const contentSlugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 export const workIdSchema = z.string().refine(isUlid, 'work id must be a ULID');
 export const workKindSchema = z.enum(['worn', 'closeup', 'interior']);
 export const workPhotoSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.(jpg|jpeg|png|webp)$/);
-const text = z.string().trim().min(1);
+const text = z.string().refine((value) => value.trim().length > 0, 'text must not be blank');
 const localized = <T extends z.ZodType>(schema: T) =>
   z
     .record(z.string().regex(/^[a-z]{2}$/), schema)
