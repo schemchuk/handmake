@@ -134,7 +134,11 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         costs: { ledger: costs, tenantConfigs },
         translatorFor: aiRuntime().translatorFor,
         work: {
-          collections: createGitHubCollectionReader({ repo: env.GITHUB_REPO, ref: 'main' }),
+          collections: createGitHubCollectionReader({
+            repo: env.GITHUB_REPO,
+            ref: 'main',
+            token: env.GITHUB_DISPATCH_TOKEN,
+          }),
           configs: tenantConfigs,
           textGeneratorFor: aiRuntime().textGeneratorFor,
         },
