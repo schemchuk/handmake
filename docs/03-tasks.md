@@ -419,9 +419,9 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   Book shows with `ref: show:<id>` and other translations with `ref: post:<id>`. EUR translation
   estimates are operator-supplied in tenant config; T43 verifies them. No participant data is stored.
 
-### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`, `site`) · split proposal
+### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`, `site`) · approved split
 - Owner: codex · Reviewer: claude-code (each implementation PR).
-- Status: proposed; awaits Volodymyr's approval before implementation.
+- Status: split approved by Volodymyr (2026-11-01); T36a in progress.
 - Depends on: T25, T35, T42.
 - Delivery: four sequential PRs, each targeting under ~400 changed non-test lines (ADR 009).
   Reassess scope before coding each part; propose a further split if the estimate exceeds the limit.

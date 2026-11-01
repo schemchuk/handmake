@@ -102,9 +102,15 @@ v3 additions:
   name behind it lives only in D1 (ADR 010). One shared resolver in `core`
   (`resolveEntryNames(text, names, policy)`) is used by the publisher and the site: an entry without a
   name (never given, withdrawn, deleted) becomes "Work No N"; a malformed token fails the render.
-- `content/works/<id>/index.md`: frontmatter `id, tenant, date, collection, photos, video?` (R2 key,
-  2b), `versions` (UA/DE description with provenance). No `sale` field before phase 4 (ADR 014).
-- `content/collections/<slug>.md`: `title` and `description` per language, `order`, cover photo.
+- `content/works/<id>/index.md`: strict frontmatter `id, tenant, date, collection, kind, photos,
+  versions`; `kind` is `worn | closeup | interior`, distinct from dispatch `kind: work`.
+  `versions.<lang>` holds `description`, `provenance` and optional `model`/`prompt`; no body text.
+  Photos are plain image filenames stored in `photos/`. No `sale` before phase 4 (ADR 014);
+  video references wait for phase 2b. The work builder requires stable ULID/date in its payload.
+- `content/collections/<slug>.md`: strict frontmatter `tenant, slug, versions, order, cover`.
+  `versions.<lang>` holds `title`, `description`, `provenance` and optional `model`/`prompt`;
+  `cover` references `{ workId, fileName }`. No body text. Flat work/collection paths cannot hold
+  conflicting identities across tenants: writes must reject a foreign owner rather than overwrite.
 
 Tenant config `config/tenants/faden-und-stimmung.yaml` holds tenant ID and name, languages and their
 order, enabled channels with per-channel settings (e.g. Instagram language `de`), content store type,
