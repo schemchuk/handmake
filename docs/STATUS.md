@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T36c2 — persisted generation recovery and approval metadata (`docs/03-tasks.md`, T36c2). Start a fresh session; one PR, reviewer claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T36c2 on `feat/T36c2-<name>`. T36c1 merged as PR #38 (`6b810d3`). Read docs/review-notes.md sections "Work text generation" (provenance and UA-recovery decisions) and "Work publication". No deployment.
+- **Active agent:** claude-code (review)
+- **Current task:** T36c2 — persisted generation recovery and approval metadata. Reviewer: claude-code.
+- **Branch:** `feat/T36c2-work-recovery`
+- **Last commit:** `67911df` — feat: persist work generation recovery and approval metadata; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #39 (https://github.com/schemchuk/handmake/pull/39), then merges only after CI is green and no blocking findings remain. All 614 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment or new user entry point. T36c3 starts in a fresh session after merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Reminder: the publisher's work callback needs a bot version that accepts `kind: work`; deploy only when explicitly authorized (not before T36c3).
 - **POSSE discussion, round 1 answered (2026-10-30):**

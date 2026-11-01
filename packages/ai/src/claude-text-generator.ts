@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { contentSlugSchema, workKindSchema } from '@handmake/core';
 import type {
+  GeneratedWorkText,
   TextGenerationRequest,
   TextGenerationResult,
   TextGenerator,
@@ -50,7 +51,7 @@ export class ClaudeTextGenerator implements TextGenerator {
       });
   }
 
-  async generate(request: TextGenerationRequest): Promise<TextGenerationResult> {
+  async generateUkrainian(request: TextGenerationRequest): Promise<GeneratedWorkText> {
     const input = requestSchema.parse(request);
     // create() preserves usage before local output validation, including malformed JSON.
     const response = await this.#client.messages.create({
@@ -71,29 +72,40 @@ export class ClaudeTextGenerator implements TextGenerator {
       .join('');
     const draft = outputSchema.parse(JSON.parse(text));
     if (!draft.text.trim()) throw new Error('work generation returned empty text');
+    return {
+      version: {
+        description: draft.text,
+        provenance: 'ai-assisted',
+        model: this.options.model,
+        prompt: WORK_PROMPT_VERSION,
+      },
+      notes: draft.notes,
+    };
+  }
+
+  async translateUkrainian(text: string): Promise<GeneratedWorkText> {
+    nonblank.parse(text);
     const de = await this.options.translation.translator.translate({
-      text: draft.text,
+      text,
       sourceLang: 'uk',
       targetLang: 'de',
       promptVersion: this.options.translation.promptVersion,
     });
     if (!de.text.trim()) throw new Error('work translation returned empty text');
     return {
-      versions: {
-        uk: {
-          description: draft.text,
-          provenance: 'ai-assisted',
-          model: this.options.model,
-          prompt: WORK_PROMPT_VERSION,
-        },
-        de: {
-          description: de.text,
-          provenance: 'ai-assisted',
-          model: this.options.translation.model,
-          prompt: this.options.translation.promptVersion,
-        },
+      version: {
+        description: de.text,
+        provenance: 'ai-assisted',
+        model: this.options.translation.model,
+        prompt: this.options.translation.promptVersion,
       },
-      notes: { uk: draft.notes, de: de.notes ?? '' },
+      notes: de.notes ?? '',
     };
+  }
+
+  async generate(request: TextGenerationRequest): Promise<TextGenerationResult> {
+    const uk = await this.generateUkrainian(request);
+    const de = await this.translateUkrainian(uk.version.description);
+    return { versions: { uk: uk.version, de: de.version }, notes: { uk: uk.notes, de: de.notes } };
   }
 }

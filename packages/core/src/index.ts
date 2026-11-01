@@ -11,3 +11,4 @@ export * from './tenant';
 export * from './ulid';
 export * from './work';
 export * from './work-publication';
+export * from './work-draft';

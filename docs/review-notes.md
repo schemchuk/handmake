@@ -50,15 +50,21 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Flat Git paths need globally unique work ids and collection slugs; a foreign-tenant write fails instead of overwriting.
 
 ## Work text generation (T36b)
-- T36c must call `textGeneratorFor(tenantId, workId)` and persist returned per-language provenance/model/prompt metadata in the draft; approval remains separate. No `/work` wiring in T36b.
+- T36c2 uses `textGeneratorFor(tenantId, workId)` through `createWorkDraftFlow`, persisting per-language baselines/metadata. T36c3 must wire the flow into the authorized background/session handlers; no `/work` entry point yet.
 - A failed required ledger write rejects the generation/translation. Paid calls whose usage could not be persisted need manual billing reconciliation; no application retry after a bookkeeping/output failure or zero-cost record is made by the work flow. SDK transport retries retain the existing two-retry policy.
 - Both work text operations use the tenant's `ai.translation` model and manually supplied EUR rates; T43 still verifies rates. Existing post-translation model/pricing and best-effort behavior remain as noted under T42. Prompt-cache tokens remain unaccounted for.
 - Work text costs have `ref: work:<id>`; they contribute to monthly/service totals but not the existing `show:` subtotal. They are not rebooked when a later show uses that work.
 - (T36b review, decided by Volodymyr 2026-11-01) Provenance of generated work descriptions is set at approval: text the author edited is `ai-assisted`; text approved unchanged is `ai-generated`. The DE version is `ai-assisted` if the UA text was edited, otherwise `ai-generated`. T36c compares the generated draft with the approved text and stores the result in the work's `versions`.
-- (T36b review, agreed by Volodymyr 2026-11-01) If the UA draft succeeds and the DE translation fails, T36c keeps the UA draft in the session and retries only the translation, so a retry does not pay for UA again. `ClaudeTextGenerator` currently returns nothing on a DE failure; T36c needs to expose the UA draft (for example by splitting generation and translation, or a typed error carrying the UA result).
+- (T36b review, agreed by Volodymyr 2026-11-01; implemented T36c2) The staged generator and work draft flow checkpoint UA before DE. DE failure/restart retries only translation; the UA baseline and per-language model/prompt metadata remain in `extras.work`.
 
 ## Work publication (T36c1)
 - T36c2/T36c3 must build a `kind: work` job with required `work` metadata; `texts` must exactly match `work.versions` descriptions. Top-level `provenance` remains for post compatibility and is not used for work versions.
 - Work/collection versions must cover exactly the configured tenant languages. Empty `work.channels` means no announcements; non-empty lists must contain unique enabled channel names. Both new collection and work are committed before delivery; no separate blog post is created.
 - The publisher rejects changed work metadata or channel selection on a retry. A collection slug created by another work cannot be reused as `newCollection`; select the existing collection instead. Flat-path cross-tenant collision checks remain in the store.
 - Publisher work callbacks require the bot version accepting `kind: work`; deploy only when explicitly authorized. Until T36c3 no `/work` entry point is exposed. Site pages remain T36d; a stored work is not yet a rendered page.
+
+## Work draft recovery (T36c2)
+- T36c3 must use `createWorkDraftFlow.configure` with a current `StoredDraft`, then `generate` behind the allow-list gate and background runner. Work DE regeneration uses `generate(tenantId, draftId, true)`; it translates current UA without regenerating UA.
+- `buildApprovedWorkJob` must receive the freshly claimed publishing draft, not a stale preview. It requires both generated baselines, uses `createdAt` for stable publication date, compares UA exactly and preserves approved text/model/prompt metadata.
+- An uncertain UA attempt (API/accounting failure or lost checkpoint) retains `uaPending`; retry/configuration is blocked for manual billing/result reconciliation. T36c3 must surface that failure clearly and must not clear the marker automatically. No database can reconstruct an API result lost before its checkpoint.
+- Template/collection cannot be changed after UA generation; announcement channels/new-collection metadata can be configured without losing baselines. A hand-written DE fallback without a generated DE baseline cannot be approved through the work helper; T36c3 must route recovery explicitly.

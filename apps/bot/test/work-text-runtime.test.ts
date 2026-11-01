@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { parseTenantConfig } from '@handmake/core';
+import { createDraft, parseTenantConfig } from '@handmake/core';
 import type { TenantConfig } from '@handmake/core';
 import type { ParseClient, TextGenerationClient } from '@handmake/ai';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAiCostRuntime } from '../src/ai-cost-runtime';
 import { createAiCostLedger } from '../src/ai-costs';
 import { makeD1 } from './helpers';
+import { createD1DraftStore } from '../src/draft-store';
+import { createWorkDraftFlow } from '../src/work-draft-flow';
 
 // Exercise the real adapters and ledger; only their SDK transport is replaced.
 const sdk = vi.hoisted(() => ({ create: vi.fn(), parse: vi.fn() }));
@@ -217,4 +219,35 @@ describe('work text generation with T42', () => {
     expect(configs.load).not.toHaveBeenCalled();
     expect(sdk.create).not.toHaveBeenCalled();
   });
+});
+
+it('persists paid UA through a DE failure and books only the DE retry after a Worker restart', async () => {
+  const drafts = createD1DraftStore(db);
+  const draft = {
+    ...createDraft(tenantId, workId, new Date(), { kind: 'work' }),
+    texts: { uk: 'Author note' },
+    photoRefs: ['opaque-photo'],
+  };
+  await drafts.create(draft, '11');
+  const makeFlow = () =>
+    createWorkDraftFlow({
+      drafts: createD1DraftStore(db),
+      textGeneratorFor: runtime.textGeneratorFor,
+    });
+  await makeFlow().configure((await drafts.get(tenantId, workId))!, {
+    kind: 'worn',
+    collection: 'fixture',
+    channels: [],
+  });
+  sdk.parse.mockRejectedValueOnce(new SyntaxError('DE parse failure'));
+  await expect(makeFlow().generate(tenantId, workId)).rejects.toThrow(
+    /paid usage may be unavailable/,
+  );
+  expect((await drafts.get(tenantId, workId))?.draft.texts['uk']).toBe('UA fixture');
+  expect((await summary()).total).toBe(3);
+  expect(await makeFlow().generate(tenantId, workId)).toBe(true);
+  expect(sdk.create).toHaveBeenCalledOnce();
+  expect(sdk.parse).toHaveBeenCalledTimes(2);
+  expect((await summary()).total).toBe(4.5);
+  expect((await drafts.get(tenantId, workId))?.draft.state).toBe('ready');
 });

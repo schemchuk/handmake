@@ -1,3 +1,4 @@
+import { buildApprovedWorkJob, createDraft, workDraftDataSchema } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
 import { parseDispatchPayload, PayloadParseError } from '../src/payload';
@@ -178,4 +179,34 @@ describe('approved work dispatch contract', () => {
       parseDispatchPayload(JSON.stringify({ ...approvedWorkPayload, ...patch })),
     ).toThrow(PayloadParseError);
   });
+});
+
+it('round-trips the approved work job with edited UA and its per-language metadata', () => {
+  const draft = {
+    ...createDraft(
+      approvedWorkPayload.tenantId,
+      approvedWorkPayload.draftId,
+      new Date(approvedWorkPayload.work.date),
+      { kind: 'work' },
+    ),
+    state: 'ready' as const,
+    photoRefs: approvedWorkPayload.fileIds,
+    texts: { ...approvedWorkPayload.texts, uk: 'Edited UA fixture' },
+    extras: {
+      work: workDraftDataSchema.parse({
+        config: { kind: 'worn', collection: 'fixture', channels: [] },
+        generated: approvedWorkPayload.work.versions,
+      }),
+    },
+  };
+  const { postId, ...job } = buildApprovedWorkJob(draft);
+  const parsed = parseDispatchPayload(JSON.stringify({ ...job, draftId: postId }));
+  expect(parsed.work?.versions['uk']).toMatchObject({
+    description: draft.texts.uk,
+    provenance: 'ai-assisted',
+    model: 'fixture-model',
+    prompt: 'fixture@1',
+  });
+  expect(parsed.work?.versions['de']?.provenance).toBe('ai-assisted');
+  expect(parsed.texts).toEqual(draft.texts);
 });

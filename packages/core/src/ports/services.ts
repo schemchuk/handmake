@@ -66,7 +66,15 @@ export interface TextGenerationResult {
   notes: Record<string, string>;
 }
 
+export interface GeneratedWorkText {
+  version: Work['versions'][string];
+  notes: string;
+}
+
 export interface TextGenerator {
+  /** Stages let the caller persist a paid UA result before attempting DE. */
+  generateUkrainian(request: TextGenerationRequest): Promise<GeneratedWorkText>;
+  translateUkrainian(text: string): Promise<GeneratedWorkText>;
   generate(request: TextGenerationRequest): Promise<TextGenerationResult>;
 }
 
