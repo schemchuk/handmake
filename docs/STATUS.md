@@ -3,8 +3,8 @@
 - **Active agent:** codex
 - **Current task:** T36c3 — author /work session and collection selection. Reviewer: claude-code.
 - **Branch:** `feat/T36c3-work-session`
-- **Last commit:** this commit (`feat: read tenant collections in the bot Worker`); parent is the T36c3 handoff on main.
-- **Next step:** wire template/collection selection and the existing work recovery/approval flow into the bot. Collection reader tests (8) and bot typecheck pass. No deployment.
+- **Last commit:** `09a37a3` — feat: read tenant collections in the bot Worker; /work integration in this commit.
+- **Next step:** open one T36c3 PR and hand off to claude-code. All 638 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
