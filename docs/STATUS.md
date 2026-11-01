@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code (review)
-- **Current task:** T36d — review PR #41 (site pages for works and collections).
-- **Branch:** `feat/T36d-portfolio-pages`
-- **Last commit:** `6f0959a` — `feat: render localized work and collection pages`; this commit records the review handoff.
-- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/41, checks green CI, then merges if no blocking findings. All 645 local tests, typecheck, lint, format check, build and desktop/mobile Chromium checks pass. CI was queued at handoff. No deployment.
+- **Active agent:** claude-code
+- **Current task:** none. T36 (a–d) complete. Next: ADR 015 (needs Volodymyr's provider data) before T44.
+- **Branch:** `main`
+- **Last commit:** `fa70db2` — feat: add localized work and collection site pages (T36d) (#41).
+- **Next step:** write ADR 015 once Volodymyr supplies the provider comparison; then T44. Bot is not deployed: `/work` and `kind: work` callbacks go live only after Volodymyr explicitly authorizes a redeploy (D1 migrations first). Site deploy of works pages happens via the Site workflow on his go-ahead.
 - **Blocked on:** nothing. H13 done 2026-11-01 (photos local, not in the repo); T43 closed by Volodymyr 2026-11-01; ADR 015 (provider, prompts, cost, Q15) still has to be written before T44.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
