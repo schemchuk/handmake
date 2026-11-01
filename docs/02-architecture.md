@@ -437,3 +437,28 @@ config, not a network branch.
    publish the circle).
 4. Allow-list per tenant; the bot maps Telegram user ID → tenant.
 5. Legal prerequisites from spec N8 (terms, DPA, privacy policy, Meta App Review).
+
+### Show contracts (T44a)
+
+`core/show.ts` defines an approved show linked to one real work: original photo names
+resolve within that work; 3-5 generated images and one short MP4 resolve within the show.
+Each generated asset records provenance, provider call/model, prompt version, visible label
+and machine-readable marking declaration. Marking declarations are not verification: T44d
+must inspect/process the bytes before approval. The show snapshots its fictional adult persona
+so later config edits cannot change historical pages. Tenant/work existence, media bytes and
+exact tenant-language coverage are publication/store checks for T44b.
+
+Optional tenant `shows` config holds `models` (id, name, look, referenceImage, fictional/adult
+assertions), `image` (model, eurPerImage) and `video` (model, eurPerSecond). Absence disables
+shows; presence requires the existing `ai` budget. References are opaque media identifiers,
+not secret values. Actual persona choices and references remain an author configuration step;
+T44a does not enable shows for the live tenant. Work kind provides the default template;
+the author's override wins.
+
+The runtime-neutral `ShowGenerator` port takes resolved original/reference bytes and performs
+one image or video call per invocation. The application persists an attempt identity before
+each call and books/checkpoints its result (call identity, EUR cost, model, prompt version and
+raw bytes) before continuing. EUR rates are operator configuration estimates, not a live price
+claim; T44d must reconcile them with billing. Uncertain outcomes require reconciliation rather
+than a blind retry. T44b-T44e add storage, orchestration, marking and the author session;
+T44a does not add a publish-job variant or change existing draft routing.
