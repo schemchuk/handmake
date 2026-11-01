@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
+- **Active agent:** claude-code (review)
 - **Current task:** T36b — text generation and cost accounting. Reviewer: claude-code.
 - **Branch:** `feat/T36b-work-text`
-- **Last commit:** `ed5c8e9` — feat: add work text generator and strict usage reporting; runtime integration in this commit.
-- **Next step:** open one T36b PR and hand off to claude-code. All 553 tests pass via sequential workspace execution (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. Local parallel tests hit existing 5 s timeouts. No deployment; /work wiring belongs to T36c.
+- **Last commit:** `f646c60` — feat: account for generated work text through T42; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #37 (https://github.com/schemchuk/handmake/pull/37), then merges only after CI is green and no blocking findings remain. All 553 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. Local parallel tests hit existing 5 s timeouts. No deployment; T36c starts in a fresh session after merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**
