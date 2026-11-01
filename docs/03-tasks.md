@@ -584,6 +584,50 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   approval; models are changed by config only.
 - Tests: session flow, template choice, mocked generator, cap respected, marker present.
 
+#### Proposed T44 split (2026-11-01; awaiting Volodymyr approval)
+
+T44 exceeds the ADR 009 review budget: it introduces a content kind, media persistence,
+paid-call recovery, a provider adapter and a bot session. Keep T44 as the parent acceptance
+criteria above; implement the following in separate sessions and PRs, each targeting fewer
+than approximately 400 changed non-test lines. No implementation starts before approval.
+All subtasks: **Owner: codex · Reviewer: claude-code**.
+
+- **T44a — Show contracts and tenant configuration** (depends on T36, T43).
+  Change: provider-neutral show/content schemas, `ShowGenerator` port, template selection,
+  configurable fictional adult model identities and references, provider model identifiers and
+  configured EUR rates. Define original/generated media references, provenance and marking metadata.
+  Acceptance: validated contracts describe 3-5 images and one short video linked to a real work;
+  model changes require config only; existing tenants remain valid with shows disabled.
+  Tests: valid/invalid shows and config, template defaults/override, port purity.
+- **T44b — Show storage and approval publication** (depends on T44a).
+  Change: persist show documents, original references, generated images/video and marking metadata;
+  extend the publish job and idempotent content writer for approved shows. No channel copies (T46).
+  Acceptance: retrying approval does not duplicate content or alter an already committed show;
+  publication remains tenant-scoped and stores all declared media.
+  Tests: store contract, serialization, retry/collision and tenant isolation.
+- **T44c — Durable generation flow with a mocked generator** (depends on T44a, T42).
+  Change: show draft checkpoints, per-call cost booking and budget checks, generation/regeneration
+  orchestration and recovery. Use dependency injection; never enable mock output in production.
+  Acceptance: completed paid results survive retries; uncertain calls require reconciliation;
+  regeneration is accounted for and the cap blocks new paid attempts.
+  Tests: mocked generation, concurrent claims, partial failure/restart, accounting failure and cap.
+- **T44d — fal adapter and media marking** (depends on T44a, T44c).
+  Change: implement the ADR 015 image/video provider behind the port, versioned template prompts,
+  visible and machine-readable image markers, video labelling and durable result ingestion.
+  Acceptance: provider ids come from config; outputs cannot reach approval without required markers;
+  costs have provider call identity. Complete the ADR 015 model-terms check before real calls;
+  reconcile configured rates with provider billing before production enablement.
+  Tests: mocked provider HTTP lifecycle, failed/uncertain outcomes, marker verification,
+  media validation and secret-safe errors. No paid calls or deploy implied by this subtask.
+- **T44e — Author session and preview** (depends on T44b, T44c, T44d).
+  Change: `/show`, 2-3 original photos or existing-work selection, model/template menus,
+  original/result preview, regenerate, discard and approval dispatch. Wire the budget gate and
+  recovery messages behind the allow-list; deployment requires separate authorization.
+  Acceptance: the author can create and approve a show without repository edits; originals are
+  visible alongside results; every generated image is labelled and approval commits show content.
+  Tests: session flow with mocked generator, config-only model change, template override,
+  denied budget, regeneration, approval retry and existing post/work regression checks.
+
 ### T45 — Shows on the site (F30, `site`)
 - Depends on: T44, T41
 - Change: shows list and show pages (images, video, work link, model name, "KI-generiertes Model"

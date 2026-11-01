@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44 (show generation), Owner codex, Reviewer claude-code. Depends on T36 (done) and T43 (done; ADR 015 accepted).
+- **Active agent:** none
+- **Current task:** T44 planning: proposed split T44a-T44e in docs/03-tasks.md; implementation not started.
 - **Branch:** `main`
-- **Last commit:** `61328be` — fix: authenticate the collection listing with the dispatch token (#44).
-- **Next step:** T44 in a fresh session (mock `ShowGenerator` first; real fal adapter after the model-page check below). Provider per ADR 015: fal.ai (`nano-banana-2/edit`, Kling 2.5 Turbo Pro), model ids in tenant config; `FAL_KEY` only in local `.env` (Worker secret later, with Volodymyr). Photos of works may be sent to providers (author's consent). Bot redeployed 2026-11-01 with T36c, #42 (error logging), #43 (author notice on work publish), #44 (collection listing authenticated: anonymous GitHub API calls from Workers got 403). `/work` end to end verified by Volodymyr; the test work (aplikatsiia-kvitochka) stays on the site, as do all future published works. Site works pages are live.
-- **Blocked on:** nothing. Pre-production check: fal "Excluded Models" mark for the two models (ADR 015); real per-call cost from the fal balance.
-- **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
+- **Last commit:** this handoff commit — docs: propose reviewable T44 subtasks.
+- **Next step:** Volodymyr approves or adjusts the T44a-T44e split; then hand off to codex for T44a in a fresh session. ADR 015 permits mocked generation; real adapter requires the model-terms check before real calls. No deploy authorized.
+- **Blocked on:** approval of the proposed T44 split (AGENTS.md / ADR 009 review budget).
+- **Open questions for Volodymyr:** approve or adjust T44a-T44e in docs/03-tasks.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
