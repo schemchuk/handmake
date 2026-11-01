@@ -593,7 +593,7 @@ than approximately 400 changed non-test lines. Approved by Volodymyr in chat on 
 All subtasks: **Owner: codex · Reviewer: claude-code**.
 
 - **T44a — Show contracts and tenant configuration** (depends on T36, T43).
-  Implemented on `feat/t44a-show-contracts`; awaiting claude-code review.
+  Done: merged as PR #45 (`3fc6354`).
   Change: provider-neutral show/content schemas, `ShowGenerator` port, template selection,
   configurable fictional adult model identities and references, provider model identifiers and
   configured EUR rates. Define original/generated media references, provenance and marking metadata.

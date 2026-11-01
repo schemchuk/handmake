@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44a implemented; review pending. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44a-show-contracts`
-- **Last commit:** preceding commit `680869d` — docs: approve T44 split and hand off T44a; implementation and handoff are in this commit.
-- **Next step:** Review the T44a PR (show schemas, ShowGenerator port, optional tenant shows config). Merge after green CI and no blocking findings; then hand off T44b in a fresh session. T44b must validate linked work/tenant, media bytes and tenant-language coverage. T44d verifies marking bytes and provider terms/rates before real calls. No deploy authorized.
-- **Blocked on:** nothing; awaiting reviewer. Validation: all 686 tests passed outside sandbox, plus workspace typecheck, lint, format check, build and publisher dry-run.
+- **Active agent:** codex
+- **Current task:** T44b (show storage and approval publication), Owner codex, Reviewer claude-code. T44a merged as PR #45 (`3fc6354`).
+- **Branch:** `main`
+- **Last commit:** `3fc6354` — feat: add show contracts and tenant model configuration (#45).
+- **Next step:** Codex implements T44b in a fresh session on its own feature branch; read the T44a section of docs/review-notes.md first (work/tenant/media/language checks belong to T44b). No deploy authorized.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
