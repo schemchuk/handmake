@@ -3,8 +3,8 @@
 - **Active agent:** codex
 - **Current task:** T36c1 — work dispatch and publisher integration. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
 - **Branch:** `feat/T36c1-work-publish`
-- **Last commit:** this commit (`feat: define approved work dispatch and completion contracts`); parent `e7d1727`.
-- **Next step:** connect publisher work persistence and optional announcements; shared contracts/callback tests pass. No deployment, /work UI or generation changes.
+- **Last commit:** `15b63e4` — feat: define approved work dispatch and completion contracts; publisher integration in this commit.
+- **Next step:** open one T36c1 PR and hand off to claude-code. All 586 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment, /work UI or generation changes.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

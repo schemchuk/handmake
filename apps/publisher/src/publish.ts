@@ -20,6 +20,7 @@ import type {
   PublishLedger,
   SecretResolver,
   TenantConfig,
+  Work,
 } from '@handmake/core';
 import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
@@ -32,6 +33,7 @@ import type { PublishCallbackSender } from './publish-callback';
 import { parseDispatchPayload } from './payload';
 import { requiredEnv } from './required-env';
 import { loadTenantConfig } from './tenant-config';
+import { prepareWorkPublication } from './work-publication';
 
 export interface PublishDeps {
   cwd?: string;
@@ -55,7 +57,9 @@ export interface PublishDeps {
 }
 
 export interface PublishResult {
+  /** Channel projection for works; only ordinary posts are saved under content/posts. */
   post: Post;
+  work?: Work;
   ledger: PublishLedger;
   delivered: Record<string, (number | string)[]>;
   skipped: string[];
@@ -68,9 +72,13 @@ export class PublishError extends Error {
   }
 }
 
-function defaultRegistry(tenant: TenantConfig, env: NodeJS.ProcessEnv): ChannelRegistry {
+function defaultRegistry(
+  tenant: TenantConfig,
+  env: NodeJS.ProcessEnv,
+  channels = Object.keys(tenant.channels),
+): ChannelRegistry {
   const registry = new ChannelRegistry();
-  for (const key of Object.keys(tenant.channels)) {
+  for (const key of channels) {
     if (key === 'telegram') {
       // A missing token surfaces as a delivery failure, so the ledger
       // records the failed channel instead of the run dying early.
@@ -114,23 +122,26 @@ export async function runPublish(
   }
   const tenant = await loadTenantConfig(payload.tenantId, root);
 
-  const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
-
   const store = new GitRepoContentStore({ rootDir: root });
-  const post = buildPostFromPayload(payload, tenant, { now });
-  // A re-run (e.g. the next day) must reuse the existing folder, not create a
-  // second one for the same post.
-  const existing = await store.readPost(post.tenant, post.id);
-  if (existing) post.date = existing.date;
-
-  await store.savePost(post, photos);
-
+  const publication =
+    payload.kind === 'work' ? await prepareWorkPublication(payload, tenant, store) : undefined;
+  const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
+  const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
+  if (publication) {
+    if (publication.collection) await store.saveCollection(publication.collection);
+    await store.saveWork(publication.work, photos);
+  } else {
+    // Re-running on another day reuses the original post folder.
+    const existing = await store.readPost(post.tenant, post.id);
+    if (existing) post.date = existing.date;
+    await store.savePost(post, photos);
+  }
   const git = deps.git ?? createGitCommitter({ repoDir: root, env });
-  const postFolder = path.join('content', 'posts', postFolderName(post));
-  const committedPost = await git.commit([postFolder], `content: add post ${post.id}`);
-  log(committedPost ? `committed ${postFolder}` : `${postFolder} unchanged (already committed)`);
+  const paths = publication?.paths ?? [path.join('content', 'posts', postFolderName(post))];
+  const committedPost = await git.commit(paths, `content: add ${payload.kind} ${post.id}`);
+  log(committedPost ? `committed ${paths.join(', ')}` : 'content unchanged (already committed)');
 
-  const registry = deps.registry ?? defaultRegistry(tenant, env);
+  const registry = deps.registry ?? defaultRegistry(tenant, env, post.channels);
   const secrets: SecretResolver = deps.secrets ?? {
     resolve: async (name) => requiredEnv(name, env),
   };
@@ -146,9 +157,8 @@ export async function runPublish(
     }
   };
 
-  let ledger =
-    (await store.readLedger(post.tenant, post.id)) ??
-    initLedger(post.tenant, post.id, post.channels, now);
+  const previousLedger = await store.readLedger(post.tenant, post.id);
+  let ledger = previousLedger ?? initLedger(post.tenant, post.id, post.channels, now);
   const delivered: Record<string, (number | string)[]> = {};
   const skipped: string[] = [];
 
@@ -159,6 +169,9 @@ export async function runPublish(
       `content: update ledger ${post.id}`,
     );
   };
+
+  // Persist even an empty ledger: site-only work completion is also retryable.
+  if (publication && !previousLedger) await persistLedger();
 
   for (const channel of post.channels) {
     const entry = ledger.channels[channel];
@@ -209,7 +222,12 @@ export async function runPublish(
     await persistLedger();
   }
 
-  await notify('author', `published ${post.id} to ${Object.keys(delivered).join(', ')}`);
+  await notify(
+    'author',
+    publication && !post.channels.length
+      ? `published work ${post.id}`
+      : `published ${post.id} to ${Object.keys(delivered).join(', ')}`,
+  );
 
   // T19: report the delivery to the bot so it moves the draft out of
   // `publishing` and indexes the post. The bot's endpoint is idempotent, so
@@ -239,6 +257,7 @@ export async function runPublish(
       });
     try {
       await sender.send({
+        ...(publication ? { kind: 'work' as const } : {}),
         tenantId: post.tenant,
         postId: post.id,
         date: post.date,
@@ -255,5 +274,5 @@ export async function runPublish(
       );
     }
   }
-  return { post, ledger, delivered, skipped };
+  return { post, ...(publication ? { work: publication.work } : {}), ledger, delivered, skipped };
 }

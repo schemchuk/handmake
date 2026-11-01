@@ -250,3 +250,15 @@ describe('work completion callbacks', () => {
     expect(await indexCount(db, id)).toBe(0);
   });
 });
+
+it('does not complete a work when a channel reports failure', async () => {
+  const db = await makeD1();
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+  await makePublishingDraft(db, id, 'work');
+  const response = await createApp(makeEnv(db), botTexts).handle(
+    await signedRequest(callbackBody(id, { kind: 'work', channels: { telegram: 'failed' } })),
+  );
+  expect(response.status).toBe(409);
+  expect((await createD1DraftStore(db).get(tenant, id))?.draft.state).toBe('publishing');
+  expect(await indexCount(db, id)).toBe(0);
+});

@@ -216,7 +216,14 @@ Channel polls are anonymous: no voter data reaches us.
    She edits and approves as with posts.
 3. Publish dispatches with kind `work`: the publisher's `buildWorkFromPayload` and a works writer in
    the content store write `content/works/<id>/` (ledger path `content/ledger/<id>.json` as for posts),
-   optionally also a channel post about the new work (her choice in the preview).
+   optionally also channel announcements (her choice in the preview). The shared `work` dispatch
+   metadata carries stable date, template kind, collection, approved versions, announcement channel
+   names and optional localized `newCollection` data. The publisher validates languages against the
+   tenant before fetching photos, creates a cover from the first photo, and commits new collection
+   and work together. Announcement `Post` projections are transient, never saved as blog posts.
+   Work-only publication persists an empty ledger. Work callbacks carry `kind: work` and mark the
+   draft published without adding it to the regular post index. A retry cannot change stored work
+   metadata or the ledger's channel selection; it resumes existing channel operation IDs.
 4. A work is also the source for a video (4.8), which answers spec Q9 by default: "a new work = a
    `work` draft; `/video` on a published work starts the render".
 

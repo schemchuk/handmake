@@ -20,7 +20,7 @@ interface PublishJobBase {
   texts: Record<string, string>;
   /** Opaque photo refs (Telegram file_ids); downloaded inside the pipeline. */
   fileIds: string[];
-  /** Dominant provenance; the publisher stamps it on every version. */
+  /** Dominant provenance for regular posts; work metadata preserves each language separately. */
   provenance: Provenance;
   /** Poll spec for a wotw-poll draft (produced by the poll cron, T30). */
   poll?: PostPoll;
