@@ -1,0 +1,12 @@
+---
+import { loadSiteData } from '../lib/site-data';
+import { workImageKey } from '../lib/portfolio';
+interface Props { workId: string; fileName: string; alt: string; eager?: boolean }
+const { workId, fileName, alt, eager = false } = Astro.props;
+const data = await loadSiteData();
+const image = data.workImages.get(workImageKey(workId, fileName))!;
+const largest = image.variants.at(-1)!;
+---
+<img src={largest.url} srcset={image.variants.map((variant) => `${variant.url} ${variant.width}w`).join(', ')}
+  sizes="(min-width: 52rem) 60vw, 100vw" width={largest.width} height={largest.height} alt={alt}
+  loading={eager ? 'eager' : 'lazy'} decoding="async" />
