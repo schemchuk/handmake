@@ -14,3 +14,4 @@ export * from './work-publication';
 export * from './work-draft';
 export * from './show';
 export * from './show-config';
+export * from './show-draft';

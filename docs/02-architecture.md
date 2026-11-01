@@ -486,3 +486,22 @@ callback. The callback completes the draft without indexing a blog post. T44e wi
 session/approval button; the legacy post approval path explicitly rejects show drafts. T45 renders
 shows and T46 adds channel copies. The existing dry-run supports posts/works only and rejects shows;
 show publication is verified through isolated store/publisher integration tests. No deployment here.
+
+### Durable show generation (T44c)
+
+`createShowDraftFlow` is an unwired application service with injected generator, image resolver,
+`ShowResultStore`, D1 drafts/locks and cost ledger. Configure once from tenant models/rates;
+`extras.show` snapshots the plan, pending attempt, current receipts and retired regeneration receipts.
+The service generates 3-5 images and a five-second video; replacing an image also replaces the video.
+Generation-ready means raw outputs only: T44d must mark/verify them before T44e permits approval.
+
+Before paying, persist an attempt id; store the full provider result (bytes AND billing metadata)
+in immutable durable attempt-indexed storage, book its cost, then checkpoint its opaque reference.
+Recovery reads that same result and rebooks idempotently; it never repeats an uncertain paid call.
+A missing durable outcome or invalid result requires operator reconciliation, even after a timeout.
+D1 tenant locks serialize show calls; failed owners can resume, stale leases can only be reclaimed
+by the same draft after ten minutes. Unknown outcomes retain the lock: reconcile before clearing
+or discarding it. Each call checks current spend plus its configured estimate against the cap;
+actual costs may differ from estimates, and unrelated text calls do not take the show lock.
+Raw media above 20 MB are charged but rejected; T44d must recheck size after marking/ingestion.
+Migration 0008 creates the lock table; it is tested locally, not applied remotely in this task.
