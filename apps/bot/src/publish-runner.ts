@@ -46,6 +46,7 @@ export function createGitHubActionsRunner(options: GitHubActionsRunnerOptions): 
             texts: job.texts,
             fileIds: job.fileIds,
             provenance: job.provenance,
+            ...(job.kind === 'work' ? { work: job.work } : {}),
             ...(job.poll !== undefined ? { poll: job.poll } : {}),
             live: options.live,
           },

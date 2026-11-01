@@ -128,3 +128,30 @@ describe('createGitHubActionsRunner', () => {
     await expect(runner.run(job)).rejects.toThrowError(/fetch failed/);
   });
 });
+
+it('mirrors the approved work job metadata without reducing per-language provenance', async () => {
+  const fetchImpl = mockFetch(204);
+  const runner = createGitHubActionsRunner({
+    repo: 'owner/repo',
+    token: 'fixture-token',
+    live: false,
+    fetchImpl: fetchImpl as typeof fetch,
+  });
+  const workJob: PublishJob = {
+    ...job,
+    kind: 'work',
+    work: {
+      date: '2026-11-01T10:00:00Z',
+      kind: 'closeup',
+      collection: 'fixture',
+      channels: [],
+      versions: {
+        uk: { description: job.texts['uk']!, provenance: 'ai-generated' },
+        de: { description: job.texts['de']!, provenance: 'ai-assisted' },
+      },
+    },
+  };
+  await runner.run(workJob);
+  const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+  expect(JSON.parse(init.body as string).client_payload.work).toEqual(workJob.work);
+});

@@ -1,12 +1,12 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T36c — implementation split proposed in docs/03-tasks.md (T36c1–T36c3). Reviewer: claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1` — docs: propose smaller T36c implementation PRs.
-- **Next step:** Volodymyr reviews the T36c split; codex implements T36c1 in a fresh session after approval. T36a/T36b merged. No code or deployment in this session.
-- **Blocked on:** approval of the three-PR split required to replace the current one-PR T36c plan (ADR 009).
-- **Open questions for Volodymyr:** approve T36c1 (dispatch/publisher), T36c2 (generation recovery/metadata), T36c3 (/work UI)?
+- **Current task:** T36c1 — work dispatch and publisher integration. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
+- **Branch:** `feat/T36c1-work-publish`
+- **Last commit:** this commit (`feat: define approved work dispatch and completion contracts`); parent `e7d1727`.
+- **Next step:** connect publisher work persistence and optional announcements; shared contracts/callback tests pass. No deployment, /work UI or generation changes.
+- **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

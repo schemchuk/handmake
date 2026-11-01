@@ -469,7 +469,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 #### T36c — Author work session and publishing integration
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T36b (merged).
-- Status: implementation split proposed on 2026-11-01; awaits Volodymyr's approval.
+- Status: implementation split approved by Volodymyr on 2026-11-01; T36c1 in progress.
   The existing session, dispatch and publisher boundaries plus partial-generation recovery require
   more than ~400 changed non-test lines together. Deliver T36c as the three sequential PRs below
   (ADR 009); preserve all parent acceptance criteria. T36d waits for all three to merge.

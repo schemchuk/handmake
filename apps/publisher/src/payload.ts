@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { pollSchema, postTypeSchema, provenanceSchema } from '@handmake/core';
+import {
+  pollSchema,
+  postTypeSchema,
+  provenanceSchema,
+  workPublicationSchema,
+  isUlid,
+} from '@handmake/core';
 
 /**
  * Dispatch payload (T09): what the bot hands to the publisher when an author
@@ -14,7 +20,7 @@ export const dispatchPayloadSchema = z
   .object({
     tenantId: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'tenantId must be kebab-case'),
     draftId: z.string().min(1),
-    /** What the pipeline builds; 'work' lands with the website phase (T36). */
+    /** Work dispatches additionally require approved work metadata. */
     kind: z.enum(['post', 'work']).default('post'),
     type: postTypeSchema.default('free'),
     texts: z
@@ -26,9 +32,37 @@ export const dispatchPayloadSchema = z
     fileIds: z.array(z.string().min(1)),
     poll: pollSchema.optional(),
     provenance: provenanceSchema,
+    work: workPublicationSchema.optional(),
   })
   .strict()
   .superRefine((payload, ctx) => {
+    if (payload.kind === 'work') {
+      if (
+        !payload.work ||
+        !isUlid(payload.draftId) ||
+        payload.type !== 'free' ||
+        !payload.fileIds.length
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'work requires metadata, stable ULID, free type and photos',
+        });
+      }
+      if (
+        payload.work &&
+        (Object.keys(payload.texts).length !== Object.keys(payload.work.versions).length ||
+          Object.entries(payload.work.versions).some(
+            ([lang, version]) => version.description !== payload.texts[lang],
+          ))
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'work versions must match approved texts exactly',
+        });
+      }
+    } else if (payload.work) {
+      ctx.addIssue({ code: 'custom', message: 'post must not carry work metadata' });
+    }
     if (payload.type === 'wotw-poll') {
       if (!payload.poll) {
         ctx.addIssue({ code: 'custom', message: 'wotw-poll payload requires a poll' });
