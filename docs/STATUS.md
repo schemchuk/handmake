@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code (review)
-- **Current task:** T36c3 — author /work session and collection selection. Reviewer: claude-code.
-- **Branch:** `feat/T36c3-work-session`
-- **Last commit:** `7a2f1b9` — feat: add author work sessions and collection selection; handoff recorded in this commit.
-- **Next step:** claude-code reviews PR #40 (https://github.com/schemchuk/handmake/pull/40), then merges only after CI is green and no blocking findings remain. All 638 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment. T36d starts in a fresh session after merge.
+- **Active agent:** codex
+- **Current task:** T36d — site pages for works and collections. Reviewer: claude-code.
+- **Branch:** `main`
+- **Last commit:** `a40a301` — feat: add author work sessions and collections (T36c3) (#40).
+- **Next step:** codex starts T36d in a fresh session from `main`. The bot is not deployed: `/work` and `kind: work` callbacks go live only after Volodymyr explicitly authorizes a bot redeploy (D1 migrations first).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
