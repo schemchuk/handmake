@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44c implemented; review pending. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44c-show-generation`
-- **Last commit:** preceding commit `9b5da12` — docs: T44b merged, review notes, hand over T44c to codex; implementation and handoff are in this commit.
-- **Next step:** Review T44c; merge after green CI/no blockers, then hand off T44d in a fresh session. Flow is unwired: T44d supplies durable ShowResultStore and marking, T44e supplies UI/approval. Migration 0008 is local-tested only; no remote migration/deploy authorized. Uncertain calls retain tenant locks for reconciliation.
-- **Blocked on:** nothing; awaiting reviewer. Validation details are in the PR.
+- **Active agent:** codex
+- **Current task:** T44d (fal adapter and media marking), Owner codex, Reviewer claude-code. T44c merged as PR #47 (`6d9bcb0`).
+- **Branch:** `main`
+- **Last commit:** `6d9bcb0` — feat: checkpoint show generation and account for paid calls (#47).
+- **Next step:** Codex implements T44d in a fresh session on its own feature branch; read the T44a-T44c sections of docs/review-notes.md first. T44d supplies the durable `ShowResultStore`, marking and the fal adapter; complete the ADR 015 model-terms check before any real call. Migration 0008 is local-tested only: apply it remotely before the bot is deployed with show code that uses locks (not authorized yet). No deploy authorized.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

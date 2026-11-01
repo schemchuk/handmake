@@ -608,7 +608,7 @@ All subtasks: **Owner: codex · Reviewer: claude-code**.
   publication remains tenant-scoped and stores all declared media.
   Tests: store contract, serialization, retry/collision and tenant isolation.
 - **T44c — Durable generation flow with a mocked generator** (depends on T44a, T42).
-  Implemented on `feat/t44c-show-generation`; awaiting claude-code review.
+  Done: merged as PR #47 (`6d9bcb0`).
   Change: show draft checkpoints, per-call cost booking and budget checks, generation/regeneration
   orchestration and recovery. Use dependency injection; never enable mock output in production.
   Acceptance: completed paid results survive retries; uncertain calls require reconciliation;

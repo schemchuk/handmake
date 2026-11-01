@@ -88,3 +88,11 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44b review) A show folder without `index.md` (interrupted save) keeps its already written media, and a retry with different bytes fails as "immutable". If T44e lets the author regenerate after a failed approval, it needs a new show id or a cleanup path for the incomplete folder.
 - (T44b review) The bot approval path throws for `kind: show` drafts until T44e wires the show approval; no show drafts can be created before then.
 - (T44b review) `apps/bot` test "completes a site-only work idempotently" failed once in a full local run and passed alone twice; likely a timeout under load, not a defect. Watch it in CI.
+
+## Show generation (T44c)
+- (T44c review) No blockers; CI green, bot 249 and core 213 tests pass. `recordCost` is `INSERT OR IGNORE` on `(tenant_id, id)`, so rebooking by `callId` on recovery is idempotent; T44d must give every real call a provider-unique `callId`.
+- (T44c review) The whole show (3-5 images + video, sequential) runs in one `generate` call. T44e must run it in a way that survives the Worker time limits (queue or resumed invocations); checkpoints make a resume safe.
+- (T44c review) An uncertain outcome (pending marker without a durable result) keeps the tenant lock and the draft in `failed`; nothing clears it. T44e needs an explicit operator/author "discard after reconciling" path, like the T36c2 `uaPending` note.
+- (T44c review) The lock timestamp is set only at acquire and not refreshed during a run; the stale takeover relies on the draft's `updatedAt` check. If a flow ever exceeds ten minutes with no checkpoint, a second `generate` for the same draft could take over. Refresh the lease per checkpoint if calls get slower.
+- (T44c review) `configure` compares plan and tenant config with `JSON.stringify`, which depends on key order from the same zod schemas. Fine today; use a deep-equal if the schemas diverge.
+- (T44c review) Migration 0008 (`show_generation_locks`) is not applied remotely; apply it before deploying a bot that calls the show flow.
