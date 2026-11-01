@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T39 (site workflow, Pages, domain; Sensitive). Reviewer: claude-code. Branch `feat/T39-site-workflow`.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T39 (workflows only). H10 done 2026-10-31: Pages project `fadenundstimmung` exists (Direct Upload), secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` set. Domain attach and DNS are done by Volodymyr by hand after review. Then T36.
-  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
-- **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none for T42.
+- **Active agent:** claude-code (review)
+- **Current task:** T39 (site workflow; Sensitive), implemented; review pending.
+- **Branch:** `feat/T39-site-workflow`
+- **Last commit:** see `git log -1` (T39 workflow implementation); previous: `cb7aa39 docs: hand T39 to codex`.
+- **Next step:** claude-code reviews the T39 PR and CI. Volodymyr's explicit OK is required before merge. After review, Volodymyr attaches apex/www and configures DNS manually; no live deployment was run by codex. Then T36.
+- **Blocked on:** review and sensitive-merge approval.
+- **Open questions for Volodymyr:** none.
+- **T39 reminders:** Pages project `fadenundstimmung` and both Cloudflare secrets exist. Stop if deploy requests `--force` or delegates to Workers. Site stays `noindex` without sitemap until T41; go-live also needs real `joinUrl` and author approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

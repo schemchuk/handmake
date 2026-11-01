@@ -123,3 +123,12 @@ jobs:
             --data-urlencode \
             "text=publish workflow failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             > /dev/null
+
+  site:
+    needs: publish
+    permissions:
+      contents: read
+    uses: ./.github/workflows/site.yml
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
