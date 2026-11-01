@@ -419,14 +419,85 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   Book shows with `ref: show:<id>` and other translations with `ref: post:<id>`. EUR translation
   estimates are operator-supplied in tenant config; T43 verifies them. No participant data is stored.
 
-### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`) · revised in v4
-- Depends on: T25, T35, T42
-- Change: as v3 (kind `work`, `/work` session, `TextGenerator` port, UA description plus DE version,
-  works writer `content/works/<id>/`, `content/collections/<slug>.md`), plus a `kind` field on the work
-  (`worn` | `closeup` | `interior`) used to pick the show template; text calls book their cost (T42).
-  Site pages for works and collections.
-- Acceptance: a published work appears in `content/works/` and on the site with valid frontmatter.
-- Tests: schema, builder, mocked generator, site build.
+### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`, `site`) · split proposal
+- Owner: codex · Reviewer: claude-code (each implementation PR).
+- Status: proposed; awaits Volodymyr's approval before implementation.
+- Depends on: T25, T35, T42.
+- Delivery: four sequential PRs, each targeting under ~400 changed non-test lines (ADR 009).
+  Reassess scope before coding each part; propose a further split if the estimate exceeds the limit.
+  T36 is complete only after T36a–T36d. Later tasks depending on T36 wait for all four parts.
+- Boundaries: no deployment, invented author copy or tenant-specific core logic.
+  Do not modify `apps/bot/wrangler`, credentials or D1 migrations. Explain any need to cross these boundaries separately
+  before proceeding. Video generation, show budget gating and pricing verification remain T43/T44.
+
+#### T36a — Work and collection contracts, builder and content writer
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T25, T35, T42; first PR in the split.
+- Change: add strict tenant-aware work and collection schemas and types; work fields include stable
+  `id`, `tenant`, `date`, `collection`, declared photos, per-language descriptions and provenance,
+  plus template `kind: worn | closeup | interior`. Keep dispatch `kind: work` distinct from the
+  work's template kind. Collections contain a tenant, slug, localized titles/descriptions, order and
+  cover reference. Add the pure `buildWorkFromPayload` builder and Git content-store writers for
+  `content/works/<id>/index.md` with photos and `content/collections/<slug>.md`.
+  Extend `ContentStore` with typed work/collection reads and listings and declared-photo access,
+  following ADR 016; extend the reusable store contract tests with the first Git implementation.
+  Leave dispatch orchestration and channel delivery for T36c.
+- Acceptance: a valid approved payload builds and round-trips through the store with provenance;
+  repeating the same write uses the same identity and paths. Reads/listings are tenant-scoped,
+  listings have deterministic ordering, malformed content fails loudly, and photo access exposes
+  only declared files with no path traversal. No bot, AI or site behavior changes in this PR.
+- Tests: schema rejection cases and all three template kinds; builder determinism and invalid
+  payloads; extended store contracts covering round-trips, repeated writes, tenant isolation,
+  ordering, malformed files and undeclared/unsafe photo names. Run typecheck and lint.
+
+#### T36b — Text generation and cost accounting
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T36a (merged), T42; second PR.
+- Change: introduce the provider-neutral `TextGenerator` port together with its first AI adapter.
+  Generate a Ukrainian description from the author's note and supplied work context, then a German
+  version, using existing translation conventions where applicable. Return editable text and
+  provenance/model/prompt metadata. Wire paid text calls into T42 usage accounting with tenant and
+  work correlation; reuse configured models/prices rather than adding prices in code.
+- Acceptance: mocked generation produces both language versions with accurate provenance; the
+  adapter never approves or publishes text. Every successful paid call is accounted for once,
+  including a successful UA call followed by a failed DE call. Failures surface without fabricated
+  text or zero-cost fallback; document the existing SDK parse-failure accounting limitation from
+  T42 and avoid treating unobserved usage as free. No live provider calls in tests.
+- Tests: mocked provider and translator success, malformed output, partial failure, usage hooks,
+  duplicate usage events and tenant/work attribution; typecheck and lint.
+
+#### T36c — Author work session and publishing integration
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T36b (merged); third PR.
+- Change: add `/work` using the existing draft/session FSM: collect photos and note, select template
+  kind, select or create a collection, generate descriptions, edit, preview and explicitly approve.
+  Include the author's choice of channel announcement. Dispatch approved work payloads and connect
+  the publisher to T36a's builder/writers, existing photo processing and ledger/retry machinery.
+- Acceptance: only the authorized author can advance the session; unapproved text is never
+  dispatched. Publishing writes the work and any new collection; optional announcements use channel
+  ports. Re-running the same publish payload creates neither another work nor duplicate channel
+  operations. Existing post sessions and publishing continue to work. Use the existing D1 schema;
+  explain any discovered migration requirement before proceeding.
+- Tests: session transitions, edit/approval/cancel paths, invalid input, collection selection/creation,
+  dispatch payload, processed photos, optional announcement, retry after partial delivery and post
+  regression tests using fake adapters; typecheck and lint. Run actionlint if workflows change.
+
+#### T36d — Work and collection site pages
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T36c (merged); fourth PR.
+- Change: build work and collection listings/detail pages from T36a's `ContentStore` contracts,
+  never filesystem globs. Use tenant site configuration, German default routes and Ukrainian `/uk/`
+  routes, localized metadata/canonical links, provenance labels and declared-photo bytes. Generate
+  responsive optimized images through the site build for work/collection pages (T35 review note).
+  Use structural test fixtures only; obtain real copy from the author.
+- Acceptance: an approved published work appears on its localized work and collection pages after
+  a build. Missing translations follow T35's existing policy: omit the work from that language's
+  listing and do not emit its detail route; no silent language fallback. Navigation emits only
+  existing localized links. Tenant isolation and malformed-content failures match ADR 016; photo
+  optimization preserves authentic originals in the content store. No deploy in this task.
+- Tests: fixture site build for both languages, collection membership/order, missing translation,
+  canonical links, provenance labels, optimized image output and malformed content; typecheck and
+  lint. Run actionlint if workflows change.
 
 ### T43 — Show pipeline spike and ADR 015 (docs and scripts) · Owner: claude-code · Reviewer: kimi-code
 - Depends on: T42, H13 · Resolves Q15
