@@ -6,7 +6,7 @@
 - **Last commit:** see `git log -1`
 - **Next step:** codex implements T36c on `feat/T36c-<name>`. T36a (PR #36) and T36b (PR #37, `7c2be86`) are merged; read docs/review-notes.md sections "Works and collections" and "Work text generation". No deployment.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** work provenance at approval (`ai-assisted` vs `ai-generated` for unedited text), see review-notes.
+- **Open questions for Volodymyr:** none. Decided 2026-11-01: work text provenance depends on author edits (review-notes, T36b).
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

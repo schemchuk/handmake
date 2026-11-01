@@ -473,6 +473,8 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   kind, select or create a collection, generate descriptions, edit, preview and explicitly approve.
   Include the author's choice of channel announcement. Dispatch approved work payloads and connect
   the publisher to T36a's builder/writers, existing photo processing and ledger/retry machinery.
+- Provenance (decided 2026-11-01): set at approval by comparing the generated draft with the approved text;
+  edited text is `ai-assisted`, unchanged text is `ai-generated` (DE follows the UA edit state).
 - Acceptance: only the authorized author can advance the session; unapproved text is never
   dispatched. Publishing writes the work and any new collection; optional announcements use channel
   ports. Re-running the same publish payload creates neither another work nor duplicate channel
