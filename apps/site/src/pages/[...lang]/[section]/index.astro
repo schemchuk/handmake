@@ -1,0 +1,27 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PortfolioFeed from '../../../components/PortfolioFeed.astro';
+import { uiStrings } from '../../../lib/i18n';
+import { langParam, pagePath } from '../../../lib/paths';
+import type { PortfolioSection } from '../../../lib/portfolio';
+import { loadSiteData } from '../../../lib/site-data';
+
+export async function getStaticPaths() {
+  const { tenant, site } = await loadSiteData();
+  return tenant.languages.flatMap((lang) => ['works', 'collections'].map((section) => ({
+    params: { lang: langParam(lang, site.defaultLanguage), section }, props: { lang, section },
+  })));
+}
+interface Props { lang: string; section: PortfolioSection }
+const { lang, section } = Astro.props;
+const data = await loadSiteData();
+const ui = uiStrings(lang);
+const title = section === 'works' ? ui.worksHeading : ui.collectionsHeading;
+const items = data[section].filter((item) => !!item.versions[lang]);
+const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code, pagePath(code, data.site.defaultLanguage, section)]));
+---
+<Base lang={lang} title={title} alternates={alternates} current={section}>
+  <div class="wrap"><h1 class="portfolio-heading">{title}</h1>
+    <PortfolioFeed items={items} section={section} lang={lang} data={data} />
+  </div>
+</Base>

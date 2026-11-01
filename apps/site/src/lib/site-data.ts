@@ -2,10 +2,11 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseTenantConfig } from '@handmake/core';
-import type { Post, SiteConfig, TenantConfig } from '@handmake/core';
+import type { ContentStore, Post, SiteConfig, TenantConfig } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 
 import { bundledLatinFamily } from './font-families';
+import { loadPortfolio } from './portfolio';
 
 /** Post types that belong on the public blog; announcements, reminders and polls stay in channels. */
 export const siteVisibleTypes: ReadonlySet<Post['type']> = new Set(['free']);
@@ -16,11 +17,11 @@ export interface SitePost {
   languages: string[];
 }
 
-export interface SiteData {
+export interface SiteData extends Awaited<ReturnType<typeof loadPortfolio>> {
   tenant: TenantConfig;
   site: SiteConfig;
   posts: SitePost[];
-  store: GitRepoContentStore;
+  store: ContentStore;
   /** Search engines are kept out until the go-live checklist (T41) sets SITE_INDEXABLE=true. */
   indexable: boolean;
 }
@@ -99,6 +100,7 @@ export function loadSiteData(): Promise<SiteData> {
       tenant,
       site: tenant.site,
       posts: visiblePosts(await store.listPosts(tenant.id), tenant.languages),
+      ...(await loadPortfolio(store, tenant.id)),
       store,
       indexable,
     };

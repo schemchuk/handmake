@@ -1,6 +1,10 @@
 /** UI strings per language. A tenant language without an entry here fails the build. */
 export interface UiStrings {
   skip: string;
+  worksHeading: string;
+  collectionsHeading: string;
+  noWorks: string;
+  descriptionLabel: string;
   navCircle: string;
   postsHeading: string;
   noPosts: string;
@@ -18,6 +22,10 @@ export interface UiStrings {
 const strings: Record<string, UiStrings> = {
   de: {
     skip: 'Zum Inhalt springen',
+    worksHeading: 'Arbeiten',
+    collectionsHeading: 'Kollektionen',
+    noWorks: 'Noch keine Arbeiten.',
+    descriptionLabel: 'Beschreibung',
     navCircle: 'Kreis',
     postsHeading: 'Beiträge',
     noPosts: 'Noch keine Beiträge.',
@@ -33,6 +41,10 @@ const strings: Record<string, UiStrings> = {
   },
   uk: {
     skip: 'Перейти до вмісту',
+    worksHeading: 'Роботи',
+    collectionsHeading: 'Колекції',
+    noWorks: 'Поки що немає робіт.',
+    descriptionLabel: 'Опис',
     navCircle: 'Гурток',
     postsHeading: 'Дописи',
     noPosts: 'Поки що немає дописів.',

@@ -1,0 +1,9 @@
+---
+import type { WorkImage } from '../lib/portfolio';
+interface Props { photo: WorkImage; alt: string; eager?: boolean }
+const { photo, alt, eager = false } = Astro.props;
+const largest = photo.variants.at(-1)!;
+---
+<img src={largest.url} srcset={photo.variants.map((variant) => `${variant.url} ${variant.width}w`).join(', ')}
+  sizes="(min-width: 52rem) 60vw, 100vw" width={largest.width} height={largest.height} alt={alt}
+  loading={eager ? 'eager' : 'lazy'} decoding="async" />

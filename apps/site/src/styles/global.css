@@ -299,3 +299,26 @@ a {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Portfolio pages retain the existing feed and detail grid. */
+.portfolio-heading {
+  margin-block: 2rem 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 7vw, 5.5rem);
+  line-height: 1.05;
+}
+.work-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 1.5rem;
+  padding-bottom: 3rem;
+}
+.work-gallery img {
+  width: 100%;
+}
+@media (max-width: 40rem) {
+  .nav {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+}

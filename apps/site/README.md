@@ -10,12 +10,31 @@ from the `ContentStore`.
 |---|---|
 | `/`, `/uk/` | home: wordmark and the blog feed |
 | `/posts/<post id, lowercase>/`, `/uk/posts/...` | one post (the canonical URL used by T40) |
+| `/works/`, `/uk/works/` | works, newest first; localized work details at `<id>/` |
+| `/collections/`, `/uk/collections/` | collections in configured order; localized details at `<slug>/` |
+| `/work-media/<work id>/<file>/<width>.webp` | optimized declared work photos |
 | `/kreis/`, `/uk/kreis/` | the circle page, only if `site.circle` is set |
 | `/media/<post id>/<file>` | photos, written from the store at build time |
 
 The default language comes from `site.defaultLanguage`, other tenant languages live under
 `/<lang>/`. A post appears only in languages it has text for. Only posts of type `free` are on the
 blog (`siteVisibleTypes` in `src/lib/site-data.ts`); announcements, reminders and polls stay in channels.
+
+## Portfolio content
+
+Works and collections come through `ContentStore.listWorks`, `listCollections` and
+`readWorkPhoto`. A missing translation omits the item from that language's listing and produces
+no detail route or language-switch link. Collection membership uses the work's `collection` slug;
+a missing collection, dangling cover or missing declared photo fails the build.
+
+Work descriptions and collection titles/descriptions are authored content. Non-human descriptions
+carry a localized provenance label; it does not describe the authentic photos. Work titles in
+metadata and cards are excerpts of the stored description.
+
+Sharp auto-orients declared photos and generates WebP variants at up to 480, 960 and 1440 pixels
+without upscaling; `srcset` serves them responsively. Output strips image metadata and leaves
+original bytes in the content store unchanged. Regular blog photos still use their existing media
+route without this optimization. Tests build an isolated tenant with structural fixtures only.
 
 ## Build
 
