@@ -12,3 +12,5 @@ export * from './ulid';
 export * from './work';
 export * from './work-publication';
 export * from './work-draft';
+export * from './show';
+export * from './show-config';

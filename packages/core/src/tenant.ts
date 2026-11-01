@@ -1,6 +1,8 @@
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 
+import { showConfigSchema } from './show-config';
+
 /**
  * Tenant config lives in `config/tenants/<id>.yaml` and holds everything
  * about a tenant except secrets: it references secrets *by name* only.
@@ -205,6 +207,8 @@ export const tenantConfigSchema = z
       })
       .strict()
       .optional(),
+    // Absence disables show generation; existing tenants need no migration.
+    shows: showConfigSchema.optional(),
     site: siteSchema.optional(),
     featureFlags: z.record(z.string(), z.boolean()),
     // Commercialization stub — must stay empty for now (spec section 8).
@@ -212,6 +216,9 @@ export const tenantConfigSchema = z
   })
   .strict()
   .superRefine((config, ctx) => {
+    if (config.shows && !config.ai) {
+      ctx.addIssue({ code: 'custom', path: ['shows'], message: 'shows require an AI budget' });
+    }
     const site = config.site;
     if (site && !config.languages.includes(site.defaultLanguage)) {
       ctx.addIssue({

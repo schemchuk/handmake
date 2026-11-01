@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44a (show contracts and tenant configuration), Owner codex, Reviewer claude-code. T44a-T44e split approved by Volodymyr on 2026-11-01; implementation not started.
-- **Branch:** `main`
-- **Last commit:** preceding commit `de8369d` — docs: propose reviewable T44 subtasks; approval recorded in this handoff commit.
-- **Next step:** Codex implements T44a in a fresh session on its own feature branch. ADR 015 permits mocked generation; real adapter requires the model-terms check before real calls. No deploy authorized.
-- **Blocked on:** nothing for T44a.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** claude-code
+- **Current task:** T44a implemented; review pending. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44a-show-contracts`
+- **Last commit:** preceding commit `680869d` — docs: approve T44 split and hand off T44a; implementation and handoff are in this commit.
+- **Next step:** Review the T44a PR (show schemas, ShowGenerator port, optional tenant shows config). Merge after green CI and no blocking findings; then hand off T44b in a fresh session. T44b must validate linked work/tenant, media bytes and tenant-language coverage. T44d verifies marking bytes and provider terms/rates before real calls. No deploy authorized.
+- **Blocked on:** nothing; awaiting reviewer. Validation: all 686 tests passed outside sandbox, plus workspace typecheck, lint, format check, build and publisher dry-run.
+- **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

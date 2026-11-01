@@ -78,3 +78,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T36c3 review) The collection reader calls the unauthenticated GitHub Contents API from a Worker; GitHub limits that per IP (60/hour) and Worker egress IPs are shared, so the menu can fail with a rate-limit error. The author sees "could not select collection, try /work again". If this happens in practice, send the existing GitHub token or read a generated index file instead. It also reads each collection file in sequence (one subrequest per collection).
 - (T36c3 review) `/work` on a draft in `publishing` state answers "description not finished" (the retry text). Harmless, but misleading; use the "busy" text if touched.
 - (T36c3 review) Announcement "yes" selects every channel in the tenant config, including `instagram` once configured. Check that the publisher can deliver to it before T26-T34 enable it.
+
+## Show contracts (T44a)
+- (T44a review) No blockers; CI green, core tests 205 passed. T44b must check that a show's `workId`, tenant, `originals` file names and generated media bytes really exist, and that `versions` cover exactly the tenant languages (the schema only checks shape).
+- (T44a review) Show `images[].prompt` and `video.prompt` hold the prompt version (e.g. `worn@1`), while the port calls it `promptVersion`. Pick one name in T44b/T44d so the stored field and the call result map without a rename.
+- (T44a review) `showSchema` does not tie `model` (snapshot) to the tenant `shows.models` list or `images[].model` to `shows.image.model`; that consistency belongs to the T44c orchestration, not the schema.
+- (T44a review) Marker declarations are shape-only by design; T44d must verify the bytes before approval. `eurPerImage`/`eurPerSecond` are operator estimates until reconciled with fal billing (ADR 015 pre-production check).
+- (T44a review) Test title "requires a persona except for %s interior" reads oddly for `worn`/`closeup`; cosmetic.
