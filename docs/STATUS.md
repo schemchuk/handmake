@@ -3,8 +3,8 @@
 - **Active agent:** claude-code
 - **Current task:** none. ADR 015 accepted; next T44 (show generation), depends on T36 (done) and T43 (done).
 - **Branch:** `main`
-- **Last commit:** `fa70db2` — feat: add localized work and collection site pages (T36d) (#41).
-- **Next step:** T44 in a fresh session. Provider: fal.ai (`nano-banana-2/edit` images, Kling 2.5 Turbo Pro video), model ids in tenant config; `FAL_KEY` is in local `.env` only (Worker secret later, with Volodymyr). Photos of works may be sent to providers (author's consent). Bot redeployed 2026-11-01 (version 3129afb7, no pending D1 migrations; `/work` and `kind: work` callbacks live). The site works pages are not deployed yet: waits for Volodymyr's go-ahead.
+- **Last commit:** `61328be` — fix: authenticate the collection listing with the dispatch token (#44).
+- **Next step:** T44 in a fresh session (mock `ShowGenerator` first; real fal adapter after the model-page check below). Provider per ADR 015: fal.ai (`nano-banana-2/edit`, Kling 2.5 Turbo Pro), model ids in tenant config; `FAL_KEY` only in local `.env` (Worker secret later, with Volodymyr). Photos of works may be sent to providers (author's consent). Bot redeployed 2026-11-01 with T36c, #42 (error logging), #43 (author notice on work publish), #44 (collection listing authenticated: anonymous GitHub API calls from Workers got 403). `/work` end to end verified by Volodymyr; the test work (aplikatsiia-kvitochka) stays on the site, as do all future published works. Site works pages are live.
 - **Blocked on:** nothing. Pre-production check: fal "Excluded Models" mark for the two models (ADR 015); real per-call cost from the fal balance.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
