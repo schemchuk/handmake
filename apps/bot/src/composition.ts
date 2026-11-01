@@ -15,6 +15,7 @@ import type { Env } from './env';
 import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './processed-updates';
 import { createGitHubActionsRunner } from './publish-runner';
 import { handlePublishedCallback, publishedCallbackPath } from './published-callback';
+import { createGitHubCollectionReader } from './collection-reader';
 import { createGitHubTenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 
@@ -132,6 +133,11 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         token: env.TELEGRAM_BOT_TOKEN,
         costs: { ledger: costs, tenantConfigs },
         translatorFor: aiRuntime().translatorFor,
+        work: {
+          collections: createGitHubCollectionReader({ repo: env.GITHUB_REPO, ref: 'main' }),
+          configs: tenantConfigs,
+          textGeneratorFor: aiRuntime().textGeneratorFor,
+        },
         drafts: createD1DraftStore(env.DB),
         resolveTenant: createTenantLookup(env.TELEGRAM_ALLOWED_USER_IDS),
         texts,

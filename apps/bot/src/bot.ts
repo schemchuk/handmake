@@ -1,4 +1,4 @@
-import { isUlid, maxDraftPhotos, pollSchema } from '@handmake/core';
+import { buildApprovedWorkJob, isUlid, maxDraftPhotos, pollSchema } from '@handmake/core';
 import type { Draft, PostPoll, PublishJob, PublishRunner, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
 
@@ -10,9 +10,12 @@ import { buildPreview } from './preview';
 import type { AiCostLedger } from './ai-costs';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
+import { registerWorkSession } from './work-session';
+import type { WorkSessionOptions } from './work-session';
 
 export interface CreateBotOptions {
   token: string;
+  work?: WorkSessionOptions;
   costs?: { ledger: AiCostLedger; tenantConfigs: TenantConfigSource };
   drafts: D1DraftStore;
   resolveTenant: TenantLookup;
@@ -56,6 +59,8 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     await next();
   });
 
+  const workSession = registerWorkSession(bot, options);
+
   bot.command('cost', async (ctx) => {
     let reply: string = texts.costUnavailableText;
     try {
@@ -77,6 +82,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   bot.command('new', async (ctx) => {
     const existing = await ctx.drafts.findCollectingForChat(ctx.tenantId, chatId(ctx), 'post');
     if (existing) {
+      await setSession(ctx, { kind: 'post', draftId: existing.draft.draftId });
       await ctx.reply(texts.draftExistsText(existing.draft.photoRefs.length));
       return;
     }
@@ -125,6 +131,10 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
     if (stored.draft.state === 'publishing' || stored.draft.state === 'published') {
       await ctx.reply(texts.draftFinishedText);
+      return;
+    }
+    if (stored.draft.kind === 'work') {
+      await workSession.generate(ctx, stored);
       return;
     }
     if ((stored.draft.texts['uk'] ?? '').trim() === '') {
@@ -195,6 +205,10 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
 
     if (action === 'regen-de') {
+      if (stored.draft.kind === 'work') {
+        await workSession.generate(ctx, stored, true);
+        return;
+      }
       const now = new Date();
       const claimed = await ctx.drafts.claimTranslation(
         ctx.tenantId,
@@ -370,6 +384,10 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     const stored =
       session.draftId !== null ? await ctx.drafts.get(ctx.tenantId, session.draftId) : undefined;
 
+    if (stored?.draft.state === 'failed' && stored.draft.kind === 'work') {
+      await ctx.reply(texts.workRetryText);
+      return;
+    }
     if (stored?.draft.state === 'failed') {
       const applied = await ctx.drafts.writeGermanByHand(
         ctx.tenantId,
@@ -667,7 +685,7 @@ function publishingStaleCutoff(now: Date): Date {
 /** Builds the dispatch job from the claimed draft; 'uk' stays the first key
  * so renderTelegram keeps Ukrainian as the album-caption language. */
 function publishJobOf(draft: Draft): PublishJob {
-  if (draft.kind !== 'post') throw new Error('work approval is connected in T36c3');
+  if (draft.kind === 'work') return buildApprovedWorkJob(draft);
   const texts: Record<string, string> = {};
   const uk = draft.texts['uk'];
   const de = draft.texts['de'];

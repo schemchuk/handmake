@@ -70,3 +70,8 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Template/collection cannot be changed after UA generation; announcement channels/new-collection metadata can be configured without losing baselines. A hand-written DE fallback without a generated DE baseline cannot be approved through the work helper; T36c3 must route recovery explicitly.
 - (T36c2 review) Any failed UA call, including a transient network error with no billing, leaves `uaPending` set and blocks the draft. The author has no way to clear it, so T36c3 must offer a clear "discard and start over" path (and tell the operator to check billing), not only an error message.
 - (T36c2 review) Approved provenance is computed from UA only, as decided: if the author edits only the German text, DE keeps `ai-generated`. This over-labels rather than under-labels AI use, so it is acceptable.
+
+## Work session (T36c3)
+- `/work` resumes its active work draft or collecting work; older ready drafts remain reachable through their own preview buttons after switching sessions. `/new` reattaches an existing collecting post. New-collection input uses one line per localized title/description; identifiers are generated, never typed by the author.
+- The public collection reader surfaces HTTP/rate-limit, malformed-content and oversized-list failures; it has no stale-cache fallback. The [Contents API directory cap](https://docs.github.com/en/rest/repos/contents#get-repository-content) is checked rather than silently truncating the menu. Large catalogues may need pagination/concurrent reads in a later task.
+- Redeploy the bot only with Volodymyr's explicit authorization. Site pages remain T36d; no deploy was run in T36c3.

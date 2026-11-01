@@ -232,6 +232,14 @@ Channel polls are anonymous: no voter data reaches us.
    Work-only publication persists an empty ledger. Work callbacks carry `kind: work` and mark the
    draft published without adding it to the regular post index. A retry cannot change stored work
    metadata or the ledger's channel selection; it resumes existing channel operation IDs.
+   The bot's `/work` selects a template and a tenant collection through inline menus; a new
+   collection takes one plain-text message (title/description per configured language, one field
+   per line). Its slug derives from the work ULID; copy remains entirely author-entered.
+   The Worker reads collections through `CollectionReader`, using public Git HTTP APIs rather than
+   filesystem imports. Menus pin slug snapshots so reordered listings and long slugs cannot change
+   an old button's meaning. Existing preview/edit/consent/publish handlers use the work flow; a
+   preview toggle chooses no announcements or all configured channels. Uncertain UA offers
+   `/discard` then `/work` and tells the operator to reconcile billing. No automatic UA retry.
 4. A work is also the source for a video (4.8), which answers spec Q9 by default: "a new work = a
    `work` draft; `/video` on a published work starts the render".
 

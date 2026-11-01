@@ -421,7 +421,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 
 ### T36 — Works and collections (`bot`, `publisher`, `core`, `ai`, `site`) · approved split
 - Owner: codex · Reviewer: claude-code (each implementation PR).
-- Status: split approved by Volodymyr (2026-11-01); T36a/T36b/T36c1 merged; T36c2 implemented in PR #39, awaiting review.
+- Status: split approved by Volodymyr (2026-11-01); T36a/T36b/T36c1/T36c2 merged; T36c3 implemented in PR #40, awaiting review.
 - Depends on: T25, T35, T42.
 - Delivery: six sequential PRs (T36a, T36b, T36c1–T36c3, T36d), each targeting under ~400 changed non-test lines (ADR 009).
   Reassess scope before coding each part; propose a further split if the estimate exceeds the limit.
@@ -469,7 +469,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 #### T36c — Author work session and publishing integration
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T36b (merged).
-- Status: implementation split approved by Volodymyr on 2026-11-01; T36c1 merged; T36c2 implemented in PR #39, awaiting review.
+- Status: implementation split approved by Volodymyr on 2026-11-01; T36c1/T36c2 merged; T36c3 implemented in PR #40, awaiting review.
   The existing session, dispatch and publisher boundaries plus partial-generation recovery require
   more than ~400 changed non-test lines together. Deliver T36c as the three sequential PRs below
   (ADR 009); preserve all parent acceptance criteria. T36d waits for all three to merge.

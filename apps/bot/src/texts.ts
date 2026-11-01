@@ -7,6 +7,25 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  workUnavailableText: 'Роботи зараз недоступні. Спробуй /work пізніше.',
+  workSetupText: 'Обери, як буде представлено роботу:',
+  workKinds: { worn: 'На моделі', closeup: 'Крупний план', interior: 'В інтер’єрі' },
+  workCollectionsText: 'Обери колекцію або створи нову:',
+  workCreateButton: 'Нова колекція',
+  workFormText: (languages: string[]) =>
+    'Надішли одним повідомленням, кожне поле з нового рядка:\n' +
+    languages.flatMap((lang) => [`Назва (${lang})`, `Опис (${lang})`]).join('\n'),
+  workConfiguredText: 'Колекцію обрано. Додай фото та коротку нотатку про роботу, потім /done.',
+  workSetupErrorText: 'Не вдалося обрати колекцію чи зберегти зміни. Спробуй /work ще раз.',
+  workNeedsPhotosText: 'Додай фото роботи перед /done.',
+  workGeneratingText: 'Готую опис роботи українською та німецькою…',
+  workRetryText: 'Опис не завершено. /done — продовжити; /discard — видалити чернетку.',
+  workUncertainText:
+    'Результат попереднього виклику невідомий. Оператору потрібно перевірити витрати. /discard і /work — видалити цю чернетку та почати заново.',
+  workAnnounceOn: 'Повідомлення в канали: так',
+  workAnnounceOff: 'Повідомлення в канали: ні',
+  workPreview: (kind: string, title: string) => `Робота: ${kind}. Колекція: ${title}`,
+
   costUnavailableText: 'Облік витрат на ШІ не налаштовано.',
   costFailedText: 'Не вдалося отримати витрати на ШІ. Спробуй /cost пізніше.',
   costLimitText: 'Ліміт витрат на ШІ вичерпано. Нові покази доступні наступного місяця.',
@@ -50,7 +69,7 @@ export const botTexts = {
     `Файл «${fileName}» не підійде: я приймаю лише фото у форматах JPEG/PNG і текст. ` +
     `HEIC та інші формати конвертуй у JPEG (або надішли фото як зображення, не як файл).`,
   unsupportedMessageText: 'Поки що я приймаю лише текст і фото — голосове, відео та стікери ні.',
-  unknownCommandText: 'Такої команди я не знаю. Команди: /new, /done, /discard.',
+  unknownCommandText: 'Такої команди я не знаю. Команди: /new, /work, /done, /discard.',
 
   // --- T15: translate, preview, edit, regenerate -----------------------------
   draftNoneText: 'Немає чернетки — надішли текст чи фото, або почни з /new.',

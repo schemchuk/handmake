@@ -69,6 +69,9 @@ export interface ContentStore {
   writeLedger(ledger: PublishLedger): Promise<void>;
 }
 
+/** Read-only content capability for runtimes without filesystem access. */
+export type CollectionReader = Pick<ContentStore, 'listCollections'>;
+
 export type DraftState =
   'collecting' | 'translating' | 'ready' | 'publishing' | 'published' | 'failed';
 

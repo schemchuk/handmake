@@ -1,4 +1,5 @@
 import { renderTelegram, TelegramRenderError, telegramCapabilities } from '@handmake/channels';
+import { buildApprovedWorkJob, readWorkDraftData } from '@handmake/core';
 import type { Draft, Post } from '@handmake/core';
 
 import type { BotTexts } from './texts';
@@ -88,12 +89,15 @@ export function buildPreview(draft: Draft, texts: BotTexts, now = new Date()): P
 
   let blockedError: string | undefined;
   try {
-    renderTelegram(post);
+    if (draft.kind === 'work') buildApprovedWorkJob(draft);
+    if (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length)
+      renderTelegram(post);
   } catch (error) {
-    if (!(error instanceof TelegramRenderError)) {
+    if (draft.kind === 'work') blockedError = texts.workSetupText;
+    else if (!(error instanceof TelegramRenderError)) {
       throw error;
     }
-    blockedError = error.message;
+    if (error instanceof TelegramRenderError) blockedError = error.message;
   }
 
   const lines: string[] = [texts.previewHeader(draft.photoRefs.length), ''];
@@ -120,14 +124,31 @@ export function buildPreview(draft: Draft, texts: BotTexts, now = new Date()): P
     blockedError === undefined &&
     draft.photoRefs.length > 0 &&
     uk !== undefined &&
-    uk.length > telegramCapabilities.captionLimit
+    uk.length > telegramCapabilities.captionLimit &&
+    (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length > 0)
   ) {
     lines.push('');
     lines.push(texts.previewCaptionSplitNote);
   }
 
+  const rows = keyboard(draft.draftId, texts, blockedError !== undefined);
+  if (draft.kind === 'work' && !blockedError) {
+    const { config } = readWorkDraftData(draft);
+    lines.unshift(
+      texts.workPreview(
+        texts.workKinds[config.kind],
+        String(draft.extras['workCollectionTitle'] ?? '').slice(0, 60),
+      ),
+    );
+    rows.unshift([
+      {
+        text: config.channels.length ? texts.workAnnounceOn : texts.workAnnounceOff,
+        callback_data: `work:${draft.draftId}:announce:${config.channels.length ? 'no' : 'yes'}`,
+      },
+    ]);
+  }
   return {
     text: lines.join('\n'),
-    keyboard: { inline_keyboard: keyboard(draft.draftId, texts, blockedError !== undefined) },
+    keyboard: { inline_keyboard: rows },
   };
 }

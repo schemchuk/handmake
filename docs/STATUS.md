@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T36c3 — author `/work` session and collection selection (`docs/03-tasks.md`, T36c3). Start a fresh session; one PR, reviewer claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T36c3 on `feat/T36c3-<name>`. T36c2 merged as PR #39. Read docs/review-notes.md sections "Work draft recovery (T36c2)" and "Work publication". If the estimate exceeds ~400 non-test lines, propose a further split in docs/03-tasks.md first. No deployment.
+- **Active agent:** claude-code (review)
+- **Current task:** T36c3 — author /work session and collection selection. Reviewer: claude-code.
+- **Branch:** `feat/T36c3-work-session`
+- **Last commit:** `7a2f1b9` — feat: add author work sessions and collection selection; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #40 (https://github.com/schemchuk/handmake/pull/40), then merges only after CI is green and no blocking findings remain. All 638 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment. T36d starts in a fresh session after merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
