@@ -72,4 +72,15 @@ describe('Worker collection reader', () => {
     await expect(make(fetchImpl).listCollections('../tenant')).rejects.toThrow();
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+  it('authenticates the directory listing when given a token', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 404 }));
+    await createGitHubCollectionReader({
+      repo: 'owner/repo',
+      ref: 'main',
+      token: 'secret-token',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    }).listCollections('tenant');
+    const init = (fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer secret-token');
+  });
 });

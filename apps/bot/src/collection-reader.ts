@@ -5,6 +5,8 @@ import type { CollectionReader } from '@handmake/core';
 export function createGitHubCollectionReader(options: {
   repo: string;
   ref: string;
+  /** Authenticates the directory listing: GitHub rate-limits anonymous calls per shared Worker IP. */
+  token?: string;
   fetchImpl?: typeof fetch;
 }): CollectionReader {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -13,7 +15,11 @@ export function createGitHubCollectionReader(options: {
     async listCollections(tenantId) {
       contentSlugSchema.parse(tenantId);
       const response = await fetchImpl(directory, {
-        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'handmake-bot' },
+        headers: {
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'handmake-bot',
+          ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+        },
       });
       if (response.status === 404) return [];
       if (!response.ok) throw new Error(`collection listing failed: HTTP ${response.status}`);
