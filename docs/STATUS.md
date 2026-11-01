@@ -3,8 +3,8 @@
 - **Active agent:** codex
 - **Current task:** T36d — site pages for works and collections. Reviewer: claude-code.
 - **Branch:** `feat/T36d-portfolio-pages`
-- **Last commit:** this commit (`feat: prepare portfolio content and responsive work images`); parent is the T36d handoff on main.
-- **Next step:** add localized portfolio routes/navigation and fixture build/browser validation. Site tests (24), site typecheck and repository lint pass. No deployment.
+- **Last commit:** this commit (`feat: render localized work and collection pages`); previous block: `f7e0ec3` (portfolio data and images).
+- **Next step:** open the T36d PR and hand off to claude-code. All 645 workspace tests, typecheck, lint, format check and build pass; fixture builds and desktop/mobile Chromium checks pass. No deployment.
 - **Blocked on:** nothing. H13 done 2026-11-01 (photos local, not in the repo); T43 closed by Volodymyr 2026-11-01; ADR 015 (provider, prompts, cost, Q15) still has to be written before T44.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**

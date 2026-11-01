@@ -1,0 +1,73 @@
+---
+import Base from '../../../layouts/Base.astro';
+import WorkImage from '../../../components/WorkImage.astro';
+import PortfolioFeed from '../../../components/PortfolioFeed.astro';
+import Provenance from '../../../components/Provenance.astro';
+import { uiStrings } from '../../../lib/i18n';
+import { langParam, pagePath } from '../../../lib/paths';
+import {
+  portfolioCover, portfolioKey, portfolioLanguages, portfolioPage, portfolioTitle, workImageKey,
+} from '../../../lib/portfolio';
+import type { PortfolioItem, PortfolioSection } from '../../../lib/portfolio';
+import { loadSiteData } from '../../../lib/site-data';
+import { excerpt, paragraphs } from '../../../lib/text';
+
+export async function getStaticPaths() {
+  const data = await loadSiteData();
+  return (['works', 'collections'] as const).flatMap((section) => data[section].flatMap((item) =>
+    portfolioLanguages(item, data.tenant.languages).map((lang) => ({
+      params: { lang: langParam(lang, data.site.defaultLanguage), section, id: portfolioKey(item) },
+      props: { lang, section, item },
+    })),
+  ));
+}
+interface Props { lang: string; section: PortfolioSection; item: PortfolioItem }
+const { lang, section, item } = Astro.props;
+const data = await loadSiteData();
+const def = data.site.defaultLanguage;
+const ui = uiStrings(lang);
+const version = item.versions[lang]!;
+const title = portfolioTitle(item, lang);
+const cover = portfolioCover(item);
+const work = 'id' in item ? item : undefined;
+const collection = work
+  ? data.collections.find((entry) => entry.slug === work.collection && entry.versions[lang])
+  : undefined;
+const members = work ? []
+  : data.works.filter((entry) => entry.collection === portfolioKey(item) && entry.versions[lang]);
+const alternates = Object.fromEntries(
+  portfolioLanguages(item, data.tenant.languages).map((code) => [
+    code, pagePath(code, def, portfolioPage(section, item)),
+  ]),
+);
+const [lead, ...rest] = paragraphs(version.description);
+---
+<Base lang={lang} title={title} description={excerpt(version.description)} alternates={alternates} current={section}>
+  <article class="wrap page">
+    {work && <h1 class="visually-hidden">{title}</h1>}
+    <figure class="page-figure">
+      <WorkImage photo={data.workImages.get(workImageKey(cover.workId, cover.fileName))!} alt={title} eager />
+    </figure>
+    <div class="page-body page-body--with-figure">
+      {!work && <h1>{title}</h1>}
+      {work && <time class="meta" datetime={work.date}>{new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: data.tenant.meetingSchedule.timezone }).format(new Date(work.date))}</time>}
+      <p class="lead">{lead}</p>
+      {rest.map((paragraph) => <p>{paragraph}</p>)}
+      <Provenance value={version.provenance} lang={lang} />
+      {collection && <p><a href={pagePath(lang, def, portfolioPage('collections', collection))}>{collection.versions[lang]!.title}</a></p>}
+      <a class="back" href={pagePath(lang, def, section)}>{section === 'works' ? ui.worksHeading : ui.collectionsHeading}</a>
+    </div>
+  </article>
+  {work ? (
+    <div class="wrap work-gallery">
+      {work.photos.slice(1).map((file) => (
+        <WorkImage photo={data.workImages.get(workImageKey(work.id, file))!} alt={title} />
+      ))}
+    </div>
+  ) : (
+    <section class="wrap">
+      <h2>{ui.worksHeading}</h2>
+      <PortfolioFeed items={members} section="works" lang={lang} data={data} />
+    </section>
+  )}
+</Base>

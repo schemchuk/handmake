@@ -112,6 +112,12 @@ v3 additions:
   `cover` references `{ workId, fileName }`. No body text. Flat work/collection paths cannot hold
   conflicting identities across tenants: writes must reject a foreign owner rather than overwrite.
 
+The site reads works and collections through `ContentStore` (T36d, ADR 016). Listings and detail
+routes include only items translated into the requested tenant language; navigation has no language
+fallback. Missing collection/cover/photo references fail the build. Declared photo bytes become
+responsive WebP variants (up to 480/960/1440 pixels, auto-oriented, without upscaling or metadata);
+originals remain unchanged in the store. Provenance labels apply to localized descriptions.
+
 Tenant config `config/tenants/faden-und-stimmung.yaml` holds tenant ID and name, languages and their
 order, enabled channels with per-channel settings (e.g. Instagram language `de`), content store type,
 meeting schedule (Thursday 14:00 Europe/Berlin), announcement/reminder schedule with Ukrainian

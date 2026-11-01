@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import Stitch from '../components/Stitch.astro';
 import { fontFaceCss, fontStack } from '../lib/fonts';
-import { languageName, uiStrings } from '../lib/i18n';
+import { uiStrings } from '../lib/i18n';
 import { absoluteUrl, pagePath } from '../lib/paths';
 import { loadSiteData } from '../lib/site-data';
 
@@ -13,7 +13,7 @@ interface Props {
   /** Path of this page in each language it exists in, e.g. { de: '/kreis/', uk: '/uk/kreis/' }. */
   alternates: Record<string, string>;
   /** Which nav entry is current. */
-  current?: 'home' | 'circle';
+  current?: 'home' | 'circle' | 'works' | 'collections';
 }
 
 const { lang, title, description, alternates, current } = Astro.props;
@@ -65,15 +65,17 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
       <header class="site-header">
         <a class="wordmark" href={pagePath(lang, def)}>{tenant.name}</a>
         <nav class="nav" aria-label="Main">
-          {site.circle && (
+          <a href={pagePath(lang, def, 'works')} aria-current={current === 'works' ? 'page' : undefined}>{ui.worksHeading}</a>
+          <a href={pagePath(lang, def, 'collections')} aria-current={current === 'collections' ? 'page' : undefined}>{ui.collectionsHeading}</a>
+          {site.circle?.texts[lang] && (
             <a href={pagePath(lang, def, 'kreis')} aria-current={current === 'circle' ? 'page' : undefined}>
               {ui.navCircle}
             </a>
           )}
           <div class="langs" role="group" aria-label={ui.language}>
             {
-              [def, ...tenant.languages.filter((code) => code !== def)].map((code) => {
-                const href = alternates[code] ?? pagePath(code, def);
+              [def, ...tenant.languages.filter((code) => code !== def)].filter((code) => alternates[code]).map((code) => {
+                const href = alternates[code]!;
                 return (
                   <a href={href} hreflang={code} lang={code} aria-current={code === lang ? 'true' : undefined}>
                     {code.toUpperCase()}

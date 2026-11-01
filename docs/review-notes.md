@@ -14,8 +14,8 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 
 ## Content store
 - F19 (work of the week): `ContentStore.listPosts` now exists (T35, ADR 016); use it when candidates are built (PR #6 review note 3).
-- Site: a post with no German text is not shown on `/` (no language fallback); a work without a translation needs the same decision (T35 review).
-- Site: photos are published unresized; add an optimization step before the show pipeline (T35 review).
+- Site: a post with no German text is not shown on `/` (no language fallback); T36d applies the same policy to works and collections, including detail routes and navigation (T35 review).
+- Site: T36d optimizes work/collection photos with responsive WebP copies while retaining originals. Regular blog photos remain unresized (T35 review).
 
 ## CI
 - gitleaks-action needs `GITLEAKS_LICENSE` if the repo moves to an organization.
@@ -45,7 +45,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - First deploy must be started by hand (Actions → Site → Run workflow on `main`) to confirm locked Wrangler 4.152.0 does not need `--force` for the existing Pages project.
 
 ## Works and collections (T36a, PR #36)
-- A collection's `cover` (`{ workId, fileName }`) is not checked by the low-level writer. T36c1 creates a new collection with its first work and first photo as cover; the site (T36d) must still fail or skip loudly on any dangling cover.
+- A collection's `cover` (`{ workId, fileName }`) is not checked by the low-level writer. T36c1 creates a new collection with its first work and first photo as cover; the site (T36d) fails the build on a dangling cover, missing collection or missing declared photo.
 - If a save crashes after the photos but before `index.md`, `listWorks` fails with "missing document" until a retry of the same publish completes the work.
 - Flat Git paths need globally unique work ids and collection slugs; a foreign-tenant write fails instead of overwriting.
 

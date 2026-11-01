@@ -1,0 +1,21 @@
+---
+import WorkImage from './WorkImage.astro';
+import { uiStrings } from '../lib/i18n';
+import { pagePath } from '../lib/paths';
+import { portfolioCover, portfolioPage, portfolioTitle, workImageKey } from '../lib/portfolio';
+import type { PortfolioItem, PortfolioSection } from '../lib/portfolio';
+import type { SiteData } from '../lib/site-data';
+interface Props { items: PortfolioItem[]; section: PortfolioSection; lang: string; data: SiteData }
+const { items, section, lang, data } = Astro.props;
+---
+{items.length === 0 ? <p class="empty">{uiStrings(lang).noWorks}</p> : (
+  <ol class="feed">
+    {items.map((item) => {
+      const cover = portfolioCover(item);
+      return <li class="entry"><a href={pagePath(lang, data.site.defaultLanguage, portfolioPage(section, item))}>
+        <WorkImage photo={data.workImages.get(workImageKey(cover.workId, cover.fileName))!} alt="" />
+        <p class="entry-text">{portfolioTitle(item, lang)}</p>
+      </a></li>;
+    })}
+  </ol>
+)}
