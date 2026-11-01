@@ -46,3 +46,27 @@ export interface ShowGenerator {
   generateImage(request: ShowImageRequest): Promise<ShowCallResult<ShowSourceImage['mimeType']>>;
   generateVideo(request: ShowVideoRequest): Promise<ShowCallResult<'video/mp4'>>;
 }
+
+/** Durable attempt-indexed storage of raw bytes AND the provider receipt, before accounting.
+ * put must be immutable/idempotent and get must return the same result across restarts.
+ * References must be usable by ShowMediaSource after marking/ingestion (T44d).
+ */
+export interface ShowResultStore {
+  put(
+    tenantId: string,
+    showId: string,
+    attemptId: string,
+    result: ShowCallResult<ShowSourceImage['mimeType'] | 'video/mp4'>,
+  ): Promise<void>;
+  get(
+    tenantId: string,
+    showId: string,
+    attemptId: string,
+  ): Promise<
+    | {
+        ref: string;
+        result: ShowCallResult<ShowSourceImage['mimeType'] | 'video/mp4'>;
+      }
+    | undefined
+  >;
+}
