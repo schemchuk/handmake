@@ -22,6 +22,7 @@ export const botTexts = {
   workRetryText: 'Опис не завершено. /done — продовжити; /discard — видалити чернетку.',
   workUncertainText:
     'Результат попереднього виклику невідомий. Оператору потрібно перевірити витрати. /discard і /work — видалити цю чернетку та почати заново.',
+  workPublishedText: (url?: string) => `Роботу опубліковано на сайті.${url ? ` ${url}` : ''}`,
   workAnnounceOn: 'Повідомлення в канали: так',
   workAnnounceOff: 'Повідомлення в канали: ні',
   workPreview: (kind: string, title: string) => `Робота: ${kind}. Колекція: ${title}`,

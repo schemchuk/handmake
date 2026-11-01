@@ -174,6 +174,8 @@ export interface D1DraftStore {
    * the callback treats that as a no-op, never an error.
    */
   markPublished(tenantId: string, draftId: string, now: Date): Promise<boolean>;
+  /** The chat a draft was started from, for notices after background steps. */
+  chatIdOf(tenantId: string, draftId: string): Promise<string | undefined>;
   /**
    * Idempotent index row for a published post (migration 0005). Insert or
    * ignore: a retried or duplicated callback can never index the same post
@@ -524,6 +526,14 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(now.toISOString(), tenantId, draftId)
         .run();
       return result.meta.changes === 1;
+    },
+
+    async chatIdOf(tenantId, draftId) {
+      const row = await db
+        .prepare('SELECT chat_id FROM drafts WHERE tenant_id = ? AND id = ?')
+        .bind(tenantId, draftId)
+        .first<{ chat_id: string }>();
+      return row?.chat_id;
     },
 
     async indexPublished({ tenantId, postId, publishedAt, photos }) {
