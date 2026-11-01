@@ -29,7 +29,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H9 | Random `NAMES_ENDPOINT_SECRET` (`openssl rand -hex 32`) as GitHub Secret and Worker secret. | T28 |
 | H10 | Cloudflare Pages project; API token scoped to Pages deploy only; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Secrets. Domain fadenundstimmung.de is registered (INWX) and its zone is active on Cloudflare (done 2026-10-30); attaching it to Pages is part of T39. **Done 2026-10-31:** Pages project `fadenundstimmung` (Direct Upload, created with `wrangler pages project create --force`), both secrets set. | T39 |
 | H11 | Impressum fields as GitHub Secrets (names in `.env.example`); confirm the legal page texts. | T41 |
-| H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. | T43 |
+| H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. **Done 2026-11-01:** 11 photos of 3 works received (blouse with cross-stitch, crocheted pillow cover, crocheted flower appliqué), kept locally and NOT committed (public repo, author's works). Usable: blouse 1-3, pillow 1-2, appliqué 4; blurry or process shots skipped (pillow 3, appliqué 1-3, 5). Author's consent to send them to AI providers is still needed before T43. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
 
 ## Tasks

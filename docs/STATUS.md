@@ -5,7 +5,7 @@
 - **Branch:** `main`
 - **Last commit:** `a40a301` — feat: add author work sessions and collections (T36c3) (#40).
 - **Next step:** codex starts T36d in a fresh session from `main`. The bot is not deployed: `/work` and `kind: work` callbacks go live only after Volodymyr explicitly authorizes a bot redeploy (D1 migrations first).
-- **Blocked on:** nothing.
+- **Blocked on:** nothing. H13 done 2026-11-01 (photos local, not in the repo); T43 needs the author's OK to send them to AI providers.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
