@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code (review)
-- **Current task:** T36a — work/collection contracts, builder and content store. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
-- **Branch:** `feat/T36a-work-content`
-- **Last commit:** `5b8f846` — feat: persist works and collections through content store; handoff recorded in this commit.
-- **Next step:** claude-code reviews PR #36 (https://github.com/schemchuk/handmake/pull/36), then merges only after CI is green and no blocking findings remain. All 519 tests, typecheck, lint, formatting and build pass locally; bot tests require Miniflare outside sandbox. No deployment. T36b waits for a fresh session after T36a merges.
+- **Active agent:** codex
+- **Current task:** T36b — text generation and cost accounting (`docs/03-tasks.md`, T36 section). Start a fresh session; one PR, reviewer claude-code.
+- **Branch:** `main`
+- **Last commit:** see `git log -1`
+- **Next step:** codex implements T36b on `feat/T36b-<name>`. T36a merged as PR #36 (`f7d3026`); review notes for T36c/T36d are in docs/review-notes.md ("Works and collections"). No deployment.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

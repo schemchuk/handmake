@@ -43,3 +43,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Test-channel publish runs also commit a post and trigger the site deploy, so test posts reach the site. Harmless while the site is `noindex` and has no domain; decide before T41 whether to filter them.
 - Deploy runs after channel delivery, so a "Mehr auf der Website" link (T40) can briefly point to a page that does not exist yet. T40 must account for this.
 - First deploy must be started by hand (Actions → Site → Run workflow on `main`) to confirm locked Wrangler 4.152.0 does not need `--force` for the existing Pages project.
+
+## Works and collections (T36a, PR #36)
+- `buildWorkFromPayload` does not check languages against `tenant.languages` (it has no tenant input); T36c must validate them when it wires dispatch.
+- A collection's `cover` (`{ workId, fileName }`) is not checked for existence at write time. T36c should create a new collection together with its first work and use that work's photo as cover; the site (T36d) must fail or skip loudly on a dangling cover.
+- If a save crashes after the photos but before `index.md`, `listWorks` fails with "missing document" until a retry of the same publish completes the work.
+- Flat Git paths need globally unique work ids and collection slugs; a foreign-tenant write fails instead of overwriting.
