@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** none. T39 merged as PR #35 (codex; reviewed by claude-code).
+- **Active agent:** codex
+- **Current task:** T36 (works and collections). First propose a split into PRs under ~400 lines in docs/03-tasks.md. Reviewer: claude-code.
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** T39 fully done 2026-11-01: first Site deploy ok without `--force`; `fadenundstimmung.de` active on Pages, `www` 301 to apex (Redirect Rule), Always Use HTTPS on; site stays `noindex`. Next: T36 or T40.
+- **Next step:** codex proposes the T36 split (docs-only commit on `main`, then stop for Volodymyr's OK), then implements the first part on its own branch. Site is live at fadenundstimmung.de behind `noindex` (T39 done 2026-11-01).
   Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
