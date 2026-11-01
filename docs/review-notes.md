@@ -83,3 +83,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44a review) `showSchema` does not tie `model` (snapshot) to the tenant `shows.models` list or `images[].model` to `shows.image.model`; that consistency belongs to the T44c orchestration, not the schema.
 - (T44a review) Marker declarations are shape-only by design; T44d must verify the bytes before approval. `eurPerImage`/`eurPerSecond` are operator estimates until reconciled with fal billing (ADR 015 pre-production check).
 - (T44a review) Test title "requires a persona except for %s interior" reads oddly for `worn`/`closeup`; cosmetic.
+
+## Show publication (T44b)
+- (T44b review) Generated media reach the publisher as Telegram file ids (`TelegramMediaSource.fetchMedia`). The Bot API `getFile` downloads files up to 20 MB only; T44c/T44e must keep the video (and images) under that, or add another transport.
+- (T44b review) A show folder without `index.md` (interrupted save) keeps its already written media, and a retry with different bytes fails as "immutable". If T44e lets the author regenerate after a failed approval, it needs a new show id or a cleanup path for the incomplete folder.
+- (T44b review) The bot approval path throws for `kind: show` drafts until T44e wires the show approval; no show drafts can be created before then.
+- (T44b review) `apps/bot` test "completes a site-only work idempotently" failed once in a full local run and passed alone twice; likely a timeout under load, not a defect. Watch it in CI.
