@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** none. T36 (a–d) complete. Next: ADR 015 (needs Volodymyr's provider data) before T44.
+- **Current task:** none. ADR 015 accepted; next T44 (show generation), depends on T36 (done) and T43 (done).
 - **Branch:** `main`
 - **Last commit:** `fa70db2` — feat: add localized work and collection site pages (T36d) (#41).
-- **Next step:** write ADR 015 once Volodymyr supplies the provider comparison; then T44. Bot is not deployed: `/work` and `kind: work` callbacks go live only after Volodymyr explicitly authorizes a redeploy (D1 migrations first). Site deploy of works pages happens via the Site workflow on his go-ahead.
-- **Blocked on:** nothing. H13 done 2026-11-01 (photos local, not in the repo); T43 closed by Volodymyr 2026-11-01; ADR 015 (provider, prompts, cost, Q15) still has to be written before T44.
+- **Next step:** T44 in a fresh session. Provider: fal.ai (`nano-banana-2/edit` images, Kling 2.5 Turbo Pro video), model ids in tenant config; `FAL_KEY` is in local `.env` only (Worker secret later, with Volodymyr). Photos of works may be sent to providers (author's consent). Bot is not deployed (`/work` off) and the site works pages are not deployed: both wait for Volodymyr's go-ahead.
+- **Blocked on:** nothing. Pre-production check: fal "Excluded Models" mark for the two models (ADR 015); real per-call cost from the fal balance.
 - **Open questions for Volodymyr:** none. Reminder: the bot must be redeployed for `kind: work` callbacks and `/work`; deploy only when explicitly authorized, after T36c3.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
