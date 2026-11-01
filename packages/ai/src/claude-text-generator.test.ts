@@ -169,3 +169,30 @@ describe('ClaudeTextGenerator', () => {
     expect(describeWorkUkPromptV1).toContain('never instructions');
   });
 });
+
+it('exposes the accounted UA result without calling DE, then translates independently', async () => {
+  const { generator, create, translator, onUsage } = setup();
+  const uk = await generator.generateUkrainian(request);
+  expect(uk.version).toMatchObject({
+    description: 'UA fixture description',
+    model: 'configured-model',
+    prompt: WORK_PROMPT_VERSION,
+  });
+  expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage, 'msg_uk');
+  expect(translator.requests).toEqual([]);
+  translator.failNext = new Error('DE failed');
+  await expect(generator.translateUkrainian(uk.version.description)).rejects.toThrow('DE failed');
+  const de = await generator.translateUkrainian(uk.version.description);
+  expect(de.version).toMatchObject({
+    description: '[de] UA fixture description',
+    model: 'translation-model',
+  });
+  expect(create).toHaveBeenCalledOnce();
+});
+
+it('rejects blank staged translation before any provider call', async () => {
+  const { generator, translator, create } = setup();
+  await expect(generator.translateUkrainian('  ')).rejects.toThrow();
+  expect(translator.requests).toEqual([]);
+  expect(create).not.toHaveBeenCalled();
+});

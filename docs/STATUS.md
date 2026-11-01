@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T36c2 — persisted generation recovery and approval metadata (`docs/03-tasks.md`, T36c2). Start a fresh session; one PR, reviewer claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T36c2 on `feat/T36c2-<name>`. T36c1 merged as PR #38 (`6b810d3`). Read docs/review-notes.md sections "Work text generation" (provenance and UA-recovery decisions) and "Work publication". No deployment.
+- **Current task:** T36c2 — persisted generation recovery and approval metadata. Reviewer: claude-code.
+- **Branch:** `feat/T36c2-work-recovery`
+- **Last commit:** this commit (`feat: expose separately accounted work text stages`); parent is the T36c2 handoff on main.
+- **Next step:** add version-guarded work draft checkpoints, DE-only recovery and approval metadata. Core/AI tests (206), full typecheck and lint pass. No deployment or new user entry point.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Reminder: the publisher's work callback needs a bot version that accepts `kind: work`; deploy only when explicitly authorized (not before T36c3).
 - **POSSE discussion, round 1 answered (2026-10-30):**
