@@ -1,6 +1,13 @@
 import { botTexts } from './texts';
-import { ClaudeTranslator, DEFAULT_MODEL, humanizeDePromptV1 } from '@handmake/ai';
-import { safeErrorMessage } from '@handmake/core';
+import {
+  ClaudeTextGenerator,
+  ClaudeTranslator,
+  DEFAULT_MODEL,
+  DEFAULT_PROMPT_VERSION,
+  humanizeDePromptV1,
+} from '@handmake/ai';
+import { contentSlugSchema, safeErrorMessage, workIdSchema } from '@handmake/core';
+import type { TextGenerator } from '@handmake/core';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { AllowList } from './allow-list';
 import { costMonth, formatCosts } from './ai-costs';
@@ -71,6 +78,53 @@ export function createAiCostRuntime(
   }
   return {
     notices,
+    /** Work descriptions require pricing and accounting; no unaccounted fallback. T36c calls this. */
+    async textGeneratorFor(tenantId: string, workId: string): Promise<TextGenerator> {
+      contentSlugSchema.parse(tenantId);
+      workIdSchema.parse(workId);
+      const config = await configs.load(tenantId);
+      if (config.id !== tenantId) throw new Error('work generation tenant config mismatch');
+      const pricing = config.ai?.translation;
+      if (!pricing) throw new Error('work generation requires configured text pricing');
+      const report =
+        (service: string) =>
+        async (usage: { input_tokens: number; output_tokens: number }, responseId?: string) => {
+          if (
+            !responseId ||
+            [usage.input_tokens, usage.output_tokens].some((n) => !Number.isSafeInteger(n) || n < 0)
+          ) {
+            throw new Error('work text usage is missing identity or valid token counts');
+          }
+          await ledger.recordCost(tenantId, {
+            id: responseId,
+            at: new Date(),
+            ref: `work:${workId}`,
+            service: `${service}:${pricing.model}`,
+            unit: 'tokens',
+            amountEur:
+              (usage.input_tokens * pricing.inputEurPerMillion +
+                usage.output_tokens * pricing.outputEurPerMillion) /
+              1_000_000,
+          });
+        };
+      return new ClaudeTextGenerator({
+        apiKey,
+        model: pricing.model,
+        onUsage: report('text-generation'),
+        translation: {
+          model: pricing.model,
+          promptVersion: DEFAULT_PROMPT_VERSION,
+          translator: new ClaudeTranslator({
+            apiKey,
+            tenantId,
+            model: pricing.model,
+            systemPrompt: humanizeDePromptV1,
+            requireUsage: true,
+            onUsage: report('translation'),
+          }),
+        },
+      });
+    },
     async translatorFor(tenantId: string, ref: string) {
       const pricing = await configs
         .load(tenantId)

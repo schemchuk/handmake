@@ -208,7 +208,12 @@ Channel polls are anonymous: no voter data reaches us.
    because they derive from author-supplied facts, with model/prompt metadata on each version.
    Template kind/collection are metadata, never a source of invented facts. No photos are sent to
    the text API. UA usage is booked before local output validation; work translation opts into
-   required usage accounting. She edits and approves as with posts.
+   required usage accounting. The T42 runtime's `textGeneratorFor(tenantId, workId)` binds both calls
+   to `work:<id>` and reuses `ai.translation` model/EUR rates for both text operations; it requires
+   matching tenant config and pricing, with no default/unaccounted fallback. Services are
+   `text-generation:<model>` and `translation:<model>`, deduplicated by provider response ID through
+   the existing ledger. Re-generating text with new response IDs is a new paid operation.
+   She edits and approves as with posts.
 3. Publish dispatches with kind `work`: the publisher's `buildWorkFromPayload` and a works writer in
    the content store write `content/works/<id>/` (ledger path `content/ledger/<id>.json` as for posts),
    optionally also a channel post about the new work (her choice in the preview).

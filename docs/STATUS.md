@@ -3,8 +3,8 @@
 - **Active agent:** codex
 - **Current task:** T36b — text generation and cost accounting. Reviewer: claude-code.
 - **Branch:** `feat/T36b-work-text`
-- **Last commit:** this commit (`feat: add work text generator and strict usage reporting`); parent is the T36b handoff on main.
-- **Next step:** connect the adapter to T42 with a tenant/work-bound factory and integration tests. Core tests (157), AI tests (47), AI typecheck and repository lint pass. No deployment.
+- **Last commit:** `ed5c8e9` — feat: add work text generator and strict usage reporting; runtime integration in this commit.
+- **Next step:** open one T36b PR and hand off to claude-code. All 553 tests pass via sequential workspace execution (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. Local parallel tests hit existing 5 s timeouts. No deployment; /work wiring belongs to T36c.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

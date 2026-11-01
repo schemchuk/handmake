@@ -33,7 +33,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - All existing allow-listed users are operators (Volodymyr, 2026-10-31); no separate operator role.
 - Notices claim before sending: a crash between claim and delivery can lose a notification; consider expiring claims in a later task.
 - Translation model and configured prices are not validated against each other.
-- When SDK `messages.parse` throws, paid usage is not recorded because no parsed response reaches the usage hook.
+- When SDK `messages.parse` throws, paid usage is not recorded because no parsed response reaches the usage hook. T36b work translation surfaces this as an accounting-uncertain failure (never zero usage); reconcile provider billing manually. UA generation uses SDK `messages.create` and books returned usage before validating JSON. Transport/SDK failures without a response still have unknown usage; T36b cannot reconstruct it.
 - Any tenant-config refresh failure uses the last-known config without notifying the operator; cold failures fall back to the default translator without accounting. Diagnostic warnings are logged.
 - `aiRuntime()` is constructed three times along the scheduled path; consolidate in a later task.
 - Prompt-cache read/write tokens are not accounted for; EUR prices are entered manually and need verification in T43.
@@ -49,3 +49,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - A collection's `cover` (`{ workId, fileName }`) is not checked for existence at write time. T36c should create a new collection together with its first work and use that work's photo as cover; the site (T36d) must fail or skip loudly on a dangling cover.
 - If a save crashes after the photos but before `index.md`, `listWorks` fails with "missing document" until a retry of the same publish completes the work.
 - Flat Git paths need globally unique work ids and collection slugs; a foreign-tenant write fails instead of overwriting.
+
+## Work text generation (T36b)
+- T36c must call `textGeneratorFor(tenantId, workId)` and persist returned per-language provenance/model/prompt metadata in the draft; approval remains separate. No `/work` wiring in T36b.
+- A failed required ledger write rejects the generation/translation. Paid calls whose usage could not be persisted need manual billing reconciliation; no application retry after a bookkeeping/output failure or zero-cost record is made by the work flow. SDK transport retries retain the existing two-retry policy.
+- Both work text operations use the tenant's `ai.translation` model and manually supplied EUR rates; T43 still verifies rates. Existing post-translation model/pricing and best-effort behavior remain as noted under T42. Prompt-cache tokens remain unaccounted for.
+- Work text costs have `ref: work:<id>`; they contribute to monthly/service totals but not the existing `show:` subtotal. They are not rebooked when a later show uses that work.
