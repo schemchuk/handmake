@@ -1,11 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T36 (works and collections). First propose a split into PRs under ~400 lines in docs/03-tasks.md. Reviewer: claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex proposes the T36 split (docs-only commit on `main`, then stop for Volodymyr's OK), then implements the first part on its own branch. Site is live at fadenundstimmung.de behind `noindex` (T39 done 2026-11-01).
-  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
+- **Active agent:** claude-code (review)
+- **Current task:** T36a — work/collection contracts, builder and content store. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
+- **Branch:** `feat/T36a-work-content`
+- **Last commit:** `5b8f846` — feat: persist works and collections through content store; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #36 (https://github.com/schemchuk/handmake/pull/36), then merges only after CI is green and no blocking findings remain. All 519 tests, typecheck, lint, formatting and build pass locally; bot tests require Miniflare outside sandbox. No deployment. T36b waits for a fresh session after T36a merges.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

@@ -1,3 +1,5 @@
+import { collectionSchema, compareCollections, workSchema } from '../work';
+import type { Collection, Work } from '../work';
 import { compareNewestFirst } from '../post';
 import type { Post } from '../post';
 import type {
@@ -21,7 +23,14 @@ import type {
   TranslationResult,
   Translator,
 } from '../ports/services';
-import type { ContentStore, Draft, DraftState, DraftStore, PublishLedger } from '../ports/store';
+import type {
+  ContentStore,
+  Draft,
+  DraftState,
+  DraftStore,
+  PhotoFile,
+  PublishLedger,
+} from '../ports/store';
 
 export interface FakeChannelAdapterOptions {
   key?: string;
@@ -122,6 +131,65 @@ export class FakeContentStore implements ContentStore {
     fileName: string,
   ): Promise<Uint8Array | undefined> {
     return this.photos.get(FakeContentStore.key(tenantId, postId))?.get(fileName);
+  }
+
+  readonly works = new Map<string, Work>();
+  readonly workPhotos = new Map<string, Map<string, Uint8Array>>();
+  readonly collections = new Map<string, Collection>();
+
+  async saveWork(input: Work, photos: PhotoFile[]): Promise<void> {
+    const work = workSchema.parse(input);
+    if (photos.some((photo) => !work.photos.includes(photo.fileName))) {
+      throw new Error('photo must be declared by work');
+    }
+    const existing = this.works.get(work.id);
+    if (existing && existing.tenant !== work.tenant)
+      throw new Error('work belongs to another tenant');
+    this.works.set(work.id, structuredClone(work));
+    const stored = this.workPhotos.get(work.id) ?? new Map<string, Uint8Array>();
+    for (const photo of photos) stored.set(photo.fileName, photo.data.slice());
+    this.workPhotos.set(work.id, stored);
+  }
+
+  async readWork(tenantId: string, id: string): Promise<Work | undefined> {
+    const work = this.works.get(id);
+    return work?.tenant === tenantId ? structuredClone(work) : undefined;
+  }
+
+  async listWorks(tenantId: string): Promise<Work[]> {
+    return structuredClone(
+      [...this.works.values()].filter((w) => w.tenant === tenantId).sort(compareNewestFirst),
+    );
+  }
+
+  async readWorkPhoto(
+    tenantId: string,
+    id: string,
+    fileName: string,
+  ): Promise<Uint8Array | undefined> {
+    const work = await this.readWork(tenantId, id);
+    return work?.photos.includes(fileName)
+      ? this.workPhotos.get(id)?.get(fileName)?.slice()
+      : undefined;
+  }
+
+  async saveCollection(input: Collection): Promise<void> {
+    const collection = collectionSchema.parse(input);
+    const existing = this.collections.get(collection.slug);
+    if (existing && existing.tenant !== collection.tenant)
+      throw new Error('collection belongs to another tenant');
+    this.collections.set(collection.slug, structuredClone(collection));
+  }
+
+  async readCollection(tenantId: string, slug: string): Promise<Collection | undefined> {
+    const collection = this.collections.get(slug);
+    return collection?.tenant === tenantId ? structuredClone(collection) : undefined;
+  }
+
+  async listCollections(tenantId: string): Promise<Collection[]> {
+    return structuredClone(
+      [...this.collections.values()].filter((c) => c.tenant === tenantId).sort(compareCollections),
+    );
   }
 
   async readLedger(tenantId: string, postId: string): Promise<PublishLedger | undefined> {

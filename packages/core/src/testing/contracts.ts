@@ -1,3 +1,4 @@
+import { describeWorkContentStoreContract } from './work-contract';
 import { describe, expect, it } from 'vitest';
 
 import { idempotencyBase } from '../ports/channel';
@@ -89,6 +90,7 @@ export function describeChannelAdapterContract(
 }
 
 export function describeContentStoreContract(name: string, makeStore: () => ContentStore): void {
+  describeWorkContentStoreContract(name, makeStore);
   describe(`ContentStore contract: ${name}`, () => {
     it('round-trips a post and reads back an absent ledger as undefined', async () => {
       const store = makeStore();
