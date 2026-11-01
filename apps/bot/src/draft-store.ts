@@ -87,6 +87,8 @@ export interface D1DraftStore {
    * statements below instead.
    */
   update(draft: Draft, expectedVersion: number): Promise<boolean>;
+  /** Work checkpoints/configuration: CAS protects texts and extras together without a migration. */
+  updateWork(draft: Draft, expectedVersion: number): Promise<boolean>;
   /**
    * Atomically appends one photo file_id to a collecting draft. The
    * 10-photo limit and the state guard live in the UPDATE itself, so
@@ -302,6 +304,31 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           draft.state,
           JSON.stringify(draft.texts),
           JSON.stringify(draft.photoRefs),
+          draft.updatedAt,
+          draft.tenantId,
+          draft.draftId,
+          expectedVersion,
+        )
+        .run();
+      return result.meta.changes === 1;
+    },
+
+    async updateWork(draft, expectedVersion) {
+      if (
+        draft.kind !== 'work' ||
+        !['collecting', 'translating', 'failed', 'ready'].includes(draft.state)
+      )
+        return false;
+      const result = await db
+        .prepare(
+          `UPDATE drafts SET status = ?, texts = ?, extras = ?, updated_at = ?, version = version + 1
+         WHERE tenant_id = ? AND id = ? AND version = ? AND kind = 'work'
+           AND status IN ('collecting', 'translating', 'failed', 'ready')`,
+        )
+        .bind(
+          draft.state,
+          JSON.stringify(draft.texts),
+          JSON.stringify(draft.extras),
           draft.updatedAt,
           draft.tenantId,
           draft.draftId,

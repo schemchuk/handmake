@@ -202,10 +202,12 @@ Channel polls are anonymous: no voter data reaches us.
 1. The author starts a work session (`/work`): a draft of kind `work` on the existing `drafts` table and
    FSM (collect → translate → preview → publish). She sends photos and a short note, picks or creates a
    collection (inline buttons).
-2. `TextGenerator.generate` drafts a UA description from the author's note and textual context, then
-   uses `Translator` for DE; it returns editable `versions` plus notes and never approves/publishes.
-   The UA prompt is `describe-work-uk@1`; DE reuses `humanize-de@1`. Both versions are `ai-assisted`
-   because they derive from author-supplied facts, with model/prompt metadata on each version.
+2. `TextGenerator` exposes `generateUkrainian` and `translateUkrainian` stages; `generate` still
+   combines them for callers needing both at once. Stages return editable text/version metadata and
+   notes, never approval/publication. The work draft flow persists UA before calling DE.
+   The UA prompt is `describe-work-uk@1`; DE reuses `humanize-de@1`. Generated draft metadata is
+   provisional. At explicit approval, unchanged UA means `ai-generated`, edited UA `ai-assisted`;
+   DE follows the UA edit state (Volodymyr, 2026-11-01). Model/prompt metadata remains per language.
    Template kind/collection are metadata, never a source of invented facts. No photos are sent to
    the text API. UA usage is booked before local output validation; work translation opts into
    required usage accounting. The T42 runtime's `textGeneratorFor(tenantId, workId)` binds both calls
@@ -213,7 +215,13 @@ Channel polls are anonymous: no voter data reaches us.
    matching tenant config and pricing, with no default/unaccounted fallback. Services are
    `text-generation:<model>` and `translation:<model>`, deduplicated by provider response ID through
    the existing ledger. Re-generating text with new response IDs is a new paid operation.
-   She edits and approves as with posts.
+   `extras.work` holds configuration, generated baselines, notes and a UA in-flight marker.
+   `updateWork` atomically persists texts/extras/state with the expected D1 row version. Late results
+   cannot overwrite newer claims, edits or deleted drafts. Failed DE resumes from the stored UA
+   (including author edits) without generating UA again. An interrupted UA call without a durable
+   result requires reconciliation instead of another automatic paid call. A failed configuration
+   lookup before any API call can be retried. `buildApprovedWorkJob` consumes the fresh approval
+   snapshot and preserves exact author text; T36c3 supplies UI/gating and the publishing claim.
 3. Publish dispatches with kind `work`: the publisher's `buildWorkFromPayload` and a works writer in
    the content store write `content/works/<id>/` (ledger path `content/ledger/<id>.json` as for posts),
    optionally also channel announcements (her choice in the preview). The shared `work` dispatch
