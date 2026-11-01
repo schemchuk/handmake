@@ -1,7 +1,7 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** none. ADR 015 accepted; next T44 (show generation), depends on T36 (done) and T43 (done).
+- **Active agent:** codex
+- **Current task:** T44 (show generation), Owner codex, Reviewer claude-code. Depends on T36 (done) and T43 (done; ADR 015 accepted).
 - **Branch:** `main`
 - **Last commit:** `61328be` — fix: authenticate the collection listing with the dispatch token (#44).
 - **Next step:** T44 in a fresh session (mock `ShowGenerator` first; real fal adapter after the model-page check below). Provider per ADR 015: fal.ai (`nano-banana-2/edit`, Kling 2.5 Turbo Pro), model ids in tenant config; `FAL_KEY` only in local `.env` (Worker secret later, with Volodymyr). Photos of works may be sent to providers (author's consent). Bot redeployed 2026-11-01 with T36c, #42 (error logging), #43 (author notice on work publish), #44 (collection listing authenticated: anonymous GitHub API calls from Workers got 403). `/work` end to end verified by Volodymyr; the test work (aplikatsiia-kvitochka) stays on the site, as do all future published works. Site works pages are live.
