@@ -468,7 +468,13 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 
 #### T36c — Author work session and publishing integration
 - Owner: codex · Reviewer: claude-code.
-- Depends on: T36b (merged); third PR.
+- Depends on: T36b (merged).
+- Status: implementation split proposed on 2026-11-01; awaits Volodymyr's approval.
+  The existing session, dispatch and publisher boundaries plus partial-generation recovery require
+  more than ~400 changed non-test lines together. Deliver T36c as the three sequential PRs below
+  (ADR 009); preserve all parent acceptance criteria. T36d waits for all three to merge.
+  Each part keeps Owner: codex and Reviewer: claude-code; no deployment, credentials, Wrangler
+  configuration or D1 migrations. Explain any discovered migration requirement before proceeding.
 - Change: add `/work` using the existing draft/session FSM: collect photos and note, select template
   kind, select or create a collection, generate descriptions, edit, preview and explicitly approve.
   Include the author's choice of channel announcement. Dispatch approved work payloads and connect
@@ -485,6 +491,59 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 - Tests: session transitions, edit/approval/cancel paths, invalid input, collection selection/creation,
   dispatch payload, processed photos, optional announcement, retry after partial delivery and post
   regression tests using fake adapters; typecheck and lint. Run actionlint if workflows change.
+
+##### T36c1 — Work dispatch and publisher integration
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T36b (merged); first PR, target ~200–300 changed non-test lines.
+- Change: define the shared work publish-job/dispatch contract with stable work ID/date,
+  template kind, collection reference or new collection data, approved localized descriptions and
+  metadata, photo refs and optional channel announcement. Connect publisher parsing/routing to
+  `buildWorkFromPayload`, the work/collection writers and existing photo-processing/ledger delivery.
+  Create a new collection with its first work and a cover referencing that work's first photo.
+  Handle successful work completion in the existing callback without adding works to the regular
+  post candidate index; keep old post payloads/callbacks compatible.
+- Acceptance: validate tenant languages and metadata before fetching photos or writing content.
+  Publish work-only or work plus selected channel announcements using channel ports. Retries reuse
+  content identities and resume the ledger without duplicate channel operations; work and new
+  collection are committed together. Missing/foreign collections fail clearly. Existing post
+  dispatch, publishing and completion remain compatible. This PR exposes no `/work` command.
+- Tests: valid/invalid work dispatch, tenant language mismatch, existing/new collection and cover,
+  processed photos and exact paths, work-only completion, announcement partial-delivery retry,
+  callback indexing and ordinary-post regression; typecheck and lint. Actionlint if workflows change.
+
+##### T36c2 — Persisted generation recovery and approval metadata
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T36c1 (merged); second PR, target ~180–280 changed non-test lines.
+- Change: expose successful UA generation before DE translation; add a work-draft application flow
+  using `textGeneratorFor(tenantId, workId)` with intermediate text/metadata in existing draft JSON
+  fields. Use guarded state/version updates for configuration, generated baselines and results.
+  Preserve the UA result before starting DE; retry DE from that persisted result. Build approved
+  work jobs through T36c1's contract with provenance computed from generated versus approved text.
+- Acceptance: a DE failure leaves the paid UA draft recoverable, including after runtime restart;
+  retry invokes only the paid translator. Late results cannot overwrite discarded/edited drafts or
+  a newer claim. At approval, unchanged UA is `ai-generated`, edited UA is `ai-assisted`; DE follows
+  the UA edit state as decided by Volodymyr. Preserve model/prompt metadata and author text exactly.
+  Existing draft schema suffices; no D1 migration. This PR adds no new user entry point.
+- Tests: real-D1 generation success, UA-success/DE-failure and restart recovery with call counts,
+  stale/racing claims, discard/edit races, accounting failures, approval provenance with unchanged
+  and edited UA, and metadata dispatch round-trip; typecheck and lint.
+
+##### T36c3 — Author `/work` session and collection selection
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T36c2 (merged); third PR, target ~300–380 changed non-test lines.
+- Change: wire `/work` into existing collection/edit/preview/consent handlers and the background
+  runner. Add template selection, inline selection of tenant collections or creation of a localized
+  collection, and the preview choice of channel announcement. Supply a Worker-compatible collection
+  reader through a port/adapter boundary; never import the filesystem Git adapter into the Worker.
+  Use T36c2 for generation/recovery/approval and T36c1 for dispatch; retain author-entered copy.
+- Acceptance: only allow-listed authors can operate their tenant's session. Work configuration is
+  explicit, collection errors are visible, draft IDs isolate callbacks, and unapproved work is never
+  dispatched. `/done` resumes the correct generation stage; editing, preview, consent, publish and
+  cancel use the existing session FSM. Switching between post/work sessions preserves isolation.
+  Existing post sessions remain compatible. End-to-end mocked flow covers the parent T36c criteria.
+- Tests: commands/buttons, unauthorized and foreign-tenant access, template/collection selection and
+  creation, invalid input, post/work switching, generation retry, edit/preview/approval/cancel,
+  announcement choice and dispatched payload; typecheck and lint. Actionlint if workflows change.
 
 #### T36d — Work and collection site pages
 - Owner: codex · Reviewer: claude-code.
