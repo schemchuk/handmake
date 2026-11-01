@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T44 planning: proposed split T44a-T44e in docs/03-tasks.md; implementation not started.
+- **Active agent:** codex
+- **Current task:** T44a (show contracts and tenant configuration), Owner codex, Reviewer claude-code. T44a-T44e split approved by Volodymyr on 2026-11-01; implementation not started.
 - **Branch:** `main`
-- **Last commit:** this handoff commit — docs: propose reviewable T44 subtasks.
-- **Next step:** Volodymyr approves or adjusts the T44a-T44e split; then hand off to codex for T44a in a fresh session. ADR 015 permits mocked generation; real adapter requires the model-terms check before real calls. No deploy authorized.
-- **Blocked on:** approval of the proposed T44 split (AGENTS.md / ADR 009 review budget).
-- **Open questions for Volodymyr:** approve or adjust T44a-T44e in docs/03-tasks.md.
+- **Last commit:** preceding commit `de8369d` — docs: propose reviewable T44 subtasks; approval recorded in this handoff commit.
+- **Next step:** Codex implements T44a in a fresh session on its own feature branch. ADR 015 permits mocked generation; real adapter requires the model-terms check before real calls. No deploy authorized.
+- **Blocked on:** nothing for T44a.
+- **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

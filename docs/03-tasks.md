@@ -584,12 +584,12 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   approval; models are changed by config only.
 - Tests: session flow, template choice, mocked generator, cap respected, marker present.
 
-#### Proposed T44 split (2026-11-01; awaiting Volodymyr approval)
+#### Approved T44 split (Volodymyr, 2026-11-01)
 
 T44 exceeds the ADR 009 review budget: it introduces a content kind, media persistence,
 paid-call recovery, a provider adapter and a bot session. Keep T44 as the parent acceptance
 criteria above; implement the following in separate sessions and PRs, each targeting fewer
-than approximately 400 changed non-test lines. No implementation starts before approval.
+than approximately 400 changed non-test lines. Approved by Volodymyr in chat on 2026-11-01.
 All subtasks: **Owner: codex · Reviewer: claude-code**.
 
 - **T44a — Show contracts and tenant configuration** (depends on T36, T43).
