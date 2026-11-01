@@ -63,11 +63,10 @@ describe('dispatch payload: kind (T25)', () => {
     expect(parseDispatchPayload(validPayload).kind).toBe('post');
   });
 
-  it('accepts kind work', () => {
-    const payload = parseDispatchPayload(
-      JSON.stringify({ ...JSON.parse(validPayload), kind: 'work' }),
-    );
-    expect(payload.kind).toBe('work');
+  it('rejects legacy work payloads without approved work metadata', () => {
+    expect(() =>
+      parseDispatchPayload(JSON.stringify({ ...JSON.parse(validPayload), kind: 'work' })),
+    ).toThrow(/work requires metadata/);
   });
 
   it('rejects an unknown kind', () => {
@@ -126,5 +125,57 @@ describe('dispatch payload: post type and poll (T21)', () => {
         }),
       ),
     ).toThrow(/must not carry a poll/);
+  });
+});
+
+const approvedWorkPayload = {
+  tenantId: 'faden-und-stimmung',
+  draftId: '01JBCA1B2C3D4E5F6G7H8J9K0M',
+  kind: 'work',
+  type: 'free',
+  texts: { uk: 'UA fixture', de: 'DE fixture' },
+  fileIds: ['opaque-photo'],
+  provenance: 'ai-generated',
+  work: {
+    date: '2026-11-01T10:00:00Z',
+    kind: 'worn',
+    collection: 'fixture',
+    channels: [],
+    versions: {
+      uk: {
+        description: 'UA fixture',
+        provenance: 'ai-generated',
+        model: 'fixture-model',
+        prompt: 'fixture@1',
+      },
+      de: {
+        description: 'DE fixture',
+        provenance: 'ai-generated',
+        model: 'fixture-model',
+        prompt: 'fixture@1',
+      },
+    },
+  },
+};
+describe('approved work dispatch contract', () => {
+  it('preserves all approved per-language metadata', () => {
+    expect(parseDispatchPayload(JSON.stringify(approvedWorkPayload))).toEqual(approvedWorkPayload);
+  });
+  it.each([
+    { work: undefined },
+    { draftId: 'unstable' },
+    { fileIds: [] },
+    { type: 'announcement' },
+    { texts: { uk: 'changed', de: 'DE fixture' } },
+    { texts: { uk: 'UA fixture' } },
+    { texts: { ...approvedWorkPayload.texts, en: 'extra' } },
+    { work: { ...approvedWorkPayload.work, kind: 'work' } },
+    { work: { ...approvedWorkPayload.work, channels: ['same', 'same'] } },
+    { work: { ...approvedWorkPayload.work, versions: { uk: { description: 'UA fixture' } } } },
+    { kind: 'post' },
+  ])('rejects inconsistent/unapproved work metadata %j', (patch) => {
+    expect(() =>
+      parseDispatchPayload(JSON.stringify({ ...approvedWorkPayload, ...patch })),
+    ).toThrow(PayloadParseError);
   });
 });

@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T36c — implementation split proposed in docs/03-tasks.md (T36c1–T36c3). Reviewer: claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1` — docs: propose smaller T36c implementation PRs.
-- **Next step:** Volodymyr reviews the T36c split; codex implements T36c1 in a fresh session after approval. T36a/T36b merged. No code or deployment in this session.
-- **Blocked on:** approval of the three-PR split required to replace the current one-PR T36c plan (ADR 009).
-- **Open questions for Volodymyr:** approve T36c1 (dispatch/publisher), T36c2 (generation recovery/metadata), T36c3 (/work UI)?
+- **Active agent:** claude-code (review)
+- **Current task:** T36c1 — work dispatch and publisher integration. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
+- **Branch:** `feat/T36c1-work-publish`
+- **Last commit:** `09fdf73` — feat: publish works and collections with resumable delivery; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #38 (https://github.com/schemchuk/handmake/pull/38), then merges only after CI is green and no blocking findings remain. All 586 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment. T36c2 starts in a fresh session after merge.
+- **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

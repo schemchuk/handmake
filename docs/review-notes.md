@@ -45,8 +45,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - First deploy must be started by hand (Actions → Site → Run workflow on `main`) to confirm locked Wrangler 4.152.0 does not need `--force` for the existing Pages project.
 
 ## Works and collections (T36a, PR #36)
-- `buildWorkFromPayload` does not check languages against `tenant.languages` (it has no tenant input); T36c must validate them when it wires dispatch.
-- A collection's `cover` (`{ workId, fileName }`) is not checked for existence at write time. T36c should create a new collection together with its first work and use that work's photo as cover; the site (T36d) must fail or skip loudly on a dangling cover.
+- A collection's `cover` (`{ workId, fileName }`) is not checked by the low-level writer. T36c1 creates a new collection with its first work and first photo as cover; the site (T36d) must still fail or skip loudly on any dangling cover.
 - If a save crashes after the photos but before `index.md`, `listWorks` fails with "missing document" until a retry of the same publish completes the work.
 - Flat Git paths need globally unique work ids and collection slugs; a foreign-tenant write fails instead of overwriting.
 
@@ -57,3 +56,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Work text costs have `ref: work:<id>`; they contribute to monthly/service totals but not the existing `show:` subtotal. They are not rebooked when a later show uses that work.
 - (T36b review, decided by Volodymyr 2026-11-01) Provenance of generated work descriptions is set at approval: text the author edited is `ai-assisted`; text approved unchanged is `ai-generated`. The DE version is `ai-assisted` if the UA text was edited, otherwise `ai-generated`. T36c compares the generated draft with the approved text and stores the result in the work's `versions`.
 - (T36b review, agreed by Volodymyr 2026-11-01) If the UA draft succeeds and the DE translation fails, T36c keeps the UA draft in the session and retries only the translation, so a retry does not pay for UA again. `ClaudeTextGenerator` currently returns nothing on a DE failure; T36c needs to expose the UA draft (for example by splitting generation and translation, or a typed error carrying the UA result).
+
+## Work publication (T36c1)
+- T36c2/T36c3 must build a `kind: work` job with required `work` metadata; `texts` must exactly match `work.versions` descriptions. Top-level `provenance` remains for post compatibility and is not used for work versions.
+- Work/collection versions must cover exactly the configured tenant languages. Empty `work.channels` means no announcements; non-empty lists must contain unique enabled channel names. Both new collection and work are committed before delivery; no separate blog post is created.
+- The publisher rejects changed work metadata or channel selection on a retry. A collection slug created by another work cannot be reused as `newCollection`; select the existing collection instead. Flat-path cross-tenant collision checks remain in the store.
+- Publisher work callbacks require the bot version accepting `kind: work`; deploy only when explicitly authorized. Until T36c3 no `/work` entry point is exposed. Site pages remain T36d; a stored work is not yet a rendered page.

@@ -6,12 +6,13 @@
 import type { PostPoll, PostType, Provenance } from '../post';
 import type { DraftKind } from './store';
 import type { Work } from '../work';
+import type { WorkPublication } from '../work-publication';
 
-export interface PublishJob {
+interface PublishJobBase {
   tenantId: string;
   /** Stable id: the draft id doubles as the post id and idempotency key. */
   postId: string;
-  /** What the pipeline builds; only 'post' is implemented (works: phase 2). */
+  /** What the pipeline builds. */
   kind: DraftKind;
   /** Post type: announcement/reminder drafts dispatch their real type (T25). */
   type: PostType;
@@ -19,11 +20,14 @@ export interface PublishJob {
   texts: Record<string, string>;
   /** Opaque photo refs (Telegram file_ids); downloaded inside the pipeline. */
   fileIds: string[];
-  /** Dominant provenance; the publisher stamps it on every version. */
+  /** Dominant provenance for regular posts; work metadata preserves each language separately. */
   provenance: Provenance;
   /** Poll spec for a wotw-poll draft (produced by the poll cron, T30). */
   poll?: PostPoll;
 }
+
+export type PublishJob = PublishJobBase &
+  ({ kind: 'post'; work?: never } | { kind: 'work'; work: WorkPublication });
 
 /** Runs a publish job. GitHub Actions via repository_dispatch now. */
 export interface PublishRunner {

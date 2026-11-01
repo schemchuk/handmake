@@ -423,7 +423,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 - Owner: codex · Reviewer: claude-code (each implementation PR).
 - Status: split approved by Volodymyr (2026-11-01); T36a merged in PR #36; T36b implemented in PR #37, awaiting review.
 - Depends on: T25, T35, T42.
-- Delivery: four sequential PRs, each targeting under ~400 changed non-test lines (ADR 009).
+- Delivery: six sequential PRs (T36a, T36b, T36c1–T36c3, T36d), each targeting under ~400 changed non-test lines (ADR 009).
   Reassess scope before coding each part; propose a further split if the estimate exceeds the limit.
   T36 is complete only after T36a–T36d. Later tasks depending on T36 wait for all four parts.
 - Boundaries: no deployment, invented author copy or tenant-specific core logic.
@@ -469,7 +469,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 #### T36c — Author work session and publishing integration
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T36b (merged).
-- Status: implementation split proposed on 2026-11-01; awaits Volodymyr's approval.
+- Status: implementation split approved by Volodymyr on 2026-11-01; T36c1 implemented in PR #38, awaiting review.
   The existing session, dispatch and publisher boundaries plus partial-generation recovery require
   more than ~400 changed non-test lines together. Deliver T36c as the three sequential PRs below
   (ADR 009); preserve all parent acceptance criteria. T36d waits for all three to merge.
@@ -547,7 +547,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 
 #### T36d — Work and collection site pages
 - Owner: codex · Reviewer: claude-code.
-- Depends on: T36c (merged); fourth PR.
+- Depends on: T36c (all three parts merged); final PR in the split.
 - Change: build work and collection listings/detail pages from T36a's `ContentStore` contracts,
   never filesystem globs. Use tenant site configuration, German default routes and Ukrainian `/uk/`
   routes, localized metadata/canonical links, provenance labels and declared-photo bytes. Generate

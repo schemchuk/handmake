@@ -62,9 +62,16 @@ async function indexRow(db: D1Database, postId: string) {
 }
 
 /** A draft claimed into 'publishing', as the bot leaves it after 🚀. */
-async function makePublishingDraft(db: D1Database, postId: string): Promise<void> {
+async function makePublishingDraft(
+  db: D1Database,
+  postId: string,
+  kind: 'post' | 'work' = 'post',
+): Promise<void> {
   const store = createD1DraftStore(db);
-  await store.create(createDraft(tenant, postId, new Date('2026-10-27T10:00:00.000Z')), '11');
+  await store.create(
+    createDraft(tenant, postId, new Date('2026-10-27T10:00:00.000Z'), { kind }),
+    '11',
+  );
   await store.claimTranslation(tenant, postId, ['collecting'], new Date());
   await store.markTranslated(tenant, postId, 'Hallo!', new Date());
   const claimed = await store.claimPublishing(tenant, postId, new Date());
@@ -203,4 +210,55 @@ describe('POST /callbacks/published (T18)', () => {
 
     expect(response.status).toBe(405);
   });
+});
+
+describe('work completion callbacks', () => {
+  it('completes a site-only work idempotently without adding a post candidate', async () => {
+    const db = await makeD1();
+    const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+    await makePublishingDraft(db, id, 'work');
+    const app = createApp(makeEnv(db), botTexts);
+    for (let i = 0; i < 2; i++) {
+      expect(
+        (await app.handle(await signedRequest(callbackBody(id, { kind: 'work', channels: {} }))))
+          .status,
+      ).toBe(200);
+    }
+    expect((await createD1DraftStore(db).get(tenant, id))?.draft.state).toBe('published');
+    expect(await indexCount(db, id)).toBe(0);
+  });
+  it('rejects kind mismatches without changing the draft or candidate index', async () => {
+    const db = await makeD1();
+    const id = '01JBCA1B2C3D4E5F6G7H8J9K0Z';
+    await makePublishingDraft(db, id, 'work');
+    expect(
+      (await createApp(makeEnv(db), botTexts).handle(await signedRequest(callbackBody(id)))).status,
+    ).toBe(409);
+    expect((await createD1DraftStore(db).get(tenant, id))?.draft.state).toBe('publishing');
+    expect(await indexCount(db, id)).toBe(0);
+  });
+  it('never indexes an unknown work', async () => {
+    const db = await makeD1();
+    const id = '01JBCA1B2C3D4E5F6G7H8J9K0Z';
+    expect(
+      (
+        await createApp(makeEnv(db), botTexts).handle(
+          await signedRequest(callbackBody(id, { kind: 'work' })),
+        )
+      ).status,
+    ).toBe(200);
+    expect(await indexCount(db, id)).toBe(0);
+  });
+});
+
+it('does not complete a work when a channel reports failure', async () => {
+  const db = await makeD1();
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+  await makePublishingDraft(db, id, 'work');
+  const response = await createApp(makeEnv(db), botTexts).handle(
+    await signedRequest(callbackBody(id, { kind: 'work', channels: { telegram: 'failed' } })),
+  );
+  expect(response.status).toBe(409);
+  expect((await createD1DraftStore(db).get(tenant, id))?.draft.state).toBe('publishing');
+  expect(await indexCount(db, id)).toBe(0);
 });

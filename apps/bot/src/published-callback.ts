@@ -51,7 +51,13 @@ export async function handlePublishedCallback(env: Env, request: Request): Promi
   // by hand still belongs in the index. The draft transition is the guarded
   // no-op part — a draft that is not 'publishing' (already published,
   // unknown) simply stays as it is.
-  await store.indexPublished({ tenantId, postId, publishedAt: date, photos });
+  const draft = await store.get(tenantId, postId);
+  const kind = parsed.data.kind ?? 'post';
+  if (draft && draft.draft.kind !== kind) return new Response('kind mismatch', { status: 409 });
+  if (kind === 'work' && Object.values(parsed.data.channels).some((status) => status !== 'done')) {
+    return new Response('work delivery incomplete', { status: 409 });
+  }
+  if (kind === 'post') await store.indexPublished({ tenantId, postId, publishedAt: date, photos });
   await store.markPublished(tenantId, postId, new Date());
   return new Response('ok');
 }

@@ -667,6 +667,7 @@ function publishingStaleCutoff(now: Date): Date {
 /** Builds the dispatch job from the claimed draft; 'uk' stays the first key
  * so renderTelegram keeps Ukrainian as the album-caption language. */
 function publishJobOf(draft: Draft): PublishJob {
+  if (draft.kind !== 'post') throw new Error('work approval is connected in T36c3');
   const texts: Record<string, string> = {};
   const uk = draft.texts['uk'];
   const de = draft.texts['de'];
