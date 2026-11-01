@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code (review)
-- **Current task:** T39 (site workflow; Sensitive), implemented; review pending.
-- **Branch:** `feat/T39-site-workflow`
-- **Last commit:** see `git log -1` (T39 workflow implementation); previous: `cb7aa39 docs: hand T39 to codex`.
-- **Next step:** claude-code reviews the T39 PR and CI. Volodymyr's explicit OK is required before merge. After review, Volodymyr attaches apex/www and configures DNS manually; no live deployment was run by codex. Then T36.
-- **Blocked on:** review and sensitive-merge approval.
+- **Active agent:** none
+- **Current task:** none. T39 merged as PR #35 (codex; reviewed by claude-code).
+- **Branch:** `main`
+- **Last commit:** see `git log -1`
+- **Next step:** Volodymyr: run Actions → Site → Run workflow on `main` and check it deploys without `--force`; then attach `fadenundstimmung.de` and `www` (redirect to apex) to the Pages project and set DNS in Cloudflare. Then T36 or T40.
+  Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
-- **T39 reminders:** Pages project `fadenundstimmung` and both Cloudflare secrets exist. Stop if deploy requests `--force` or delegates to Workers. Site stays `noindex` without sitemap until T41; go-live also needs real `joinUrl` and author approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

@@ -37,3 +37,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Any tenant-config refresh failure uses the last-known config without notifying the operator; cold failures fall back to the default translator without accounting. Diagnostic warnings are logged.
 - `aiRuntime()` is constructed three times along the scheduled path; consolidate in a later task.
 - Prompt-cache read/write tokens are not accounted for; EUR prices are entered manually and need verification in T43.
+
+## Site workflow (T39, PR #35)
+- A failure of the `site` job in `publish.yml` raises no Telegram alert (the alert covers only the `publish` job). The post is already published; re-run the failed job. Consider an operator alert in a later task.
+- Test-channel publish runs also commit a post and trigger the site deploy, so test posts reach the site. Harmless while the site is `noindex` and has no domain; decide before T41 whether to filter them.
+- Deploy runs after channel delivery, so a "Mehr auf der Website" link (T40) can briefly point to a page that does not exist yet. T40 must account for this.
+- First deploy must be started by hand (Actions → Site → Run workflow on `main`) to confirm locked Wrangler 4.152.0 does not need `--force` for the existing Pages project.
