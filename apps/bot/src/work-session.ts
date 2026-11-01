@@ -157,7 +157,8 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         Object.values(collection.versions)[0]!.title,
       );
       await ctx.reply(texts.workConfiguredText);
-    } catch {
+    } catch (error) {
+      console.error('work setup failed', error);
       await ctx.reply(texts.workSetupErrorText);
     }
   });
@@ -198,7 +199,8 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         fields[0]!,
       );
       await ctx.reply(texts.workConfiguredText);
-    } catch {
+    } catch (error) {
+      console.error('work setup failed', error);
       await ctx.reply(texts.workSetupErrorText);
     }
   });
