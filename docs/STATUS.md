@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T36b — text generation and cost accounting (`docs/03-tasks.md`, T36 section). Start a fresh session; one PR, reviewer claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T36b on `feat/T36b-<name>`. T36a merged as PR #36 (`f7d3026`); review notes for T36c/T36d are in docs/review-notes.md ("Works and collections"). No deployment.
+- **Active agent:** claude-code (review)
+- **Current task:** T36b — text generation and cost accounting. Reviewer: claude-code.
+- **Branch:** `feat/T36b-work-text`
+- **Last commit:** `f646c60` — feat: account for generated work text through T42; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #37 (https://github.com/schemchuk/handmake/pull/37), then merges only after CI is green and no blocking findings remain. All 553 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. Local parallel tests hit existing 5 s timeouts. No deployment; T36c starts in a fresh session after merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

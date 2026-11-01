@@ -293,6 +293,7 @@ describe('scheduled wiring', () => {
     vi.spyOn(aiCostRuntime, 'createAiCostRuntime').mockReturnValue({
       notices: vi.fn().mockRejectedValue(new Error('notices unavailable')),
       translatorFor: vi.fn(),
+      textGeneratorFor: vi.fn(),
     });
     await expect(
       app.scheduled({

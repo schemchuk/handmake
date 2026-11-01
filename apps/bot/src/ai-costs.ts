@@ -7,7 +7,7 @@ export interface AiCost {
   service: string;
   unit: string;
   amountEur: number;
-  /** `show:<id>` for shows, `post:<id>` for translations of regular posts. */
+  /** `show:<id>` for shows, `post:<id>` for post translations, `work:<id>` for descriptions. */
   ref: string;
 }
 
