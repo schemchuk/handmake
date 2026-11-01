@@ -686,6 +686,7 @@ function publishingStaleCutoff(now: Date): Date {
  * so renderTelegram keeps Ukrainian as the album-caption language. */
 function publishJobOf(draft: Draft): PublishJob {
   if (draft.kind === 'work') return buildApprovedWorkJob(draft);
+  if (draft.kind === 'show') throw new Error('show approval requires the T44e session');
   const texts: Record<string, string> = {};
   const uk = draft.texts['uk'];
   const de = draft.texts['de'];

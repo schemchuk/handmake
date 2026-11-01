@@ -21,6 +21,8 @@ import type {
   SecretResolver,
   TenantConfig,
   Work,
+  Show,
+  ShowMediaSource,
 } from '@handmake/core';
 import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
@@ -34,6 +36,8 @@ import { parseDispatchPayload } from './payload';
 import { requiredEnv } from './required-env';
 import { loadTenantConfig } from './tenant-config';
 import { prepareWorkPublication } from './work-publication';
+import { prepareShowPublication } from './show-publication';
+import { TelegramMediaSource } from './photos/telegram-media-source';
 
 export interface PublishDeps {
   cwd?: string;
@@ -42,6 +46,7 @@ export interface PublishDeps {
   logger?: (line: string) => void;
   now?: Date;
   mediaSource?: MediaSource;
+  showMediaSource?: ShowMediaSource;
   /** Default: one adapter per enabled tenant channel (telegram now). */
   registry?: ChannelRegistry;
   /** Default: resolves secret names from the environment. */
@@ -57,9 +62,10 @@ export interface PublishDeps {
 }
 
 export interface PublishResult {
-  /** Channel projection for works; only ordinary posts are saved under content/posts. */
+  /** Transient projection for works/shows; only ordinary posts are saved under content/posts. */
   post: Post;
   work?: Work;
+  show?: Show;
   ledger: PublishLedger;
   delivered: Record<string, (number | string)[]>;
   skipped: string[];
@@ -123,13 +129,26 @@ export async function runPublish(
   const tenant = await loadTenantConfig(payload.tenantId, root);
 
   const store = new GitRepoContentStore({ rootDir: root });
-  const publication =
+  const workPublication =
     payload.kind === 'work' ? await prepareWorkPublication(payload, tenant, store) : undefined;
+  const showPublication =
+    payload.kind === 'show'
+      ? await prepareShowPublication(
+          payload,
+          tenant,
+          store,
+          deps.showMediaSource ??
+            new TelegramMediaSource({ token: requiredEnv('TELEGRAM_BOT_TOKEN', env) }),
+        )
+      : undefined;
+  const publication = workPublication ?? showPublication;
   const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
   const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
-  if (publication) {
-    if (publication.collection) await store.saveCollection(publication.collection);
-    await store.saveWork(publication.work, photos);
+  if (showPublication) {
+    await store.saveShow(showPublication.show, showPublication.media);
+  } else if (workPublication) {
+    if (workPublication.collection) await store.saveCollection(workPublication.collection);
+    await store.saveWork(workPublication.work, photos);
   } else {
     // Re-running on another day reuses the original post folder.
     const existing = await store.readPost(post.tenant, post.id);
@@ -225,7 +244,7 @@ export async function runPublish(
   await notify(
     'author',
     publication && !post.channels.length
-      ? `published work ${post.id}`
+      ? `published ${payload.kind} ${post.id}`
       : `published ${post.id} to ${Object.keys(delivered).join(', ')}`,
   );
 
@@ -257,7 +276,7 @@ export async function runPublish(
       });
     try {
       await sender.send({
-        ...(publication ? { kind: 'work' as const } : {}),
+        ...(payload.kind !== 'post' ? { kind: payload.kind } : {}),
         tenantId: post.tenant,
         postId: post.id,
         date: post.date,
@@ -274,5 +293,12 @@ export async function runPublish(
       );
     }
   }
-  return { post, ...(publication ? { work: publication.work } : {}), ledger, delivered, skipped };
+  return {
+    post,
+    ...(workPublication ? { work: workPublication.work } : {}),
+    ...(showPublication ? { show: showPublication.show } : {}),
+    ledger,
+    delivered,
+    skipped,
+  };
 }

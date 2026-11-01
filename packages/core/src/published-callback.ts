@@ -15,8 +15,8 @@ import { z } from 'zod';
 export const publishedCallbackBodySchema = z
   .object({
     tenantId: z.string().min(1),
-    /** Absent on legacy post callbacks. Works must never enter the regular post index. */
-    kind: z.enum(['post', 'work']).optional(),
+    /** Absent on legacy post callbacks. Works/shows must never enter the regular post index. */
+    kind: z.enum(['post', 'work', 'show']).optional(),
     /** The draft id the pipeline published; becomes the D1 draft lookup key. */
     postId: z.string().min(1),
     /** Publication date (ISO); stored as published_at in the index. */

@@ -66,7 +66,7 @@ async function indexRow(db: D1Database, postId: string) {
 async function makePublishingDraft(
   db: D1Database,
   postId: string,
-  kind: 'post' | 'work' = 'post',
+  kind: 'post' | 'work' | 'show' = 'post',
 ): Promise<void> {
   const store = createD1DraftStore(db);
   await store.create(
@@ -293,4 +293,17 @@ describe('work published notice', () => {
     expect(sent[0]!.body.chat_id).toBe('11');
     expect(sent[0]!.body.text).toContain(`https://example.test/works/${postId.toLowerCase()}/`);
   });
+});
+
+it('completes a site-only show callback idempotently without indexing a regular post', async () => {
+  const db = await makeD1();
+  const postId = '01JBCA1B2C3D4E5F6G7H8J9K0Z';
+  await makePublishingDraft(db, postId, 'show');
+  const body = callbackBody(postId, { kind: 'show', channels: {} });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const response = await handlePublishedCallback(makeEnv(db), await signedRequest(body));
+    expect(response.status).toBe(200);
+  }
+  expect((await createD1DraftStore(db).get(tenant, postId))?.draft.state).toBe('published');
+  expect(await indexCount(db, postId)).toBe(0);
 });

@@ -228,7 +228,7 @@ const draftStates: ReadonlySet<string> = new Set([
   'failed',
 ]);
 
-const draftKinds: ReadonlySet<string> = new Set(['post', 'work']);
+const draftKinds: ReadonlySet<string> = new Set(['post', 'work', 'show']);
 const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work']);
 
 const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, created_at, updated_at

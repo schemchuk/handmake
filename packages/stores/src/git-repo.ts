@@ -10,7 +10,7 @@ import {
 } from '@handmake/core';
 import type { ContentStore, PhotoFile, Post, PublishLedger } from '@handmake/core';
 
-import { GitWorkContentStore } from './git-works';
+import { GitShowContentStore } from './git-shows';
 
 export interface GitRepoContentStoreOptions {
   rootDir: string;
@@ -28,7 +28,7 @@ export function postFolderName(post: Pick<Post, 'date' | 'id'>): string {
 
 const unsafeFileName = /[/\\]|\.{2}/;
 
-export class GitRepoContentStore extends GitWorkContentStore implements ContentStore {
+export class GitRepoContentStore extends GitShowContentStore implements ContentStore {
   readonly #rootDir: string;
 
   constructor(options: GitRepoContentStoreOptions) {

@@ -6,6 +6,8 @@ import { stringify } from 'yaml';
 
 import {
   parseTenantConfig,
+  parseShow,
+  serializeShow,
   selectShowTemplate,
   showConfigSchema,
   showSchema,
@@ -31,7 +33,7 @@ function show(): Show {
   const metadata = {
     provenance: 'ai-generated' as const,
     model: 'image-edit-v1',
-    prompt: 'worn@1',
+    promptVersion: 'worn@1',
     callId: 'image-call',
     marker: {
       visible: 'KI-generiertes Model' as const,
@@ -208,4 +210,11 @@ it('allows a generator fake without network or provider SDK dependencies', async
   });
   expect(response.callId).toBe('provider-call-1');
   expect(response.costEur).toBe(0.1);
+});
+
+it('round-trips the show content document and rejects missing video or non-document input', () => {
+  const input = show();
+  expect(parseShow(serializeShow(input))).toEqual(input);
+  expect(() => parseShow('not frontmatter')).toThrow();
+  expect(showSchema.safeParse({ ...input, video: undefined }).success).toBe(false);
 });

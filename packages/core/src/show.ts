@@ -1,3 +1,4 @@
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { z } from 'zod';
 
 import { isoDateTime } from './post';
@@ -18,7 +19,7 @@ export const aiMarkerSchema = z
 const generatedMetadata = {
   provenance: z.literal('ai-generated'),
   model: text,
-  prompt: text,
+  promptVersion: text,
   callId: text,
   marker: aiMarkerSchema,
 };
@@ -69,3 +70,29 @@ export const showSchema = z
     }
   });
 export type Show = z.infer<typeof showSchema>;
+
+export function parseShow(markdown: string): Show {
+  const match = /^---\n([\s\S]*?)\n---\s*$/.exec(markdown.replace(/\r\n/g, '\n'));
+  if (!match) throw new Error('expected a frontmatter-only show document');
+  return showSchema.parse(parseYaml(match[1]!));
+}
+export const serializeShow = (show: Show): string =>
+  `---\n${stringifyYaml(showSchema.parse(show))}---\n`;
+
+/** Opaque durable references; no bytes, provider URLs or credentials in dispatch. */
+export const showPublicationSchema = z
+  .object({
+    show: showSchema,
+    media: z
+      .array(z.object({ fileName: z.string().min(1), ref: text }).strict())
+      .min(4)
+      .max(6),
+  })
+  .strict()
+  .superRefine(({ show, media }, ctx) => {
+    const names = [...show.images.map((image) => image.fileName), show.video.fileName].sort();
+    if (JSON.stringify(names) !== JSON.stringify(media.map((file) => file.fileName).sort())) {
+      ctx.addIssue({ code: 'custom', message: 'show media must match declared files exactly' });
+    }
+  });
+export type ShowPublication = z.infer<typeof showPublicationSchema>;
