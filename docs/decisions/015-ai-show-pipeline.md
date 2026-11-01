@@ -75,7 +75,7 @@ flower). Outputs and the side-by-side page stay outside the repo (local review p
 - **Video:** the garment, the flower and the pillow stay stable over 5 s; faces drift slightly (fictional
   models, so tolerated; fixed reference images per model, T44, should reduce it).
 - **Cost (estimate, to confirm against the fal balance):** images about 0.08 USD each (fal: 10 USD is about 125
-  Nano Banana 2 images), videos about 0.35 USD each (Kling 2.5 Turbo Pro, 0.07 USD/s). The whole test is about 1.6 USD.
+  Nano Banana 2 images), videos about 0.35 USD each (Kling 2.5 Turbo Pro, 0.07 USD/s). The whole test cost 1.61 USD (fal balance 10.00 → 8.39 USD, read by Volodymyr).
   Per show: 4 images (about 0.32) + 1 video (about 0.35), about 0.70 USD per attempt, about 1.4 USD with one
   regeneration each.
 
