@@ -4,7 +4,7 @@
 - **Current task:** none. T39 merged as PR #35 (codex; reviewed by claude-code).
 - **Branch:** `main`
 - **Last commit:** see `git log -1`
-- **Next step:** Volodymyr: run Actions → Site → Run workflow on `main` and check it deploys without `--force`; then attach `fadenundstimmung.de` and `www` (redirect to apex) to the Pages project and set DNS in Cloudflare. Then T36 or T40.
+- **Next step:** T39 fully done 2026-11-01: first Site deploy ok without `--force`; `fadenundstimmung.de` active on Pages, `www` 301 to apex (Redirect Rule), Always Use HTTPS on; site stays `noindex`. Next: T36 or T40.
   Before go-live (T41): real `joinUrl`, author's approval of the circle texts, `SITE_INDEXABLE=true`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
