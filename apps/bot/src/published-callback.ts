@@ -2,6 +2,14 @@ import { publishedCallbackBodySchema, verifyCallbackSignature } from '@handmake/
 
 import { createD1DraftStore } from './draft-store';
 import type { Env } from './env';
+import type { BotTexts } from './texts';
+import type { TenantConfigSource } from './tenant-config-source';
+
+export interface PublishedCallbackOptions {
+  texts: BotTexts;
+  tenantConfigs: TenantConfigSource;
+  fetchImpl?: typeof fetch;
+}
 
 /**
  * Publisher → bot "post is published" callback (architecture 4.3, T18).
@@ -20,7 +28,11 @@ export const publishedCallbackPath = '/callbacks/published';
 /** Header the publisher signs into; lowercase because D1/Worker headers are. */
 export const signatureHeader = 'x-handmake-signature';
 
-export async function handlePublishedCallback(env: Env, request: Request): Promise<Response> {
+export async function handlePublishedCallback(
+  env: Env,
+  request: Request,
+  options?: PublishedCallbackOptions,
+): Promise<Response> {
   if (request.method !== 'POST') {
     return new Response('method not allowed', { status: 405 });
   }
@@ -58,6 +70,31 @@ export async function handlePublishedCallback(env: Env, request: Request): Promi
     return new Response('work delivery incomplete', { status: 409 });
   }
   if (kind === 'post') await store.indexPublished({ tenantId, postId, publishedAt: date, photos });
-  await store.markPublished(tenantId, postId, new Date());
+  const moved = await store.markPublished(tenantId, postId, new Date());
+  // Works may go out without any channel post, so the author gets a notice
+  // here. Only on the real transition (a retried callback stays silent) and
+  // never at the cost of the callback itself.
+  if (kind === 'work' && moved && options) {
+    try {
+      const chatId = await store.chatIdOf(tenantId, postId);
+      if (chatId) {
+        const baseUrl = (await options.tenantConfigs.load(tenantId)).site?.baseUrl;
+        const url = baseUrl && `${baseUrl}/works/${postId.toLowerCase()}/`;
+        await (options.fetchImpl ?? fetch)(
+          `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: options.texts.workPublishedText(url || undefined),
+            }),
+          },
+        );
+      }
+    } catch (error) {
+      console.error('work published notice failed', error);
+    }
+  }
   return new Response('ok');
 }

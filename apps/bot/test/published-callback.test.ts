@@ -2,6 +2,7 @@ import { createDraft, signCallbackBody } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/composition';
+import { handlePublishedCallback } from '../src/published-callback';
 import { createD1DraftStore } from '../src/draft-store';
 import type { Env } from '../src/env';
 import { botTexts } from '../src/texts';
@@ -261,4 +262,35 @@ it('does not complete a work when a channel reports failure', async () => {
   expect(response.status).toBe(409);
   expect((await createD1DraftStore(db).get(tenant, id))?.draft.state).toBe('publishing');
   expect(await indexCount(db, id)).toBe(0);
+});
+
+describe('work published notice', () => {
+  it('tells the author in the chat when a work is published, once', async () => {
+    const db = await makeD1();
+    const postId = '01J8ZEXAMPLE00000000000009';
+    await makePublishingDraft(db, postId, 'work');
+    const sent: { url: string; body: { chat_id: string; text: string } }[] = [];
+    const fetchImpl = (async (url: string, init: RequestInit) => {
+      sent.push({ url, body: JSON.parse(String(init.body)) });
+      return new Response('{}');
+    }) as unknown as typeof fetch;
+    const tenantConfigs = {
+      load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
+    };
+    const body = callbackBody(postId, { kind: 'work' });
+    const call = async () =>
+      handlePublishedCallback(makeEnv(db), await signedRequest(body), {
+        texts: botTexts,
+        tenantConfigs,
+        fetchImpl,
+      });
+
+    expect((await call()).status).toBe(200);
+    expect((await call()).status).toBe(200);
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.url).toBe('https://api.telegram.org/botTEST_TOKEN/sendMessage');
+    expect(sent[0]!.body.chat_id).toBe('11');
+    expect(sent[0]!.body.text).toContain(`https://example.test/works/${postId.toLowerCase()}/`);
+  });
 });

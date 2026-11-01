@@ -170,7 +170,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // The publisher's callback authenticates with its own HMAC, not the
       // Telegram webhook secret — it must branch off before that gate.
       if (new URL(request.url).pathname === publishedCallbackPath) {
-        return handlePublishedCallback(env, request);
+        return handlePublishedCallback(env, request, { texts, tenantConfigs });
       }
       if (request.method !== 'POST') {
         return new Response('method not allowed', { status: 405 });
