@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
+- **Active agent:** claude-code (review)
 - **Current task:** T36c2 — persisted generation recovery and approval metadata. Reviewer: claude-code.
 - **Branch:** `feat/T36c2-work-recovery`
-- **Last commit:** `6fa2d5e` — feat: expose separately accounted work text stages; persisted recovery/approval in this commit.
-- **Next step:** open one T36c2 PR and hand off to claude-code. All 614 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment or new user entry point.
+- **Last commit:** `67911df` — feat: persist work generation recovery and approval metadata; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #39 (https://github.com/schemchuk/handmake/pull/39), then merges only after CI is green and no blocking findings remain. All 614 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment or new user entry point. T36c3 starts in a fresh session after merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none. Reminder: the publisher's work callback needs a bot version that accepts `kind: work`; deploy only when explicitly authorized (not before T36c3).
 - **POSSE discussion, round 1 answered (2026-10-30):**
