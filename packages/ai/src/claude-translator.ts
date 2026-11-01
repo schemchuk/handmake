@@ -44,6 +44,8 @@ export interface ClaudeTranslatorOptions {
   client?: ParseClient;
   /** Tenant context for diagnostic messages; never contains participant data. */
   tenantId?: string;
+  /** Work generation requires confirmed accounting; legacy post translations stay best-effort. */
+  requireUsage?: boolean;
   /** Books paid usage even when the model refuses or returns unusable output. */
   onUsage?: (
     usage: { input_tokens: number; output_tokens: number },
@@ -61,10 +63,14 @@ export class ClaudeTranslator implements Translator {
   readonly #systemPrompt: string;
   readonly #client: ParseClient;
   readonly #onUsage: ClaudeTranslatorOptions['onUsage'];
+  readonly #requireUsage: boolean;
   readonly #tenantId: string;
   readonly #apiKey: string | undefined;
 
   constructor(options: ClaudeTranslatorOptions) {
+    this.#requireUsage = options.requireUsage ?? false;
+    if (this.#requireUsage && !options.onUsage)
+      throw new Error('work translation requires accounting');
     this.#onUsage = options.onUsage;
     this.#tenantId = options.tenantId ?? 'unknown';
     this.#apiKey = options.apiKey;
@@ -107,14 +113,25 @@ export class ClaudeTranslator implements Translator {
         operation: 'messages.parse',
         message: safeErrorMessage(error, [this.#apiKey]),
       });
+      if (this.#requireUsage) {
+        throw new TranslationError(
+          'api-error',
+          'translation failed; paid usage may be unavailable',
+          { cause: error },
+        );
+      }
       throw toTranslationError(error);
     }
 
     if (this.#onUsage) {
       try {
-        if (!response.usage) throw new Error('AI response is missing usage');
+        if (!response.usage || (this.#requireUsage && !response.id)) {
+          throw new Error('AI response is missing usage or response identity');
+        }
         await this.#onUsage(response.usage, response.id);
       } catch (error) {
+        if (this.#requireUsage)
+          throw new Error('work translation accounting failed', { cause: error });
         console.error('AI cost bookkeeping failed', {
           tenantId: this.#tenantId,
           operation: 'recordTranslationUsage',

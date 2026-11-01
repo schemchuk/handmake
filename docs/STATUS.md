@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T36b — text generation and cost accounting (`docs/03-tasks.md`, T36 section). Start a fresh session; one PR, reviewer claude-code.
-- **Branch:** `main`
-- **Last commit:** see `git log -1`
-- **Next step:** codex implements T36b on `feat/T36b-<name>`. T36a merged as PR #36 (`f7d3026`); review notes for T36c/T36d are in docs/review-notes.md ("Works and collections"). No deployment.
+- **Current task:** T36b — text generation and cost accounting. Reviewer: claude-code.
+- **Branch:** `feat/T36b-work-text`
+- **Last commit:** this commit (`feat: add work text generator and strict usage reporting`); parent is the T36b handoff on main.
+- **Next step:** connect the adapter to T42 with a tenant/work-bound factory and integration tests. Core tests (157), AI tests (47), AI typecheck and repository lint pass. No deployment.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**

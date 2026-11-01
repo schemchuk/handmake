@@ -6,3 +6,6 @@ export { TranslationError } from './errors';
 export type { TranslationErrorCode } from './errors';
 export { loadPrompt } from './prompts';
 export { humanizeDePromptV1 } from './prompt-text';
+export { ClaudeTextGenerator } from './claude-text-generator';
+export type { ClaudeTextGeneratorOptions, TextGenerationClient } from './claude-text-generator';
+export { describeWorkUkPromptV1, WORK_PROMPT_VERSION } from './work-prompt';

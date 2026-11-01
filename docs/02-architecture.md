@@ -202,7 +202,13 @@ Channel polls are anonymous: no voter data reaches us.
 1. The author starts a work session (`/work`): a draft of kind `work` on the existing `drafts` table and
    FSM (collect → translate → preview → publish). She sends photos and a short note, picks or creates a
    collection (inline buttons).
-2. `TextGenerator` drafts a UA description and the DE version; she edits and approves as with posts.
+2. `TextGenerator.generate` drafts a UA description from the author's note and textual context, then
+   uses `Translator` for DE; it returns editable `versions` plus notes and never approves/publishes.
+   The UA prompt is `describe-work-uk@1`; DE reuses `humanize-de@1`. Both versions are `ai-assisted`
+   because they derive from author-supplied facts, with model/prompt metadata on each version.
+   Template kind/collection are metadata, never a source of invented facts. No photos are sent to
+   the text API. UA usage is booked before local output validation; work translation opts into
+   required usage accounting. She edits and approves as with posts.
 3. Publish dispatches with kind `work`: the publisher's `buildWorkFromPayload` and a works writer in
    the content store write `content/works/<id>/` (ledger path `content/ledger/<id>.json` as for posts),
    optionally also a channel post about the new work (her choice in the preview).

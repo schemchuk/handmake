@@ -5,6 +5,7 @@
 
 import type { PostPoll, PostType, Provenance } from '../post';
 import type { DraftKind } from './store';
+import type { Work } from '../work';
 
 export interface PublishJob {
   tenantId: string;
@@ -45,6 +46,24 @@ export interface TranslationResult {
 
 export interface Translator {
   translate(request: TranslationRequest): Promise<TranslationResult>;
+}
+
+/** Draft descriptions only; the author edits and approves them in a separate flow. */
+export interface TextGenerationRequest {
+  note: string;
+  kind: Work['kind'];
+  collection: string;
+  /** Additional facts supplied by the author, never inferred from a template. */
+  context?: string;
+}
+
+export interface TextGenerationResult {
+  versions: Work['versions'];
+  notes: Record<string, string>;
+}
+
+export interface TextGenerator {
+  generate(request: TextGenerationRequest): Promise<TextGenerationResult>;
 }
 
 /** Fetches the author's photos by opaque reference (Telegram file_id now). */

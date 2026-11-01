@@ -218,3 +218,56 @@ it('preserves the SDK parse failure as the translation error cause', async () =>
     message: 'structured output failed: [REDACTED]',
   });
 });
+
+describe('required work translation accounting', () => {
+  it('requires a usage hook before construction', () => {
+    expect(() => new ClaudeTranslator({ systemPrompt: 'P', requireUsage: true })).toThrow(
+      /accounting/,
+    );
+  });
+
+  it('rejects a paid translation if its ledger write fails', async () => {
+    const onUsage = vi.fn(async () => {
+      throw new Error('ledger unavailable');
+    });
+    const translator = new ClaudeTranslator({
+      systemPrompt: 'P',
+      client: fakeClient({ ...ok, usage: { input_tokens: 1, output_tokens: 1 } }).client,
+      requireUsage: true,
+      onUsage,
+    });
+    await expect(
+      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+    ).rejects.toThrow(/accounting failed/);
+    expect(onUsage).toHaveBeenCalledOnce();
+  });
+
+  it('rejects missing usage rather than returning an unaccounted translation', async () => {
+    const onUsage = vi.fn();
+    const translator = new ClaudeTranslator({
+      systemPrompt: 'P',
+      client: fakeClient(ok).client,
+      requireUsage: true,
+      onUsage,
+    });
+    await expect(
+      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+    ).rejects.toThrow(/accounting failed/);
+    expect(onUsage).not.toHaveBeenCalled();
+  });
+
+  it('reports the parse-failure accounting uncertainty without fabricating zero usage', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onUsage = vi.fn();
+    const translator = new ClaudeTranslator({
+      systemPrompt: 'P',
+      client: fakeClient(new SyntaxError('malformed SDK output')).client,
+      requireUsage: true,
+      onUsage,
+    });
+    await expect(
+      translator.translate({ text: 'UA', sourceLang: 'uk', targetLang: 'de' }),
+    ).rejects.toThrow(/paid usage may be unavailable/);
+    expect(onUsage).not.toHaveBeenCalled();
+  });
+});
