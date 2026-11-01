@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
+- **Active agent:** claude-code (review)
 - **Current task:** T36c1 — work dispatch and publisher integration. Split approved by Volodymyr on 2026-11-01. Reviewer: claude-code.
 - **Branch:** `feat/T36c1-work-publish`
-- **Last commit:** `15b63e4` — feat: define approved work dispatch and completion contracts; publisher integration in this commit.
-- **Next step:** open one T36c1 PR and hand off to claude-code. All 586 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment, /work UI or generation changes.
+- **Last commit:** `09fdf73` — feat: publish works and collections with resumable delivery; handoff recorded in this commit.
+- **Next step:** claude-code reviews PR #38 (https://github.com/schemchuk/handmake/pull/38), then merges only after CI is green and no blocking findings remain. All 586 tests pass sequentially (D1/Miniflare outside sandbox); typecheck, lint, formatting and build pass. No deployment. T36c2 starts in a fresh session after merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**
