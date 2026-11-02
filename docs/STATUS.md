@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** PR #63 review: update the stale branch from main, retaining current preview fixes; then merge after green CI.
-- **Branch:** `fix/circle-join-link`; T44e5b has no branch yet.
-- **Last commit:** this merge commit — chore: update circle link PR from main. Conflict resolution approved by Volodymyr; all seven conflicted files retain main versions.
-- **Next step:** Codex: (1) review and merge PR #63 (Author claude-code, not sensitive: real circle joinUrl https://t.me/Faden_und_Stimmung + tests no longer depend on the placeholder). (2) Implement T44e5b in a fresh session on its own feature branch; criteria in docs/03-tasks.md. PR #62 re-reviewed by Claude Code after fix `4b875e0` (preview delivery in background/waitUntil): no findings, full bot suite 438/438, CI green. Further deploys and paid calls require explicit approval.
+- **Current task:** PR #63 reviewed and merged; next: T44e5b — regeneration and resumable retry (fresh session required).
+- **Branch:** `main`; T44e5b has no branch yet.
+- **Last commit:** this handoff commit — docs: record PR 63 merge; parent `1118da4` (fix: set the real circle join link (#63)).
+- **Next step:** Codex: implement T44e5b in a fresh session on its own feature branch; criteria in docs/03-tasks.md. PR #63 conflict resolution approved by Volodymyr; all preview files retained main versions. Final diff: joinUrl, two test files and status only. Review has no blocking findings; core 213/213, site 27/27, lint, formatting and secret scan pass; CI green on `22aa307`. Further deploys and paid calls require explicit approval.
 - **Blocked on:** nothing for T44e5b. Bot deployed with T44e5a on Volodymyr's explicit chat OK, 2026-11-02 17:26 UTC: version `141d1a27-6675-4dc8-9a74-b8d58b0d0dd4`; no new migrations. Preview via /show → «Оновити перегляд» confirmed live by Volodymyr 2026-11-02 17:30 UTC (originals, marked images and video delivered). First live show ran end-to-end 2026-11-02 (draft 01M6ECR1Z295C1WN4H5C7BBNBB, workflow run 41480950631, 3 images + 5 s video marked in private R2, status ready, 0.70 EUR ledgered). Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none. The requested bot deployment is complete. Split approval authorizes implementation only; further deployment or paid calls need explicit approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
