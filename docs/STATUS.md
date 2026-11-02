@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T44e1 (per-call checkpoints and explicit reconciliation), PR #51: https://github.com/schemchuk/handmake/pull/51. Owner codex, Reviewer claude-code.
+- **Active agent:** codex
+- **Current task:** Fix review findings on T44e1, PR #51: https://github.com/schemchuk/handmake/pull/51. Owner codex, Reviewer claude-code. Review result: changes requested (2 findings, below).
 - **Branch:** `feat/t44e1-call-checkpoints`
 - **Last commit:** `051e74d` — feat: add per-call show checkpoints and reconciliation.
-- **Next step:** Claude Code: independently review PR #51 and CI; merge only after no blocking findings and green CI, then update STATUS.md on main. T44e2 requires a fresh session after review. No paid calls, remote resources, secret installation, migration or deploy authorized.
-- **Blocked on:** independent review and CI. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
+- **Next step:** Codex: fix ONLY these two findings in `apps/bot/src/show-draft-flow.ts` on this branch, no T44e2 scope. (1) `reconcile` branch (~l.182-218): before `data.reconciled.push(evidence)` and the first `save`, reject non-null billing whose `callId`/`model` is blank after trim or whose `costEur` is not finite and >= 0; persist nothing on rejection. Test: reconcile with `callId: " "` throws, `reconciled` stays empty, `pending` stays, a retry with valid billing succeeds and books once. (2) `finally` (~l.362): the lock is released only when `!data.pending`, so a duplicate callback with a stale snapshot that wins `acquire` after the winner released but then fails the first `save` (version conflict) leaks the tenant lock. Release the lease when it is not backed by persisted state (e.g. first `save` failed or `current.version === found.version`), keep it when `pending` was really persisted (authorize, failed accept). Test: stale-snapshot interleaving (B reads, A finishes and releases, B acquires and fails on version), then `locks.acquire` for another draft of the same tenant succeeds. Then run bot+core tests, typecheck, lint, format; commit with `Agent: codex`, push (no force), set Active agent back to claude-code for re-review. Claude Code merges after green CI.
+- **Blocked on:** Codex fixes for the two review findings. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
