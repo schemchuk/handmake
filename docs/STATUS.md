@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e4a — show sessions and linked-work selection. Owner codex, Reviewer claude-code.
+- **Active agent:** claude-code
+- **Current task:** Review T44e4a — show sessions and linked-work selection, PR #54. Owner codex, Reviewer claude-code.
 - **Branch:** `feat/t44e4a-show-sessions`.
-- **Last commit:** `9432bfc` — docs: propose smaller author-input tasks.
-- **Next step:** Codex: finish T44e4a validation, push the implementation and open its PR for claude-code review. Show selection and new-work publication handoff are implemented; photo/persona menus and generation dispatch remain T44e4b/c. No paid calls, bucket, migration or deploy authorized.
+- **Last commit:** `d643e35` — feat: add persistent show selection sessions.
+- **Next step:** Claude Code: review [PR #54](https://github.com/schemchuk/handmake/pull/54), check CI and merge only after no blocking findings remain. Author must not merge. Then hand off T44e4b in a fresh session. Photo/persona menus and generation dispatch remain T44e4b/c. No paid calls, bucket, migration or deploy authorized.
 - **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=false`, `SHOW_VERIFIED_MODELS=[]`; Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates stay closed.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e4a validation: bot 368 tests and core 213 tests pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Selection only: no generation dispatch, paid calls, workflow changes, migration or deploy.
 - T44e3 validation: full bot suite 350 tests; final transport suite 27 tests (three originals and real fal adapter with mocked HTTP); publisher 137 and AI 116 tests pass. Workspace typecheck/build, lint, format and actionlint pass. No paid calls or deploy.
 - T44e1 review-fix validation: bot 324 tests and core 213 tests passed; workspace typecheck, lint and format passed. Five invalid-billing cases assert an unchanged draft and a successful corrected retry; a controlled stale-callback interleaving verifies that another draft can acquire the tenant lock. Commit secret scan passed.
 - T44d3 validation: publisher 137 and bot 303 tests pass (bot uses `--maxWorkers 1` locally); format, lint, workspace typecheck/build and actionlint pass. Real PNG/JPEG/WebP and MP4 tests cover per-frame labels, metadata tampering, retries and separate R2 persistence. No paid calls or deploy.
