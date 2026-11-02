@@ -117,3 +117,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44d3 review) Marked images must reach the publisher as PNG documents, never as Telegram photos (those strip XMP). T44e must send them as documents and keep `.png` file names.
 - (T44d3 review) Marking runs only in Node. T44e needs an authenticated Worker-to-Node transport (for example a workflow dispatch) and must stay within the 20 MB Telegram download limit after the footer is added.
 - (T44d3 review) ffmpeg/ffprobe run on provider output with restricted protocols, thread limits, a 60 s timeout and no shell; the footer adds pixels, so very large inputs near the 1920 px limit grow slightly.
+
+## Show Worker transport (T44e2)
+- (T44e2 review) No blockers; CI green, bot 345 tests pass locally. Sensitive merge (new `SHOW_TRANSPORT_SECRET`) approved by Volodymyr in chat 2026-11-02. No remote bucket, secret or deploy.
+- (T44e2 review) Grants and sources are keyed by job id. If `authorize` persisted the pending attempt but the grant save failed, or a new job replaced the old one, the grant is lost; this fails closed but needs `recover`/`reconcile`. T44e3 should resume in the same job; T44e5 must cover the case.
+- (T44e2 review) Jobs expire after a fixed hour with no extension. T44e3 must handle a long provider wait that outlives the job (resume via a new job; the journal is keyed by scope).
+- (T44e2 review) `show-replay/v1/` gets one object per request. A lifecycle rule for that prefix only is safe after job expiry; never for journal/raw/marked. Add it with bucket provisioning.
+- (T44e2 review) The transport's catch-all 409 logs nothing; T44e3 should add a secret-safe log there. `wireGrant` ignores a `null` result from the conditional source put.
