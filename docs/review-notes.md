@@ -96,3 +96,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44c review) The lock timestamp is set only at acquire and not refreshed during a run; the stale takeover relies on the draft's `updatedAt` check. If a flow ever exceeds ten minutes with no checkpoint, a second `generate` for the same draft could take over. Refresh the lease per checkpoint if calls get slower.
 - (T44c review) `configure` compares plan and tenant config with `JSON.stringify`, which depends on key order from the same zod schemas. Fine today; use a deep-equal if the schemas diverge.
 - (T44c review) Migration 0008 (`show_generation_locks`) is not applied remotely; apply it before deploying a bot that calls the show flow.
+
+## fal adapter (T44d1)
+- (T44d1 review) No blockers; CI green, packages/ai 116 tests pass. The API key goes only to the constructed `queue.fal.run` origin; returned URLs are ignored, media downloads carry no credentials and do not follow redirects.
+- (T44d1 review) If the adapter throws after fal accepted the job (timeout, invalid media, failed result), no cost is booked because T44c books only returned results. T44e's recovery path must resume by the journalled request id and book the cost, or the operator must book it by hand, otherwise real spend can sit outside the cap.
+- (T44d1 review) The fingerprint hashes the JSON of all base64 data URIs, so one call holds several copies of the reference bytes in memory (up to 20 MB of references). Hash the raw bytes instead if Worker memory becomes a problem; photos are normally small.
+- (T44d1 review) `callId` is `fal:<requestId>`, unique per job, as T44c requires for idempotent booking.
+- (T44d1 review) The ADR 015 check did not clear the excluded-model gate; `verifiedModels` stays empty and `allowPaidCalls` off until Volodymyr confirms the exact-model terms and billing.

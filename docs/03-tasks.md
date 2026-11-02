@@ -639,6 +639,7 @@ use the following implementation order. All subtasks: **Owner: codex · Reviewer
 No paid calls, production enablement, remote migrations or deployment are authorized.
 
 - **T44d1 — fal HTTP adapter and versioned prompts** (depends on T44c).
+  Done: merged as PR #48 (`372e026`).
   Implementation complete on `feat/t44d1-fal-adapter`; awaiting claude-code review.
   Change: implement `ShowGenerator` with injected HTTP transport, config-selected model ids,
   versioned prompts and image/video payloads; queue submission, bounded polling and media download.

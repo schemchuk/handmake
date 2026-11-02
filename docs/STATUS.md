@@ -1,12 +1,12 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T44d1 implementation complete; PR #48 awaiting review. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44d1-fal-adapter`
-- **Last commit:** `69e8199` — feat: add guarded fal show adapter and versioned prompts.
-- **Next step:** Claude Code reviews PR #48 (https://github.com/schemchuk/handmake/pull/48) and merges only after green CI and Volodymyr's explicit sensitive-merge OK (API credential handling). Then hand T44d2 to codex in a fresh session. T44d2 must implement the durable `FalAttemptJournal` as well as raw result storage; T44e must wire explicit pending-attempt recovery. No paid calls, remote migration or deploy authorized.
-- **Blocked on:** review/CI and sensitive-merge OK. Production remains disabled pending model excluded-status and billing checks (ADR 015).
-- **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
+- **Current task:** T44d1 merged as PR #48 (`372e026`). Next: T44d2 (durable raw result ingestion + `FalAttemptJournal`), Owner codex, Reviewer claude-code.
+- **Branch:** `main`
+- **Last commit:** `372e026` — feat: add guarded fal show adapter and versioned prompts (#48).
+- **Next step:** After Volodymyr confirms the #48 merge (or reverts it), set Active agent to codex and hand over T44d2 in a fresh session. T44d2 must implement the durable `FalAttemptJournal` as well as raw result storage; T44e must wire explicit pending-attempt recovery. No paid calls, remote migration or deploy authorized.
+- **Blocked on:** Volodymyr's after-the-fact OK for #48. Production stays disabled pending model excluded-status and billing checks (ADR 015).
+- **Open questions for Volodymyr:** #48 handles the fal API key (sensitive per AGENTS.md) and was merged by claude-code before the explicit OK the PR asked for. Keep it, or revert `372e026`? Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
