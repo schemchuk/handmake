@@ -506,6 +506,29 @@ actual costs may differ from estimates, and unrelated text calls do not take the
 Raw media above 20 MB are charged but rejected; T44d must recheck size after marking/ingestion.
 Migration 0008 creates the lock table; it is tested locally, not applied remotely in this task.
 
+### Per-call show orchestration (T44e1)
+
+`authorize` persists one new attempt after checking the budget and returns resolved image/video
+inputs without invoking the provider. An acknowledgement lost after this marker is uncertain:
+no new grant is issued. A paused grant uses the existing resumable `failed` state with `pending`;
+`translating` means an application operation owns execution. Locks refresh on every checkpoint.
+Concurrent recovery/acceptance cannot take over an active execution before the stale timeout.
+
+`accept` persists and books a result before validating media and advancing exactly one slot.
+An attempt id fences late callbacks, including callbacks for retired regeneration output.
+`recover` first obtains the existing provider id from a tenant/show/attempt-scoped immutable
+journal reader, then calls an injected read-only recovery adapter. Missing ids never authorize
+submission. T44e3 must supply GET-only provider recovery; the application does not call the
+normal generator on this path. The legacy in-process `generate` remains available for local callers.
+
+`reconcile` is an operator-only application boundary (authorization is supplied by T44e2/T44e5).
+It requires explicit confirmation, a reason and either checked billing or an explicit no-spend
+assertion. Durable result billing must match. Evidence is checkpointed before accounting; a
+failed ledger write leaves the attempt pending and fixes its billing for the retry. Only successful
+accounting permits clearing the attempt and releasing the lock. Raw objects, journal tickets,
+retired receipts and reconciliation evidence are retained. Recovery never infers zero spend.
+The next authorized attempt checks the cap again; no migration or production wiring is added.
+
 ### fal show adapter (T44d1)
 
 `packages/ai/FalShowGenerator` implements the raw-media port with injected HTTP and a required

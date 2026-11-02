@@ -19,6 +19,15 @@ export function createShowGenerationLocks(db: D1Database) {
         .run();
       return result.meta.changes === 1;
     },
+    async refresh(tenant: string, lease: string, now: Date) {
+      const result = await db
+        .prepare(
+          'UPDATE show_generation_locks SET updated_at = ? WHERE tenant_id = ? AND lease = ?',
+        )
+        .bind(now.toISOString(), tenant, lease)
+        .run();
+      return result.meta.changes === 1;
+    },
     async release(tenant: string, lease: string) {
       await db
         .prepare('DELETE FROM show_generation_locks WHERE tenant_id = ? AND lease = ?')

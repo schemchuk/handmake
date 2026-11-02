@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T44e1 (per-call checkpoints and explicit reconciliation), ready for a fresh context window. Owner codex, Reviewer claude-code. T44e1-T44e6 split approved by Volodymyr in chat on 2026-11-02.
-- **Branch:** `main`
-- **Last commit:** `21b514b` — docs: propose reviewable T44e implementation split.
-- **Next step:** Start T44e1 only in a new context window, as requested by Volodymyr. Pull/rebase and read AGENTS.md plus this status first, then the T44e1 task, T44c-T44d3 review notes and relevant architecture sections. Implement only T44e1 on `feat/t44e1-call-checkpoints`; do not continue into T44e2. No implementation started in the approval session. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Current task:** T44e1 implemented locally: bounded call grants, result acceptance, journal-id recovery and explicit operator reconciliation. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44e1-call-checkpoints`
+- **Last commit:** `21b514b` — docs: propose reviewable T44e implementation split (session base; implementation commit follows).
+- **Next step:** Finish final targeted checks, commit/push T44e1 and open its task PR, then hand off to claude-code for independent review. Do not start T44e2 in this session.
 - **Blocked on:** nothing for T44e1 implementation. Model terms/billing remain gates before the first real show; apply migration 0008 remotely only with the separately authorized `/show` bot deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**

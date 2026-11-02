@@ -11,7 +11,12 @@ const plan = {
   },
 };
 it('validates an initial raw show draft checkpoint independently of a provider SDK', () => {
-  expect(showDraftDataSchema.parse({ plan })).toEqual({ plan, outputs: {}, retired: [] });
+  expect(showDraftDataSchema.parse({ plan })).toEqual({
+    plan,
+    outputs: {},
+    retired: [],
+    reconciled: [],
+  });
 });
 it.each([
   { imageCount: 2 },
