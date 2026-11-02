@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T44e4a — show sessions and linked-work selection, PR #54. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44e4a-show-sessions`.
-- **Last commit:** `d643e35` — feat: add persistent show selection sessions.
-- **Next step:** Claude Code: review [PR #54](https://github.com/schemchuk/handmake/pull/54), check CI and merge only after no blocking findings remain. Author must not merge. Then hand off T44e4b in a fresh session. Photo/persona menus and generation dispatch remain T44e4b/c. No paid calls, bucket, migration or deploy authorized.
+- **Active agent:** codex
+- **Current task:** T44e4b — original photos and configuration menus (see docs/03-tasks.md). Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44e4b-show-inputs` (to create from `main`).
+- **Last commit:** `c61b09e` — feat: add show sessions and linked-work selection (T44e4a) (#54).
+- **Next step:** Codex: implement T44e4b in a fresh session; read the T44e4a review notes in docs/review-notes.md first. Generation dispatch remains T44e4c. No paid calls, bucket, migration or deploy authorized.
 - **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=false`, `SHOW_VERIFIED_MODELS=[]`; Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates stay closed.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
