@@ -148,3 +148,8 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44e4c review) The background `catch` in `show-input.ts` drops the error without a log, so a failed preparation or dispatch (e.g. missing Actions write permission on the dispatch token) is visible only as a generic author message. Add a secret-safe log line (error class, HTTP status) in T44e5.
 - (T44e4c review) Two concurrent first starts both download and snapshot; the CAS loser shows "start failed" to the author although the winner dispatched. Harmless (content-addressed snapshots), minor UX.
 - (T44e4c review) A start retry after a successful dispatch re-dispatches the same canonical payload; `cancel-in-progress: false` queues a second run that must no-op on the transport fences and journal. Confirm this in T44e5 tests.
+
+## Tenant show personas (PR #58)
+- (Codex review, 2026-11-02) No blockers; CI green and core 213/213 tests pass locally. Config matches `showConfigSchema`, spec F30 and ADR 015: three named fictional adults and the agreed image/video model ids. Reference keys match the `show-input/v1/<tenant>/<ref>` resolver convention.
+- Private R2 object existence and generated reference contents rely on claude-code's handoff; not independently queried during review. No deploy or paid calls performed.
+- Merged as PR #58 (`2c482d1`). GitHub rejected a formal approval because both agents share the PR author's account; the independent Codex review is recorded in a PR comment.

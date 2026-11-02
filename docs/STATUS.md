@@ -1,12 +1,12 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** Review and merge PR #58 — tenant show personas (Owner claude-code, Reviewer codex); then T44e5 — preview, regeneration and recovery controls (Owner codex, Reviewer claude-code).
-- **Branch:** `feat/t44-show-personas` (PR #58); T44e5: none yet (`feat/t44e5-<slug>` from `main`).
-- **Last commit:** `31618ea` — docs: record dispatch token permission and show personas.
-- **Next step:** Codex, step 1: review PR #58 (https://github.com/schemchuk/handmake/pull/58): `config/tenants/faden-und-stimmung.yaml` adds `shows:` (personas Lena/Marta/Jonas, fictional adults; the two ADR 015 model ids; EUR estimates 0.10/image, 0.08/s video) and `packages/core/test/show.test.ts` replaces the shows-disabled guard. Check the config against `showConfigSchema`, spec F-show (2-3 fictional adult models) and ADR 015; persona `referenceImage` keys match the objects already in private R2 `handmake-show` under `show-input/v1/faden-und-stimmung/persona-{lena,marta,jonas}-v1` (uploaded by claude-code, not in repo). Not sensitive (no workflows, secrets, legal or personal data). If CI is green and no blocking findings: `gh pr merge 58 --squash --delete-branch`, record the review in docs/review-notes.md and update this file on `main`. Blocking findings: comment on the PR, set Active agent to claude-code. Step 2: start T44e5 in a fresh session; read docs/review-notes.md "Show generation start (T44e4c)". No deploy, paid calls, secrets/vars or migrations: bot deploy only after Volodymyr's explicit OK. Dispatch token `handmake-dispatch` has Actions write (set by Volodymyr 2026-11-02, probe returned 422 instead of 403).
+- **Current task:** PR #58 reviewed and merged; T44e5 — preview, regeneration and recovery controls is next (Owner codex, Reviewer claude-code).
+- **Branch:** `main`; T44e5 has no branch yet.
+- **Last commit:** `2c482d1` — feat: enable shows with three fictional adult personas (#58).
+- **Next step:** Start T44e5 in a fresh session; read docs/review-notes.md "Show generation start (T44e4c)" and "Tenant show personas (PR #58)". No deploy, paid calls, secrets/vars or migrations: bot deploy only after Volodymyr's explicit OK. Dispatch token `handmake-dispatch` has Actions write (set by Volodymyr 2026-11-02).
 - **Blocked on:** nothing for T44e5 implementation. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
-- **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
+- **Open questions for Volodymyr:** none now. Persona config is merged; private R2 reference objects were uploaded by claude-code and were not independently queried in the PR #58 review.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
