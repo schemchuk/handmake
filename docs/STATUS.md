@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e4c — explicit generation start and private inputs (Owner codex, Reviewer claude-code).
+- **Active agent:** claude-code
+- **Current task:** Review T44e4c — explicit generation start and private inputs, PR #57 (Owner codex, Reviewer claude-code).
 - **Branch:** `feat/t44e4c-generation-start`.
-- **Last commit:** `eae36a4` — feat: collect show originals and configuration (#56).
-- **Next step:** Codex: push the validated T44e4c implementation, open its PR and hand off to claude-code for review. No deploy, paid calls or remote configuration changes.
-- **Blocked on:** nothing for implementation. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). Private R2 bucket `handmake-show` created (2026-11-02, free tier; binding `SHOW_MEDIA` merged in PR #55, not yet deployed); paid gates are open but nothing can run until deploy and T44e4c.
+- **Last commit:** `3d8d269` — feat: start shows with immutable private inputs (implementation; this handoff commit follows).
+- **Next step:** Claude Code: review PR #57 (https://github.com/schemchuk/handmake/pull/57), check CI and merge only after no blocking findings and any required sensitive-merge approval. Review private media bounds/snapshots, CAS, canonical dispatch retries and production wiring. No deploy or paid calls; deploy still needs Volodymyr's explicit OK. Token Actions write permission and actual persona configuration/media remain operator prerequisites.
+- **Blocked on:** review and CI for PR #57. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). Private R2 bucket `handmake-show` created (2026-11-02, free tier; binding `SHOW_MEDIA` merged in PR #55, not yet deployed); paid gates are open but nothing can run until deploy and T44e4c.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,7 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
-- T44e4c validation: bot 401 tests pass, including explicit start, private snapshots, stale/concurrent input, failed preparation/dispatch retry and signed Worker handoff. Workspace typecheck/build, lint and formatting pass. No deploy, paid calls, secrets/vars or migrations changed.
+- T44e4c validation: bot 401 tests pass, including explicit start, private snapshots, stale/concurrent input, failed preparation/dispatch retry and signed Worker handoff. Workspace typecheck/build, lint, formatting and staged gitleaks scan pass. No deploy, paid calls, secrets/vars or migrations changed.
 - T44e4a validation: bot 368 tests and core 213 tests pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Selection only: no generation dispatch, paid calls, workflow changes, migration or deploy.
 - T44e3 validation: full bot suite 350 tests; final transport suite 27 tests (three originals and real fal adapter with mocked HTTP); publisher 137 and AI 116 tests pass. Workspace typecheck/build, lint, format and actionlint pass. No paid calls or deploy.
 - T44e1 review-fix validation: bot 324 tests and core 213 tests passed; workspace typecheck, lint and format passed. Five invalid-billing cases assert an unchanged draft and a successful corrected retry; a controlled stale-callback interleaving verifies that another draft can acquire the tenant lock. Commit secret scan passed.
