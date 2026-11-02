@@ -7,6 +7,17 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  showPreviewReadyText:
+    'Онови перегляд, щоб побачити оригінали й готові результати. Для нового показу: /discard, потім /show.',
+  showRefreshButton: 'Оновити перегляд',
+  showOriginalLabel: (index: number) => `Оригінал роботи ${index}`,
+  showMarkedLabel: (slot: string) => `ШІ-результат: ${slot}. Порівняй із оригіналами роботи.`,
+  showPreviewStatus: (missing: number) =>
+    missing
+      ? `Ще не готові або недоступні файли: ${missing}. Онови перегляд пізніше.`
+      : 'Усі оригінали та марковані результати показано. Схвалення публікації ще недоступне.',
+  showPreviewInterruptedText:
+    'Перегляд перервано або результати змінились. /show — відкрити актуальний перегляд.',
   showUnavailableText: 'Покази вимкнені або налаштовані не повністю. Спробуй /show пізніше.',
   showSelectText: 'Обери опубліковану роботу для показу або додай нову:',
   showNewWorkButton: 'Нова робота',
@@ -27,7 +38,8 @@ export const botTexts = {
   showStartButton: 'Запустити генерацію',
   showStartText: 'План збережено. Можна повторити відправлення завдання генерації.',
   showStartingText: 'Готую приватні оригінали та завдання генерації…',
-  showDispatchedText: 'Завдання генерації передано. Результати готуються.',
+  showDispatchedText:
+    'Завдання генерації передано. Результати готуються. /show — оновити перегляд.',
   showStartFailedText:
     'Підготовка або відправлення не завершились. /show — повторити без зміни плану.',
   showFinalizeButton: 'Зберегти налаштування',

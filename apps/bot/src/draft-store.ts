@@ -90,6 +90,12 @@ export interface D1DraftStore {
   /** Work checkpoints/configuration: CAS protects texts and extras together without a migration. */
   updateWork(draft: Draft, expectedVersion: number): Promise<boolean>;
   updateShow(draft: Draft, expectedVersion: number): Promise<boolean>;
+  findShowForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
+  getSessionShow(
+    tenantId: string,
+    chatId: string,
+    draftId: string,
+  ): Promise<StoredDraft | undefined>;
   /**
    * Atomically appends one photo file_id to a collecting draft. The
    * 10-photo limit and the state guard live in the UPDATE itself, so
@@ -412,6 +418,30 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(tenantId, state)
         .all<DraftRow>();
       return (result.results ?? []).map(toStoredDraft);
+    },
+
+    async getSessionShow(tenantId, chatId, draftId) {
+      const row = await db
+        .prepare(
+          `${selectDraft} AND id = ? AND chat_id = ? AND kind = 'show'
+         AND EXISTS (SELECT 1 FROM chat_sessions s WHERE s.tenant_id = drafts.tenant_id
+           AND s.chat_id = drafts.chat_id AND s.kind = 'show' AND s.draft_id = drafts.id)`,
+        )
+        .bind(tenantId, draftId, chatId)
+        .first<DraftRow>();
+      return row ? toStoredDraft(row) : undefined;
+    },
+
+    async findShowForChat(tenantId, chatId) {
+      const row = await db
+        .prepare(
+          `${selectDraft} AND chat_id = ? AND kind = 'show'
+         AND status IN ('collecting', 'translating', 'failed', 'ready')
+         ORDER BY created_at DESC LIMIT 1`,
+        )
+        .bind(tenantId, chatId)
+        .first<DraftRow>();
+      return row ? toStoredDraft(row) : undefined;
     },
 
     async findCollectingForChat(tenantId, chatId, kind) {

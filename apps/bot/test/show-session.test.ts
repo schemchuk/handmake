@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { parseTenantConfig } from '@handmake/core';
+import { parseTenantConfig, showDraftDataSchema } from '@handmake/core';
 import type { Work } from '@handmake/core';
 import { FakePublishRunner, FakeTranslator } from '@handmake/core/testing';
 import { beforeEach, expect, it, vi } from 'vitest';
@@ -52,6 +52,9 @@ const generator = {
   translateUkrainian: vi.fn(async () => generated),
   generate: vi.fn(),
 };
+const preview = vi.fn(
+  async (_ctx: unknown, _stored: import('../src/draft-store').StoredDraft) => {},
+);
 const start = vi.fn(async (_stored: import('../src/draft-store').StoredDraft) => {});
 function build(enabled = true, execution = true) {
   bot = createBot({
@@ -65,7 +68,12 @@ function build(enabled = true, execution = true) {
       tasks.push(task());
     },
     show: enabled
-      ? { works: { listWorks, readWork }, configs: { load }, start: execution ? start : undefined }
+      ? {
+          works: { listWorks, readWork },
+          configs: { load },
+          start: execution ? start : undefined,
+          preview: execution ? preview : undefined,
+        }
       : undefined,
     work: {
       configs: { load },
@@ -532,6 +540,122 @@ it('logs only fixed start failure reasons, never token URLs', async () => {
       ['show start failed', 'show dispatch failed: HTTP 422'],
     ]);
     expect(sentTexts(calls).filter((t) => t === botTexts.showStartFailedText)).toHaveLength(2);
+  } finally {
+    log.mockRestore();
+  }
+});
+
+async function completedShow(state: 'collecting' | 'translating' | 'failed' | 'ready') {
+  const id = await linked();
+  const stored = (await get(id))!;
+  const data = showDraftDataSchema.parse({
+    plan: {
+      workId: work.id,
+      template: 'interior',
+      originals: ['first', 'second'],
+      imageCount: 3,
+      provider: { image: config.shows!.image, video: config.shows!.video },
+    },
+  });
+  await drafts.updateShow(
+    { ...stored.draft, state, extras: { ...stored.draft.extras, show: data } },
+    stored.version,
+  );
+  return id;
+}
+it.each(['collecting', 'translating', 'failed', 'ready'] as const)(
+  'resumes the same %s show after switching away and offers explicit preview refresh',
+  async (state) => {
+    const id = await completedShow(state);
+    await send('/new');
+    await build();
+    await send('/show');
+    expect((await session())!.draftId).toBe(id);
+    const action = button('preview');
+    expect(new TextEncoder().encode(action).length).toBeLessThanOrEqual(64);
+    expect(preview).not.toHaveBeenCalled();
+    const before = (await get(id))!;
+    await press(action);
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(preview.mock.calls[0]![1]).toEqual(before);
+    expect(await get(id)).toEqual(before);
+    expect(start).not.toHaveBeenCalled();
+    expect(runner.jobs).toEqual([]);
+  },
+);
+it('rejects stale and foreign preview buttons before the delivery adapter', async () => {
+  const id = await completedShow('ready');
+  await send('/show');
+  const action = button('preview');
+  await press(action, 12);
+  await press(action, 13);
+  const stored = (await get(id))!;
+  await drafts.updateShow(stored.draft, stored.version);
+  await press(action);
+  expect(preview).not.toHaveBeenCalled();
+  await send('/show');
+  await press(button('preview'));
+  expect(preview).toHaveBeenCalledTimes(1);
+});
+it('reports unavailable preview storage and retains the draft for another refresh', async () => {
+  const id = await completedShow('ready');
+  await build(true, false);
+  await send('/show');
+  await press(button('preview'));
+  expect(preview).not.toHaveBeenCalled();
+  expect(sentTexts(calls).at(-1)).toBe(botTexts.showUnavailableText);
+  expect((await session())!.draftId).toBe(id);
+});
+
+it('reads preview ownership and active session together with the current D1 snapshot', async () => {
+  const id = await completedShow('ready');
+  expect(await drafts.getSessionShow(tenant, '11', id)).toEqual(await get(id));
+  expect(await drafts.getSessionShow('other', '11', id)).toBeUndefined();
+  expect(await drafts.getSessionShow(tenant, '13', id)).toBeUndefined();
+  await send('/new');
+  expect(await drafts.getSessionShow(tenant, '11', id)).toBeUndefined();
+  await send('/show');
+  expect(await drafts.getSessionShow(tenant, '11', id)).toEqual(await get(id));
+});
+
+it('finishes the callback handler while preview delivery is still pending', async () => {
+  await completedShow('ready');
+  await send('/show');
+  let release!: () => void;
+  let delivered = false;
+  preview.mockImplementationOnce(async () => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    delivered = true;
+  });
+  let returned = false;
+  const handling = press(button('preview')).then(() => {
+    returned = true;
+  });
+  try {
+    await vi.waitFor(() => expect(returned).toBe(true), { timeout: 2000 });
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(tasks).toHaveLength(1);
+    expect(delivered).toBe(false);
+  } finally {
+    release?.();
+    await handling;
+    await flush();
+  }
+  expect(delivered).toBe(true);
+});
+it('contains background preview rejection and logs no external error details', async () => {
+  await completedShow('ready');
+  await send('/show');
+  preview.mockRejectedValueOnce(new Error('https://api.telegram.org/bot123:SECRET-token/file'));
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await press(button('preview'));
+    await flush();
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.showPreviewInterruptedText);
+    expect(log.mock.calls).toEqual([['show preview failed', 'background delivery failed']]);
+    expect(JSON.stringify(log.mock.calls)).not.toContain('SECRET');
   } finally {
     log.mockRestore();
   }

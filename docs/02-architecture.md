@@ -739,3 +739,28 @@ Provider credentials, verified-model and paid-execution gates stay in the Node w
 background work only downloads, persists and dispatches; it never waits for generation or marks media.
 No deployment or paid call is part of this task. The existing dispatch token needs Actions write
 permission for workflow_dispatch; any permission/configuration changes remain an operator step.
+
+
+### Private show preview (T44e5a)
+
+`/show` resumes the chat's latest unpublished show across collecting, translating, failed and ready
+states, including after switching to post/work authoring. An explicit version-bound refresh button
+reads the frozen plan's private original snapshots and current outputs. Preview never dispatches a
+job, changes generation state or grants publication approval. Delivery runs through the bot
+background runner (`ExecutionContext.waitUntil` in production), so the webhook finishes without
+waiting for sequential R2 reads and Telegram document uploads. Failures log fixed reasons only,
+never external exception messages or media/credential URLs.
+
+The Worker reads generated media exclusively through the private marked R2 store, which verifies
+stored byte/receipt hashes. Each marked receipt must match the current output's tenant/show/attempt
+identity, provider call, model, prompt and cost; images must be PNG and video MP4. Originals and
+marked results are sent as Telegram documents with explicit extensions, preserving marked bytes
+and machine-readable labels. No raw provider media or public bucket URL is delivered.
+
+Before media reads and each document delivery, the preview checks the private chat, active show
+session, draft ownership, version and complete output snapshot. Session/ownership/draft are read
+in one D1 query to stay within the Worker subrequest budget. A changed draft/session stops the
+remaining delivery. Telegram messages already delivered cannot be recalled atomically; partial
+previews never authorize publication. Missing originals or unfinished/unavailable marked media
+are reported with a refresh button; interrupted delivery asks the author to reopen `/show`.
+Regeneration, recovery controls and verified publication remain T44e5b/c and T44e6.

@@ -1,4 +1,7 @@
 import type { ShowSourceImage } from '@handmake/core';
+import { botTexts } from './texts';
+import { createShowPreview } from './show-preview';
+import { createR2MarkedShowStorage } from './show-storage';
 import { createShowStart, readShowImage } from './show-start';
 import { createGitHubWorkReader } from './work-reader';
 import { createAiCostLedger } from './ai-costs';
@@ -19,6 +22,25 @@ export function createShowRuntime(env: Env) {
   const disabled = async (): Promise<never> => {
     throw new Error('paid execution disabled');
   };
+  const original = async (tenant: string, ref: string): Promise<ShowSourceImage> => {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(tenant) || !/^[A-Za-z0-9_-]{1,128}$/.test(ref))
+      throw new Error('invalid private input');
+    const object = await bucket.get(`show-input/v1/${tenant}/${ref}`);
+    const mimeType = object?.httpMetadata?.contentType;
+    if (
+      !object ||
+      !object.size ||
+      object.size > 20_000_000 ||
+      !['image/jpeg', 'image/png', 'image/webp'].includes(mimeType ?? '')
+    ) {
+      await object?.body.cancel();
+      throw new Error('private input unavailable');
+    }
+    return {
+      bytes: new Uint8Array(await object.arrayBuffer()),
+      mimeType: mimeType as ShowSourceImage['mimeType'],
+    };
+  };
   const flow = createShowDraftFlow({
     drafts,
     configs: createGitHubTenantConfigSource({ repo: env.GITHUB_REPO, ref: 'main' }),
@@ -26,25 +48,7 @@ export function createShowRuntime(env: Env) {
     locks: createShowGenerationLocks(env.DB),
     results: raw.results,
     generator: { generateImage: disabled, generateVideo: disabled },
-    resolveImage: async (tenant, ref): Promise<ShowSourceImage> => {
-      if (!/^[A-Za-z0-9_-]{1,128}$/.test(tenant) || !/^[A-Za-z0-9_-]{1,128}$/.test(ref))
-        throw new Error('invalid private input');
-      const object = await bucket.get(`show-input/v1/${tenant}/${ref}`);
-      const mimeType = object?.httpMetadata?.contentType;
-      if (
-        !object ||
-        !object.size ||
-        object.size > 20_000_000 ||
-        !['image/jpeg', 'image/png', 'image/webp'].includes(mimeType ?? '')
-      ) {
-        await object?.body.cancel();
-        throw new Error('private input unavailable');
-      }
-      return {
-        bytes: new Uint8Array(await object.arrayBuffer()),
-        mimeType: mimeType as ShowSourceImage['mimeType'],
-      };
-    },
+    resolveImage: original,
   });
   const transport = createShowTransport({
     bucket,
@@ -54,6 +58,12 @@ export function createShowRuntime(env: Env) {
   });
   return {
     ...transport,
+    preview: createShowPreview({
+      drafts,
+      texts: botTexts,
+      original,
+      marked: createR2MarkedShowStorage(bucket),
+    }),
     start: createShowStart({
       bucket,
       drafts,

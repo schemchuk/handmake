@@ -133,6 +133,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
   }
   function build(): (request: Request) => Promise<Response> {
     if (!handleUpdate) {
+      const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
         costs: { ledger: costs, tenantConfigs },
@@ -144,7 +145,8 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
             token: env.GITHUB_DISPATCH_TOKEN,
           }),
           configs: tenantConfigs,
-          start: createShowRuntime(env)?.start,
+          start: shows?.start,
+          preview: shows?.preview,
         },
         work: {
           collections: createGitHubCollectionReader({
