@@ -63,9 +63,8 @@ site:
       body: Familjen Grotesk
   # The /kreis/ page; "when" comes from meetingSchedule.
   circle:
-    # PLACEHOLDER: the public channel link is not in the repo yet. Replace with
-    # the real https://t.me/<channel> link before the site goes live (T41).
-    joinUrl: https://t.me/REPLACE_WITH_PUBLIC_CHANNEL_LINK
+    # Public Telegram channel (confirmed by Volodymyr 2026-11-02).
+    joinUrl: https://t.me/Faden_und_Stimmung
     # DRAFT texts: the author confirms or rewrites them.
     texts:
       de:

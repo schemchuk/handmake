@@ -73,9 +73,17 @@ describe('assertBundledFonts', () => {
 });
 
 describe('assertNoPlaceholders', () => {
+  const tenant = readTenantConfig(findRepoRoot(__dirname), 'faden-und-stimmung');
+
+  it('accepts the real join link', () => {
+    expect(() => assertNoPlaceholders(tenant.site!)).not.toThrow();
+  });
   it('rejects a placeholder join link for an indexable site', () => {
-    const tenant = readTenantConfig(findRepoRoot(__dirname), 'faden-und-stimmung');
-    expect(() => assertNoPlaceholders(tenant.site!)).toThrow(/placeholder/);
+    const site = {
+      ...tenant.site!,
+      circle: { ...tenant.site!.circle!, joinUrl: 'https://t.me/REPLACE_WITH_PUBLIC_CHANNEL_LINK' },
+    };
+    expect(() => assertNoPlaceholders(site)).toThrow(/placeholder/);
   });
 });
 
