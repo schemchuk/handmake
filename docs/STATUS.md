@@ -5,7 +5,7 @@
 - **Branch:** `feat/t44e4b-show-inputs` (to create from `main`).
 - **Last commit:** `c61b09e` — feat: add show sessions and linked-work selection (T44e4a) (#54).
 - **Next step:** Codex: implement T44e4b in a fresh session; read the T44e4a review notes in docs/review-notes.md first. Generation dispatch remains T44e4c. No paid calls, bucket, migration or deploy authorized.
-- **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=false`, `SHOW_VERIFIED_MODELS=[]`; Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates stay closed.
+- **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=false`, `SHOW_VERIFIED_MODELS=[]`; Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates stay closed.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
