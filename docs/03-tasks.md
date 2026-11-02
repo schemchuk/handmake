@@ -779,6 +779,33 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   reconciled; neither cancel nor stale callbacks silently clear them or restore superseded output.
   Tests: preview contents, single-image/video regeneration, budget warnings/denial, stale buttons,
   interrupted jobs, operator recovery, no-spend discard and retained evidence after cancellation.
+  **Proposed split (Codex, 2026-11-02; awaiting Volodymyr approval):** the private-media
+  presentation, paid execution controls and operator recovery cross separate adapters and exceed
+  the ADR 009 review target together. Retain T44e5 as the parent acceptance gate. Each subtask
+  requires a fresh session and its own PR, targeting under 400 changed non-test lines.
+  All subtasks: **Owner: codex · Reviewer: claude-code**. No deploy or paid calls are authorized.
+  - **T44e5a — Private version-bound preview** (depends on T44e4c).
+    Present the linked work originals and every current marked image/video through the private
+    author session; support explicit refresh after asynchronous execution. Revalidate tenant,
+    draft version and current output identities before delivery; never expose raw provider output
+    or public bucket URLs. Preserve marked bytes with document delivery and correct filenames.
+    Tests: complete preview, missing/unfinished media, stale versions, cross-tenant denial,
+    interrupted delivery and superseded asynchronous results. No approval/publication yet.
+  - **T44e5b — Regeneration and resumable retry** (depends on T44e5a).
+    Add version-bound single-image/video regeneration and retry through the existing budget gates,
+    transport and canonical dispatch. Replacing an image invalidates its dependent video and
+    superseded preview. Unknown outcomes retain their lock. Add secret-safe preparation/dispatch
+    diagnostics if the existing logging still has gaps.
+    Tests: image/video regeneration, budget warning/denial, duplicate dispatch no-op, stale and
+    concurrent actions, expired jobs and interrupted preparation without another paid submission.
+  - **T44e5c — Operator reconciliation and safe discard** (depends on T44e5b).
+    Wire recovery to the immutable provider journal with GET-only resumption; expose billing
+    reconciliation and no-spend discard authorization only to the operator. Cover lost grants and
+    unavailable/oversized inputs. Cancellation retains journal, billing and output evidence and
+    cannot silently unlock an unknown attempt or restore superseded output.
+    Tests: author denial, operator recovery, billed/no-spend reconciliation, lost grant, unknown
+    outcome cancellation, stale callbacks and retained evidence. Close the parent acceptance gate.
+
 - **T44e6 — Verified approval and publication integration** (depends on T44e5).
   Change: build approval payloads only from the current generation's verified marked snapshot;
   ingest PNG and MP4 as documents preserving exact bytes and `.png` names. Recheck transport size

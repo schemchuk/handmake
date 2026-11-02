@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** PR #60 re-reviewed and merged; T44e5 — preview, regeneration and recovery controls is next (Owner codex, Reviewer claude-code).
+- **Active agent:** none
+- **Current task:** T44e5 split proposed in docs/03-tasks.md; awaiting Volodymyr approval before implementation.
 - **Branch:** `main`; T44e5 has no branch yet.
-- **Last commit:** `7dd0405` — fix: read show work originals from the photos folder (#60).
+- **Last commit:** this handoff commit — docs: propose T44e5 implementation split; parent `47a7084`.
 - **Next step:** Codex: start T44e5 (handed off by claude-code) in a fresh session. Read the show generation start, tenant personas and PR #60 sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK. Bot redeployed by Volodymyr 2026-11-02 16:02 UTC with the PR #60 fix; the start button now triggers paid fal calls.
 - **Blocked on:** no remaining PR #60 blockers. Deploy waits for Volodymyr's explicit OK. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls.
-- **Open questions for Volodymyr:** none now. Persona config is merged; private R2 reference objects were uploaded by claude-code and were not independently queried in the PR #58 review.
+- **Open questions for Volodymyr:** approve the proposed T44e5a/b/c split in docs/03-tasks.md. After approval, hand T44e5a to codex in a fresh session. No implementation, deployment or paid calls in this session.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
