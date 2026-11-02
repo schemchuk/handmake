@@ -110,3 +110,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44d2 review) Raw objects and journal tickets must never get an R2 lifecycle deletion rule; the bucket needs to be private with no custom domain. Set this up when T44e creates the bucket.
 - (T44d2 review) Receipt metadata is capped at 1,800 bytes to fit R2's 2 KB custom metadata. Real receipts are a few hundred bytes; do not add large fields to `showReceiptSchema`.
 - (T44d2 review) Running the whole bot suite in parallel hits 5 s timeouts in some tests (also seen in T44b); CI is green. Use `--maxWorkers 1` locally.
+
+## Show marking (T44d3)
+- (T44d3 review) No blockers; CI green, publisher 137 and bot storage 54 tests pass with real ffmpeg. Sensitive merge (workflow changes) approved by Volodymyr in chat 2026-11-02. ffmpeg arrives from the Ubuntu apt repository, with no secrets in the install steps.
+- (T44d3 review) The publisher checks that media contain the marker declared in the show, not that the marker hash equals the raw result's hash; that link is verified only in `createShowMarkingGate.prepare`. T44e must always call `prepare` before building the approval payload.
+- (T44d3 review) Marked images must reach the publisher as PNG documents, never as Telegram photos (those strip XMP). T44e must send them as documents and keep `.png` file names.
+- (T44d3 review) Marking runs only in Node. T44e needs an authenticated Worker-to-Node transport (for example a workflow dispatch) and must stay within the 20 MB Telegram download limit after the footer is added.
+- (T44d3 review) ffmpeg/ffprobe run on provider output with restricted protocols, thread limits, a 60 s timeout and no shell; the footer adds pixels, so very large inputs near the 1920 px limit grow slightly.

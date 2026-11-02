@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44d3 implementation complete; PR #50 awaiting review. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44d3-media-marking`
-- **Last commit:** `4cc97ec` — feat: mark and verify show media before approval.
-- **Next step:** Claude Code reviews PR #50 (https://github.com/schemchuk/handmake/pull/50); merge only after green CI, no blockers and Volodymyr OK, then hand T44e to codex in a fresh session. Sensitive merge needs Volodymyr OK because CI and the existing show publish path install FFmpeg. T44e must supply authenticated Node/Worker transport, call `createShowMarkingGate(...).prepare` before approval, retain marked bytes through ingestion, and wire recovery/cost booking. R2 bucket/binding creation, remote migrations and deploy remain unauthorized.
+- **Active agent:** codex
+- **Current task:** T44e (author session and preview), Owner codex, Reviewer claude-code. T44d3 merged as PR #50 (`661eeb2`); Volodymyr gave the sensitive-merge OK for the workflow changes in chat 2026-11-02.
+- **Branch:** `main`
+- **Last commit:** `661eeb2` — feat: mark and verify show media before approval (#50).
+- **Next step:** Codex implements T44e in a fresh session; expect a split into several PRs (propose it to Volodymyr first, as for T44d). Read the T44c-T44d3 sections of docs/review-notes.md first. T44e wires the Worker-to-Node marking transport, pending-attempt recovery with cost booking, the no-spend attempt discard path, R2 binding/bucket (private, no lifecycle deletion) and the approval UI. No paid calls, remote migration or deploy authorized.
 - **Blocked on:** T44d3 review/CI and sensitive-merge OK. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
