@@ -12,10 +12,13 @@ import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 import { registerWorkSession } from './work-session';
 import type { WorkSessionOptions } from './work-session';
+import { registerShowSession } from './show-session';
+import type { ShowSessionOptions } from './show-session';
 
 export interface CreateBotOptions {
   token: string;
   work?: WorkSessionOptions;
+  show?: ShowSessionOptions;
   costs?: { ledger: AiCostLedger; tenantConfigs: TenantConfigSource };
   drafts: D1DraftStore;
   resolveTenant: TenantLookup;
@@ -60,6 +63,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   });
 
   const workSession = registerWorkSession(bot, options);
+  registerShowSession(bot, options, workSession.start);
 
   bot.command('cost', async (ctx) => {
     let reply: string = texts.costUnavailableText;
@@ -121,6 +125,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   // translation itself runs in `background`, past the webhook response.
   bot.command('done', async (ctx) => {
     const stored = await sessionDraft(ctx);
+    if (stored?.draft.kind === 'show') return ctx.reply(texts.showContinueText);
     if (!stored) {
       await ctx.reply(texts.draftNoneText);
       return;
@@ -180,6 +185,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       await ctx.reply(texts.draftNoneText);
       return;
     }
+    if (stored.draft.kind === 'show') return ctx.reply(texts.showContinueText);
     // Any button on an old preview of a published draft gets the finished
     // answer — the draft is gone for editing, publishing or discarding.
     if (stored.draft.state === 'published') {

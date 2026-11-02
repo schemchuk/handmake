@@ -16,6 +16,7 @@ import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './pr
 import { createGitHubActionsRunner } from './publish-runner';
 import { handlePublishedCallback, publishedCallbackPath } from './published-callback';
 import { createGitHubCollectionReader } from './collection-reader';
+import { createGitHubWorkReader } from './work-reader';
 import { createGitHubTenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 import { createShowRuntime } from './show-runtime';
@@ -136,6 +137,14 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         token: env.TELEGRAM_BOT_TOKEN,
         costs: { ledger: costs, tenantConfigs },
         translatorFor: aiRuntime().translatorFor,
+        show: {
+          works: createGitHubWorkReader({
+            repo: env.GITHUB_REPO,
+            ref: 'main',
+            token: env.GITHUB_DISPATCH_TOKEN,
+          }),
+          configs: tenantConfigs,
+        },
         work: {
           collections: createGitHubCollectionReader({
             repo: env.GITHUB_REPO,

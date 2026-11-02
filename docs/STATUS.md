@@ -2,9 +2,9 @@
 
 - **Active agent:** codex
 - **Current task:** T44e4a — show sessions and linked-work selection. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44e4a-show-sessions` (to be created from `main`).
+- **Branch:** `feat/t44e4a-show-sessions`.
 - **Last commit:** `9432bfc` — docs: propose smaller author-input tasks.
-- **Next step:** Codex: start a fresh session for T44e4a; read its acceptance criteria and relevant T44e3 review notes. Volodymyr approved the T44e4a/b/c split in chat on 2026-11-02. No paid calls, bucket, migration or deploy authorized.
+- **Next step:** Codex: finish T44e4a validation, push the implementation and open its PR for claude-code review. Show selection and new-work publication handoff are implemented; photo/persona menus and generation dispatch remain T44e4b/c. No paid calls, bucket, migration or deploy authorized.
 - **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=false`, `SHOW_VERIFIED_MODELS=[]`; Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates stay closed.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
