@@ -661,6 +661,7 @@ No paid calls, production enablement, remote migrations or deployment are author
   tenants remain isolated, and raw results cannot be mistaken for approved marked media.
   Tests: restart, partial write, concurrent put, collision, tenant isolation and size limits.
 - **T44d3 — Media marking and approval verification** (depends on T44d2).
+  Implementation complete on `feat/t44d3-media-marking`; awaiting claude-code review.
   Change: implement visible image/video labels and machine-readable image metadata with versioned
   processing; verify decoded outputs and persist marked bytes separately from paid raw results.
   Preserve provider provenance metadata where supported; do not claim to create C2PA signatures.

@@ -5,7 +5,11 @@ import { Miniflare } from 'miniflare';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { FalShowGenerator } from '@handmake/ai';
 import type { ShowCallResult, ShowImageRequest } from '@handmake/core';
-import { createR2ShowStorage, ShowStorageError } from '../src/show-storage';
+import {
+  createR2ShowStorage,
+  createR2MarkedShowStorage,
+  ShowStorageError,
+} from '../src/show-storage';
 
 const scope = { tenantId: 'tenant-a', showId: 'show-one', attemptId: 'attempt-one' };
 const requestId = '019a1b2c-3d4e-7f80-9a1b-2c3d4e5f6a7b';
@@ -429,4 +433,25 @@ describe('durable fal attempt journal', () => {
     expect(submissions).toBe(1);
     expect((await get())!.result).toEqual(generated);
   });
+});
+
+it('persists marked bytes in a separate namespace and cannot resolve them as raw', async () => {
+  await put();
+  const marked = createR2MarkedShowStorage(bucket);
+  expect(await marked.get(scope.tenantId, scope.showId, scope.attemptId)).toBeUndefined();
+  await marked.put(scope.tenantId, scope.showId, scope.attemptId, {
+    ...result,
+    bytes: new Uint8Array([4, 5, 6]),
+  });
+  const saved = (await marked.get(scope.tenantId, scope.showId, scope.attemptId))!;
+  expect(saved.ref).toBe('show-marked:v1:tenant-a:show-one:attempt-one');
+  await rejects(storage.resolveRaw(scope.tenantId, saved.ref), 'invalid-input');
+  expect((await get())!.result.bytes).toEqual(bytes);
+  await rejects(marked.put(scope.tenantId, scope.showId, scope.attemptId, result), 'collision');
+  await miniflare.dispose();
+  await start();
+  expect(
+    (await createR2MarkedShowStorage(bucket).get(scope.tenantId, scope.showId, scope.attemptId))!
+      .ref,
+  ).toBe(saved.ref);
 });

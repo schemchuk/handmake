@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T44d3 (media marking and approval gate), Owner codex, Reviewer claude-code. T44d2 merged as PR #49 (`273b0f4`).
-- **Branch:** `main`
-- **Last commit:** `273b0f4` — feat: persist raw show results and fal attempt journal in R2 (#49).
-- **Next step:** Codex implements T44d3 in a fresh session on its own feature branch; read the T44c-T44d2 sections of docs/review-notes.md first. T44d3 provides separate marked-media storage and the approval gate; T44e wires recovery and cost booking and creates the R2 binding/bucket (not authorized yet). No paid calls, remote migration or deploy authorized.
-- **Blocked on:** nothing for T44d3. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
+- **Current task:** T44d3 implementation complete; preparing PR. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44d3-media-marking`
+- **Last commit:** `69a3656` — docs: T44d2 merged, review notes, hand over T44d3 to codex.
+- **Next step:** Codex opens the T44d3 PR for Claude Code. Sensitive merge needs Volodymyr OK because CI and the existing show publish path install FFmpeg. T44e must supply authenticated Node/Worker transport, call `createShowMarkingGate(...).prepare` before approval, retain marked bytes through ingestion, and wire recovery/cost booking. R2 bucket/binding creation, remote migrations and deploy remain unauthorized.
+- **Blocked on:** T44d3 review/CI and sensitive-merge OK. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,7 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
-- T44d2 validation: format, lint, workspace typecheck/build pass; bot 302 tests pass with `vitest run --maxWorkers 1` outside sandbox, including 53 new local R2 tests. Parallel runs hit 5 s timeouts in existing tests; the 20 MB storage test has a 15 s limit. No paid calls, remote resources or deploy.
+- T44d3 validation: publisher 137 and bot 303 tests pass (bot uses `--maxWorkers 1` locally); format, lint, workspace typecheck/build and actionlint pass. Real PNG/JPEG/WebP and MP4 tests cover per-frame labels, metadata tampering, retries and separate R2 persistence. No paid calls or deploy.
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
 - Bot deploy: `cd apps/bot && pnpm run deploy` (`pnpm deploy` is a built-in pnpm command). Apply D1
   migrations first: `pnpm run db:migrate`.
