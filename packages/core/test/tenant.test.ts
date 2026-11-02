@@ -199,10 +199,8 @@ describe('parseTenantConfig', () => {
     });
 
     it('rejects a non-https join link', () => {
-      const bad = realConfig().replace(
-        'joinUrl: https://t.me/REPLACE_WITH_PUBLIC_CHANNEL_LINK',
-        'joinUrl: http://t.me/channel',
-      );
+      const bad = realConfig().replace(/joinUrl: https:\/\/\S+/, 'joinUrl: http://t.me/channel');
+      expect(bad).toContain('joinUrl: http://t.me/channel');
       expect(() => parseTenantConfig(bad)).toThrowError(/joinUrl/);
     });
 
