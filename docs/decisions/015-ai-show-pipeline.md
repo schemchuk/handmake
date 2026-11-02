@@ -119,3 +119,16 @@ Implementation follows the official [queue submission](https://fal.ai/docs/api-r
 and [status](https://fal.ai/docs/api-reference/inference-api/queue/status) contracts. The adapter
 uses configured EUR estimates, disables submission retries/fallback and never enables paid calls
 by default. This is a documentation check, not final legal advice or production authorization.
+
+## Operator confirmation of terms and billing (2026-11-02)
+
+Volodymyr confirmed in chat, after checking fal.ai in the browser, that:
+- `fal-ai/nano-banana-2/edit` and `fal-ai/kling-video/v2.5-turbo/pro/image-to-video` show the
+  labels Inference, Commercial use and Partner, with no "Pending Enterprise Ready" mark, so neither
+  is an Excluded Model. The underlying owners' terms (Google, Kuaishou) still apply.
+- Billing is prepaid credit (balance $8.39, no card on file), so spend cannot exceed the balance.
+  Video price on fal's page: $0.35 for 5 s; the configured estimate stays higher.
+
+Gates opened the same day: GitHub variables `SHOW_VERIFIED_MODELS` (exactly the two ids above) and
+`SHOW_ALLOW_PAID_CALLS=true`. A real call still needs the R2 binding deployed, the show flow
+(T44e4c) and the budget guard. Real per-call prices are recorded after the first production show.
