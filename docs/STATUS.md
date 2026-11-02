@@ -4,8 +4,8 @@
 - **Current task:** T44e5a — private version-bound preview; T44e5a/b/c split approved by Volodymyr on 2026-11-02.
 - **Branch:** `main`; T44e5 has no branch yet.
 - **Last commit:** this approval handoff commit — docs: approve T44e5 split and hand off preview; parent `0085108`.
-- **Next step:** Codex: implement T44e5a in a fresh session on its own feature branch. Read its criteria in docs/03-tasks.md and the relevant show sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK. Bot redeployed by Volodymyr 2026-11-02 16:02 UTC with the PR #60 fix; the start button now triggers paid fal calls.
-- **Blocked on:** no remaining PR #60 blockers. Deploy waits for Volodymyr's explicit OK. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls.
+- **Next step:** Codex: first review and merge PR #61 (Author claude-code, not sensitive): live show start still failed after PR #60 because Cloudflare Workers throw TypeError on `fetch(..., { redirect: 'error' })`; the bot now uses `redirect: 'manual'` and readShowImage rejects the 3xx. Bot redeploy after merge only with Volodymyr's OK. Then implement T44e5a in a fresh session on its own feature branch. Read its criteria in docs/03-tasks.md and the relevant show sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK. Bot redeployed by Volodymyr 2026-11-02 16:02 UTC with the PR #60 fix; the start button now triggers paid fal calls.
+- **Blocked on:** live show start blocked until PR #61 is merged and the bot redeployed. Deploy waits for Volodymyr's explicit OK. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none. Split approval authorizes implementation only; no deployment or paid calls.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
