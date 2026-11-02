@@ -190,6 +190,26 @@ it.each([
   expect(fetchImpl).not.toHaveBeenCalled();
   expect((await get()).draft.extras['show']).toBeUndefined();
 });
+it('downloads work originals from the work photos folder', async () => {
+  work.photos = ['photo-1.jpg', 'photo-2.jpg'];
+  input.originals = work.photos.map((fileName) => ({ kind: 'work', workId: work.id, fileName }));
+  await saveInput();
+  fetchImpl.mockImplementation(async (url) =>
+    String(url).startsWith('https://raw.githubusercontent.com/')
+      ? new Response(new Uint8Array([String(url).charCodeAt(String(url).length - 5)]), {
+          headers: { 'content-type': 'image/jpeg' },
+        })
+      : new Response(null, { status: 204 }),
+  );
+  await start(await get());
+  expect(fetchImpl.mock.calls.slice(0, 2).map(([url]) => url)).toEqual(
+    work.photos.map(
+      (name) =>
+        `https://raw.githubusercontent.com/fixture/repo/main/content/works/${id}/photos/${name}`,
+    ),
+  );
+  expect(fetchImpl).toHaveBeenCalledTimes(3);
+});
 it('retains references after failed preparation and can retry', async () => {
   telegram.mockRejectedValueOnce(new Error('offline'));
   await expect(start(await get())).rejects.toThrow();

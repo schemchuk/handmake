@@ -118,7 +118,8 @@ export function createShowInput(options: CreateBotOptions) {
         try {
           await show.start!(stored);
           await ctx.reply(texts.showDispatchedText);
-        } catch {
+        } catch (error) {
+          console.error('show start failed', (error as Error).message);
           await ctx.reply(texts.showStartFailedText);
         }
       });
