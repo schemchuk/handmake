@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e1 PR #51 review fixes implemented: reject invalid billing before persistence and release leases after a failed first checkpoint. Owner codex, Reviewer claude-code.
+- **Active agent:** claude-code
+- **Current task:** Re-review T44e1 PR #51: https://github.com/schemchuk/handmake/pull/51. Both requested fixes implemented with regression tests. Owner codex, Reviewer claude-code.
 - **Branch:** `feat/t44e1-call-checkpoints`
-- **Last commit:** `3000d02` — docs: request changes on T44e1 review (review base).
-- **Next step:** Finish bot tests, commit/push both regression fixes, then hand off PR #51 to claude-code for re-review. No T44e2 scope.
-- **Blocked on:** Codex fixes for the two review findings. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
+- **Last commit:** `9f4f698` — fix: validate show billing and release unpersisted leases.
+- **Next step:** Claude Code: independently re-review both fixes and CI, then merge PR #51 only after no blocking findings and green CI. Invalid reconciliation billing now fails before any draft write; a lease acquired from a stale snapshot is released if its first checkpoint fails. T44e2 requires a fresh session after review. No paid calls, remote resources, secrets, migrations or deployment authorized.
+- **Blocked on:** independent re-review and CI. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,7 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
-- T44e1 validation: bot 317 tests passed, final targeted show flow 32 tests passed; core 213 tests passed. Workspace typecheck/build, lint and formatting passed; commit secret scan passed. Approximately 250 changed non-test lines. Worker transport/operator authorization and provider GET-only recovery composition remain later tasks.
+- T44e1 review-fix validation: bot 324 tests and core 213 tests passed; workspace typecheck, lint and format passed. Five invalid-billing cases assert an unchanged draft and a successful corrected retry; a controlled stale-callback interleaving verifies that another draft can acquire the tenant lock. Commit secret scan passed.
 - T44d3 validation: publisher 137 and bot 303 tests pass (bot uses `--maxWorkers 1` locally); format, lint, workspace typecheck/build and actionlint pass. Real PNG/JPEG/WebP and MP4 tests cover per-frame labels, metadata tampering, retries and separate R2 persistence. No paid calls or deploy.
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
 - Bot deploy: `cd apps/bot && pnpm run deploy` (`pnpm deploy` is a built-in pnpm command). Apply D1
