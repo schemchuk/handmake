@@ -117,7 +117,7 @@ export function createShowStart(deps: {
           ref.kind === 'telegram'
             ? await deps.telegram(ref.fileId)
             : await download(
-                `https://raw.githubusercontent.com/${deps.repo}/main/content/works/${work.id}/${encodeURIComponent(ref.fileName)}`,
+                `https://raw.githubusercontent.com/${deps.repo}/main/content/works/${work.id}/photos/${encodeURIComponent(ref.fileName)}`,
               );
         originals.push(await snapshot(image));
       }

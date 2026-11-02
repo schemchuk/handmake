@@ -14,6 +14,9 @@ export type ShowInput = {
   ready: boolean;
 };
 
+/** Fixed show-start reasons: lowercase words, optional HTTP status; no digits, URLs or tokens otherwise. */
+const safeReason = /^[a-z][a-z ]*(?:: HTTP \d{3})?$/;
+
 /** Persist author choices separately from the immutable execution plan. */
 export function createShowInput(options: CreateBotOptions) {
   const { drafts, texts, show } = options;
@@ -118,7 +121,10 @@ export function createShowInput(options: CreateBotOptions) {
         try {
           await show.start!(stored);
           await ctx.reply(texts.showDispatchedText);
-        } catch {
+        } catch (error) {
+          // Only plain fixed reasons (e.g. "show dispatch failed: HTTP 422"); network errors may carry token URLs.
+          const reason = error instanceof Error ? error.message : '';
+          console.error('show start failed', safeReason.test(reason) ? reason : 'unclassified');
           await ctx.reply(texts.showStartFailedText);
         }
       });

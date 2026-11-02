@@ -509,3 +509,30 @@ it('reports preparation/dispatch failure and leaves the selected refs for retry'
   expect(await input(id)).toEqual(saved);
   expect(sentTexts(calls)).toContain(botTexts.showStartFailedText);
 });
+it('logs only fixed start failure reasons, never token URLs', async () => {
+  await linked();
+  await bot.handleUpdate(photoUpdate(11, ['one']));
+  await bot.handleUpdate(photoUpdate(11, ['two']));
+  await send('/show');
+  await press(button('persona'));
+  await press(button('finalize'));
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    start.mockRejectedValueOnce(
+      new TypeError('fetch failed: https://api.telegram.org/bot123456:SECRET-token/getFile'),
+    );
+    await press(button('start'));
+    await flush();
+    start.mockRejectedValueOnce(new Error('show dispatch failed: HTTP 422'));
+    await press(button('start'));
+    await flush();
+    expect(JSON.stringify(log.mock.calls)).not.toContain('SECRET');
+    expect(log.mock.calls).toEqual([
+      ['show start failed', 'unclassified'],
+      ['show start failed', 'show dispatch failed: HTTP 422'],
+    ]);
+    expect(sentTexts(calls).filter((t) => t === botTexts.showStartFailedText)).toHaveLength(2);
+  } finally {
+    log.mockRestore();
+  }
+});
