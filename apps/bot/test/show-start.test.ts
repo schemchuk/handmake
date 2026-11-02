@@ -208,7 +208,20 @@ it('downloads work originals from the work photos folder', async () => {
         `https://raw.githubusercontent.com/fixture/repo/main/content/works/${id}/photos/${name}`,
     ),
   );
+  expect(fetchImpl.mock.calls[0]![1]).toEqual({ redirect: 'manual' });
   expect(fetchImpl).toHaveBeenCalledTimes(3);
+});
+it('refuses redirected work originals', async () => {
+  input.originals = [
+    { kind: 'work', workId: work.id, fileName: 'original.png' },
+    { kind: 'telegram', fileId: 'second' },
+  ];
+  await saveInput();
+  fetchImpl.mockResolvedValueOnce(
+    new Response(null, { status: 302, headers: { location: 'https://elsewhere.invalid/' } }),
+  );
+  await expect(start(await get())).rejects.toThrow('show input download failed');
+  expect(fetchImpl).toHaveBeenCalledTimes(1);
 });
 it('retains references after failed preparation and can retry', async () => {
   telegram.mockRejectedValueOnce(new Error('offline'));

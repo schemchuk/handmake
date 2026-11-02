@@ -45,7 +45,8 @@ export function createShowStart(deps: {
     });
   };
   const download = async (url: string): Promise<ShowSourceImage> => {
-    const response = await fetchImpl(url, { redirect: 'error' });
+    // Workers reject redirect: 'error'; readShowImage refuses the unfollowed 3xx instead.
+    const response = await fetchImpl(url, { redirect: 'manual' });
     return readShowImage(response);
   };
   return async (stored) => {
