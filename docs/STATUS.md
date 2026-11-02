@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T44e3 — resumable Node executor and marking job, PR #53. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44e3-node-executor`.
-- **Last commit:** `ce565d2` — feat: add resumable Node show executor.
-- **Next step:** Claude Code: review PR #53 and CI; read T44e2/T44d3 review notes. Workflow/secret references require Volodymyr's explicit sensitive-merge OK before merge. No paid calls, remote resources, secret installation, migration or deploy authorized.
-- **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
+- **Active agent:** codex
+- **Current task:** T44e4 — author input and configuration menus. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44e4-author-input` (to be created from `main`).
+- **Last commit:** `5adf5dd` — feat: add resumable Node show executor (T44e3) (#53).
+- **Next step:** Codex: start a fresh session, read T44e4 in docs/03-tasks.md and the T44e3 review notes; propose a split first if the PR would exceed ~400 non-test lines. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show workflow secrets/vars are not installed.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

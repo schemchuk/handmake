@@ -124,3 +124,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44e2 review) Jobs expire after a fixed hour with no extension. T44e3 must handle a long provider wait that outlives the job (resume via a new job; the journal is keyed by scope).
 - (T44e2 review) `show-replay/v1/` gets one object per request. A lifecycle rule for that prefix only is safe after job expiry; never for journal/raw/marked. Add it with bucket provisioning.
 - (T44e2 review) The transport's catch-all 409 logs nothing; T44e3 should add a secret-safe log there. `wireGrant` ignores a `null` result from the conditional source put.
+
+## Show Node executor (T44e3)
+- (T44e3 review) No blockers; CI green. Sensitive merge (new `show.yml` workflow, `FAL_KEY`/`SHOW_TRANSPORT_SECRET` references) approved by Volodymyr in chat 2026-11-02. No secrets, vars, bucket or deploy were installed.
+- (T44e3 review) The workflow concurrency group is the raw `payload` string, so dispatches with a different `version` or JSON spacing for the same show run in parallel. The Worker lock and journal prevent double spend; T44e4/T44e5 should dispatch with a canonical payload or group by `tenantId`/`showId`.
+- (T44e3 review) `open` copies the pending attempt's grant and sources to the new job before the job CAS; if the CAS loses, the copies stay orphaned under an unused job id. Storage only; cover with the `show-replay`-style lifecycle when provisioning the bucket (never journal/raw/marked).
+- (T44e3 review) Oversized sources are skipped silently during the copy; the executor then fails closed on the missing source, which needs operator recovery (T44e5).
+- (T44e3 review) `show-cli` swallows all errors into one generic line to stay secret-safe; diagnosis relies on Worker durable state and the transport's 409 log.
