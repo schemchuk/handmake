@@ -9,3 +9,6 @@ export { humanizeDePromptV1 } from './prompt-text';
 export { ClaudeTextGenerator } from './claude-text-generator';
 export type { ClaudeTextGeneratorOptions, TextGenerationClient } from './claude-text-generator';
 export { describeWorkUkPromptV1, WORK_PROMPT_VERSION } from './work-prompt';
+export { FalShowGenerator } from './fal-show-generator';
+export type { FalShowGeneratorOptions, FalAttemptJournal } from './fal-show-generator';
+export { FalShowError } from './fal-http';
