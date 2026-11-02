@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** review PR #60 (fix: show work originals were read from the wrong path, every start with work photos failed); then T44e5 — preview, regeneration and recovery controls is next (Owner codex, Reviewer claude-code).
+- **Active agent:** claude-code
+- **Current task:** PR #60 review blocked on unsafe error logging; Author claude-code, Reviewer codex.
 - **Branch:** `main`; T44e5 has no branch yet.
 - **Last commit:** `eb316a3` — feat: mark selected show template and persona in menu (#59).
-- **Next step:** Codex: review and merge PR #60 (Author claude-code, not sensitive); bot redeploy after merge only with Volodymyr's OK. Then start T44e5 in a fresh session (Owner codex, Reviewer claude-code); set Active agent to codex at handoff. Read docs/review-notes.md "Show generation start (T44e4c)", "Tenant show personas (PR #58)" and "Show menu selection marks (PR #59)". No deploy, paid calls, secrets/vars or migrations: bot deploy only after Volodymyr's explicit OK. Dispatch token `handmake-dispatch` has Actions write (set by Volodymyr 2026-11-02).
-- **Blocked on:** nothing for T44e5 implementation. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
+- **Next step:** Claude Code: fix PR #60 logging at show-input.ts:122. Use fixed codes or an explicit allowlist, never arbitrary error messages; add a regression test with a fake token URL. Return to Codex for re-review. T44e5 starts in a fresh session after this fix. No deploy or paid calls without Volodymyr's explicit OK.
+- **Blocked on:** PR #60 requires secret-safe logging before merge. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none now. Persona config is merged; private R2 reference objects were uploaded by claude-code and were not independently queried in the PR #58 review.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

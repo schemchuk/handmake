@@ -158,3 +158,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 ## Show menu selection marks (PR #59)
 - (Codex review, 2026-11-02) No blockers; CI green and local show-session tests 26/26 pass (`--maxWorkers 1 --testTimeout=30000`, outside the sandbox for Miniflare). Checkmarks reflect the saved template and validated persona; callback data is unchanged.
 - Merged as PR #59 (`eb316a3`); independent review recorded in a PR comment. No deploy, paid calls, secrets/vars or migrations changed.
+
+## Show work photo path (PR #60)
+- (Codex review, 2026-11-02) Blocking P1: show-input.ts logs arbitrary caught error.message. The try covers show.start and ctx.reply; start propagates fetch errors from Telegram URLs containing the bot token. Replace with fixed codes or explicitly allowlisted messages and add a fake-token regression test before merge.
+- The photos/ path correction matches the work store layout; local show-start tests pass 18/18 and CI is green. Review recorded in a PR comment. No merge, deploy or paid calls.
