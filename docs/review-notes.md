@@ -103,3 +103,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44d1 review) The fingerprint hashes the JSON of all base64 data URIs, so one call holds several copies of the reference bytes in memory (up to 20 MB of references). Hash the raw bytes instead if Worker memory becomes a problem; photos are normally small.
 - (T44d1 review) `callId` is `fal:<requestId>`, unique per job, as T44c requires for idempotent booking.
 - (T44d1 review) The ADR 015 check did not clear the excluded-model gate; `verifiedModels` stays empty and `allowPaidCalls` off until Volodymyr confirms the exact-model terms and billing.
+
+## Show raw storage (T44d2)
+- (T44d2 review) No blockers; CI green, 53 new R2 tests pass (Miniflare). No secrets, no workflow changes, no bucket or binding created; the adapters are unwired.
+- (T44d2 review) A transient R2 error in `reserve` (before any POST) leaves the attempt id unusable: the next call sees a reservation without a request id and demands reconciliation. Safe but strict; T44e's discard path must let the operator drop such a no-spend attempt after checking fal.
+- (T44d2 review) Raw objects and journal tickets must never get an R2 lifecycle deletion rule; the bucket needs to be private with no custom domain. Set this up when T44e creates the bucket.
+- (T44d2 review) Receipt metadata is capped at 1,800 bytes to fit R2's 2 KB custom metadata. Real receipts are a few hundred bytes; do not add large fields to `showReceiptSchema`.
+- (T44d2 review) Running the whole bot suite in parallel hits 5 s timeouts in some tests (also seen in T44b); CI is green. Use `--maxWorkers 1` locally.

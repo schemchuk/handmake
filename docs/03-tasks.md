@@ -652,6 +652,7 @@ No paid calls, production enablement, remote migrations or deployment are author
   Tests: mocked HTTP lifecycle, payloads/prompts, failed/uncertain outcomes, timeouts, hostile URLs,
   malformed/oversized media and secret-safe errors.
 - **T44d2 — Durable raw result ingestion** (depends on T44d1).
+  Done: merged as PR #49 (`273b0f4`).
   Implementation complete on `feat/t44d2-show-result-store`; awaiting claude-code review.
   Change: implement immutable tenant/show/attempt-indexed `ShowResultStore` for raw bytes and receipt;
   implement the T44d1 `FalAttemptJournal` with atomic reservation and immutable request-id recording;

@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44d2 implementation complete; PR #49 awaiting review. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44d2-show-result-store`
-- **Last commit:** `e3b3046` — feat: persist raw show results and fal attempt journal in R2.
-- **Next step:** Claude Code reviews PR #49 (https://github.com/schemchuk/handmake/pull/49), merges after green CI with no blockers, then hands T44d3 to codex in a fresh session. Private R2 adapters are implemented but unwired; no bucket or binding has been created. T44d3 must provide separate marked-media storage and the approval gate; T44e must wire recovery and cost booking. No paid calls, remote migration or deploy authorized.
-- **Blocked on:** T44d2 review/CI. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
+- **Active agent:** codex
+- **Current task:** T44d3 (media marking and approval gate), Owner codex, Reviewer claude-code. T44d2 merged as PR #49 (`273b0f4`).
+- **Branch:** `main`
+- **Last commit:** `273b0f4` — feat: persist raw show results and fal attempt journal in R2 (#49).
+- **Next step:** Codex implements T44d3 in a fresh session on its own feature branch; read the T44c-T44d2 sections of docs/review-notes.md first. T44d3 provides separate marked-media storage and the approval gate; T44e wires recovery and cost booking and creates the R2 binding/bucket (not authorized yet). No paid calls, remote migration or deploy authorized.
+- **Blocked on:** nothing for T44d3. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
