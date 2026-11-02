@@ -88,7 +88,7 @@ export function createShowRuntime(env: Env) {
           throw new Error('private original unavailable');
         return readShowImage(
           await fetch(`https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${path}`, {
-            redirect: 'error',
+            redirect: 'manual',
           }),
         );
       },
