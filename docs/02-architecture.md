@@ -713,3 +713,29 @@ tenant filtering, keeping listing plus work reads within the Worker subrequest b
 Older works require a future paged reader. If retention removed a waiting work draft,
 an existing tenant-scoped Git work permits resumption; a retained unpublished draft
 still blocks linking. No media bytes, private input objects or paid calls are produced.
+
+### Explicit show start and private inputs (T44e4c)
+
+Saving show input never starts generation. A separate version-bound author button schedules
+preparation in Worker background work. It revalidates the published tenant work, current show
+configuration, 2-3 original references, template and configured fictional adult persona before
+freezing the plan with CAS. Author text and original reference selections remain unchanged.
+
+Work photos come from their approved Git paths; uploaded originals come from Telegram's file API.
+Persona references must already exist under `show-input/v1/<tenant>/<reference>` in private R2.
+Preparation accepts JPEG/PNG/WebP only, bounds actual streamed download bytes at 20 MB per image,
+and copies originals and persona bytes into tenant-scoped, content-addressed immutable snapshots.
+The configured plan points to those snapshots; later source/config changes cannot replace them.
+
+The Worker opens the existing authenticated transport job and dispatches `show.yml` on `main`
+with canonical JSON key order: tenantId, showId, jobId, version. A retry after failed or ambiguous
+dispatch reuses the same unexpired job and immutable plan. Competing preparation loses the draft
+CAS; stale input cannot replace the plan. Duplicate dispatch shares the workflow concurrency group;
+the existing transport fences, tenant lock and provider journal remain the paid-call authority.
+Expired or progressed jobs require T44e5 recovery rather than silently opening another job.
+
+Production requires both SHOW_MEDIA and SHOW_TRANSPORT_SECRET; missing bindings disable execution.
+Provider credentials, verified-model and paid-execution gates stay in the Node workflow. Worker
+background work only downloads, persists and dispatches; it never waits for generation or marks media.
+No deployment or paid call is part of this task. The existing dispatch token needs Actions write
+permission for workflow_dispatch; any permission/configuration changes remain an operator step.

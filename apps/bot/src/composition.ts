@@ -144,6 +144,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
             token: env.GITHUB_DISPATCH_TOKEN,
           }),
           configs: tenantConfigs,
+          start: createShowRuntime(env)?.start,
         },
         work: {
           collections: createGitHubCollectionReader({

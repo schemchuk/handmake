@@ -52,7 +52,8 @@ const generator = {
   translateUkrainian: vi.fn(async () => generated),
   generate: vi.fn(),
 };
-function build(enabled = true) {
+const start = vi.fn(async (_stored: import('../src/draft-store').StoredDraft) => {});
+function build(enabled = true, execution = true) {
   bot = createBot({
     token: 'TEST_TOKEN',
     drafts,
@@ -63,7 +64,9 @@ function build(enabled = true) {
     background: (task) => {
       tasks.push(task());
     },
-    show: enabled ? { works: { listWorks, readWork }, configs: { load } } : undefined,
+    show: enabled
+      ? { works: { listWorks, readWork }, configs: { load }, start: execution ? start : undefined }
+      : undefined,
     work: {
       configs: { load },
       collections: {
@@ -437,4 +440,54 @@ it('recovers a published work link after retention removed the waiting draft', a
   await send('/show');
   expect((await get(id))!.draft.extras['showSelection']).toMatchObject({ workId: pending });
   expect((await input(id)).template).toBe('worn');
+});
+
+it('requires an explicit current start action and never starts from intake/finalize', async () => {
+  const id = await linked();
+  await press(`show:${id}:start:${(await get(id))!.version}`);
+  expect(start).not.toHaveBeenCalled();
+  await bot.handleUpdate(photoUpdate(11, ['one']));
+  await bot.handleUpdate(photoUpdate(11, ['two']));
+  await send('/show');
+  await press(button('persona'));
+  await press(button('finalize'));
+  expect(start).not.toHaveBeenCalled();
+  const action = button('start');
+  await press(action.replace(/\d+$/, '0'));
+  expect(start).not.toHaveBeenCalled();
+  await press(action);
+  await flush();
+  expect(start).toHaveBeenCalledTimes(1);
+  expect(start.mock.calls[0]![0].draft.draftId).toBe(id);
+  expect(sentTexts(calls)).toContain(botTexts.showDispatchedText);
+});
+it('reports missing execution resources without starting background work', async () => {
+  const id = await linked();
+  const stored = (await get(id))!;
+  await drafts.updateShow(
+    {
+      ...stored.draft,
+      extras: { ...stored.draft.extras, showInput: { ...(await input(id)), ready: true } },
+    },
+    stored.version,
+  );
+  await build(true, false);
+  await press(`show:${id}:start:${(await get(id))!.version}`);
+  expect(start).not.toHaveBeenCalled();
+  expect(tasks).toEqual([]);
+  expect(sentTexts(calls)).toContain(botTexts.showUnavailableText);
+});
+it('reports preparation/dispatch failure and leaves the selected refs for retry', async () => {
+  const id = await linked();
+  await bot.handleUpdate(photoUpdate(11, ['one']));
+  await bot.handleUpdate(photoUpdate(11, ['two']));
+  await send('/show');
+  await press(button('persona'));
+  await press(button('finalize'));
+  const saved = await input(id);
+  start.mockRejectedValueOnce(new Error('fixture'));
+  await press(button('start'));
+  await flush();
+  expect(await input(id)).toEqual(saved);
+  expect(sentTexts(calls)).toContain(botTexts.showStartFailedText);
 });
