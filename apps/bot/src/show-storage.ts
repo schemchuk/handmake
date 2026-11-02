@@ -22,12 +22,19 @@ export class ShowStorageError extends Error {
  * A failed/uncertain write can be retried with the same scope and identical contents.
  */
 export function createR2ShowStorage(bucket: Bucket) {
+  return createStorage(bucket, 'raw');
+}
+/** Marked writes are trusted only after Node verification; never expose a public upload endpoint. */
+export function createR2MarkedShowStorage(bucket: Bucket): ShowResultStore {
+  return createStorage(bucket, 'marked').results;
+}
+function createStorage(bucket: Bucket, kind: 'raw' | 'marked') {
   const results: ShowResultStore = {
     put: (tenantId, showId, attemptId, result) =>
       protect(async () => {
         const scope = { tenantId, showId, attemptId };
-        const key = objectKey('raw', scope);
-        const ref = rawRef(scope);
+        const key = objectKey(kind, scope);
+        const ref = resultRef(scope, kind);
         const { bytes: inputBytes, ...receipt } = result;
         const validated = showReceiptSchema.safeParse({ ...receipt, attemptId, ref });
         if (
@@ -65,7 +72,7 @@ export function createR2ShowStorage(bucket: Bucket) {
     get: (tenantId, showId, attemptId) =>
       protect(async () => {
         const scope = { tenantId, showId, attemptId };
-        const object = await bucket.get(objectKey('raw', scope));
+        const object = await bucket.get(objectKey(kind, scope));
         if (!object) return undefined;
         if (!object.size || object.size > maxBytes) {
           await object.body.cancel();
@@ -96,7 +103,7 @@ export function createR2ShowStorage(bucket: Bucket) {
         if (
           !receipt.success ||
           receipt.data.attemptId !== attemptId ||
-          receipt.data.ref !== rawRef(scope)
+          receipt.data.ref !== resultRef(scope, kind)
         ) {
           await object.body.cancel();
           throw new ShowStorageError('corrupt');
@@ -172,7 +179,7 @@ export function createR2ShowStorage(bucket: Bucket) {
         const parts = ref.split(':');
         if (
           parts.length !== 5 ||
-          parts[0] !== 'show-raw' ||
+          parts[0] !== `show-${kind}` ||
           parts[1] !== 'v1' ||
           parts[2] !== tenantId
         )
@@ -184,13 +191,13 @@ export function createR2ShowStorage(bucket: Bucket) {
   };
 }
 
-function objectKey(kind: 'raw' | 'attempt', scope: Scope): string {
+function objectKey(kind: 'raw' | 'marked' | 'attempt', scope: Scope): string {
   for (const part of [scope.tenantId, scope.showId, scope.attemptId])
     if (!/^[a-zA-Z0-9_-]{1,128}$/.test(part)) throw new ShowStorageError('invalid-input');
   return `show-${kind}/v1/${scope.tenantId}/${scope.showId}/${scope.attemptId}`;
 }
-function rawRef(scope: Scope): string {
-  return `show-raw:v1:${scope.tenantId}:${scope.showId}:${scope.attemptId}`;
+function resultRef(scope: Scope, kind: 'raw' | 'marked'): string {
+  return `show-${kind}:v1:${scope.tenantId}:${scope.showId}:${scope.attemptId}`;
 }
 function byteLength(value: string): number {
   return new TextEncoder().encode(value).length;

@@ -64,6 +64,13 @@ jobs:
           DISPATCH_PAYLOAD: ${{ inputs.payload || toJson(github.event.client_payload) }}
         run: printf '%s' "$DISPATCH_PAYLOAD" | jq 'del(.live)' > "$RUNNER_TEMP/payload.json"
 
+      - name: Install show media validation tools
+        run: |
+          if jq -e '.kind == "show"' "$RUNNER_TEMP/payload.json" > /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+
       - name: Publish to channels
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

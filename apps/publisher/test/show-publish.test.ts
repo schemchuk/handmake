@@ -7,6 +7,7 @@ import { showSchema } from '@handmake/core';
 import type { PublishedCallbackBody, Show, Work } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import sharp from 'sharp';
+import { markingFixtures } from './fixtures/show-marking';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { parseDispatchPayload } from '../src/payload';
 import type { DispatchPayload } from '../src/payload';
@@ -18,7 +19,7 @@ let root: string,
   store: GitRepoContentStore,
   payload: DispatchPayload;
 let image: Uint8Array;
-const video = new Uint8Array([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109]);
+let video: Uint8Array;
 const source = { fetchMedia: vi.fn<(ref: string) => Promise<Uint8Array>>() };
 const git = { commit: vi.fn(async (_paths: string[], _message: string) => true) };
 const callback = { send: vi.fn(async (_body: PublishedCallbackBody) => {}) };
@@ -53,12 +54,11 @@ beforeEach(async () => {
       ),
     ),
   );
-  image = new Uint8Array(
-    await sharp({ create: { width: 16, height: 16, channels: 3, background: '#bbbbbb' } })
-      .png()
-      .withXmp('<x:xmpmeta>AI fixture marker</x:xmpmeta>')
-      .toBuffer(),
-  );
+  const fixtures = await markingFixtures();
+  image = new Uint8Array(fixtures.markedImage.result.bytes);
+  video = new Uint8Array(fixtures.markedVideo.result.bytes);
+  for (const entry of show.images) entry.marker = fixtures.markedImage.marker;
+  show.video.marker = fixtures.markedVideo.marker;
   store = new GitRepoContentStore({ rootDir: root });
   const work: Work = {
     id: show.workId,
@@ -162,7 +162,7 @@ it('rejects changed approved content or media on retry', async () => {
   source.fetchMedia.mockImplementation(async (ref) =>
     ref.endsWith('.mp4') ? video : new Uint8Array(await sharp(image).negate().png().toBuffer()),
   );
-  await expect(run()).rejects.toThrow('immutable');
+  await expect(run()).rejects.toThrow('marking failed');
 });
 it.each([
   { draftId: '01JBCA1B2C3D4E5F6G7H8J9K0A' },
@@ -197,4 +197,11 @@ it('refuses a conflicting channel ledger before any download', async () => {
   });
   await expect(run()).rejects.toThrow('before T46');
   expect(source.fetchMedia).not.toHaveBeenCalled();
+});
+
+it('rejects valid but unmarked media even when dispatch declares a marker', async () => {
+  const raw = (await markingFixtures()).image;
+  source.fetchMedia.mockImplementation(async (ref) => (ref.endsWith('.mp4') ? video : raw));
+  await expect(run()).rejects.toThrow('marking failed');
+  expect(git.commit).not.toHaveBeenCalled();
 });

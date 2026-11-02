@@ -558,3 +558,33 @@ R2 [conditional operations](https://developers.cloudflare.com/r2/api/workers/wor
 and [atomic write consistency](https://developers.cloudflare.com/r2/reference/consistency/) provide
 the storage primitives. Miniflare integration tests exercise them locally, including disk persistence
 across runtime restart. Remote binding/bucket setup remains part of later deployment work.
+
+### Show marking execution boundary (T44d3)
+
+Marking and full decoding run in the Node publisher environment (`apps/publisher`), using Sharp
+and native FFmpeg/ffprobe. They never execute in the bot Worker. T44d3 adds an unwired processing
+service, not an Actions workflow or remote endpoint. T44e must supply an authenticated transport
+between the private Worker/R2 store and that Node service before enabling shows; no public raw URLs.
+The Node approval gate re-verifies stored marked bytes against the raw result before returning
+media for approval. Raw and marked R2 results use separate namespaces. Existing raw receipts and
+paid-call identities remain unchanged; retrying processing has no generator dependency.
+
+`show-mark@1` appends an opaque footer rendered from original bitmap glyphs; no system fonts are
+needed. PNG XMP and the MP4 comment bind the label to the SHA-256 of the immutable raw bytes.
+Images decode fully and their footer pixels must match exactly. Videos decode fully, keep the
+expected duration (current shows: 5 s), and must match the footer on every frame (PSNR >= 32 dB
+allows H.264 compression). Counted frames must agree with container frame counts when present.
+Inputs are limited to 320-1920 pixels wide, 64-2560 high and 450 video frames. Processing and
+verification both enforce 20 MB; native commands have timeouts, restricted protocols and thread limits.
+Supported EXIF/ICC/IPTC and MP4 tags are retained; original image XMP is archived verbatim as base64
+in the new XMP packet. Transformations do not preserve valid C2PA signatures; the signed originals
+remain in raw storage. This implementation creates no C2PA signatures or authenticity claims.
+
+T44e calls `createShowMarkingGate(raw, marked).prepare(tenant, show, attempt)` before approval:
+it verifies the raw linkage and provider receipt, persists separate marked bytes, and re-verifies
+cached bytes on retry without generating anything. Use `createR2MarkedShowStorage` for the marked
+store. Its `show-marked:v1:` references cannot resolve through `resolveRaw`. Transport must retain
+the marked bytes (for example, Telegram document uploads); compressed photo uploads may strip XMP.
+The publisher independently verifies markers after download before saving/committing show content.
+CI installs FFmpeg for real media tests; the existing publish job installs it only for show payloads.
+No new publishing/render workflow or production endpoint is added.
