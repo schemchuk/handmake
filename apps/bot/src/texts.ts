@@ -17,8 +17,19 @@ export const botTexts = {
   showMissingWorkText:
     'Опубліковану роботу не знайдено. Спробуй /show пізніше або /discard і /show для нового вибору.',
   showSelectionErrorText: 'Вибір застарів або не зберігся. Спробуй /show ще раз.',
-  showLinkedText:
-    'Роботу обрано й збережено для показу. Генерацію ще не запущено; налаштування фото й моделей буде доступне пізніше.',
+  showInputText: (count: number, template: string, model: string | undefined, ready: boolean) =>
+    `Оригінали: ${count}/3 (потрібно 2–3). Формат: ${template}. Модель: ${model ?? 'не обрана'}.\n` +
+    (ready
+      ? 'Вхідні дані збережено. Генерацію ще не запущено.'
+      : 'Надішли фото або використай фото роботи, обери формат і модель, потім збережи налаштування.'),
+  showUseWorkPhotosButton: 'Використати фото роботи',
+  showResetPhotosButton: 'Очистити фото й надіслати нові',
+  showFinalizeButton: 'Зберегти налаштування',
+  showPhotoBoundsText:
+    'Для показу потрібно 2–3 оригінали. Зайві фото не додано. /show — налаштування.',
+  showNeedsPersonaText: 'Для цього формату обери модель через /show.',
+  showPhotoSavedText: (count: number) =>
+    `Оригінал збережено (${count}/3). /show — продовжити налаштування.`,
   showContinueText:
     'Це сесія показу. /show — продовжити, /work — робота, /new — допис, /discard — видалити чернетку показу.',
   workUnavailableText: 'Роботи зараз недоступні. Спробуй /work пізніше.',

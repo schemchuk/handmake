@@ -69,3 +69,19 @@ it('validates tenant and work identifiers before network access and rejects malf
   expect(fetchImpl).not.toHaveBeenCalled();
   await expect(make(fetchImpl).readWork('tenant', id)).rejects.toThrow();
 });
+
+it('bounds raw work reads to the twenty newest ids before fetching', async () => {
+  const ids = Array.from(
+    { length: 60 },
+    (_, i) => `${id.slice(0, 21)}${String(i).padStart(5, '0')}`,
+  );
+  const fetchImpl = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url).includes('api.github.com'))
+      return Response.json(ids.map((name) => ({ type: 'dir', name })));
+    const selected = String(url).split('/').at(-2)!;
+    return new Response(serializeWork({ ...work, id: selected }));
+  });
+  const result = await make(fetchImpl).listWorks('tenant');
+  expect(fetchImpl).toHaveBeenCalledTimes(21);
+  expect(result.map((w) => w.id)).toEqual(ids.slice(-20).reverse());
+});
