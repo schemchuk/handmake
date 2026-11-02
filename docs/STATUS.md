@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** PR #55 review complete; merged with no blocking findings. T44e4b remains next (Owner codex, Reviewer claude-code).
-- **Branch:** `main`.
+- **Active agent:** codex
+- **Current task:** T44e4b — original photos and configuration menus (Owner codex, Reviewer claude-code).
+- **Branch:** `feat/t44e4b-show-inputs`.
 - **Last commit:** `68d542c` — chore: bind private R2 show media bucket (#55).
-- **Next step:** Codex: start T44e4b in a fresh session on `feat/t44e4b-show-inputs` from `main`; set Active agent to codex before work and read the T44e4a notes in docs/review-notes.md. PR #55 validation: CI passed and Wrangler deploy --dry-run passed, confirming `SHOW_MEDIA` -> `handmake-show`; binding matches Env and runtime. Remote bucket public-access settings were not independently inspected. No deploy or paid calls performed. Do NOT deploy the bot, run paid calls or touch secrets/vars/migrations: deploy waits for T44e4c and Volodymyr's explicit OK.
+- **Next step:** Implement and test resumable original intake and versioned configuration menus. No generation, deploy, paid calls, secrets/vars or migrations.
 - **Blocked on:** nothing for implementation. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). Private R2 bucket `handmake-show` created (2026-11-02, free tier; binding `SHOW_MEDIA` merged in PR #55, not yet deployed); paid gates are open but nothing can run until deploy and T44e4c.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
