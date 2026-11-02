@@ -147,8 +147,14 @@ describe('show content contract', () => {
 });
 
 describe('show config and templates', () => {
-  it('leaves existing tenant shows disabled', () => {
-    expect(tenant().shows).toBeUndefined();
+  it('enables tenant shows with fictional adult personas and the ADR 015 models', () => {
+    const shows = tenant().shows!;
+    expect(shows.models.map((m) => m.id)).toEqual(['lena', 'marta', 'jonas']);
+    expect(shows.models.every((m) => m.fictional && m.adult)).toBe(true);
+    expect([shows.image.model, shows.video.model]).toEqual([
+      'fal-ai/nano-banana-2/edit',
+      'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',
+    ]);
   });
   it('changes model identities, count and provider ids through config only', () => {
     const next = {
