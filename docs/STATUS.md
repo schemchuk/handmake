@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Re-review T44e1 PR #51: https://github.com/schemchuk/handmake/pull/51. Both requested fixes implemented with regression tests. Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44e1-call-checkpoints`
-- **Last commit:** `9f4f698` — fix: validate show billing and release unpersisted leases.
-- **Next step:** Claude Code: independently re-review both fixes and CI, then merge PR #51 only after no blocking findings and green CI. Invalid reconciliation billing now fails before any draft write; a lease acquired from a stale snapshot is released if its first checkpoint fails. T44e2 requires a fresh session after review. No paid calls, remote resources, secrets, migrations or deployment authorized.
-- **Blocked on:** independent re-review and CI. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
+- **Active agent:** codex
+- **Current task:** T44e2 (private storage composition and authenticated Worker transport), see docs/03-tasks.md. Owner codex, Reviewer claude-code. T44e1 merged as PR #51 (`d83fd8d`).
+- **Branch:** `main` (create `feat/t44e2-worker-transport`)
+- **Last commit:** `d83fd8d` — feat: add per-call show checkpoints and reconciliation (#51).
+- **Next step:** Codex: start T44e2 in a fresh session. Pull/rebase, read AGENTS.md and this status, then only the T44e2 task and the relevant architecture sections. Implement only T44e2; do not continue into T44e3. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Blocked on:** nothing for T44e2 implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
