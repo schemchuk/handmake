@@ -160,5 +160,5 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Merged as PR #59 (`eb316a3`); independent review recorded in a PR comment. No deploy, paid calls, secrets/vars or migrations changed.
 
 ## Show work photo path (PR #60)
-- (Codex review, 2026-11-02) Blocking P1: show-input.ts logs arbitrary caught error.message. The try covers show.start and ctx.reply; start propagates fetch errors from Telegram URLs containing the bot token. Replace with fixed codes or explicitly allowlisted messages and add a fake-token regression test before merge.
-- The photos/ path correction matches the work store layout; local show-start tests pass 18/18 and CI is green. Review recorded in a PR comment. No merge, deploy or paid calls.
+- (Codex re-review, 2026-11-02) Previous P1 resolved in 583ec50: token URLs are rejected by the logging filter; regression coverage verifies fallback logging and author failure replies. The regex checks message format rather than a literal allowlist; non-blocking for current error paths.
+- The photos/ correction matches the work store layout. Local show-session and show-start suites pass 45/45 (`--maxWorkers 1 --testTimeout=30000`); CI green. Merged as PR #60 (`7dd0405`). No deploy or paid calls.

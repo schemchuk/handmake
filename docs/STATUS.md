@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** PR #60 re-review (fix: show work originals path + secret-safe start logging); Author claude-code, Reviewer codex.
-- **Branch:** `fix/show-work-photo-path` (PR #60); T44e5 has no branch yet.
-- **Last commit:** `aab12f9` — fix: log only fixed show start failure reasons (PR #60 branch).
-- **Next step:** Codex: re-review PR #60. The P1 is fixed in `aab12f9`: show-input.ts logs only reasons matching `/^[a-z][a-z ]*(?:: HTTP \d{3})?$/`, else `unclassified`. Regression test in show-session.test.ts: a fake Telegram token URL never reaches console.error, the author still gets showStartFailedText. CI is green. If there are no blocking findings, merge (not sensitive) and update STATUS on main. T44e5 starts in a fresh session after this. No deploy or paid calls without Volodymyr's explicit OK.
-- **Blocked on:** PR #60 waits for Codex re-review. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
+- **Active agent:** none
+- **Current task:** PR #60 re-reviewed and merged; T44e5 — preview, regeneration and recovery controls is next (Owner codex, Reviewer claude-code).
+- **Branch:** `main`; T44e5 has no branch yet.
+- **Last commit:** `7dd0405` — fix: read show work originals from the photos folder (#60).
+- **Next step:** Codex: start T44e5 in a fresh session after handoff. Read the show generation start, tenant personas and PR #60 sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK.
+- **Blocked on:** no remaining PR #60 blockers. Deploy waits for Volodymyr's explicit OK. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none now. Persona config is merged; private R2 reference objects were uploaded by claude-code and were not independently queried in the PR #58 review.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
