@@ -53,6 +53,8 @@ export function createShowInput(options: CreateBotOptions) {
     const input = current(stored, work, config);
     if (!(await save(stored, input))) throw new Error('input changed');
     const prefix = `show:${stored.draft.draftId}:`;
+    // Telegram keyboards have no selected state; mark the saved choices in their labels.
+    const mark = (selected: boolean, label: string) => (selected ? `✓ ${label}` : label);
     const button = (label: string, action: string, value = '') => ({
       text: label,
       callback_data: `${prefix}${action}:${stored.version + 1}${action === 'start' ? '' : `.${value}`}`,
@@ -72,10 +74,14 @@ export function createShowInput(options: CreateBotOptions) {
               : []),
             [button(texts.showResetPhotosButton, 'reset')],
             ...(['worn', 'closeup', 'interior'] as const).map((t) => [
-              button(texts.workKinds[t], 'template', t),
+              button(mark(input.template === t, texts.workKinds[t]), 'template', t),
             ]),
             ...config.models.map((m, i) => [
-              button(Array.from(m.name).slice(0, 60).join(''), 'persona', String(i)),
+              button(
+                mark(input.model?.id === m.id, Array.from(m.name).slice(0, 60).join('')),
+                'persona',
+                String(i),
+              ),
             ]),
             [button(texts.showFinalizeButton, 'finalize')],
             ...(input.ready ? [[button(texts.showStartButton, 'start')]] : []),

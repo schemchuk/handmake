@@ -336,6 +336,24 @@ it.each([1, 2, 3, 4])(
   },
 );
 
+it('marks the saved template and persona in the menu labels', async () => {
+  await linked();
+  const labels = () => {
+    const call = [...calls].reverse().find((c) => c.payload['reply_markup']);
+    return (
+      call!.payload['reply_markup'] as { inline_keyboard: { text: string }[][] }
+    ).inline_keyboard
+      .flat()
+      .map((b) => b.text);
+  };
+  expect(labels().filter((t) => t.startsWith('✓ '))).toEqual([`✓ ${botTexts.workKinds.worn}`]);
+  await press(button('persona'));
+  expect(labels().filter((t) => t.startsWith('✓ '))).toEqual([
+    `✓ ${botTexts.workKinds.worn}`,
+    '✓ Fixture',
+  ]);
+});
+
 it('atomically persists concurrent album originals across restart without changing author text', async () => {
   const id = await linked();
   await Promise.all(
