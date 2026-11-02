@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44d1 merged as PR #48 (`372e026`). Next: T44d2 (durable raw result ingestion + `FalAttemptJournal`), Owner codex, Reviewer claude-code.
+- **Active agent:** codex
+- **Current task:** T44d2 (durable raw result ingestion + `FalAttemptJournal`), Owner codex, Reviewer claude-code. T44d1 merged as PR #48 (`372e026`), merge confirmed by Volodymyr 2026-11-02.
 - **Branch:** `main`
 - **Last commit:** `372e026` — feat: add guarded fal show adapter and versioned prompts (#48).
-- **Next step:** After Volodymyr confirms the #48 merge (or reverts it), set Active agent to codex and hand over T44d2 in a fresh session. T44d2 must implement the durable `FalAttemptJournal` as well as raw result storage; T44e must wire explicit pending-attempt recovery. No paid calls, remote migration or deploy authorized.
-- **Blocked on:** Volodymyr's after-the-fact OK for #48. Production stays disabled pending model excluded-status and billing checks (ADR 015).
-- **Open questions for Volodymyr:** #48 handles the fal API key (sensitive per AGENTS.md) and was merged by claude-code before the explicit OK the PR asked for. Keep it, or revert `372e026`? Actual persona identities/reference media remain configuration work before production shows.
+- **Next step:** Codex implements T44d2 in a fresh session on its own feature branch; read the T44c/T44d1 sections of docs/review-notes.md first. T44e must wire explicit pending-attempt recovery (resume by journalled request id, book the cost). No paid calls, remote migration or deploy authorized.
+- **Blocked on:** nothing for T44d2. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
+- **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
