@@ -730,7 +730,7 @@ Model-terms and billing checks remain gates before the first real show, not befo
   Tests: new/existing work paths, missing work, 2-3 photo bounds, persona config changes, template
   override, denied access, disabled configuration and existing post/work session regressions.
 
-#### Proposed T44e4 split (pending Volodymyr approval, 2026-11-02)
+#### T44e4 split (approved by Volodymyr in chat, 2026-11-02)
 
 T44e4 needs persistent show-session routing, a tenant-scoped work reader, new-work handoff,
 photo intake, configuration menus, private input persistence and executor dispatch. These cross
