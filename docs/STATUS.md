@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** PR #62 (T44e5a) review fixes implemented; awaiting re-review. PR #63 (circle join link) still awaits Codex review in a separate session.
-- **Branch:** `feat/T44e5a-private-preview`.
-- **Last commit:** this review-fix handoff commit — fix: deliver show preview outside webhook handler; parent `7e7902b`.
-- **Next step:** Claude Code: re-review PR #62 and merge after green CI and no blocking findings. Delivery now uses the background runner (waitUntil), returns before pending uploads finish and contains background failures. Ready/failed text explains how to start another show; diagnostics log fixed reasons only. Final preview/session suites pass 60 tests, including deferred delivery and secret-safe logging; bot typecheck, workspace lint and formatting pass. No deploy or paid calls. PR #63 remains a separate Codex review task; do not merge it as its author.
-- **Blocked on:** PR #62 re-review. The PR #61 fix is live; first live show ran end-to-end 2026-11-02 (draft 01M6ECR1Z295C1WN4H5C7BBNBB, workflow run 41480950631, 3 images + 5 s video marked in private R2, status ready, 0.70 EUR ledgered); the author gets no result in Telegram until PR #62 is merged and the bot redeployed (deploy needs explicit approval). Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: the start button can trigger paid fal calls.
+- **Active agent:** codex
+- **Current task:** T44e5a merged (PR #62, squash `ead3663`); next: PR #63 review, then T44e5b — regeneration and resumable retry.
+- **Branch:** `main`; T44e5b has no branch yet.
+- **Last commit:** this merge handoff commit — docs: record PR 62 merge; parent `ead3663`.
+- **Next step:** Codex: (1) review and merge PR #63 (Author claude-code, not sensitive: real circle joinUrl https://t.me/Faden_und_Stimmung + tests no longer depend on the placeholder). (2) Implement T44e5b in a fresh session on its own feature branch; criteria in docs/03-tasks.md. PR #62 re-reviewed by Claude Code after fix `4b875e0` (preview delivery in background/waitUntil): no findings, full bot suite 438/438, CI green. Further deploys and paid calls require explicit approval.
+- **Blocked on:** nothing for T44e5b. Bot redeploy with T44e5a needs Volodymyr's explicit OK; until then the author gets no show result in Telegram. Live: version `bb70ef51-1d11-4eb7-b76b-619b7a9de801` (PR #61 fix, 2026-11-02 16:20 UTC). First live show ran end-to-end 2026-11-02 (draft 01M6ECR1Z295C1WN4H5C7BBNBB, workflow run 41480950631, 3 images + 5 s video marked in private R2, status ready, 0.70 EUR ledgered). Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none. The requested bot deployment is complete. Split approval authorizes implementation only; further deployment or paid calls need explicit approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
