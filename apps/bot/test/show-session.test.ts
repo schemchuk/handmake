@@ -153,10 +153,9 @@ it('persists selection across bot instances, revalidates the chosen id and prese
   await press(choice);
   expect(readWork).toHaveBeenLastCalledWith(tenant, work.id);
   expect((await get(id))!.draft.extras['showSelection']).toMatchObject({ workId: work.id });
-  const before = await get(id);
   await send('/show');
+  const before = await get(id);
   await send('Do not collect');
-  await bot.handleUpdate(photoUpdate(11, ['photo']));
   await send('/done');
   await send('/done@test_bot');
   expect(await get(id)).toEqual(before);
@@ -277,7 +276,7 @@ it('hands off to work authoring, requires explicit approval and resumes only aft
   expect((await session())!.draftId).toBe(showId);
   expect((await get(showId))!.draft.extras['showSelection']).toMatchObject({ workId });
   expect((await get(showId))!.draft.extras['show']).toBeUndefined();
-  expect(sentTexts(calls).at(-1)).toBe(botTexts.showLinkedText);
+  expect(sentTexts(calls).at(-1)).toContain('Оригінали: 0/3');
 });
 
 it('discards only the active show and allows a fresh selection', async () => {
@@ -290,4 +289,152 @@ it('discards only the active show and allows a fresh selection', async () => {
   expect(await get(postId)).toBeDefined();
   await send('/show');
   expect((await session())!.draftId).not.toBe(id);
+});
+
+const persona = {
+  id: 'fixture',
+  name: 'Fixture',
+  look: 'Fictional adult',
+  referenceImage: 'fixture-ref',
+  adult: true as const,
+  fictional: true as const,
+};
+async function linked() {
+  config.shows!.models = [persona];
+  await send('/show');
+  await press(button('pick'));
+  return (await session())!.draftId!;
+}
+const input = async (id: string) =>
+  (await get(id))!.draft.extras['showInput'] as import('../src/show-input').ShowInput;
+async function finalize() {
+  await send('/show');
+  await press(button('finalize'));
+}
+
+it.each([1, 2, 3, 4])(
+  'enforces %i original inputs and requires a persona outside interior scenes',
+  async (count) => {
+    const id = await linked();
+    for (let i = 0; i < count; i++) await bot.handleUpdate(photoUpdate(11, [`photo-${i}`]));
+    await finalize();
+    expect((await input(id)).ready).toBe(false);
+    expect(sentTexts(calls)).toContain(
+      count === 1 ? botTexts.showPhotoBoundsText : botTexts.showNeedsPersonaText,
+    );
+    await send('/show');
+    await press(button('persona'));
+    await press(button('finalize'));
+    expect((await input(id)).originals).toHaveLength(Math.min(count, 3));
+    expect((await input(id)).ready).toBe(count >= 2);
+    expect((await get(id))!.draft.extras['show']).toBeUndefined();
+    expect(runner.jobs).toEqual([]);
+    expect(tasks).toEqual([]);
+  },
+);
+
+it('atomically persists concurrent album originals across restart without changing author text', async () => {
+  const id = await linked();
+  await Promise.all(
+    Array.from({ length: 4 }, (_, i) => bot.handleUpdate(photoUpdate(11, [`album-${i}`]))),
+  );
+  const saved = await input(id);
+  expect(saved.originals).toHaveLength(3);
+  expect(new Set(saved.originals.map((r) => JSON.stringify(r))).size).toBe(3);
+  await build();
+  await send('/show');
+  expect((await input(id)).originals).toEqual(saved.originals);
+  expect((await get(id))!.draft.texts).toEqual({});
+  expect(work.versions['uk']!.description).toBe('Author original');
+  await send('Original author note');
+  expect((await get(id))!.draft.texts).toEqual({});
+});
+
+it('uses work originals, supports explicit template override without persona, and resets references', async () => {
+  const id = await linked();
+  await press(button('originals'));
+  expect((await input(id)).originals).toEqual([
+    { kind: 'work', workId: work.id, fileName: 'original.jpg' },
+  ]);
+  await bot.handleUpdate(photoUpdate(11, ['additional']));
+  await send('/show');
+  const template = button('template').replace(/worn$/, 'interior');
+  await press(template);
+  await press(button('finalize'));
+  expect(await input(id)).toMatchObject({ template: 'interior', ready: true });
+  await press(button('reset'));
+  expect(await input(id)).toMatchObject({ originals: [], ready: false });
+});
+
+it.each(['removed', 'changed'])(
+  'rejects stale menus and %s persona configuration',
+  async (change) => {
+    const id = await linked();
+    await press(button('persona'));
+    const old = button('finalize');
+    const saved = await input(id);
+    config.shows!.models =
+      change === 'removed' ? [] : [{ ...persona, referenceImage: 'replacement' }];
+    await press(old);
+    expect(await input(id)).toEqual(saved);
+    await send('/show');
+    expect((await input(id)).model).toBeUndefined();
+    expect((await input(id)).ready).toBe(false);
+    const before = await input(id);
+    await press(old);
+    expect(await input(id)).toEqual(before);
+  },
+);
+
+it('revalidates the work and its photo membership before finalizing', async () => {
+  const id = await linked();
+  await press(button('originals'));
+  await bot.handleUpdate(photoUpdate(11, ['extra']));
+  await send('/show');
+  await press(button('persona'));
+  const finish = button('finalize');
+  readWork.mockResolvedValueOnce(undefined);
+  await press(finish);
+  expect((await input(id)).ready).toBe(false);
+  readWork.mockResolvedValueOnce({ ...work, photos: ['changed.jpg'] });
+  await press(finish);
+  expect(sentTexts(calls)).toContain(botTexts.showMissingWorkText);
+  expect((await input(id)).ready).toBe(false);
+});
+
+it('does not reuse an oversized work photo set implicitly', async () => {
+  readWork.mockResolvedValue({ ...work, photos: ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg'] });
+  const id = await linked();
+  expect(await input(id)).toMatchObject({ originals: [] });
+  expect(JSON.stringify(calls.at(-1))).not.toContain(':originals:');
+});
+
+it('invalidates saved readiness and menu callbacks when another original arrives', async () => {
+  const id = await linked();
+  await bot.handleUpdate(photoUpdate(11, ['first']));
+  await bot.handleUpdate(photoUpdate(11, ['second']));
+  await send('/show');
+  await press(button('persona'));
+  await press(button('finalize'));
+  expect((await input(id)).ready).toBe(true);
+  const old = button('reset');
+  await bot.handleUpdate(photoUpdate(11, ['third']));
+  expect((await input(id)).ready).toBe(false);
+  const saved = await input(id);
+  await press(old);
+  expect(await input(id)).toEqual(saved);
+  await bot.handleUpdate(photoUpdate(11, ['third']));
+  expect(await input(id)).toEqual(saved);
+});
+
+it('recovers a published work link after retention removed the waiting draft', async () => {
+  await send('/show');
+  const id = (await session())!.draftId!;
+  await press(button('new'));
+  const pending = (await session())!.draftId!;
+  await drafts.delete(tenant, pending);
+  readWork.mockResolvedValue({ ...work, id: pending });
+  await send('/show');
+  expect((await get(id))!.draft.extras['showSelection']).toMatchObject({ workId: pending });
+  expect((await input(id)).template).toBe('worn');
 });

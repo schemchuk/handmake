@@ -690,3 +690,26 @@ published, `/show` revalidates the Git work before linking it. `/work` from a wa
 resumes the same linked draft, including ready drafts still awaiting author approval. Show input
 cannot fall through to post/work collection or armed edits. Selection never configures a plan,
 starts generation or publishes content; photo/persona menus and dispatch remain T44e4b/c.
+
+### Show original intake and menus (T44e4b)
+
+A linked collecting show persists `extras.showInput`: 2-3 original references (typed
+`work` with work id/file name or `telegram` with file id), a template, an optional full
+persona snapshot, the menu's tenant show-config snapshot and a `ready` input flag.
+The default template follows the work kind. Authors explicitly reuse a work's 1-3
+photos and add originals, or clear them and upload replacements; larger work sets
+require new originals. Photo captions and other author text are never rewritten.
+
+Photo intake uses bounded CAS retries, re-reading the draft after contention; racing
+album messages cannot overwrite references or exceed three. Every input mutation
+invalidates saved readiness. Menus bind callbacks to the draft version and exact show
+configuration; removed or changed personas are cleared when reopening the menu.
+Finalization re-reads the tenant-scoped published work, checks reused photo membership,
+the 2-3 bound and the required persona for non-interior templates. The input flag is
+not a generation plan or dispatch authorization; T44e4c must revalidate before starting.
+
+The GitHub work reader bounds raw reads to the twenty newest directory ULIDs before
+tenant filtering, keeping listing plus work reads within the Worker subrequest budget.
+Older works require a future paged reader. If retention removed a waiting work draft,
+an existing tenant-scoped Git work permits resumption; a retained unpublished draft
+still blocks linking. No media bytes, private input objects or paid calls are produced.

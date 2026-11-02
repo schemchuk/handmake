@@ -40,9 +40,14 @@ export function createGitHubWorkReader(options: {
       if (!Array.isArray(entries) || entries.length >= 1000)
         throw new Error('invalid or oversized work listing');
       const works = [];
-      for (const entry of entries as { type?: string; name?: string }[]) {
-        if (entry.type !== 'dir') continue;
-        const work = await readWork(tenantId, workIdSchema.parse(entry.name));
+      const ids = (entries as { type?: string; name?: string }[])
+        .filter((entry) => entry.type === 'dir')
+        .map((entry) => workIdSchema.parse(entry.name))
+        .sort()
+        .reverse()
+        .slice(0, 20);
+      for (const id of ids) {
+        const work = await readWork(tenantId, id);
         if (work) works.push(work);
       }
       return works.sort(compareNewestFirst);

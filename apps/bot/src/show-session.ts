@@ -6,6 +6,7 @@ import type { CreateBotOptions } from './bot';
 import type { AppContext } from './context';
 import type { StoredDraft } from './draft-store';
 import type { TenantConfigSource } from './tenant-config-source';
+import { createShowInput } from './show-input';
 
 export interface ShowSessionOptions {
   works: WorkReader;
@@ -13,13 +14,14 @@ export interface ShowSessionOptions {
 }
 type Selection = { ids: string[]; version: number; workId?: string; awaitingWorkId?: string };
 
-/** Input only: configuring a generation plan and dispatching it belong to T44e4b/c. */
+/** Author input only; configuring and dispatching a generation plan belong to T44e4c. */
 export function registerShowSession(
   bot: Bot<AppContext>,
   options: CreateBotOptions,
   startWork: (ctx: AppContext) => Promise<unknown>,
 ) {
   const { drafts, texts, show } = options;
+  const input = createShowInput(options);
   const enabled = async (tenantId: string) => {
     const config = await show?.configs.load(tenantId);
     return config?.id === tenantId && !!config.shows && !!config.ai;
@@ -50,8 +52,9 @@ export function registerShowSession(
       const pending = selection?.awaitingWorkId
         ? await drafts.get(ctx.tenantId, linked)
         : undefined;
-      if (selection?.awaitingWorkId && !pending) return ctx.reply(texts.showMissingWorkText);
-      if (selection?.awaitingWorkId && pending?.draft.state !== 'published')
+      if (selection?.awaitingWorkId && !pending && !work)
+        return ctx.reply(texts.showMissingWorkText);
+      if (selection?.awaitingWorkId && pending && pending.draft.state !== 'published')
         return ctx.reply(texts.showAwaitingWorkText);
       if (!work || work.tenant !== ctx.tenantId || work.id !== linked)
         return ctx.reply(texts.showMissingWorkText);
@@ -60,7 +63,8 @@ export function registerShowSession(
         !(await save(stored, { ...selection, workId: linked, awaitingWorkId: undefined }))
       )
         throw new Error('show selection changed');
-      return ctx.reply(texts.showLinkedText);
+      const updated = await drafts.get(ctx.tenantId, stored.draft.draftId);
+      return input.present(ctx, updated!);
     }
     const works = (await show!.works.listWorks(ctx.tenantId)).filter(
       (work) => work.tenant === ctx.tenantId,
@@ -72,7 +76,9 @@ export function registerShowSession(
         inline_keyboard: [
           ...works.map((work, index) => [
             {
-              text: (Object.values(work.versions)[0]?.description ?? work.id).slice(0, 60),
+              text: Array.from(Object.values(work.versions)[0]?.description ?? work.id)
+                .slice(0, 60)
+                .join(''),
               callback_data: `show:${stored.draft.draftId}:pick:${menu.version}.${index}`,
             },
           ]),
@@ -116,6 +122,8 @@ export function registerShowSession(
         stored.draft.extras['show']
       )
         return ctx.reply(texts.showSelectionErrorText);
+      if (['originals', 'reset', 'template', 'persona', 'finalize'].includes(action ?? ''))
+        return await input.action(ctx, stored, action!, value ?? '');
       const menu = stored.draft.extras['showSelection'] as Selection | undefined;
       const [version, index] = (value ?? '').split('.').map(Number);
       if (!menu || menu.workId || menu.awaitingWorkId || version !== menu.version)
@@ -146,7 +154,7 @@ export function registerShowSession(
         return ctx.reply(texts.showMissingWorkText);
       if (!(await save(stored, { ...menu, workId }))) throw new Error('show selection changed');
       await activate(ctx, id!);
-      return await ctx.reply(texts.showLinkedText);
+      return await input.present(ctx, (await drafts.get(ctx.tenantId, id!))!);
     } catch {
       return ctx.reply(texts.showSelectionErrorText);
     }
@@ -155,6 +163,12 @@ export function registerShowSession(
   bot.on('message', async (ctx, next) => {
     const session = await drafts.getChatSession(ctx.tenantId, String(ctx.chat.id));
     if (session?.kind !== 'show' || ctx.msg.text?.startsWith('/')) return next();
-    return ctx.reply(texts.showContinueText);
+    try {
+      if (ctx.msg.photo?.length && session.draftId)
+        return await input.photo(ctx, session.draftId, ctx.msg.photo.at(-1)!.file_id);
+      return ctx.reply(texts.showContinueText);
+    } catch {
+      return ctx.reply(texts.showMissingWorkText);
+    }
   });
 }

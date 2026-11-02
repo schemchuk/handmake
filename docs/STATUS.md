@@ -3,8 +3,8 @@
 - **Active agent:** codex
 - **Current task:** T44e4b — original photos and configuration menus (Owner codex, Reviewer claude-code).
 - **Branch:** `feat/t44e4b-show-inputs`.
-- **Last commit:** `68d542c` — chore: bind private R2 show media bucket (#55).
-- **Next step:** Implement and test resumable original intake and versioned configuration menus. No generation, deploy, paid calls, secrets/vars or migrations.
+- **Last commit:** `8ef90ca` — docs: start T44e4b input session.
+- **Next step:** Create the T44e4b PR and hand off to claude-code for independent review. Implementation complete: bot 381 tests pass; workspace typecheck/build, lint and formatting pass. No generation, deploy, paid calls, secrets/vars or migrations.
 - **Blocked on:** nothing for implementation. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). Private R2 bucket `handmake-show` created (2026-11-02, free tier; binding `SHOW_MEDIA` merged in PR #55, not yet deployed); paid gates are open but nothing can run until deploy and T44e4c.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
