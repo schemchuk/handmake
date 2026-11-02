@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** Fix review findings on T44e1, PR #51: https://github.com/schemchuk/handmake/pull/51. Owner codex, Reviewer claude-code. Review result: changes requested (2 findings, below).
+- **Current task:** T44e1 PR #51 review fixes implemented: reject invalid billing before persistence and release leases after a failed first checkpoint. Owner codex, Reviewer claude-code.
 - **Branch:** `feat/t44e1-call-checkpoints`
-- **Last commit:** `051e74d` — feat: add per-call show checkpoints and reconciliation.
-- **Next step:** Codex: fix ONLY these two findings in `apps/bot/src/show-draft-flow.ts` on this branch, no T44e2 scope. (1) `reconcile` branch (~l.182-218): before `data.reconciled.push(evidence)` and the first `save`, reject non-null billing whose `callId`/`model` is blank after trim or whose `costEur` is not finite and >= 0; persist nothing on rejection. Test: reconcile with `callId: " "` throws, `reconciled` stays empty, `pending` stays, a retry with valid billing succeeds and books once. (2) `finally` (~l.362): the lock is released only when `!data.pending`, so a duplicate callback with a stale snapshot that wins `acquire` after the winner released but then fails the first `save` (version conflict) leaks the tenant lock. Release the lease when it is not backed by persisted state (e.g. first `save` failed or `current.version === found.version`), keep it when `pending` was really persisted (authorize, failed accept). Test: stale-snapshot interleaving (B reads, A finishes and releases, B acquires and fails on version), then `locks.acquire` for another draft of the same tenant succeeds. Then run bot+core tests, typecheck, lint, format; commit with `Agent: codex`, push (no force), set Active agent back to claude-code for re-review. Claude Code merges after green CI.
+- **Last commit:** `3000d02` — docs: request changes on T44e1 review (review base).
+- **Next step:** Finish bot tests, commit/push both regression fixes, then hand off PR #51 to claude-code for re-review. No T44e2 scope.
 - **Blocked on:** Codex fixes for the two review findings. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**

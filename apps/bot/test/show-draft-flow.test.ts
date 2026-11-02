@@ -550,3 +550,67 @@ it('does not transfer an active recovery lease to another checkpoint operation',
   release();
   expect(await recovering).toBe(true);
 });
+
+it.each([
+  { callId: ' ' },
+  { model: ' ' },
+  { costEur: -1 },
+  { costEur: Number.NaN },
+  { costEur: Number.POSITIVE_INFINITY },
+])('rejects invalid reconciliation billing without persisting evidence: %j', async (patch) => {
+  const value = await grant();
+  const before = await get();
+  const billing = { callId: 'provider:checked-job', model: 'image-v1', costEur: 0.1 };
+  await expect(
+    flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing: { ...billing, ...patch },
+    }),
+  ).rejects.toThrow('invalid billing');
+  expect(await get()).toEqual(before);
+  expect((await data()).reconciled).toEqual([]);
+  expect((await data()).pending!.attemptId).toBe(value.request.attemptId);
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing,
+    }),
+  ).toBe(true);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing,
+    }),
+  ).toBe(false);
+});
+
+it('releases an acquired lease when a stale callback loses its first checkpoint', async () => {
+  const value = await grant();
+  const acquire = locks.acquire.bind(locks);
+  let entered!: () => void, release!: () => void;
+  const read = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const paused = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  // B has read the pending snapshot but has not acquired the lease yet.
+  vi.spyOn(locks, 'acquire').mockImplementationOnce(async (...args) => {
+    entered();
+    await paused;
+    return acquire(...args);
+  });
+  const stale = flow().accept(tenant, id, value.request.attemptId, grantedResult(value));
+  const rejected = expect(stale).rejects.toThrow('changed during generation');
+  await read;
+  // A accepts that same attempt and releases its lease before B acquires.
+  expect(await flow().accept(tenant, id, value.request.attemptId, grantedResult(value))).toBe(true);
+  release();
+  await rejected;
+  expect((await data()).pending).toBeUndefined();
+  expect(await locks.acquire(tenant, other, 'next-show', clock.now())).toBe(true);
+});

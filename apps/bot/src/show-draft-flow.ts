@@ -102,6 +102,16 @@ export function createShowDraftFlow(deps: Deps) {
         data.pending?.attemptId !== operation.attemptId
       )
         return false;
+      if (operation?.kind === 'reconcile' && operation.confirmation.billing) {
+        const billing = operation.confirmation.billing;
+        if (
+          !billing.callId.trim() ||
+          !billing.model.trim() ||
+          !Number.isFinite(billing.costEur) ||
+          billing.costEur < 0
+        )
+          throw new Error('show billing requires reconciliation: invalid billing');
+      }
       if (operation?.kind === 'authorize' && data.pending)
         throw new Error('show outcome requires reconciliation; no new authorization');
       const stale =
@@ -359,7 +369,9 @@ export function createShowDraftFlow(deps: Deps) {
           .catch(() => false);
         throw error;
       } finally {
-        if (!data.pending) await locks.release(tenantId, lease);
+        // A failed first checkpoint never persisted ownership of this acquired lease.
+        if (!data.pending || current.version === found.version)
+          await locks.release(tenantId, lease);
       }
     },
   };
