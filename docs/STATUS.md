@@ -1,12 +1,12 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** PR #61 review complete and merged; next: T44e5a — private version-bound preview (split approved 2026-11-02).
+- **Current task:** PR #61 reviewed, merged and deployed; next: T44e5a — private version-bound preview (split approved 2026-11-02).
 - **Branch:** `main`; T44e5a has no branch yet.
-- **Last commit:** this review handoff commit — docs: record PR 61 review and preview handoff; parent `23f0281` (fix: use manual redirect for show input fetches in the Worker (#61)).
-- **Next step:** Codex: implement T44e5a in a fresh session on its own feature branch. Read its criteria in docs/03-tasks.md and the relevant show sections in docs/review-notes.md. PR #61 reviewed without blocking findings and merged as `23f0281`; 46 local show-start/show-session tests pass and CI is green. No deploy or paid calls without Volodymyr's explicit OK.
-- **Blocked on:** live show start awaits bot redeploy with Volodymyr's explicit OK; T44e5a implementation is unblocked. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls. Last bot deploy by Volodymyr: 2026-11-02 16:02 UTC (PR #60 fix).
-- **Open questions for Volodymyr:** none. Split approval authorizes implementation only; no deployment or paid calls.
+- **Last commit:** this deployment handoff commit — docs: record authorized bot deployment; parent `8de3d18`.
+- **Next step:** Codex: implement T44e5a in a fresh session on its own feature branch. Read its criteria in docs/03-tasks.md and the relevant show sections in docs/review-notes.md. PR #61 reviewed without blocking findings and merged as `23f0281`; 46 local show-start/show-session tests pass and CI is green. Bot deployed with Volodymyr's explicit chat approval on 2026-11-02 16:20 UTC: version `bb70ef51-1d11-4eb7-b76b-619b7a9de801` (PR #61 fix). HTTP GET returned the expected 405. No paid calls executed; further deploys and paid calls require explicit approval.
+- **Blocked on:** none for T44e5a. The PR #61 fix is live; end-to-end show generation was not exercised during deployment. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: the start button can trigger paid fal calls.
+- **Open questions for Volodymyr:** none. The requested bot deployment is complete. Split approval authorizes implementation only; further deployment or paid calls need explicit approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
