@@ -674,8 +674,81 @@ No paid calls, production enablement, remote migrations or deployment are author
   Tests: real small media fixtures, decoding, missing/tampered metadata, absent visible label,
   invalid/truncated video, duration and post-marking size limits, immutable output and retry.
 
-T44e remains blocked on all three subtasks. Each subtask gets a fresh session and its own PR.
+T44d1-T44d3 are merged; T44e's implementation dependencies are satisfied.
+Each subtask gets a fresh session and its own PR.
 Any new workflow or secret handling remains subject to the existing sensitive-merge approval rule.
+
+### Proposed T44e split (2026-11-02, awaiting Volodymyr's approval)
+
+T44e crosses paid-call recovery, execution lifetime, private media transport and the author UI.
+It cannot fit the ADR 009 target of approximately 400 changed non-test lines in one PR.
+Keep T44e as the parent acceptance gate; propose the following implementation order.
+All subtasks: **Owner: codex · Reviewer: claude-code**. Each requires a fresh session and its own PR.
+No paid calls, remote resource creation, secret installation, migrations or deployment are authorized.
+Model-terms and billing checks remain gates before the first real show, not before implementation.
+
+- **T44e1 — Per-call checkpoints and explicit reconciliation** (depends on T44d3).
+  Change: separate paid-call authorization from result/checkpoint acceptance, so orchestration can
+  resume one bounded step at a time. Preserve tenant locks and refresh leases at checkpoints.
+  Add application operations to recover a journalled request, account for failed/rejected paid
+  outcomes, and discard an attempt only after explicit operator reconciliation (including no-spend
+  attempts). Retain raw/journal evidence; never infer zero spend from a missing result/request id.
+  Acceptance: no new submission while an outcome is uncertain; recovery by provider id books once
+  before unlocking or authorizing further spend. Regeneration uses new attempt ids and preserves
+  retired receipts. Budget checks cover each new call; lost acknowledgements cannot bypass the cap.
+  Tests: mocked paid-call recovery, rejected output accounting, ledger failure/retry, concurrent
+  claims, lease refresh, stale checkpoints, cap rejection and explicit no-spend discard.
+- **T44e2 — Private storage composition and authenticated Worker transport** (depends on T44e1).
+  Change: add the Worker side of job-scoped transport for call grants, journal reservation/recording,
+  raw/marked media and result checkpoints. Compose the existing R2 adapters with local bindings;
+  describe the later private bucket setup without creating remote resources or installing secrets.
+  Acceptance: requests bind tenant, show, attempt and job/version; authentication, replay and stale-job
+  checks fail closed. Retryable operations stay idempotent. Media remain private and size-bounded;
+  neither public URLs nor credentials appear in payloads/logs. Missing configuration disables shows.
+  Tests: signed/invalid/expired requests, replay, cross-tenant access, stale generation callbacks,
+  Miniflare storage integration, size limits and unchanged existing webhook/callback behavior.
+- **T44e3 — Resumable Node executor and marking job** (depends on T44e2).
+  Change: implement the Node client/executor and its workflow dispatch. Long provider waits and
+  Sharp/FFmpeg processing run in Node; the Worker owns authorization, budget and checkpoints through
+  T44e1/T44e2. Execute only granted attempts, reserve the durable journal before POST, resume reads
+  using recorded provider ids, and upload receipts/results through the authenticated transport.
+  Call `createShowMarkingGate.prepare` before reporting a result as verified for preview/approval.
+  Acceptance: no complete show runs inside webhook `waitUntil`; interruptions resume from persisted
+  state without another paid submission. Raw and marked media stay separate. Paid execution remains
+  disabled until the existing production gates are explicitly cleared; dispatch grants alone do not
+  clear them. New workflow/secret handling requires sensitive-merge OK, not deployment permission.
+  Tests: mocked end-to-end Worker/Node HTTP lifecycle, restart at paid/marked checkpoints, duplicate
+  dispatch/callback, worker rejection, marking failure and secret-safe errors. No paid provider tests.
+- **T44e4 — Author input and configuration menus** (depends on T44e3).
+  Change: implement allow-listed `/show`, 2-3 original photos or existing-work selection, configurable
+  persona choices and template defaults/override. Reuse the existing work-authoring/storage path for
+  new works; ensure the linked work exists before show publication and require author approval for
+  any work publication. Persist the session and original references; preserve the author's texts.
+  Acceptance: no Git/Markdown interaction is needed; disabled/misconfigured shows give a clear reply.
+  Models change through tenant config only. Interrupted input resumes without mixing post/work/show
+  sessions, and generation starts only after validated input and explicit author action.
+  Tests: new/existing work paths, missing work, 2-3 photo bounds, persona config changes, template
+  override, denied access, disabled configuration and existing post/work session regressions.
+- **T44e5 — Preview, regeneration and recovery controls** (depends on T44e4).
+  Change: show originals beside marked images/video; add regenerate, retry/reconcile and discard
+  controls using T44e1 operations. Bind buttons and asynchronous results to the current draft version;
+  expose billing reconciliation/discard authorization only to the operator where required.
+  Acceptance: the author can inspect the actual work and every marked result. Paid regeneration is
+  budget-gated and replacing an image also replaces its video. Unknown outcomes remain locked until
+  reconciled; neither cancel nor stale callbacks silently clear them or restore superseded output.
+  Tests: preview contents, single-image/video regeneration, budget warnings/denial, stale buttons,
+  interrupted jobs, operator recovery, no-spend discard and retained evidence after cancellation.
+- **T44e6 — Verified approval and publication integration** (depends on T44e5).
+  Change: build approval payloads only from the current generation's verified marked snapshot;
+  ingest PNG and MP4 as documents preserving exact bytes and `.png` names. Recheck transport size
+  and integrity, then use T44b's idempotent show dispatch/callback path. Document the deployment
+  checklist and deferred model/billing, private-bucket and migration gates without executing them.
+  Acceptance: author approval publishes the show linked to its real work; retry never duplicates
+  content or changes an approved snapshot. Raw/unmarked, altered or stale media cannot be approved;
+  the publisher independently verifies downloaded markers. All parent T44e criteria are covered.
+  Tests: mocked full author-to-publication flow, exact document bytes, marker stripping/tampering,
+  regeneration versus approval races, dispatch/callback retries, tenant isolation and post/work
+  regressions. Keep live calls and deployment as separately authorized follow-up work.
 
 ### T45 — Shows on the site (F30, `site`)
 - Depends on: T44, T41

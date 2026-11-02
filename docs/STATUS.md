@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e (author session and preview), Owner codex, Reviewer claude-code. T44d3 merged as PR #50 (`661eeb2`); Volodymyr gave the sensitive-merge OK for the workflow changes in chat 2026-11-02.
+- **Active agent:** none
+- **Current task:** T44e split proposed; awaiting Volodymyr's approval. Owner codex, Reviewer claude-code. T44d3 merged as PR #50 (`661eeb2`).
 - **Branch:** `main`
-- **Last commit:** `661eeb2` — feat: mark and verify show media before approval (#50).
-- **Next step:** Codex implements T44e in a fresh session; expect a split into several PRs (propose it to Volodymyr first, as for T44d). Read the T44c-T44d3 sections of docs/review-notes.md first. T44e wires the Worker-to-Node marking transport, pending-attempt recovery with cost booking, the no-spend attempt discard path, R2 binding/bucket (private, no lifecycle deletion) and the approval UI. No paid calls, remote migration or deploy authorized.
-- **Blocked on:** T44d3 review/CI and sensitive-merge OK. Before the first real show (not before T44e code): fal exact-model terms ("excluded model") and billing check for `nano-banana-2/edit` and `kling-video/v2.5-turbo/pro` (Volodymyr, deferred 2026-11-02); apply migration 0008 to remote D1 together with the bot deploy that adds `/show` (Volodymyr, agreed 2026-11-02).
+- **Last commit:** `9865ea1` — docs: T44d3 merged, review notes, hand over T44e to codex.
+- **Next step:** Volodymyr reviews the proposed T44e1-T44e6 split in docs/03-tasks.md. After approval, hand T44e1 to codex in a fresh session. No implementation changed; no paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Blocked on:** approval of the T44e split requested by the handoff and ADR 009 size rule. T44d3 is merged, not a blocker. Model terms/billing remain gates before the first real show; apply migration 0008 remotely only with the separately authorized `/show` bot deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
