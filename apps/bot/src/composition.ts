@@ -18,6 +18,8 @@ import { handlePublishedCallback, publishedCallbackPath } from './published-call
 import { createGitHubCollectionReader } from './collection-reader';
 import { createGitHubTenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
+import { createShowRuntime } from './show-runtime';
+import { showTransportPath } from './show-transport';
 
 /** Header Telegram sends when the webhook was registered with a secret token. */
 export const secretTokenHeader = 'x-telegram-bot-api-secret-token';
@@ -98,6 +100,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         env.TELEGRAM_ALLOWED_USER_IDS,
         env.GITHUB_DISPATCH_TOKEN,
         env.PUBLISH_CALLBACK_SECRET,
+        env.SHOW_TRANSPORT_SECRET ?? '',
       ]),
     });
   }
@@ -171,6 +174,10 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     },
 
     async handle(request) {
+      if (new URL(request.url).pathname.startsWith(showTransportPath)) {
+        const shows = createShowRuntime(env);
+        return shows ? shows.handle(request) : new Response('shows disabled', { status: 503 });
+      }
       // The publisher's callback authenticates with its own HMAC, not the
       // Telegram webhook secret — it must branch off before that gate.
       if (new URL(request.url).pathname === publishedCallbackPath) {

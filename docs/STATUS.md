@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T44e2 (private storage composition and authenticated Worker transport), see docs/03-tasks.md. Owner codex, Reviewer claude-code. T44e1 merged as PR #51 (`d83fd8d`).
-- **Branch:** `main` (create `feat/t44e2-worker-transport`)
+- **Current task:** T44e2 implemented: private storage composition and authenticated Worker transport. Owner codex, Reviewer claude-code. Preparing the task PR; T44e3 has not started.
+- **Branch:** `feat/t44e2-worker-transport`
 - **Last commit:** `d83fd8d` — feat: add per-call show checkpoints and reconciliation (#51).
-- **Next step:** Codex: start T44e2 in a fresh session. Pull/rebase, read AGENTS.md and this status, then only the T44e2 task and the relevant architecture sections. Implement only T44e2; do not continue into T44e3. No paid calls, remote resources, secret installation, migration or deploy authorized.
-- **Blocked on:** nothing for T44e2 implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
+- **Next step:** Codex: push the implementation, open its PR, check CI, then hand off to claude-code for review. Sensitive merge needs Volodymyr's explicit OK because this adds secret handling. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Blocked on:** reviewer approval and CI before merge; Volodymyr's sensitive-merge OK. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e2 validation: full bot suite 341 passed before final journal/lease hardening; final transport/storage suite 75 passed (21 transport + 54 storage). Workspace typecheck, lint and formatting passed. Job restart discovery is read-only; raw/marked receipts bind the journal provider identity. Local bindings only; production remains disabled.
 - T44e1 review-fix validation: bot 324 tests and core 213 tests passed; workspace typecheck, lint and format passed. Five invalid-billing cases assert an unchanged draft and a successful corrected retry; a controlled stale-callback interleaving verifies that another draft can acquire the tenant lock. Commit secret scan passed.
 - T44d3 validation: publisher 137 and bot 303 tests pass (bot uses `--maxWorkers 1` locally); format, lint, workspace typecheck/build and actionlint pass. Real PNG/JPEG/WebP and MP4 tests cover per-frame labels, metadata tampering, retries and separate R2 persistence. No paid calls or deploy.
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.

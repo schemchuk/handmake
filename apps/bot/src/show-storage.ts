@@ -173,6 +173,8 @@ function createStorage(bucket: Bucket, kind: 'raw' | 'marked') {
   return {
     results,
     journal,
+    readAttempt: (scope: Scope) =>
+      protect(async () => (await readTicket(objectKey('attempt', scope))).ticket),
     /** Internal raw-media resolution only; NEVER expose as the approval/publish media source. */
     resolveRaw: (tenantId: string, ref: string) =>
       protect(async () => {
