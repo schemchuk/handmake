@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T44e5 split proposed in docs/03-tasks.md; awaiting Volodymyr approval before implementation.
+- **Active agent:** codex
+- **Current task:** T44e5a — private version-bound preview; T44e5a/b/c split approved by Volodymyr on 2026-11-02.
 - **Branch:** `main`; T44e5 has no branch yet.
-- **Last commit:** this handoff commit — docs: propose T44e5 implementation split; parent `47a7084`.
-- **Next step:** Codex: start T44e5 (handed off by claude-code) in a fresh session. Read the show generation start, tenant personas and PR #60 sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK. Bot redeployed by Volodymyr 2026-11-02 16:02 UTC with the PR #60 fix; the start button now triggers paid fal calls.
+- **Last commit:** this approval handoff commit — docs: approve T44e5 split and hand off preview; parent `0085108`.
+- **Next step:** Codex: implement T44e5a in a fresh session on its own feature branch. Read its criteria in docs/03-tasks.md and the relevant show sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK. Bot redeployed by Volodymyr 2026-11-02 16:02 UTC with the PR #60 fix; the start button now triggers paid fal calls.
 - **Blocked on:** no remaining PR #60 blockers. Deploy waits for Volodymyr's explicit OK. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls.
-- **Open questions for Volodymyr:** approve the proposed T44e5a/b/c split in docs/03-tasks.md. After approval, hand T44e5a to codex in a fresh session. No implementation, deployment or paid calls in this session.
+- **Open questions for Volodymyr:** none. Split approval authorizes implementation only; no deployment or paid calls.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

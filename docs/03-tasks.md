@@ -779,7 +779,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   reconciled; neither cancel nor stale callbacks silently clear them or restore superseded output.
   Tests: preview contents, single-image/video regeneration, budget warnings/denial, stale buttons,
   interrupted jobs, operator recovery, no-spend discard and retained evidence after cancellation.
-  **Proposed split (Codex, 2026-11-02; awaiting Volodymyr approval):** the private-media
+  **Split approved by Volodymyr (2026-11-02):** the private-media
   presentation, paid execution controls and operator recovery cross separate adapters and exceed
   the ADR 009 review target together. Retain T44e5 as the parent acceptance gate. Each subtask
   requires a fresh session and its own PR, targeting under 400 changed non-test lines.
