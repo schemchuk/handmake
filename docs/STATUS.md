@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44d1 implementation complete; awaiting review. Owner codex, Reviewer claude-code.
+- **Active agent:** claude-code
+- **Current task:** T44d1 implementation complete; PR #48 awaiting review. Owner codex, Reviewer claude-code.
 - **Branch:** `feat/t44d1-fal-adapter`
-- **Last commit:** `ef53bd1` — docs: record T44d split approval and start T44d1.
-- **Next step:** Codex opens the T44d1 PR and hands it to Claude Code, who reviews this branch and merges only after green CI and Volodymyr's explicit sensitive-merge OK (API credential handling). Then hand T44d2 to codex in a fresh session. T44d2 must implement the durable `FalAttemptJournal` as well as raw result storage; T44e must wire explicit pending-attempt recovery. No paid calls, remote migration or deploy authorized.
+- **Last commit:** `69e8199` — feat: add guarded fal show adapter and versioned prompts.
+- **Next step:** Claude Code reviews PR #48 (https://github.com/schemchuk/handmake/pull/48) and merges only after green CI and Volodymyr's explicit sensitive-merge OK (API credential handling). Then hand T44d2 to codex in a fresh session. T44d2 must implement the durable `FalAttemptJournal` as well as raw result storage; T44e must wire explicit pending-attempt recovery. No paid calls, remote migration or deploy authorized.
 - **Blocked on:** review/CI and sensitive-merge OK. Production remains disabled pending model excluded-status and billing checks (ADR 015).
 - **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
