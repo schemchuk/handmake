@@ -6,12 +6,38 @@ import type {
   ShowGenerator,
   ShowResultStore,
   ShowSourceImage,
+  ShowImageRequest,
+  ShowVideoRequest,
 } from '@handmake/core';
 import type { D1DraftStore, StoredDraft } from './draft-store';
 import type { TenantConfigSource } from './tenant-config-source';
 import { assertCanStartShow } from './ai-costs';
 import type { AiCostLedger } from './ai-costs';
 import type { createShowGenerationLocks } from './show-generation-locks';
+
+type Result = NonNullable<Awaited<ReturnType<ShowResultStore['get']>>>['result'];
+export type ShowCallGrant =
+  { kind: 'image'; request: ShowImageRequest } | { kind: 'video'; request: ShowVideoRequest };
+type Operation =
+  | { kind: 'authorize' }
+  | { kind: 'accept'; attemptId: string; result?: Result }
+  | { kind: 'recover'; attemptId: string; recovery: ShowRecovery }
+  | { kind: 'reconcile'; attemptId: string; confirmation: ShowReconciliation };
+/** Adapter reads an immutable journal identity and resumes GETs only; no submission fallback. */
+export type ShowRecovery = {
+  requestId(scope: {
+    tenantId: string;
+    showId: string;
+    attemptId: string;
+  }): Promise<string | undefined>;
+  read(requestId: string): Promise<Result>;
+};
+/** The operator must check provider billing, including for reservations without a request id. */
+export type ShowReconciliation = {
+  operatorConfirmed: true;
+  note: string;
+  billing: Pick<ShowReceipt, 'callId' | 'model' | 'costEur'> | null;
+};
 
 export const maxShowMediaBytes = 20_000_000;
 type Deps = {
@@ -29,7 +55,7 @@ type Deps = {
 export function createShowDraftFlow(deps: Deps) {
   const { drafts, configs, ledger, locks, generator, results, resolveImage } = deps;
   const now = deps.now ?? (() => new Date());
-  return {
+  const flow = {
     async configure(stored: StoredDraft, input: ShowDraftPlan) {
       if (
         stored.draft.kind !== 'show' ||
@@ -60,11 +86,34 @@ export function createShowDraftFlow(deps: Deps) {
       );
     },
 
-    async generate(tenantId: string, draftId: string, regenerate?: string): Promise<boolean> {
+    async run(
+      tenantId: string,
+      draftId: string,
+      regenerate?: string,
+      operation?: Operation,
+    ): Promise<boolean | ShowCallGrant> {
       const found = await drafts.get(tenantId, draftId);
       if (!found || found.draft.kind !== 'show') return false;
       let current = found;
       const data = showDraftDataSchema.parse(current.draft.extras['show']);
+      if (
+        operation &&
+        operation.kind !== 'authorize' &&
+        data.pending?.attemptId !== operation.attemptId
+      )
+        return false;
+      if (operation?.kind === 'reconcile' && operation.confirmation.billing) {
+        const billing = operation.confirmation.billing;
+        if (
+          !billing.callId.trim() ||
+          !billing.model.trim() ||
+          !Number.isFinite(billing.costEur) ||
+          billing.costEur < 0
+        )
+          throw new Error('show billing requires reconciliation: invalid billing');
+      }
+      if (operation?.kind === 'authorize' && data.pending)
+        throw new Error('show outcome requires reconciliation; no new authorization');
       const stale =
         current.draft.state === 'translating' &&
         Date.parse(current.draft.updatedAt) < now().getTime() - 10 * 60_000;
@@ -107,6 +156,8 @@ export function createShowDraftFlow(deps: Deps) {
         if (!(await drafts.updateShow(next, current.version)))
           throw new Error('show draft changed during generation');
         current = { ...current, draft: next, version: current.version + 1 };
+        if (!(await locks.refresh(tenantId, lease, now())))
+          throw new Error('show generation lease lost');
       };
       data.lease = lease;
       try {
@@ -136,9 +187,75 @@ export function createShowDraftFlow(deps: Deps) {
               ref: `show:${draftId}`,
             });
           };
+          if (data.pending && data.pending.slot !== slot)
+            throw new Error('show checkpoint slot mismatch');
+          if (operation?.kind === 'reconcile') {
+            const confirmation = operation.confirmation;
+            if (confirmation.operatorConfirmed !== true || !confirmation.note.trim())
+              throw new Error('explicit operator reconciliation is required');
+            const durable = await results.get(tenantId, draftId, data.pending!.attemptId);
+            const billing = confirmation.billing;
+            if (
+              durable &&
+              (!billing ||
+                billing.callId !== durable.result.callId ||
+                billing.model !== durable.result.model ||
+                billing.costEur !== durable.result.costEur)
+            )
+              throw new Error('reconciliation must match durable billing');
+            const previous = data.reconciled.find((r) => r.attemptId === data.pending!.attemptId);
+            const evidence = {
+              attemptId: data.pending!.attemptId,
+              at: now().toISOString(),
+              operatorConfirmed: confirmation.operatorConfirmed,
+              note: confirmation.note,
+              billing,
+            };
+            if (
+              previous &&
+              (previous.billing?.callId !== billing?.callId ||
+                previous.billing?.model !== billing?.model ||
+                previous.billing?.costEur !== billing?.costEur)
+            )
+              throw new Error('reconciliation billing is immutable');
+            if (!previous) data.reconciled.push(evidence);
+            // Save explicit evidence before booking; a failed ledger write keeps the pending marker.
+            await save('translating');
+            if (billing) await book(billing);
+            delete data.pending;
+            await save('failed');
+            return true;
+          }
           let durable;
           if (data.pending) {
-            if (data.pending.slot !== slot) throw new Error('show checkpoint slot mismatch');
+            if (
+              (operation?.kind === 'accept' && operation.result) ||
+              operation?.kind === 'recover'
+            ) {
+              if (data.reconciled.some((r) => r.attemptId === data.pending!.attemptId))
+                throw new Error('attempt has explicit reconciliation evidence');
+              let result: Result;
+              if (operation.kind === 'recover') {
+                const requestId = await operation.recovery.requestId({
+                  tenantId,
+                  showId: draftId,
+                  attemptId: data.pending.attemptId,
+                });
+                if (!requestId?.trim())
+                  throw new Error('no journalled provider id; reconciliation required');
+                result = await operation.recovery.read(requestId);
+              } else result = operation.result!;
+              try {
+                await results.put(tenantId, draftId, data.pending.attemptId, result);
+              } catch (error) {
+                await book(result);
+                throw error;
+              }
+              // Book even if the acknowledgement/read is lost after immutable persistence.
+              await book(result);
+            }
+            if (data.reconciled.some((r) => r.attemptId === data.pending!.attemptId))
+              throw new Error('finish explicit reconciliation before accepting output');
             durable = await results.get(tenantId, draftId, data.pending.attemptId);
             if (!durable)
               throw new Error('show outcome requires reconciliation; never retry the paid call');
@@ -174,19 +291,34 @@ export function createShowDraftFlow(deps: Deps) {
               providerModel: model,
               promptVersion,
             };
-            const result = video
-              ? await generator.generateVideo({
-                  ...common,
-                  image: first!.result as ShowSourceImage,
-                  durationSeconds: 5,
-                })
-              : await generator.generateImage({
-                  ...common,
-                  originals: originals as [ShowSourceImage, ...ShowSourceImage[]],
-                  ...(data.plan.template === 'interior'
-                    ? { template: 'interior' as const, persona }
-                    : { template: data.plan.template, persona: persona! }),
-                });
+            const request: ShowCallGrant = video
+              ? {
+                  kind: 'video',
+                  request: {
+                    ...common,
+                    image: first!.result as ShowSourceImage,
+                    durationSeconds: 5,
+                  },
+                }
+              : {
+                  kind: 'image',
+                  request: {
+                    ...common,
+                    originals: originals as [ShowSourceImage, ...ShowSourceImage[]],
+                    ...(data.plan.template === 'interior'
+                      ? { template: 'interior' as const, persona }
+                      : { template: data.plan.template, persona: persona! }),
+                  },
+                };
+            if (operation?.kind === 'authorize') {
+              // Paused/resumable: release execution ownership, retain the uncertain tenant lock.
+              await save('failed');
+              return request;
+            }
+            const result =
+              request.kind === 'video'
+                ? await generator.generateVideo(request.request)
+                : await generator.generateImage(request.request);
             try {
               await results.put(tenantId, draftId, data.pending.attemptId, result);
             } catch (error) {
@@ -216,7 +348,14 @@ export function createShowDraftFlow(deps: Deps) {
             ref: durable.ref,
           });
           delete data.pending;
-          await save('translating');
+          await save(
+            operation
+              ? slots.every((key) => data.outputs[key])
+                ? 'ready'
+                : 'failed'
+              : 'translating',
+          );
+          if (operation) return true;
         }
         await save('ready');
         return true;
@@ -230,8 +369,46 @@ export function createShowDraftFlow(deps: Deps) {
           .catch(() => false);
         throw error;
       } finally {
-        if (!data.pending) await locks.release(tenantId, lease);
+        // A failed first checkpoint never persisted ownership of this acquired lease.
+        if (!data.pending || current.version === found.version)
+          await locks.release(tenantId, lease);
       }
+    },
+  };
+  return {
+    configure: flow.configure,
+    async generate(tenantId: string, draftId: string, regenerate?: string) {
+      return (await flow.run(tenantId, draftId, regenerate)) === true;
+    },
+    async authorize(tenantId: string, draftId: string, regenerate?: string) {
+      const result = await flow.run(tenantId, draftId, regenerate, { kind: 'authorize' });
+      return typeof result === 'object' ? result : undefined;
+    },
+    async accept(tenantId: string, draftId: string, attemptId: string, result?: Result) {
+      return (
+        (await flow.run(tenantId, draftId, undefined, { kind: 'accept', attemptId, result })) ===
+        true
+      );
+    },
+    async recover(tenantId: string, draftId: string, attemptId: string, recovery: ShowRecovery) {
+      return (
+        (await flow.run(tenantId, draftId, undefined, { kind: 'recover', attemptId, recovery })) ===
+        true
+      );
+    },
+    async reconcile(
+      tenantId: string,
+      draftId: string,
+      attemptId: string,
+      confirmation: ShowReconciliation,
+    ) {
+      return (
+        (await flow.run(tenantId, draftId, undefined, {
+          kind: 'reconcile',
+          attemptId,
+          confirmation,
+        })) === true
+      );
     },
   };
 }

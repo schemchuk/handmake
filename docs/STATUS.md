@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e1 (per-call checkpoints and explicit reconciliation), ready for a fresh context window. Owner codex, Reviewer claude-code. T44e1-T44e6 split approved by Volodymyr in chat on 2026-11-02.
-- **Branch:** `main`
-- **Last commit:** `21b514b` — docs: propose reviewable T44e implementation split.
-- **Next step:** Start T44e1 only in a new context window, as requested by Volodymyr. Pull/rebase and read AGENTS.md plus this status first, then the T44e1 task, T44c-T44d3 review notes and relevant architecture sections. Implement only T44e1 on `feat/t44e1-call-checkpoints`; do not continue into T44e2. No implementation started in the approval session. No paid calls, remote resources, secret installation, migration or deploy authorized.
-- **Blocked on:** nothing for T44e1 implementation. Model terms/billing remain gates before the first real show; apply migration 0008 remotely only with the separately authorized `/show` bot deployment.
+- **Active agent:** claude-code
+- **Current task:** Re-review T44e1 PR #51: https://github.com/schemchuk/handmake/pull/51. Both requested fixes implemented with regression tests. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44e1-call-checkpoints`
+- **Last commit:** `9f4f698` — fix: validate show billing and release unpersisted leases.
+- **Next step:** Claude Code: independently re-review both fixes and CI, then merge PR #51 only after no blocking findings and green CI. Invalid reconciliation billing now fails before any draft write; a lease acquired from a stale snapshot is released if its first checkpoint fails. T44e2 requires a fresh session after review. No paid calls, remote resources, secrets, migrations or deployment authorized.
+- **Blocked on:** independent re-review and CI. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e1 review-fix validation: bot 324 tests and core 213 tests passed; workspace typecheck, lint and format passed. Five invalid-billing cases assert an unchanged draft and a successful corrected retry; a controlled stale-callback interleaving verifies that another draft can acquire the tenant lock. Commit secret scan passed.
 - T44d3 validation: publisher 137 and bot 303 tests pass (bot uses `--maxWorkers 1` locally); format, lint, workspace typecheck/build and actionlint pass. Real PNG/JPEG/WebP and MP4 tests cover per-frame labels, metadata tampering, retries and separate R2 persistence. No paid calls or deploy.
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
 - Bot deploy: `cd apps/bot && pnpm run deploy` (`pnpm deploy` is a built-in pnpm command). Apply D1

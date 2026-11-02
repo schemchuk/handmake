@@ -34,6 +34,21 @@ export const showDraftDataSchema = z
     retired: z.array(showReceiptSchema).default([]),
     outputs: z.record(z.string().regex(/^(image-[0-4]|video)$/), showReceiptSchema).default({}),
     pending: z.object({ attemptId: text, slot: text, at: z.iso.datetime() }).strict().optional(),
+    reconciled: z
+      .array(
+        z
+          .object({
+            attemptId: text,
+            at: z.iso.datetime(),
+            operatorConfirmed: z.literal(true),
+            note: text,
+            billing: showReceiptSchema
+              .pick({ callId: true, model: true, costEur: true })
+              .nullable(),
+          })
+          .strict(),
+      )
+      .default([]),
     lease: text.optional(),
   })
   .strict();

@@ -289,3 +289,328 @@ it('accounts for a returned call even if the durable store loses its just-writte
   expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
   expect((await data()).pending).toBeDefined();
 });
+
+async function grant() {
+  const value = await flow().authorize(tenant, id);
+  expect(value?.kind).toBe('image');
+  return value!;
+}
+const grantedResult = (value: Awaited<ReturnType<typeof grant>>) => ({
+  ...receipt(value.request, value.kind === 'video'),
+  mimeType: value.kind === 'video' ? ('video/mp4' as const) : ('image/png' as const),
+});
+
+it('authorizes exactly one attempt, accepts it independently and never invokes a paid adapter', async () => {
+  for (let slot = 0; slot < 4; slot++) {
+    const value = await flow().authorize(tenant, id);
+    expect(value?.kind).toBe(slot === 3 ? 'video' : 'image');
+    const result = grantedResult(value!);
+    expect(await flow().accept(tenant, id, value!.request.attemptId, result)).toBe(true);
+    expect(Object.keys((await data()).outputs)).toHaveLength(slot + 1);
+  }
+  expect((await get()).draft.state).toBe('ready');
+  expect(await flow().authorize(tenant, id)).toBeUndefined();
+  expect(image).not.toHaveBeenCalled();
+  expect(video).not.toHaveBeenCalled();
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.8);
+});
+it('keeps a lost grant acknowledgement uncertain across the lease timeout and cap checks', async () => {
+  await grant();
+  clock.advance(20 * 60_000);
+  await expect(flow().authorize(tenant, id)).rejects.toThrow('reconciliation');
+  await create(other);
+  expect(await flow().authorize(tenant, other)).toBeUndefined();
+  expect(image).not.toHaveBeenCalled();
+});
+it('recovers an existing provider job once and ignores duplicate or stale callbacks', async () => {
+  const value = await grant();
+  const resume = vi.fn(async (_requestId: string) => ({
+    ...grantedResult(value),
+    callId: 'provider:existing-job',
+  }));
+  const recovery = { requestId: vi.fn(async () => 'existing-job'), read: resume };
+  expect(await flow().recover(tenant, id, value.request.attemptId, recovery)).toBe(true);
+  expect(await flow().recover(tenant, id, value.request.attemptId, recovery)).toBe(false);
+  expect(resume).toHaveBeenCalledWith('existing-job');
+  expect(recovery.requestId).toHaveBeenCalledWith({
+    tenantId: tenant,
+    showId: id,
+    attemptId: value.request.attemptId,
+  });
+  const next = await grant();
+  expect(await flow().accept(tenant, id, value.request.attemptId, grantedResult(value))).toBe(
+    false,
+  );
+  expect((await data()).pending!.attemptId).toBe(next.request.attemptId);
+  expect(resume).toHaveBeenCalledTimes(1);
+  expect(image).not.toHaveBeenCalled();
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+});
+it('retains unknown recovery outcomes without allowing a new call', async () => {
+  const value = await grant();
+  const read = vi.fn();
+  await expect(
+    flow().recover(tenant, id, value.request.attemptId, {
+      requestId: async () => undefined,
+      read,
+    }),
+  ).rejects.toThrow('no journalled provider id');
+  expect(read).not.toHaveBeenCalled();
+  await expect(flow().authorize(tenant, id)).rejects.toThrow('reconciliation');
+  expect((await data()).pending!.attemptId).toBe(value.request.attemptId);
+});
+it('retries failed acceptance bookkeeping from durable media without another recovery read', async () => {
+  const value = await grant();
+  vi.spyOn(ledger, 'recordCost').mockRejectedValueOnce(new Error('ledger down'));
+  await expect(
+    flow().accept(tenant, id, value.request.attemptId, grantedResult(value)),
+  ).rejects.toThrow('ledger down');
+  expect((await data()).pending).toBeDefined();
+  expect(await flow().accept(tenant, id, value.request.attemptId)).toBe(true);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+});
+it('accounts for a returned result even when its stored acknowledgement is missing', async () => {
+  const value = await grant();
+  vi.spyOn(results, 'get').mockResolvedValue(undefined);
+  await expect(
+    flow().accept(tenant, id, value.request.attemptId, grantedResult(value)),
+  ).rejects.toThrow('reconciliation');
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+  expect((await data()).pending).toBeDefined();
+});
+it('books rejected paid output and requires explicit reconciliation before dropping the attempt', async () => {
+  const value = await grant();
+  const result = { ...grantedResult(value), bytes: new Uint8Array() };
+  await expect(flow().accept(tenant, id, value.request.attemptId, result)).rejects.toThrow(
+    'reconciliation',
+  );
+  await expect(
+    flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing: null,
+    }),
+  ).rejects.toThrow('match durable billing');
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Rejected empty output; charged',
+      billing: { callId: result.callId, model: result.model, costEur: result.costEur },
+    }),
+  ).toBe(true);
+  expect(assets.size).toBe(1);
+  expect((await data()).reconciled).toHaveLength(1);
+  expect((await data()).pending).toBeUndefined();
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+  expect((await grant()).request.attemptId).not.toBe(value.request.attemptId);
+});
+it('requires an explicit no-spend confirmation and retains durable reconciliation evidence', async () => {
+  const value = await grant();
+  await expect(
+    flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: ' ',
+      billing: null,
+    }),
+  ).rejects.toThrow('explicit operator');
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Provider checked: reservation never submitted',
+      billing: null,
+    }),
+  ).toBe(true);
+  expect((await data()).reconciled[0]).toMatchObject({
+    attemptId: value.request.attemptId,
+    billing: null,
+  });
+  expect((await ledger.summary(tenant, clock.now())).total).toBe(0);
+  await create(other);
+  expect(await flow().authorize(tenant, other)).toBeDefined();
+});
+it('keeps charged reconciliation pending on ledger failure and books once on retry', async () => {
+  const value = await grant();
+  const confirmation = {
+    operatorConfirmed: true as const,
+    note: 'Provider confirmed failed paid job',
+    billing: { callId: 'provider:failed-job', model: 'image-v1', costEur: 0.3 },
+  };
+  vi.spyOn(ledger, 'recordCost').mockRejectedValueOnce(new Error('ledger unavailable'));
+  await expect(flow().reconcile(tenant, id, value.request.attemptId, confirmation)).rejects.toThrow(
+    'ledger',
+  );
+  expect((await data()).pending).toBeDefined();
+  await expect(
+    flow().reconcile(tenant, id, value.request.attemptId, { ...confirmation, billing: null }),
+  ).rejects.toThrow('immutable');
+  await expect(
+    flow().accept(tenant, id, value.request.attemptId, grantedResult(value)),
+  ).rejects.toThrow('reconciliation');
+  expect(await flow().reconcile(tenant, id, value.request.attemptId, confirmation)).toBe(true);
+  expect(await flow().reconcile(tenant, id, value.request.attemptId, confirmation)).toBe(false);
+  expect((await data()).reconciled).toHaveLength(1);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.3);
+});
+it('serializes concurrent grant and acceptance claims', async () => {
+  const claims = await Promise.all([flow().authorize(tenant, id), flow().authorize(tenant, id)]);
+  expect(claims.filter(Boolean)).toHaveLength(1);
+  const value = claims.find(Boolean)!;
+  const accepted = await Promise.all([
+    flow().accept(tenant, id, value.request.attemptId, grantedResult(value)),
+    flow().accept(tenant, id, value.request.attemptId, grantedResult(value)),
+  ]);
+  expect(accepted.filter(Boolean)).toHaveLength(1);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+});
+it('refreshes the lease on each checkpoint and fences a stale lease', async () => {
+  const refresh = vi.spyOn(locks, 'refresh');
+  const value = await grant();
+  expect(refresh).toHaveBeenCalledTimes(3);
+  clock.advance(9 * 60_000);
+  const lastLease = refresh.mock.calls.at(-1)![1];
+  expect(await locks.refresh(tenant, lastLease, clock.now())).toBe(true);
+  clock.advance(2 * 60_000);
+  expect(await locks.acquire(tenant, id, 'competing-lease', clock.now())).toBe(false);
+  expect(await locks.refresh(tenant, 'stale-lease', clock.now())).toBe(false);
+  await flow().accept(tenant, id, value.request.attemptId, grantedResult(value));
+  expect(refresh.mock.calls.at(-1)![1]).not.toBe(lastLease);
+});
+it('checks the cap after each accepted step', async () => {
+  const value = await grant();
+  await flow().accept(tenant, id, value.request.attemptId, grantedResult(value));
+  await spend(24.85);
+  await expect(flow().authorize(tenant, id)).rejects.toThrow('cap');
+  expect((await data()).outputs['image-0']).toBeDefined();
+  expect((await data()).pending).toBeUndefined();
+});
+
+it('retries a lost bounded output checkpoint without charging or restoring it twice', async () => {
+  const value = await grant();
+  const update = drafts.updateShow.bind(drafts);
+  let lost = false;
+  vi.spyOn(drafts, 'updateShow').mockImplementation(async (draft, version) => {
+    const show = showDraftDataSchema.parse(draft.extras['show']);
+    if (!lost && show.outputs['image-0'] && !show.pending) {
+      lost = true;
+      return false;
+    }
+    return update(draft, version);
+  });
+  await expect(
+    flow().accept(tenant, id, value.request.attemptId, grantedResult(value)),
+  ).rejects.toThrow('changed');
+  expect(await flow().accept(tenant, id, value.request.attemptId)).toBe(true);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+  expect(await flow().accept(tenant, id, value.request.attemptId)).toBe(false);
+});
+it('uses fresh bounded regeneration attempts and preserves retired billing receipts', async () => {
+  await flow().generate(tenant, id);
+  const original = (await data()).outputs['image-1']!;
+  const value = (await flow().authorize(tenant, id, 'image-1'))!;
+  expect(value.request.attemptId).not.toBe(original.attemptId);
+  expect((await data()).retired).toHaveLength(2);
+  await flow().accept(tenant, id, value.request.attemptId, grantedResult(value));
+  const clip = (await flow().authorize(tenant, id))!;
+  expect(clip.kind).toBe('video');
+  await flow().accept(tenant, id, clip.request.attemptId, grantedResult(clip));
+  expect((await get()).draft.state).toBe('ready');
+  expect((await data()).retired).toContainEqual(original);
+  expect(assets.has(`${tenant}/${id}/${original.attemptId}`)).toBe(true);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(1.4);
+});
+
+it('does not transfer an active recovery lease to another checkpoint operation', async () => {
+  const value = await grant();
+  let entered!: () => void, release!: () => void;
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const paused = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const recovering = flow().recover(tenant, id, value.request.attemptId, {
+    requestId: async () => 'existing-job',
+    read: async () => {
+      entered();
+      await paused;
+      return grantedResult(value);
+    },
+  });
+  await started;
+  expect(await flow().accept(tenant, id, value.request.attemptId, grantedResult(value))).toBe(
+    false,
+  );
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Competing operation',
+      billing: null,
+    }),
+  ).toBe(false);
+  release();
+  expect(await recovering).toBe(true);
+});
+
+it.each([
+  { callId: ' ' },
+  { model: ' ' },
+  { costEur: -1 },
+  { costEur: Number.NaN },
+  { costEur: Number.POSITIVE_INFINITY },
+])('rejects invalid reconciliation billing without persisting evidence: %j', async (patch) => {
+  const value = await grant();
+  const before = await get();
+  const billing = { callId: 'provider:checked-job', model: 'image-v1', costEur: 0.1 };
+  await expect(
+    flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing: { ...billing, ...patch },
+    }),
+  ).rejects.toThrow('invalid billing');
+  expect(await get()).toEqual(before);
+  expect((await data()).reconciled).toEqual([]);
+  expect((await data()).pending!.attemptId).toBe(value.request.attemptId);
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing,
+    }),
+  ).toBe(true);
+  expect((await ledger.summary(tenant, clock.now())).total).toBeCloseTo(0.1);
+  expect(
+    await flow().reconcile(tenant, id, value.request.attemptId, {
+      operatorConfirmed: true,
+      note: 'Checked provider billing',
+      billing,
+    }),
+  ).toBe(false);
+});
+
+it('releases an acquired lease when a stale callback loses its first checkpoint', async () => {
+  const value = await grant();
+  const acquire = locks.acquire.bind(locks);
+  let entered!: () => void, release!: () => void;
+  const read = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const paused = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  // B has read the pending snapshot but has not acquired the lease yet.
+  vi.spyOn(locks, 'acquire').mockImplementationOnce(async (...args) => {
+    entered();
+    await paused;
+    return acquire(...args);
+  });
+  const stale = flow().accept(tenant, id, value.request.attemptId, grantedResult(value));
+  const rejected = expect(stale).rejects.toThrow('changed during generation');
+  await read;
+  // A accepts that same attempt and releases its lease before B acquires.
+  expect(await flow().accept(tenant, id, value.request.attemptId, grantedResult(value))).toBe(true);
+  release();
+  await rejected;
+  expect((await data()).pending).toBeUndefined();
+  expect(await locks.acquire(tenant, other, 'next-show', clock.now())).toBe(true);
+});
