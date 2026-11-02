@@ -208,3 +208,24 @@ it('stops delivery when the author switches sessions during download', async () 
   await preview(ctx, stored);
   expect(documents).not.toHaveBeenCalled();
 });
+
+it('logs fixed diagnostics for unavailable media and interrupted delivery without external details', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const sensitive = new Error('https://api.telegram.org/bot123:SECRET-token/file');
+  original.mockRejectedValueOnce(sensitive);
+  marked.mockRejectedValueOnce(sensitive);
+  documents.mockRejectedValueOnce(sensitive);
+  try {
+    await preview(ctx, stored);
+    expect(log.mock.calls).toEqual([
+      ['show preview failed', 'original unavailable'],
+      ['show preview failed', 'delivery interrupted'],
+    ]);
+    log.mockClear();
+    await preview(ctx, stored);
+    expect(log.mock.calls).toEqual([['show preview failed', 'marked media unavailable']]);
+    expect(JSON.stringify(log.mock.calls)).not.toContain('SECRET');
+  } finally {
+    log.mockRestore();
+  }
+});

@@ -746,7 +746,10 @@ permission for workflow_dispatch; any permission/configuration changes remain an
 `/show` resumes the chat's latest unpublished show across collecting, translating, failed and ready
 states, including after switching to post/work authoring. An explicit version-bound refresh button
 reads the frozen plan's private original snapshots and current outputs. Preview never dispatches a
-job, changes generation state or grants publication approval.
+job, changes generation state or grants publication approval. Delivery runs through the bot
+background runner (`ExecutionContext.waitUntil` in production), so the webhook finishes without
+waiting for sequential R2 reads and Telegram document uploads. Failures log fixed reasons only,
+never external exception messages or media/credential URLs.
 
 The Worker reads generated media exclusively through the private marked R2 store, which verifies
 stored byte/receipt hashes. Each marked receipt must match the current output's tenant/show/attempt

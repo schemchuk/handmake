@@ -617,3 +617,46 @@ it('reads preview ownership and active session together with the current D1 snap
   await send('/show');
   expect(await drafts.getSessionShow(tenant, '11', id)).toEqual(await get(id));
 });
+
+it('finishes the callback handler while preview delivery is still pending', async () => {
+  await completedShow('ready');
+  await send('/show');
+  let release!: () => void;
+  let delivered = false;
+  preview.mockImplementationOnce(async () => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    delivered = true;
+  });
+  let returned = false;
+  const handling = press(button('preview')).then(() => {
+    returned = true;
+  });
+  try {
+    await vi.waitFor(() => expect(returned).toBe(true), { timeout: 2000 });
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(tasks).toHaveLength(1);
+    expect(delivered).toBe(false);
+  } finally {
+    release?.();
+    await handling;
+    await flush();
+  }
+  expect(delivered).toBe(true);
+});
+it('contains background preview rejection and logs no external error details', async () => {
+  await completedShow('ready');
+  await send('/show');
+  preview.mockRejectedValueOnce(new Error('https://api.telegram.org/bot123:SECRET-token/file'));
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await press(button('preview'));
+    await flush();
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.showPreviewInterruptedText);
+    expect(log.mock.calls).toEqual([['show preview failed', 'background delivery failed']]);
+    expect(JSON.stringify(log.mock.calls)).not.toContain('SECRET');
+  } finally {
+    log.mockRestore();
+  }
+});

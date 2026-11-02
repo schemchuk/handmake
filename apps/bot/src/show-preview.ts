@@ -46,6 +46,7 @@ export function createShowPreview(deps: {
         try {
           image = await deps.original(tenantId, ref);
         } catch {
+          console.error('show preview failed', 'original unavailable');
           missing++;
           continue;
         }
@@ -76,10 +77,12 @@ export function createShowPreview(deps: {
         try {
           marked = await deps.marked.get(tenantId, draftId, receipt.attemptId);
         } catch {
+          console.error('show preview failed', 'marked media unavailable');
           missing++;
           continue;
         }
         if (!marked) {
+          console.error('show preview failed', 'marked media missing');
           missing++;
           continue;
         }
@@ -101,6 +104,7 @@ export function createShowPreview(deps: {
       await current();
       return ctx.reply(deps.texts.showPreviewStatus(missing), refreshKeyboard(stored, deps.texts));
     } catch {
+      console.error('show preview failed', 'delivery interrupted');
       // A partially delivered preview never grants approval. Refresh reads a fresh version via /show.
       return ctx.reply(deps.texts.showPreviewInterruptedText);
     }
