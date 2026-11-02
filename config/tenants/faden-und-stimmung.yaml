@@ -90,6 +90,36 @@ ai:
     inputEurPerMillion: 3.5
     outputEurPerMillion: 17.5
 
+# Shows (ADR 015): fictional adult personas generated with fal on 2026-11-02.
+# referenceImage is a key under show-input/v1/<tenant>/ in the private R2 bucket.
+# EUR estimates sit above fal's list prices ($0.08/image, $0.35 per 5 s video).
+shows:
+  models:
+    - id: lena
+      name: Lena
+      look: a woman in her early 30s with shoulder-length light brown hair
+      referenceImage: persona-lena-v1
+      fictional: true
+      adult: true
+    - id: marta
+      name: Marta
+      look: a woman in her mid 50s with short silver-grey hair and a warm smile
+      referenceImage: persona-marta-v1
+      fictional: true
+      adult: true
+    - id: jonas
+      name: Jonas
+      look: a man in his late 30s with short dark hair and a neatly trimmed beard
+      referenceImage: persona-jonas-v1
+      fictional: true
+      adult: true
+  image:
+    model: fal-ai/nano-banana-2/edit
+    eurPerImage: 0.1
+  video:
+    model: fal-ai/kling-video/v2.5-turbo/pro/image-to-video
+    eurPerSecond: 0.08
+
 featureFlags:
   translation: true
   wotwPoll: false
