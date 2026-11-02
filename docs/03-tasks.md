@@ -631,11 +631,11 @@ All subtasks: **Owner: codex · Reviewer: claude-code**.
   Tests: session flow with mocked generator, config-only model change, template override,
   denied budget, regeneration, approval retry and existing post/work regression checks.
 
-### Proposed T44d split (2026-11-02, awaiting Volodymyr's approval)
+### T44d split (approved by Volodymyr in chat, 2026-11-02)
 
 T44d combines three independently reviewable adapters and is expected to exceed the ADR 009
 limit of approximately 400 changed non-test lines. Keep T44d as the parent acceptance gate;
-propose the following implementation order. All subtasks: **Owner: codex · Reviewer: claude-code**.
+use the following implementation order. All subtasks: **Owner: codex · Reviewer: claude-code**.
 No paid calls, production enablement, remote migrations or deployment are authorized.
 
 - **T44d1 — fal HTTP adapter and versioned prompts** (depends on T44c).

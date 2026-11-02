@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T44d (fal adapter and media marking), Owner codex, Reviewer claude-code. T44c merged as PR #47 (`6d9bcb0`).
-- **Branch:** `main`
-- **Last commit:** this handoff commit — docs: propose reviewable T44d implementation split (parent `a1d2626`).
-- **Next step:** Volodymyr reviews the proposed T44d1-T44d3 split in docs/03-tasks.md. After approval, hand T44d1 to codex in a fresh session. No implementation changed. Complete the ADR 015 model-terms check before any real call. Migration 0008 remains local-tested only; no remote migration or deploy authorized.
-- **Blocked on:** approval of the T44d split required by the ADR 009 PR-size rule.
+- **Active agent:** codex
+- **Current task:** T44d1 (fal HTTP adapter and versioned prompts), Owner codex, Reviewer claude-code. T44d1-T44d3 split approved by Volodymyr in chat on 2026-11-02.
+- **Branch:** `main` (next: `feat/t44d1-fal-adapter`)
+- **Last commit:** this session-start commit — docs: record T44d split approval and start T44d1 (parent `9f9e3d1`).
+- **Next step:** Implement T44d1 with mocked HTTP tests on its feature branch, then open a PR for claude-code. No paid calls, remote migration, production enablement or deploy authorized.
+- **Blocked on:** nothing for mocked implementation; model excluded-status and billing checks remain pre-production gates.
 - **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
