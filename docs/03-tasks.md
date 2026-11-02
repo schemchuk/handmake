@@ -678,11 +678,11 @@ T44d1-T44d3 are merged; T44e's implementation dependencies are satisfied.
 Each subtask gets a fresh session and its own PR.
 Any new workflow or secret handling remains subject to the existing sensitive-merge approval rule.
 
-### Proposed T44e split (2026-11-02, awaiting Volodymyr's approval)
+### T44e split (approved by Volodymyr in chat, 2026-11-02)
 
 T44e crosses paid-call recovery, execution lifetime, private media transport and the author UI.
 It cannot fit the ADR 009 target of approximately 400 changed non-test lines in one PR.
-Keep T44e as the parent acceptance gate; propose the following implementation order.
+Keep T44e as the parent acceptance gate; use the following implementation order.
 All subtasks: **Owner: codex · Reviewer: claude-code**. Each requires a fresh session and its own PR.
 No paid calls, remote resource creation, secret installation, migrations or deployment are authorized.
 Model-terms and billing checks remain gates before the first real show, not before implementation.

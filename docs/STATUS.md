@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T44e split proposed; awaiting Volodymyr's approval. Owner codex, Reviewer claude-code. T44d3 merged as PR #50 (`661eeb2`).
+- **Active agent:** codex
+- **Current task:** T44e1 (per-call checkpoints and explicit reconciliation), ready for a fresh context window. Owner codex, Reviewer claude-code. T44e1-T44e6 split approved by Volodymyr in chat on 2026-11-02.
 - **Branch:** `main`
-- **Last commit:** `9865ea1` — docs: T44d3 merged, review notes, hand over T44e to codex.
-- **Next step:** Volodymyr reviews the proposed T44e1-T44e6 split in docs/03-tasks.md. After approval, hand T44e1 to codex in a fresh session. No implementation changed; no paid calls, remote resources, secret installation, migration or deploy authorized.
-- **Blocked on:** approval of the T44e split requested by the handoff and ADR 009 size rule. T44d3 is merged, not a blocker. Model terms/billing remain gates before the first real show; apply migration 0008 remotely only with the separately authorized `/show` bot deployment.
+- **Last commit:** `21b514b` — docs: propose reviewable T44e implementation split.
+- **Next step:** Start T44e1 only in a new context window, as requested by Volodymyr. Pull/rebase and read AGENTS.md plus this status first, then the T44e1 task, T44c-T44d3 review notes and relevant architecture sections. Implement only T44e1 on `feat/t44e1-call-checkpoints`; do not continue into T44e2. No implementation started in the approval session. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Blocked on:** nothing for T44e1 implementation. Model terms/billing remain gates before the first real show; apply migration 0008 remotely only with the separately authorized `/show` bot deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
