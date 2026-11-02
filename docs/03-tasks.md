@@ -729,6 +729,47 @@ Model-terms and billing checks remain gates before the first real show, not befo
   sessions, and generation starts only after validated input and explicit author action.
   Tests: new/existing work paths, missing work, 2-3 photo bounds, persona config changes, template
   override, denied access, disabled configuration and existing post/work session regressions.
+
+#### Proposed T44e4 split (pending Volodymyr approval, 2026-11-02)
+
+T44e4 needs persistent show-session routing, a tenant-scoped work reader, new-work handoff,
+photo intake, configuration menus, private input persistence and executor dispatch. These cross
+separate adapters and cannot fit the ADR 009 target in one reviewable PR. Keep T44e4 as the
+parent acceptance gate. All subtasks: **Owner: codex · Reviewer: claude-code**. Each requires
+a fresh session and its own PR; propose a further split before coding if one exceeds the target.
+No paid calls, bucket creation, remote migrations or deployment are authorized.
+
+- **T44e4a — Show sessions and linked-work selection** (depends on T44e3).
+  Change: add allow-listed `/show`, persistent show-session routing and a tenant-scoped published
+  work reader. Offer existing-work selection and a handoff to the existing `/work` authoring and
+  approval flow for a new work, retaining the link needed to resume show setup after publication.
+  Do not publish a work implicitly. Provide a clear disabled/misconfigured reply.
+  Acceptance: interrupted selection resumes; missing/cross-tenant works are rejected; post, work
+  and show messages stay in their own sessions. New works use the existing storage/publication
+  path and require author approval before becoming eligible for show generation.
+  Tests: denied access, disabled configuration, existing/missing/cross-tenant works, new-work
+  handoff and approved-publication resumption, post/work session regressions.
+- **T44e4b — Original photos and configuration menus** (depends on T44e4a).
+  Change: collect and persist 2-3 original references for the linked work, using existing work
+  photos where suitable and allowing new originals. Add persona choices from tenant config and
+  work-kind template defaults with explicit overrides. Preserve the author's texts unchanged.
+  Acceptance: photo bounds are enforced atomically; interrupted intake resumes; stale menus and
+  removed/changed personas cannot configure a generation; non-interior templates require a persona.
+  The linked work is revalidated before finalizing the input. No generation starts from intake.
+  Tests: 1/2/3/4-photo inputs, concurrent album messages, resume, persona config changes, template
+  overrides, missing linked work and unchanged author text.
+- **T44e4c — Explicit generation start and private inputs** (depends on T44e4b).
+  Change: resolve validated original/persona references into bounded private show inputs, configure
+  the immutable show plan and dispatch the existing resumable Node executor only after an explicit
+  author action. Use a canonical tenant/show/version payload for dispatch. Wire the production
+  composition while retaining all existing disabled/missing-resource and paid-execution gates.
+  Acceptance: the linked published work, current config and 2-3 originals are checked before
+  starting; duplicate/stale actions cannot replace a configured plan or submit another paid call.
+  Provider waits and marking remain in Node; webhook background work only prepares/dispatches.
+  Failed preparation/dispatch remains resumable without mixing sessions or losing original refs.
+  Tests: explicit-action requirement, invalid input, missing private storage/config, canonical
+  dispatch, duplicate/stale buttons, preparation/dispatch retry and mocked Worker/Node handoff.
+
 - **T44e5 — Preview, regeneration and recovery controls** (depends on T44e4).
   Change: show originals beside marked images/video; add regenerate, retry/reconcile and discard
   controls using T44e1 operations. Bind buttons and asynchronous results to the current draft version;
