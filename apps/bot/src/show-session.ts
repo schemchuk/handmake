@@ -123,11 +123,25 @@ export function registerShowSession(
         !stored ||
         stored.draft.kind !== 'show' ||
         !['collecting', 'translating', 'failed', 'ready'].includes(stored.draft.state) ||
-        (action !== 'preview' && stored.draft.state !== 'collecting') ||
+        (!['preview', 'retry', 'regen'].includes(action ?? '') &&
+          stored.draft.state !== 'collecting') ||
         (await drafts.chatIdOf(ctx.tenantId, id!)) !== String(ctx.chat!.id) ||
-        (stored.draft.extras['show'] && !['start', 'preview'].includes(action ?? ''))
+        (stored.draft.extras['show'] &&
+          !['start', 'preview', 'retry', 'regen'].includes(action ?? ''))
       )
         return ctx.reply(texts.showSelectionErrorText);
+      if (action === 'retry' || action === 'regen') {
+        const active = await drafts.getSessionShow(ctx.tenantId, String(ctx.chat!.id), id!);
+        if (!active || active.version !== stored.version)
+          return ctx.reply(texts.showSelectionErrorText);
+        const [version, slot] = (value ?? '').split('.');
+        if (
+          (action === 'retry' && stored.draft.state !== 'failed') ||
+          (action === 'regen' && (stored.draft.state !== 'ready' || !slot))
+        )
+          return ctx.reply(texts.showSelectionErrorText);
+        return await input.start(ctx, stored, version ?? '', action === 'regen' ? slot : undefined);
+      }
       if (action === 'preview') {
         if (
           !/^\d+$/.test(value ?? '') ||

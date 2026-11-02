@@ -270,3 +270,46 @@ it('bounds streamed downloads and rejects invalid media', async () => {
   ])
     await expect(readShowImage(response)).rejects.toThrow();
 });
+
+it('dispatches regeneration once across concurrent stale starts and resumes a failed dispatch without more paid calls', async () => {
+  await db.prepare('DELETE FROM show_generation_locks').run();
+  await start(await get());
+  generator.generateImage.mockImplementation(async (request) => ({
+    bytes: new Uint8Array([1]),
+    mimeType: 'image/png',
+    callId: request.attemptId,
+    model: request.providerModel,
+    promptVersion: request.promptVersion,
+    costEur: 0.1,
+  }));
+  generator.generateVideo.mockImplementation(async (request) => ({
+    bytes: new Uint8Array([2]),
+    mimeType: 'video/mp4',
+    callId: request.attemptId,
+    model: request.providerModel,
+    promptVersion: request.promptVersion,
+    costEur: 0.5,
+  }));
+  await flow.generate(tenant, id);
+  const ready = await get();
+  fetchImpl.mockClear();
+  fetchImpl.mockResolvedValueOnce(new Response(null, { status: 503 }));
+  const attempts = await Promise.allSettled([start(ready, 'image-1'), start(ready, 'video')]);
+  expect(attempts.every((r) => r.status === 'rejected')).toBe(true);
+  expect(fetchImpl).toHaveBeenCalledTimes(1);
+  const prepared = await get();
+  expect(prepared.draft.state).toBe('failed');
+  const payload = JSON.parse(fetchImpl.mock.calls[0]![1]!.body as string);
+  fetchImpl.mockResolvedValue(new Response(null, { status: 204 }));
+  await start(prepared);
+  expect(JSON.parse(fetchImpl.mock.calls[1]![1]!.body as string)).toEqual(payload);
+  expect(generator.generateImage).toHaveBeenCalledTimes(3);
+  expect(generator.generateVideo).toHaveBeenCalledTimes(1);
+});
+it('rejects a superseded start snapshot before dispatch or private preparation', async () => {
+  const stale = await get();
+  await drafts.updateShow(stale.draft, stale.version);
+  await expect(start(stale)).rejects.toThrow('stale');
+  expect(telegram).not.toHaveBeenCalled();
+  expect(fetchImpl).not.toHaveBeenCalled();
+});

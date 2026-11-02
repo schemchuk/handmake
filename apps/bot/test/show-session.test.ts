@@ -4,6 +4,7 @@ import type { Work } from '@handmake/core';
 import { FakePublishRunner, FakeTranslator } from '@handmake/core/testing';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { createBot } from '../src/bot';
+import { createAiCostLedger } from '../src/ai-costs';
 import { createD1DraftStore } from '../src/draft-store';
 import { botTexts } from '../src/texts';
 import {
@@ -29,6 +30,7 @@ const baseConfig = parseTenantConfig(
   readFileSync(new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url), 'utf8'),
 );
 let config: typeof baseConfig;
+let costs: ReturnType<typeof createAiCostLedger>;
 let drafts: ReturnType<typeof createD1DraftStore>;
 let bot: ReturnType<typeof createBot>;
 let calls: ReturnType<typeof mockTelegramApi>;
@@ -59,6 +61,7 @@ const start = vi.fn(async (_stored: import('../src/draft-store').StoredDraft) =>
 function build(enabled = true, execution = true) {
   bot = createBot({
     token: 'TEST_TOKEN',
+    costs: { ledger: costs, tenantConfigs: { load } },
     drafts,
     texts: botTexts,
     translator,
@@ -101,7 +104,9 @@ function build(enabled = true, execution = true) {
 }
 beforeEach(async () => {
   vi.clearAllMocks();
-  drafts = createD1DraftStore(await makeD1());
+  const db = await makeD1();
+  costs = createAiCostLedger(db);
+  drafts = createD1DraftStore(db);
   config = structuredClone(baseConfig);
   config.shows = {
     models: [],
@@ -659,4 +664,56 @@ it('contains background preview rejection and logs no external error details', a
   } finally {
     log.mockRestore();
   }
+});
+
+it.each(['image-0', 'image-2', 'video'])(
+  'routes version-bound %s regeneration through canonical start',
+  async (slot) => {
+    const id = await completedShow('ready');
+    await send('/show');
+    const stored = (await get(id))!;
+    const action = `show:${id}:regen:${stored.version}.${slot}`;
+    expect(new TextEncoder().encode(action).length).toBeLessThanOrEqual(64);
+    await press(action);
+    await flush();
+    expect(start).toHaveBeenCalledWith(stored, slot);
+    expect(runner.jobs).toEqual([]);
+  },
+);
+it('offers failed-show retry and rejects stale, foreign and inactive regeneration actions', async () => {
+  const id = await completedShow('failed');
+  await send('/show');
+  const stored = (await get(id))!;
+  await press(button('retry'));
+  await flush();
+  expect(start).toHaveBeenCalledWith(stored, undefined);
+  start.mockClear();
+  await drafts.updateShow({ ...stored.draft, state: 'ready' }, stored.version);
+  await send('/show');
+  const action = button('regen');
+  await press(action, 12);
+  await press(action, 13);
+  await press(`show:${id}:regen:${stored.version}.video`);
+  await send('/new');
+  await press(action);
+  await flush();
+  expect(start).not.toHaveBeenCalled();
+});
+
+it('warns at the monthly target before routing regeneration through the normal budget gates', async () => {
+  const id = await completedShow('ready');
+  config.ai!.monthlyTargetEur = 20;
+  await costs.recordCost(tenant, {
+    id: 'warning-fixture',
+    at: new Date(),
+    service: 'fixture',
+    unit: 'image',
+    amountEur: 20,
+    ref: `show:${id}`,
+  });
+  await send('/show');
+  await press(button('regen'));
+  await flush();
+  expect(sentTexts(calls)).toContain(botTexts.costTargetText);
+  expect(start).toHaveBeenCalledTimes(1);
 });

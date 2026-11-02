@@ -1,6 +1,14 @@
 /** An uncertain call retains the tenant lock; no automatic takeover by another show. */
 export function createShowGenerationLocks(db: D1Database) {
   return {
+    /** New author actions cannot take over even an expired execution lease. */
+    async acquireIdle(tenant: string, draft: string, lease: string, now: Date) {
+      const result = await db
+        .prepare('INSERT OR IGNORE INTO show_generation_locks VALUES (?, ?, ?, ?)')
+        .bind(tenant, draft, lease, now.toISOString())
+        .run();
+      return result.meta.changes === 1;
+    },
     async acquire(tenant: string, draft: string, lease: string, now: Date, previous = '') {
       const result = await db
         .prepare(

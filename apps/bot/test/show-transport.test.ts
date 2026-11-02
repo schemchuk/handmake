@@ -542,3 +542,44 @@ it('resumes the actual fal adapter through HTTP journal without repeating POST',
   expect(posts).toBe(1);
   expect((await createAiCostLedger(db).summary(tenant, new Date(now))).total).toBe(0.1);
 });
+
+it('reopens expired jobs without authorizing another unknown paid submission', async () => {
+  await authorize();
+  const pending = showDraftDataSchema.parse(
+    (await drafts.get(tenant, show))!.draft.extras['show'],
+  ).pending;
+  await call('reserve', { body: JSON.stringify({ fingerprint: 'a'.repeat(64) }) });
+  await call('record', { body: JSON.stringify({ requestId: providerId }) });
+  const oldJob = job;
+  const resumed = createShowTransport({ bucket, secret, drafts, flow, now: () => now + 3_600_001 });
+  const fresh = await resumed.open(tenant, show, version, true);
+  expect(fresh.id).not.toBe(oldJob);
+  const grant = await bucket.get(`show-grant/v1/${fresh.id}/${attempt}`);
+  expect(grant).toBeTruthy();
+  job = fresh.id;
+  const response = await resumed.handle(
+    await request('authorize', { time: now + 3_600_001, attempt: 'next' }),
+  );
+  expect(response.status).toBe(409);
+  expect(
+    showDraftDataSchema.parse((await drafts.get(tenant, show))!.draft.extras['show']).pending,
+  ).toEqual(pending);
+  const ticket = await createR2ShowStorage(bucket).readAttempt({
+    tenantId: tenant,
+    showId: show,
+    attemptId: attempt,
+  });
+  expect(ticket.requestId).toBe(providerId);
+  expect(generator.generateImage).not.toHaveBeenCalled();
+});
+it('keeps a stable live job identity for duplicate dispatch and refuses missing grants on expiry', async () => {
+  expect((await transport.open(tenant, show, version, true)).id).toBe(job);
+  await authorize();
+  await bucket.delete(`show-grant/v1/${job}/${attempt}`);
+  const resumed = createShowTransport({ bucket, secret, drafts, flow, now: () => now + 3_600_001 });
+  await expect(resumed.open(tenant, show, version, true)).rejects.toThrow('reconciliation');
+  expect(
+    showDraftDataSchema.parse((await drafts.get(tenant, show))!.draft.extras['show']).pending
+      ?.attemptId,
+  ).toBe(attempt);
+});

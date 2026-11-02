@@ -111,7 +111,7 @@ export function createShowInput(options: CreateBotOptions) {
   return {
     present,
     presentStart,
-    async start(ctx: AppContext, stored: StoredDraft, version: string) {
+    async start(ctx: AppContext, stored: StoredDraft, version: string, regenerate?: string) {
       if (!/^\d+$/.test(version) || Number(version) !== stored.version)
         return ctx.reply(texts.showSelectionErrorText);
       if (!show?.start) return ctx.reply(texts.showUnavailableText);
@@ -121,7 +121,13 @@ export function createShowInput(options: CreateBotOptions) {
       await ctx.reply(texts.showStartingText);
       options.background(async () => {
         try {
-          await show.start!(stored);
+          if (options.costs) {
+            const budget = (await options.costs.tenantConfigs.load(ctx.tenantId)).ai;
+            const summary = await options.costs.ledger.summary(ctx.tenantId, new Date());
+            if (budget && summary.total >= budget.monthlyTargetEur)
+              await ctx.reply(texts.costTargetText);
+          }
+          await show.start!(stored, regenerate);
           await ctx.reply(texts.showDispatchedText);
         } catch (error) {
           // Only plain fixed reasons (e.g. "show dispatch failed: HTTP 422"); network errors may carry token URLs.

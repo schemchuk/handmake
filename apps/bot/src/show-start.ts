@@ -7,7 +7,7 @@ import type { createShowDraftFlow } from './show-draft-flow';
 
 const limit = 20_000_000;
 const part = /^[A-Za-z0-9_-]{1,128}$/;
-export type ShowStart = (stored: StoredDraft) => Promise<void>;
+export type ShowStart = (stored: StoredDraft, regenerate?: string) => Promise<void>;
 
 /** No provider calls: snapshot bounded private inputs, freeze the plan, dispatch Node. */
 export function createShowStart(deps: {
@@ -15,7 +15,7 @@ export function createShowStart(deps: {
   drafts: D1DraftStore;
   configs: TenantConfigSource;
   works: WorkReader;
-  flow: Pick<ReturnType<typeof createShowDraftFlow>, 'configure'>;
+  flow: Pick<ReturnType<typeof createShowDraftFlow>, 'configure' | 'prepareRegeneration'>;
   open: (tenant: string, show: string, version: number) => Promise<{ id: string }>;
   telegram: (fileId: string) => Promise<ShowSourceImage>;
   repo: string;
@@ -49,15 +49,21 @@ export function createShowStart(deps: {
     const response = await fetchImpl(url, { redirect: 'manual' });
     return readShowImage(response);
   };
-  return async (stored) => {
+  return async (stored, regenerate) => {
     const { tenantId, draftId } = stored.draft;
     if (
       !part.test(tenantId) ||
       !part.test(draftId) ||
       stored.draft.kind !== 'show' ||
-      stored.draft.state !== 'collecting'
+      !['collecting', 'failed', 'ready'].includes(stored.draft.state)
     )
       throw new Error('stale show');
+    const latest = await deps.drafts.get(tenantId, draftId);
+    if (!latest || latest.version !== stored.version) throw new Error('stale show');
+    if (regenerate) {
+      await deps.flow.prepareRegeneration(stored, regenerate);
+      stored = (await deps.drafts.get(tenantId, draftId))!;
+    } else if (stored.draft.state === 'ready') throw new Error('stale show');
     if (!stored.draft.extras['show']) {
       const tenant = await deps.configs.load(tenantId);
       const input = stored.draft.extras['showInput'] as ShowInput | undefined;
