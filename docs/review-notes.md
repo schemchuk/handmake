@@ -135,3 +135,9 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44e4a review) `listWorks` fetches the listing plus one raw file per work and `/show` renders one button per work: with dozens of works this hits the Worker subrequest limit (50 on the free plan) and Telegram's keyboard size. Add paging or a bound in T44e4b/c.
 - (T44e4a review) Draft retention can purge the awaited work draft before the author returns to `/show`; the show then reports the work as missing although it exists in Git. Recovery is `/discard` and a new `/show`; consider linking straight from Git when the pending draft is gone.
 - (T44e4a review) Button labels use `.slice(0, 60)`, which can split a surrogate pair (emoji). Minor.
+
+## Show input menus (T44e4b)
+- (T44e4b review) No blockers; CI green, bot 381 tests pass locally. Merged as PR #56 (`eae36a4`).
+- (T44e4b review) The GitHub work reader keeps the 20 newest work ids of the whole repo before tenant filtering. With several tenants, one tenant's recent works can hide all of another's. Needs a tenant-aware or paged listing before a second tenant.
+- (T44e4b review) "Use work photos" replaces the current originals instead of adding to them; an uploaded photo sent first is dropped silently (`show-input.ts`, `originals` action). Consider appending up to three.
+- (T44e4b review) A photo sent before a work is linked answers with `showMissingWorkText` ("published work not found"), which is misleading. Minor UX.
