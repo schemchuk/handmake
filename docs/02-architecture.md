@@ -527,3 +527,34 @@ URLs. Media downloads accept only fal media hosts or the documented falserverles
 without credentials or redirects. HTTP/body timeouts, bounded polling, JSON limits and streamed
 20 MB media limits fail closed. Header/MIME probes are preliminary: decoding, marker verification
 and the approval gate remain T44d3. No adapter output is approved media.
+
+### Durable raw show storage (T44d2)
+
+`apps/bot/src/show-storage.ts` implements `ShowResultStore` and `FalAttemptJournal` using an injected
+**private R2 bucket**, suitable for the existing Worker runtime. Native R2 bindings avoid another
+secret or public media URL. No bucket, binding or production wiring is created by T44d2.
+
+Raw bytes and their canonical receipt commit as one object under
+`show-raw/v1/<tenant>/<show>/<attempt>`. Create-only conditional writes make identical retries safe;
+conflicting receipts or bytes fail closed. SHA-256 checks cover both bytes and serialized receipt.
+The byte limit is 20 MB; receipt JSON is limited to 1,800 UTF-8 bytes to fit R2 custom metadata.
+Media decoding and marking remain T44d3. Invalid or missing persisted metadata is never repaired
+by overwriting a paid result. An interrupted upload exposes no receipt-only state; an acknowledgement
+lost after commit is recovered by reading or retrying the same immutable result.
+
+Journal objects use `show-attempt/v1/<tenant>/<show>/<attempt>`. Atomic create-only reservation
+binds the input fingerprint; recording the request UUID uses compare-and-swap against the reserved
+object's ETag. Repeated identical recording is safe, conflicting UUIDs fail. No expiration/deletion
+path is provided: configure no lifecycle deletion for these prefixes while outcomes need recovery.
+The raw and journal objects are independent; a journalled paid call without a raw result remains
+an explicit reconciliation case for T44e. Draft cleanup does not delete this evidence.
+
+`get` returns `show-raw:v1:<tenant>:<show>:<attempt>` references, resolved only by the internal
+`resolveRaw(tenantId, ref)` method with tenant checks and integrity verification. These references
+are NOT publisher/approval references. T44d3 must persist verified marked media separately; T44e
+must use that marked-media gate and transport for approval. No raw bucket is publicly served.
+
+R2 [conditional operations](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#conditional-operations)
+and [atomic write consistency](https://developers.cloudflare.com/r2/reference/consistency/) provide
+the storage primitives. Miniflare integration tests exercise them locally, including disk persistence
+across runtime restart. Remote binding/bucket setup remains part of later deployment work.
