@@ -7,6 +7,20 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  showUnavailableText: 'Покази вимкнені або налаштовані не повністю. Спробуй /show пізніше.',
+  showSelectText: 'Обери опубліковану роботу для показу або додай нову:',
+  showNewWorkButton: 'Нова робота',
+  showNewWorkText:
+    'Спочатку підготуй і схвали публікацію роботи через /work. Після публікації повернися до /show.',
+  showAwaitingWorkText:
+    'Роботу ще не опубліковано. Продовж через /work і схвали публікацію, потім повернися до /show.',
+  showMissingWorkText:
+    'Опубліковану роботу не знайдено. Спробуй /show пізніше або /discard і /show для нового вибору.',
+  showSelectionErrorText: 'Вибір застарів або не зберігся. Спробуй /show ще раз.',
+  showLinkedText:
+    'Роботу обрано й збережено для показу. Генерацію ще не запущено; налаштування фото й моделей буде доступне пізніше.',
+  showContinueText:
+    'Це сесія показу. /show — продовжити, /work — робота, /new — допис, /discard — видалити чернетку показу.',
   workUnavailableText: 'Роботи зараз недоступні. Спробуй /work пізніше.',
   workSetupText: 'Обери, як буде представлено роботу:',
   workKinds: { worn: 'На моделі', closeup: 'Крупний план', interior: 'В інтер’єрі' },
@@ -70,7 +84,7 @@ export const botTexts = {
     `Файл «${fileName}» не підійде: я приймаю лише фото у форматах JPEG/PNG і текст. ` +
     `HEIC та інші формати конвертуй у JPEG (або надішли фото як зображення, не як файл).`,
   unsupportedMessageText: 'Поки що я приймаю лише текст і фото — голосове, відео та стікери ні.',
-  unknownCommandText: 'Такої команди я не знаю. Команди: /new, /work, /done, /discard.',
+  unknownCommandText: 'Такої команди я не знаю. Команди: /new, /work, /show, /done, /discard.',
 
   // --- T15: translate, preview, edit, regenerate -----------------------------
   draftNoneText: 'Немає чернетки — надішли текст чи фото, або почни з /new.',

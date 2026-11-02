@@ -51,7 +51,7 @@ export type DraftEditTarget = 'uk' | 'de';
  * author's messages and commands belong to. Entry sessions (T27) never own a
  * draft; post and work sessions point at their current draft.
  */
-export type SessionKind = 'post' | 'entry' | 'work';
+export type SessionKind = 'post' | 'entry' | 'work' | 'show';
 
 export interface ChatSession {
   kind: SessionKind;
@@ -230,7 +230,7 @@ const draftStates: ReadonlySet<string> = new Set([
 ]);
 
 const draftKinds: ReadonlySet<string> = new Set(['post', 'work', 'show']);
-const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work']);
+const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work', 'show']);
 
 const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, created_at, updated_at
   FROM drafts WHERE tenant_id = ?`;

@@ -72,6 +72,7 @@ export interface ContentStore {
 
 /** Read-only content capability for runtimes without filesystem access. */
 export type CollectionReader = Pick<ContentStore, 'listCollections'>;
+export type WorkReader = Pick<ContentStore, 'listWorks' | 'readWork'>;
 
 export type DraftState =
   'collecting' | 'translating' | 'ready' | 'publishing' | 'published' | 'failed';

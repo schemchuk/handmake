@@ -55,16 +55,23 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
     };
     if (!(await flow!.configure(snapshot, config))) throw new Error('work configuration changed');
   };
-  bot.command('work', async (ctx) => {
+  const start = async (ctx: AppContext) => {
     if (!settings) return ctx.reply(texts.workUnavailableText);
-    const chat = String(ctx.chat.id);
+    const chat = String(ctx.chat!.id);
     const session = await drafts.getChatSession(ctx.tenantId, chat);
-    const active =
-      session?.kind === 'work' && session.draftId
+    const showDraft =
+      session?.kind === 'show' && session.draftId
         ? await drafts.get(ctx.tenantId, session.draftId)
         : undefined;
+    const handoff = showDraft?.draft.extras['showSelection'] as
+      { awaitingWorkId?: string } | undefined;
+    const workId = session?.kind === 'work' ? session.draftId : handoff?.awaitingWorkId;
+    const active =
+      workId && (await drafts.chatIdOf(ctx.tenantId, workId)) === chat
+        ? await drafts.get(ctx.tenantId, workId)
+        : undefined;
     const stored =
-      active && active.draft.state !== 'published'
+      active?.draft.kind === 'work' && active.draft.state !== 'published'
         ? active
         : await drafts.getOrCreateCollecting(ctx.tenantId, chat, 'work', new Date());
     await drafts.setChatSession(
@@ -85,7 +92,8 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         ]),
       },
     });
-  });
+  };
+  bot.command('work', start);
   bot.on('callback_query:data', async (ctx, next) => {
     if (!ctx.callbackQuery.data.startsWith('work:')) return next();
     await ctx.answerCallbackQuery();
@@ -205,6 +213,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
     }
   });
   return {
+    start,
     async generate(ctx: AppContext, stored: StoredDraft, regenerate = false) {
       if (!flow) return ctx.reply(texts.workUnavailableText);
       try {

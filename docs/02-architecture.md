@@ -674,3 +674,19 @@ that attempt twice.
 explicitly clears the existing exact-model terms/billing gates. Dispatch grants do not clear
 these gates. This implementation installs no secrets, provisions no resources, applies no
 migration and deploys nothing. Workflow/secret changes require sensitive-merge approval.
+
+### Show selection sessions (T44e4a)
+
+Allow-listed `/show` requires tenant `shows` and `ai` configuration. `chat_sessions.kind`
+accepts `show` without a schema migration. A collecting show stores `extras.showSelection`:
+versioned work ids for the current menu and either `workId` or `awaitingWorkId`. Callback
+selection uses draft CAS, validates the owning tenant/chat and re-reads the exact published
+work. The Worker uses the read-only `WorkReader` port; its GitHub adapter reads approved
+`content/works/<ULID>/index.md` documents and filters by tenant without filesystem imports.
+
+New-work selection links the existing work draft and enters the existing `/work` authoring,
+preview and explicit publication approval flow. After the publication callback marks that draft
+published, `/show` revalidates the Git work before linking it. `/work` from a waiting show
+resumes the same linked draft, including ready drafts still awaiting author approval. Show input
+cannot fall through to post/work collection or armed edits. Selection never configures a plan,
+starts generation or publishes content; photo/persona menus and dispatch remain T44e4b/c.
