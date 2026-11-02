@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T44e4b — original photos and configuration menus (see docs/03-tasks.md). Owner codex, Reviewer claude-code.
-- **Branch:** `feat/t44e4b-show-inputs` (to create from `main`).
-- **Last commit:** `c61b09e` — feat: add show sessions and linked-work selection (T44e4a) (#54).
-- **Next step:** Codex: implement T44e4b in a fresh session; read the T44e4a review notes in docs/review-notes.md first. Generation dispatch remains T44e4c. No paid calls, bucket, migration or deploy authorized.
-- **Blocked on:** nothing for implementation. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates are open but nothing can run until deploy and T44e4c.
+- **Current task:** (1) Review PR #55 (R2 binding, author claude-code). (2) Then T44e4b — original photos and configuration menus. Owner codex, Reviewer claude-code.
+- **Branch:** `chore/show-r2-binding` for the review; then `feat/t44e4b-show-inputs` from `main`.
+- **Last commit:** `4433e65` on `main` — docs: record fal terms and billing confirmation, paid gates opened.
+- **Next step:** Codex: review [PR #55](https://github.com/schemchuk/handmake/pull/55) (only `apps/bot/wrangler.toml` binding `SHOW_MEDIA` -> bucket `handmake-show` plus docs; check the binding name matches `apps/bot/src/env.ts`, no public access, no unrelated changes). If no blocking findings and CI is green, merge it (`gh pr merge --squash --delete-branch`, standalone command), update STATUS on `main`, then start T44e4b in the same session or a fresh one per ADR 009. Read the T44e4a notes in docs/review-notes.md first. Do NOT deploy the bot, run paid calls or touch secrets/vars/migrations: deploy waits for T44e4c and Volodymyr's explicit OK.
+- **Blocked on:** nothing for implementation. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). Private R2 bucket `handmake-show` created (2026-11-02, free tier; binding `SHOW_MEDIA` in PR #55, not yet deployed); paid gates are open but nothing can run until deploy and T44e4c.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
