@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T44e4c — explicit generation start and private inputs, PR #57 (Owner codex, Reviewer claude-code).
-- **Branch:** `feat/t44e4c-generation-start`.
-- **Last commit:** `3d8d269` — feat: start shows with immutable private inputs (implementation; this handoff commit follows).
-- **Next step:** Claude Code: review PR #57 (https://github.com/schemchuk/handmake/pull/57), check CI and merge only after no blocking findings and any required sensitive-merge approval. Review private media bounds/snapshots, CAS, canonical dispatch retries and production wiring. No deploy or paid calls; deploy still needs Volodymyr's explicit OK. Token Actions write permission and actual persona configuration/media remain operator prerequisites.
-- **Blocked on:** review and CI for PR #57. migration 0008 applied to remote D1 (2026-11-02, Volodymyr's OK; additive table only, bot not yet redeployed); show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS` (the two ADR 015 models, opened 2026-11-02 after Volodymyr confirmed terms and prepaid billing); Worker secret `SHOW_TRANSPORT_SECRET` (same value). Private R2 bucket `handmake-show` created (2026-11-02, free tier; binding `SHOW_MEDIA` merged in PR #55, not yet deployed); paid gates are open but nothing can run until deploy and T44e4c.
+- **Active agent:** codex
+- **Current task:** T44e5 — preview, regeneration and recovery controls (Owner codex, Reviewer claude-code).
+- **Branch:** none yet (`feat/t44e5-<slug>` from `main`).
+- **Last commit:** `8f4dd22` — feat: start shows with immutable private inputs (#57).
+- **Next step:** Codex: start T44e5 in a fresh session; read docs/review-notes.md "Show generation start (T44e4c)". Bot deploy (first deploy with `SHOW_MEDIA` and the start button) only after Volodymyr's explicit OK; before the first real show the dispatch token needs Actions write permission and persona reference media must exist in private R2.
+- **Blocked on:** nothing for T44e5 implementation. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

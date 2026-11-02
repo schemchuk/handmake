@@ -141,3 +141,10 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - (T44e4b review) The GitHub work reader keeps the 20 newest work ids of the whole repo before tenant filtering. With several tenants, one tenant's recent works can hide all of another's. Needs a tenant-aware or paged listing before a second tenant.
 - (T44e4b review) "Use work photos" replaces the current originals instead of adding to them; an uploaded photo sent first is dropped silently (`show-input.ts`, `originals` action). Consider appending up to three.
 - (T44e4b review) A photo sent before a work is linked answers with `showMissingWorkText` ("published work not found"), which is misleading. Minor UX.
+
+## Show generation start (T44e4c)
+- (T44e4c review) No blockers; CI green. Sensitive merge (first use of the bot token for Telegram file downloads and the dispatch token for `show.yml`) approved by Volodymyr in chat 2026-11-02. Merged as PR #57 (`8f4dd22`). No deploy, paid call, secret or var change.
+- (T44e4c review) `readShowImage` accepts only `image/jpeg|png|webp` from the response `Content-Type`. If Telegram's file server or raw.githubusercontent.com answers `application/octet-stream` (e.g. photos sent as documents, or some `.webp`), preparation fails closed. Check this on the first real show; sniffing magic bytes would be a fix.
+- (T44e4c review) The background `catch` in `show-input.ts` drops the error without a log, so a failed preparation or dispatch (e.g. missing Actions write permission on the dispatch token) is visible only as a generic author message. Add a secret-safe log line (error class, HTTP status) in T44e5.
+- (T44e4c review) Two concurrent first starts both download and snapshot; the CAS loser shows "start failed" to the author although the winner dispatched. Harmless (content-addressed snapshots), minor UX.
+- (T44e4c review) A start retry after a successful dispatch re-dispatches the same canonical payload; `cancel-in-progress: false` queues a second run that must no-op on the transport fences and journal. Confirm this in T44e5 tests.
