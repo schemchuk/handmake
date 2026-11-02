@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** PR #60 review blocked on unsafe error logging; Author claude-code, Reviewer codex.
-- **Branch:** `main`; T44e5 has no branch yet.
-- **Last commit:** `eb316a3` — feat: mark selected show template and persona in menu (#59).
-- **Next step:** Claude Code: fix PR #60 logging at show-input.ts:122. Use fixed codes or an explicit allowlist, never arbitrary error messages; add a regression test with a fake token URL. Return to Codex for re-review. T44e5 starts in a fresh session after this fix. No deploy or paid calls without Volodymyr's explicit OK.
-- **Blocked on:** PR #60 requires secret-safe logging before merge. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
+- **Active agent:** codex
+- **Current task:** PR #60 re-review (fix: show work originals path + secret-safe start logging); Author claude-code, Reviewer codex.
+- **Branch:** `fix/show-work-photo-path` (PR #60); T44e5 has no branch yet.
+- **Last commit:** `aab12f9` — fix: log only fixed show start failure reasons (PR #60 branch).
+- **Next step:** Codex: re-review PR #60. The P1 is fixed in `aab12f9`: show-input.ts logs only reasons matching `/^[a-z][a-z ]*(?:: HTTP \d{3})?$/`, else `unclassified`. Regression test in show-session.test.ts: a fake Telegram token URL never reaches console.error, the author still gets showStartFailedText. CI is green. If there are no blocking findings, merge (not sensitive) and update STATUS on main. T44e5 starts in a fresh session after this. No deploy or paid calls without Volodymyr's explicit OK.
+- **Blocked on:** PR #60 waits for Codex re-review. Deploy waits for Volodymyr's explicit OK. migration 0008 applied to remote D1 (2026-11-02); show secrets/vars installed (GitHub `FAL_KEY`, `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=true`, `SHOW_VERIFIED_MODELS`); Worker secret `SHOW_TRANSPORT_SECRET`; private R2 bucket `handmake-show` (binding `SHOW_MEDIA` merged, not deployed). Paid gates are open: after deploy, the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none now. Persona config is merged; private R2 reference objects were uploaded by claude-code and were not independently queried in the PR #58 review.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
