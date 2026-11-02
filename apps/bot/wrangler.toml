@@ -12,6 +12,12 @@ database_name = "handmake-bot"
 migrations_dir = "migrations"
 database_id = "4cae8a3e-9869-4dad-a2b8-ab046365999e"
 
+# Private show media store (T44d2). No public access; only the Worker binding reads and writes it.
+#   pnpm --filter @handmake/bot exec wrangler r2 bucket create handmake-show
+[[r2_buckets]]
+binding = "SHOW_MEDIA"
+bucket_name = "handmake-show"
+
 # Daily draft cleanup (architecture section 5: drafts older than 30 days are
 # deleted). UTC. Keep this expression in sync with cleanupCron in src/composition.ts.
 # The 15-minute tick drives the F18 announcement/reminder cron; moments are
