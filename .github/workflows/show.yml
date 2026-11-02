@@ -1,0 +1,46 @@
+name: Generate and mark show
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'Private job coordinates: {"tenantId","showId","jobId","version"}'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: show-${{ inputs.payload }}
+  cancel-in-progress: false
+jobs:
+  execute:
+    # Production gates are separate from dispatch; absent configuration fails closed.
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install marking tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Write job coordinates
+        env:
+          SHOW_JOB: ${{ inputs.payload }}
+        run: printf '%s' "$SHOW_JOB" > "$RUNNER_TEMP/show-job.json"
+      - name: Execute resumable show job
+        env:
+          SHOW_WORKER_ORIGIN: ${{ vars.SHOW_WORKER_ORIGIN }}
+          SHOW_TRANSPORT_SECRET: ${{ secrets.SHOW_TRANSPORT_SECRET }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          SHOW_ALLOW_PAID_CALLS: ${{ vars.SHOW_ALLOW_PAID_CALLS }}
+          SHOW_VERIFIED_MODELS: ${{ vars.SHOW_VERIFIED_MODELS }}
+        run: pnpm --filter @handmake/publisher exec tsx src/show-cli.ts "$RUNNER_TEMP/show-job.json"

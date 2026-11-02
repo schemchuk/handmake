@@ -215,6 +215,9 @@ importers:
 
   apps/publisher:
     dependencies:
+      '@handmake/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@handmake/channels':
         specifier: workspace:*
         version: link:../../packages/channels

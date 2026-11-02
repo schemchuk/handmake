@@ -642,3 +642,35 @@ requires separately authorized private bucket creation/binding and secret instal
 public access/custom domains and lifecycle deletion for journal/raw/marked evidence. Author tasks
 will populate `show-input/v1/<tenant>/<opaque-id>` with bounded image bytes and MIME metadata.
 No remote resources, secrets, migration or deployment are installed by T44e2.
+
+### Resumable Node execution (T44e3)
+
+`show.yml` accepts a workflow-dispatch payload containing only `tenantId`, `showId`, `jobId`
+and `version`. The internal Worker `open` boundary supplies these coordinates; author controls
+and automatic dispatch wiring belong to T44e4/T44e5. The runner always checks out `main`, uses
+read-only repository permissions and never publishes media or changes repository content.
+`SHOW_WORKER_ORIGIN` is an HTTPS origin; `SHOW_TRANSPORT_SECRET` signs each request with a new
+nonce. Node errors and Worker rejection logs contain fixed text only. No response bodies,
+credentials, input photos or provider errors are logged or uploaded as workflow artifacts.
+
+The executor discovers the latest version through `status`, prepares existing outputs, and
+resumes the pending grant before requesting another. `stored` reports raw/marked presence.
+The fal adapter reserves the durable journal before POST and records the provider id before
+polling. Restarts with a recorded id issue reads; a reservation without an id requires explicit
+reconciliation. Raw upload precedes the accounting checkpoint; marking failures retain billed
+raw evidence and stop further submissions. `createShowMarkingGate.prepare` verifies the marked
+snapshot on every restart. Images remain PNG; raw and marked storage adapters are separate.
+A lost callback acknowledgement is resolved by fresh status discovery, never by blind submission.
+
+An expired job is resumed through a new internal `open` using the current draft version. It
+copies the pending immutable grant and bounded private sources before replacing the job fence;
+the scope-keyed journal and result objects survive. A missing grant fails closed for operator
+reconciliation. Old job callbacks are rejected. Concurrent dispatches also face the Worker job
+fence and atomic journal reservation; a duplicate may require another resume but cannot submit
+that attempt twice.
+
+`FAL_KEY` is a future GitHub Secret. `SHOW_ALLOW_PAID_CALLS` defaults to false and
+`SHOW_VERIFIED_MODELS` defaults to an empty JSON array; both remain closed until Volodymyr
+explicitly clears the existing exact-model terms/billing gates. Dispatch grants do not clear
+these gates. This implementation installs no secrets, provisions no resources, applies no
+migration and deploys nothing. Workflow/secret changes require sensitive-merge approval.

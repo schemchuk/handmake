@@ -72,6 +72,27 @@ export function createShowTransport(deps: {
         if (busy !== undefined && busy + 600_000 > now()) throw new Error('job requires recovery');
       }
       const job: Job = { id: crypto.randomUUID(), version, expires: now() + 60 * 60_000 };
+      if (previous) {
+        const prior = JSON.parse(await previous.text()) as Job;
+        const data = showDraftDataSchema.parse(draft.draft.extras['show']);
+        if (data.pending) {
+          const attempt = data.pending.attemptId;
+          const grant = await bucket.get(`show-grant/v1/${prior.id}/${attempt}`);
+          if (!grant) throw new Error('grant requires reconciliation');
+          for (let i = 0; i < 4; i++) {
+            const source = await bucket.get(`show-source/v1/${prior.id}/${attempt}/source-${i}`);
+            if (source && source.size <= limit)
+              await bucket.put(
+                `show-source/v1/${job.id}/${attempt}/source-${i}`,
+                await source.arrayBuffer(),
+                {
+                  httpMetadata: source.httpMetadata,
+                },
+              );
+          }
+          await bucket.put(`show-grant/v1/${job.id}/${attempt}`, await grant.arrayBuffer());
+        }
+      }
       const saved = await bucket.put(key, JSON.stringify(job), {
         onlyIf: previous ? { etagMatches: previous.etag } : { etagDoesNotMatch: '*' },
       });
@@ -191,6 +212,11 @@ export function createShowTransport(deps: {
           value = await raw.journal.reserve(scope, json()['fingerprint'] ?? '');
         } else if (operation === 'record') {
           await raw.journal.record(scope, json()['requestId'] ?? '');
+        } else if (operation === 'stored') {
+          value = {
+            raw: !!(await raw.results.get(scope.tenantId, scope.showId, scope.attemptId)),
+            marked: !!(await marked.get(scope.tenantId, scope.showId, scope.attemptId)),
+          };
         } else if (operation === 'journal') {
           value = await raw.readAttempt(scope);
         } else if (operation === 'checkpoint') {
@@ -258,6 +284,7 @@ export function createShowTransport(deps: {
         unlock = undefined;
         return reply(200, { version: job.version, value: value ?? null });
       } catch {
+        console.warn('show transport operation rejected');
         return reply(409, { error: 'show operation rejected; inspect durable state before retry' });
       } finally {
         if (unlock) await unlock().catch(() => undefined);
@@ -271,10 +298,15 @@ async function wireGrant(grant: ShowCallGrant, bucket: R2Bucket, job: string) {
   const source = async (image: { bytes: Uint8Array; mimeType: string }) => {
     if (!image.bytes.length || image.bytes.length > limit) throw new Error('invalid source');
     const id = `source-${index++}`;
-    await bucket.put(`show-source/v1/${job}/${grant.request.attemptId}/${id}`, image.bytes, {
-      onlyIf: { etagDoesNotMatch: '*' },
-      httpMetadata: { contentType: image.mimeType },
-    });
+    const saved = await bucket.put(
+      `show-source/v1/${job}/${grant.request.attemptId}/${id}`,
+      image.bytes,
+      {
+        onlyIf: { etagDoesNotMatch: '*' },
+        httpMetadata: { contentType: image.mimeType },
+      },
+    );
+    if (!saved) throw new Error('source changed');
     return { sourceId: id, mimeType: image.mimeType };
   };
   if (grant.kind === 'video')
