@@ -6,15 +6,17 @@ import type { CreateBotOptions } from './bot';
 import type { AppContext } from './context';
 import type { StoredDraft } from './draft-store';
 import type { TenantConfigSource } from './tenant-config-source';
+import type { ShowStart } from './show-start';
 import { createShowInput } from './show-input';
 
 export interface ShowSessionOptions {
   works: WorkReader;
   configs: TenantConfigSource;
+  start?: ShowStart;
 }
 type Selection = { ids: string[]; version: number; workId?: string; awaitingWorkId?: string };
 
-/** Author input only; configuring and dispatching a generation plan belong to T44e4c. */
+/** Keep show input and explicit execution inside their own author session. */
 export function registerShowSession(
   bot: Bot<AppContext>,
   options: CreateBotOptions,
@@ -43,8 +45,9 @@ export function registerShowSession(
       new Date(),
     );
   const present = async (ctx: AppContext, stored: StoredDraft) => {
-    if (stored.draft.state !== 'collecting' || stored.draft.extras['show'])
-      return ctx.reply(texts.draftBusyText);
+    if (stored.draft.state === 'collecting' && stored.draft.extras['show'])
+      return input.presentStart(ctx, stored);
+    if (stored.draft.state !== 'collecting') return ctx.reply(texts.draftBusyText);
     const selection = stored.draft.extras['showSelection'] as Selection | undefined;
     const linked = selection?.workId ?? selection?.awaitingWorkId;
     if (linked) {
@@ -119,9 +122,10 @@ export function registerShowSession(
         stored.draft.kind !== 'show' ||
         stored.draft.state !== 'collecting' ||
         (await drafts.chatIdOf(ctx.tenantId, id!)) !== String(ctx.chat!.id) ||
-        stored.draft.extras['show']
+        (stored.draft.extras['show'] && action !== 'start')
       )
         return ctx.reply(texts.showSelectionErrorText);
+      if (action === 'start') return await input.start(ctx, stored, value ?? '');
       if (['originals', 'reset', 'template', 'persona', 'finalize'].includes(action ?? ''))
         return await input.action(ctx, stored, action!, value ?? '');
       const menu = stored.draft.extras['showSelection'] as Selection | undefined;

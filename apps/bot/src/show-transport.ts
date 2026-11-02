@@ -60,13 +60,19 @@ export function createShowTransport(deps: {
 
   return {
     /** Internal dispatch boundary only. Never exposed as an HTTP operation. */
-    async open(tenantId: string, showId: string, version: number) {
+    async open(tenantId: string, showId: string, version: number, reuse = false) {
       if (!secret || !part.test(tenantId) || !part.test(showId)) throw new Error('shows disabled');
       const draft = await drafts.get(tenantId, showId);
       if (!draft || draft.draft.kind !== 'show' || draft.version !== version)
         throw new Error('stale show');
       const key = jobKey(tenantId, showId);
       const previous = await bucket.get(key);
+      if (previous && reuse) {
+        const { job } = await load(tenantId, showId);
+        if (job.version !== version || job.expires <= now())
+          throw new Error('job requires recovery');
+        return job;
+      }
       if (previous) {
         const busy = (await load(tenantId, showId)).job.busy;
         if (busy !== undefined && busy + 600_000 > now()) throw new Error('job requires recovery');

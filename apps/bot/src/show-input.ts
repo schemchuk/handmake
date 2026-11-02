@@ -14,7 +14,7 @@ export type ShowInput = {
   ready: boolean;
 };
 
-/** Input snapshots only; private media resolution and explicit dispatch belong to T44e4c. */
+/** Persist author choices separately from the immutable execution plan. */
 export function createShowInput(options: CreateBotOptions) {
   const { drafts, texts, show } = options;
   const read = async (stored: StoredDraft) => {
@@ -55,7 +55,7 @@ export function createShowInput(options: CreateBotOptions) {
     const prefix = `show:${stored.draft.draftId}:`;
     const button = (label: string, action: string, value = '') => ({
       text: label,
-      callback_data: `${prefix}${action}:${stored.version + 1}.${value}`,
+      callback_data: `${prefix}${action}:${stored.version + 1}${action === 'start' ? '' : `.${value}`}`,
     });
     await ctx.reply(
       texts.showInputText(
@@ -78,13 +78,45 @@ export function createShowInput(options: CreateBotOptions) {
               button(Array.from(m.name).slice(0, 60).join(''), 'persona', String(i)),
             ]),
             [button(texts.showFinalizeButton, 'finalize')],
+            ...(input.ready ? [[button(texts.showStartButton, 'start')]] : []),
           ],
         },
       },
     );
   };
+  const presentStart = (ctx: AppContext, stored: StoredDraft) =>
+    ctx.reply(texts.showStartText, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: texts.showStartButton,
+              callback_data: `show:${stored.draft.draftId}:start:${stored.version}`,
+            },
+          ],
+        ],
+      },
+    });
   return {
     present,
+    presentStart,
+    async start(ctx: AppContext, stored: StoredDraft, version: string) {
+      if (!/^\d+$/.test(version) || Number(version) !== stored.version)
+        return ctx.reply(texts.showSelectionErrorText);
+      if (!show?.start) return ctx.reply(texts.showUnavailableText);
+      const selected = stored.draft.extras['showInput'] as ShowInput | undefined;
+      if (!stored.draft.extras['show'] && !selected?.ready)
+        return ctx.reply(texts.showSelectionErrorText);
+      await ctx.reply(texts.showStartingText);
+      options.background(async () => {
+        try {
+          await show.start!(stored);
+          await ctx.reply(texts.showDispatchedText);
+        } catch {
+          await ctx.reply(texts.showStartFailedText);
+        }
+      });
+    },
     async action(ctx: AppContext, stored: StoredDraft, action: string, value: string) {
       const [version, choice] = value.split('.');
       const { work, config } = await read(stored);

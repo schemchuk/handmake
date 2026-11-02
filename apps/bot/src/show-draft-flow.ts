@@ -56,7 +56,7 @@ export function createShowDraftFlow(deps: Deps) {
   const { drafts, configs, ledger, locks, generator, results, resolveImage } = deps;
   const now = deps.now ?? (() => new Date());
   const flow = {
-    async configure(stored: StoredDraft, input: ShowDraftPlan) {
+    async configure(stored: StoredDraft, input: ShowDraftPlan, privateModelReference?: string) {
       if (
         stored.draft.kind !== 'show' ||
         stored.draft.state !== 'collecting' ||
@@ -76,6 +76,8 @@ export function createShowDraftFlow(deps: Deps) {
           ))
       )
         throw new Error('show plan must match tenant models and pricing');
+      // Trusted preparation may replace only the validated persona's media pointer.
+      if (plan.model && privateModelReference) plan.model.referenceImage = privateModelReference;
       return drafts.updateShow(
         {
           ...stored.draft,
