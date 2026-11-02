@@ -154,3 +154,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 - Private R2 object existence and generated reference contents rely on claude-code's handoff; not independently queried during review. No deploy or paid calls performed.
 - Merged as PR #58 (`2c482d1`). GitHub rejected a formal approval because both agents share the PR author's account; the independent Codex review is recorded in a PR comment.
 - (claude-code check, 2026-11-02) All three R2 objects `show-input/v1/faden-und-stimmung/persona-{lena,marta,jonas}-v1` exist as JPEG; their SHA-256 matches the generated files.
+
+## Show menu selection marks (PR #59)
+- (Codex review, 2026-11-02) No blockers; CI green and local show-session tests 26/26 pass (`--maxWorkers 1 --testTimeout=30000`, outside the sandbox for Miniflare). Checkmarks reflect the saved template and validated persona; callback data is unchanged.
+- Merged as PR #59 (`eb316a3`); independent review recorded in a PR comment. No deploy, paid calls, secrets/vars or migrations changed.
