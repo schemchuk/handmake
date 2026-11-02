@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
+- **Active agent:** none
 - **Current task:** T44d (fal adapter and media marking), Owner codex, Reviewer claude-code. T44c merged as PR #47 (`6d9bcb0`).
 - **Branch:** `main`
-- **Last commit:** `6d9bcb0` — feat: checkpoint show generation and account for paid calls (#47).
-- **Next step:** Codex implements T44d in a fresh session on its own feature branch; read the T44a-T44c sections of docs/review-notes.md first. T44d supplies the durable `ShowResultStore`, marking and the fal adapter; complete the ADR 015 model-terms check before any real call. Migration 0008 is local-tested only: apply it remotely before the bot is deployed with show code that uses locks (not authorized yet). No deploy authorized.
-- **Blocked on:** nothing.
+- **Last commit:** this handoff commit — docs: propose reviewable T44d implementation split (parent `a1d2626`).
+- **Next step:** Volodymyr reviews the proposed T44d1-T44d3 split in docs/03-tasks.md. After approval, hand T44d1 to codex in a fresh session. No implementation changed. Complete the ADR 015 model-terms check before any real call. Migration 0008 remains local-tested only; no remote migration or deploy authorized.
+- **Blocked on:** approval of the T44d split required by the ADR 009 PR-size rule.
 - **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

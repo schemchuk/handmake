@@ -631,6 +631,45 @@ All subtasks: **Owner: codex · Reviewer: claude-code**.
   Tests: session flow with mocked generator, config-only model change, template override,
   denied budget, regeneration, approval retry and existing post/work regression checks.
 
+### Proposed T44d split (2026-11-02, awaiting Volodymyr's approval)
+
+T44d combines three independently reviewable adapters and is expected to exceed the ADR 009
+limit of approximately 400 changed non-test lines. Keep T44d as the parent acceptance gate;
+propose the following implementation order. All subtasks: **Owner: codex · Reviewer: claude-code**.
+No paid calls, production enablement, remote migrations or deployment are authorized.
+
+- **T44d1 — fal HTTP adapter and versioned prompts** (depends on T44c).
+  Change: implement `ShowGenerator` with injected HTTP transport, config-selected model ids,
+  versioned prompts and image/video payloads; queue submission, bounded polling and media download.
+  Retain provider request identity for reconciliation, including failures after submission;
+  never automatically resubmit an uncertain paid call. Report configured EUR estimates explicitly,
+  not as provider-invoiced prices. Verify the selected model terms before any real call; leave
+  production disabled until excluded-model status and billing reconciliation are resolved.
+  Acceptance: one submission per attempt, provider-unique accounting identity, no credentials or
+  provider response bodies in errors; validate URLs before sending authorization headers.
+  Tests: mocked HTTP lifecycle, payloads/prompts, failed/uncertain outcomes, timeouts, hostile URLs,
+  malformed/oversized media and secret-safe errors.
+- **T44d2 — Durable raw result ingestion** (depends on T44d1).
+  Change: implement immutable tenant/show/attempt-indexed `ShowResultStore` for raw bytes and receipt;
+  document the storage/runtime choice and raw-media resolution contract for T44e.
+  Acceptance: bytes and receipt survive restart; retries are idempotent, collisions fail closed,
+  tenants remain isolated, and raw results cannot be mistaken for approved marked media.
+  Tests: restart, partial write, concurrent put, collision, tenant isolation and size limits.
+- **T44d3 — Media marking and approval verification** (depends on T44d2).
+  Change: implement visible image/video labels and machine-readable image metadata with versioned
+  processing; verify decoded outputs and persist marked bytes separately from paid raw results.
+  Preserve provider provenance metadata where supported; do not claim to create C2PA signatures.
+  Document the execution boundary first: the bot is a Worker and cannot execute native FFmpeg;
+  ADR 012's Actions renderer is still proposed and does not authorize a new workflow here.
+  Acceptance: approval consumes only verified marked bytes; every image and the full video carry
+  the required label; recheck the 20 MB transport limit after processing. Processing retries never
+  trigger generation or another paid call. Define the gate T44e must call before approval.
+  Tests: real small media fixtures, decoding, missing/tampered metadata, absent visible label,
+  invalid/truncated video, duration and post-marking size limits, immutable output and retry.
+
+T44e remains blocked on all three subtasks. Each subtask gets a fresh session and its own PR.
+Any new workflow or secret handling remains subject to the existing sensitive-merge approval rule.
+
 ### T45 — Shows on the site (F30, `site`)
 - Depends on: T44, T41
 - Change: shows list and show pages (images, video, work link, model name, "KI-generiertes Model"
