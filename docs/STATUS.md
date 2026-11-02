@@ -4,8 +4,8 @@
 - **Current task:** T44e4 — author input and configuration menus. Owner codex, Reviewer claude-code.
 - **Branch:** `feat/t44e4-author-input` (to be created from `main`).
 - **Last commit:** `5adf5dd` — feat: add resumable Node show executor (T44e3) (#53).
-- **Next step:** Codex: start a fresh session, read T44e4 in docs/03-tasks.md and the T44e3 review notes; propose a split first if the PR would exceed ~400 non-test lines. No paid calls, remote resources, secret installation, migration or deploy authorized.
-- **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show workflow secrets/vars are not installed.
+- **Next step:** Codex: start a fresh session, read T44e4 in docs/03-tasks.md and the T44e3 review notes; propose a split first if the PR would exceed ~400 non-test lines. No paid calls, bucket, migration or deploy authorized (secrets/vars below were installed 2026-11-02 at Volodymyr's request).
+- **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment; show secrets/vars are installed (2026-11-02): GitHub secrets `FAL_KEY` (set by Volodymyr) and `SHOW_TRANSPORT_SECRET`, vars `SHOW_WORKER_ORIGIN`, `SHOW_ALLOW_PAID_CALLS=false`, `SHOW_VERIFIED_MODELS=[]`; Worker secret `SHOW_TRANSPORT_SECRET` (same value). No R2 bucket yet; paid gates stay closed.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
