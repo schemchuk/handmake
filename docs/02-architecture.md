@@ -611,3 +611,34 @@ the marked bytes (for example, Telegram document uploads); compressed photo uplo
 The publisher independently verifies markers after download before saving/committing show content.
 CI installs FFmpeg for real media tests; the existing publish job installs it only for show payloads.
 No new publishing/render workflow or production endpoint is added.
+
+### Private show transport (T44e2)
+
+`createShowRuntime` composes D1 orchestration and separate raw/marked R2 adapters. Missing
+`SHOW_MEDIA` or `SHOW_TRANSPORT_SECRET` returns 503 for `/internal/shows/`; the normal webhook and
+publish callback keep their existing authentication. The generator always throws: paid execution,
+Node dispatch, marking verification and approval are later tasks, not enabled by this transport.
+
+The internal-only `open(tenant, show, draftVersion)` creates a one-hour job. Every HTTP operation is
+POST `/internal/shows/<tenant>/<show>/<job>/<version>/<attempt>/<operation>`. HMAC-SHA256 signs newline
+joined method, pathname, `x-show-time` (epoch milliseconds), `x-show-nonce`, `x-show-receipt` (or empty)
+and lowercase SHA-256 of exact body bytes; send lowercase hex in `x-show-signature`. Clock skew is
+limited to five minutes. Atomic R2 nonce reservations reject replay; retries require a new nonce.
+Job CAS serializes operations; interrupted requests retain a ten-minute lease before internal
+redispatch may replace the job. Replacement fences the old job; journal/raw evidence survives.
+
+`authorize` uses attempt `next`; its grant replaces bytes with private `source-0` through `source-3`
+operations. `status` with attempt `next` discovers the current version/pending attempt after a lost
+response; it alone permits an old version and never authorizes spend. `grant` reads the saved grant.
+`reserve` takes JSON `{fingerprint}`, `record` takes `{requestId}`, and `journal` reads the ticket.
+`raw-put`/`marked-put` take binary bodies and schema-validated receipt JSON in `x-show-receipt`;
+provider identity must match the journal and marked billing must match raw billing. `raw-get` and
+`marked-get` return bytes plus receipt and version headers. `checkpoint` accepts/books durable raw
+results through T44e1. JSON replies include `version`; media replies include `x-show-version`.
+Media are limited to 20 MB, control bodies to 4 KB, and responses use `Cache-Control: no-store`.
+
+Local bindings live in `apps/bot/wrangler.show-local.toml`; tests use Miniflare only. Later deployment
+requires separately authorized private bucket creation/binding and secret installation. Disable
+public access/custom domains and lifecycle deletion for journal/raw/marked evidence. Author tasks
+will populate `show-input/v1/<tenant>/<opaque-id>` with bounded image bytes and MIME metadata.
+No remote resources, secrets, migration or deployment are installed by T44e2.

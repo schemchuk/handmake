@@ -1,0 +1,14 @@
+# Local-only composition. Never deploy this configuration or add remote bindings here.
+name = "handmake-show-local"
+main = "src/index.ts"
+compatibility_date = "2026-10-26"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "handmake-show-local"
+database_id = "local-only"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "SHOW_MEDIA"
+bucket_name = "handmake-show-local"

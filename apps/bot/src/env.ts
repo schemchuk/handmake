@@ -2,6 +2,10 @@
  * the Worker secrets store only; wrangler.toml and the repo hold names. */
 
 export interface Env {
+  /** Optional private binding; no production bucket is provisioned by T44e2. */
+  SHOW_MEDIA?: R2Bucket;
+  /** Dedicated HMAC secret for show transport; absence disables the endpoint. */
+  SHOW_TRANSPORT_SECRET?: string;
   DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET: string;
