@@ -1,5 +1,6 @@
 import { selectShowTemplate } from '@handmake/core';
 import type { ShowConfig, ShowModel, ShowTemplate, Work } from '@handmake/core';
+import { refreshKeyboard } from './show-preview';
 import type { AppContext } from './context';
 import type { CreateBotOptions } from './bot';
 import type { StoredDraft } from './draft-store';
@@ -97,6 +98,7 @@ export function createShowInput(options: CreateBotOptions) {
     ctx.reply(texts.showStartText, {
       reply_markup: {
         inline_keyboard: [
+          ...refreshKeyboard(stored, texts).reply_markup.inline_keyboard,
           [
             {
               text: texts.showStartButton,

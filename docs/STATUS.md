@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** PR #61 reviewed, merged and deployed; next: T44e5a — private version-bound preview (split approved 2026-11-02).
-- **Branch:** `main`; T44e5a has no branch yet.
-- **Last commit:** this deployment handoff commit — docs: record authorized bot deployment; parent `8de3d18`.
-- **Next step:** Codex: implement T44e5a in a fresh session on its own feature branch. Read its criteria in docs/03-tasks.md and the relevant show sections in docs/review-notes.md. PR #61 reviewed without blocking findings and merged as `23f0281`; 46 local show-start/show-session tests pass and CI is green. Bot deployed with Volodymyr's explicit chat approval on 2026-11-02 16:20 UTC: version `bb70ef51-1d11-4eb7-b76b-619b7a9de801` (PR #61 fix). HTTP GET returned the expected 405. No paid calls executed; further deploys and paid calls require explicit approval.
-- **Blocked on:** none for T44e5a. The PR #61 fix is live; end-to-end show generation was not exercised during deployment. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: the start button can trigger paid fal calls.
-- **Open questions for Volodymyr:** none. The requested bot deployment is complete. Split approval authorizes implementation only; further deployment or paid calls need explicit approval.
+- **Active agent:** claude-code
+- **Current task:** T44e5a implemented; awaiting independent review. T44e5b/c remain separate tasks.
+- **Branch:** `feat/T44e5a-private-preview`.
+- **Last commit:** this implementation handoff commit — feat: add private version-bound show preview; parent `8969b9c`.
+- **Next step:** Claude Code: review the T44e5a PR from this branch, then merge after green CI and no blocking findings. Preview sends frozen originals and current marked PNG/MP4 as private documents; `/show` resumes unfinished/ready shows and offers version-bound refresh. No approval/publication controls yet. After merge, hand T44e5b to Codex for a fresh session.
+- **Blocked on:** independent review. No deploy or paid calls authorized for T44e5a. Last production deploy remains PR #61, version `bb70ef51-1d11-4eb7-b76b-619b7a9de801` (2026-11-02 16:20 UTC). Paid gates are open: the production start button can trigger paid fal calls.
+- **Open questions for Volodymyr:** none.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e5a validation: full bot suite 434 tests passed before consolidating preview ownership into one D1 read; final preview/session suites pass 57 tests (including the new atomic D1 ownership case). Workspace typecheck/build, lint and formatting pass. Documents preserve exact bytes and filenames; stale/foreign sessions, mismatched receipts, missing media, superseded results and interrupted delivery are covered. No deploy, paid calls, workflows, secrets or migrations changed.
 - T44e4c validation: bot 401 tests pass, including explicit start, private snapshots, stale/concurrent input, failed preparation/dispatch retry and signed Worker handoff. Workspace typecheck/build, lint, formatting and staged gitleaks scan pass. No deploy, paid calls, secrets/vars or migrations changed.
 - T44e4a validation: bot 368 tests and core 213 tests pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Selection only: no generation dispatch, paid calls, workflow changes, migration or deploy.
 - T44e3 validation: full bot suite 350 tests; final transport suite 27 tests (three originals and real fal adapter with mocked HTTP); publisher 137 and AI 116 tests pass. Workspace typecheck/build, lint, format and actionlint pass. No paid calls or deploy.

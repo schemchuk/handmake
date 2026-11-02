@@ -7,12 +7,15 @@ import type { AppContext } from './context';
 import type { StoredDraft } from './draft-store';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { ShowStart } from './show-start';
+import { refreshKeyboard } from './show-preview';
+import type { ShowPreview } from './show-preview';
 import { createShowInput } from './show-input';
 
 export interface ShowSessionOptions {
   works: WorkReader;
   configs: TenantConfigSource;
   start?: ShowStart;
+  preview?: ShowPreview;
 }
 type Selection = { ids: string[]; version: number; workId?: string; awaitingWorkId?: string };
 
@@ -45,8 +48,10 @@ export function registerShowSession(
       new Date(),
     );
   const present = async (ctx: AppContext, stored: StoredDraft) => {
-    if (stored.draft.state === 'collecting' && stored.draft.extras['show'])
-      return input.presentStart(ctx, stored);
+    if (stored.draft.extras['show']) {
+      if (stored.draft.state === 'collecting') return input.presentStart(ctx, stored);
+      return ctx.reply(texts.showPreviewReadyText, refreshKeyboard(stored, texts));
+    }
     if (stored.draft.state !== 'collecting') return ctx.reply(texts.draftBusyText);
     const selection = stored.draft.extras['showSelection'] as Selection | undefined;
     const linked = selection?.workId ?? selection?.awaitingWorkId;
@@ -98,12 +103,9 @@ export function registerShowSession(
   bot.command('show', async (ctx) => {
     try {
       if (!(await enabled(ctx.tenantId))) return ctx.reply(texts.showUnavailableText);
-      const stored = await drafts.getOrCreateCollecting(
-        ctx.tenantId,
-        String(ctx.chat.id),
-        'show',
-        new Date(),
-      );
+      const stored =
+        (await drafts.findShowForChat(ctx.tenantId, String(ctx.chat.id))) ??
+        (await drafts.getOrCreateCollecting(ctx.tenantId, String(ctx.chat.id), 'show', new Date()));
       await activate(ctx, stored.draft.draftId);
       return await present(ctx, stored);
     } catch {
@@ -120,11 +122,22 @@ export function registerShowSession(
       if (
         !stored ||
         stored.draft.kind !== 'show' ||
-        stored.draft.state !== 'collecting' ||
+        !['collecting', 'translating', 'failed', 'ready'].includes(stored.draft.state) ||
+        (action !== 'preview' && stored.draft.state !== 'collecting') ||
         (await drafts.chatIdOf(ctx.tenantId, id!)) !== String(ctx.chat!.id) ||
-        (stored.draft.extras['show'] && action !== 'start')
+        (stored.draft.extras['show'] && !['start', 'preview'].includes(action ?? ''))
       )
         return ctx.reply(texts.showSelectionErrorText);
+      if (action === 'preview') {
+        if (
+          !/^\d+$/.test(value ?? '') ||
+          Number(value) !== stored.version ||
+          !stored.draft.extras['show']
+        )
+          return ctx.reply(texts.showSelectionErrorText);
+        if (!show?.preview) return ctx.reply(texts.showUnavailableText);
+        return await show.preview(ctx, stored);
+      }
       if (action === 'start') return await input.start(ctx, stored, value ?? '');
       if (['originals', 'reset', 'template', 'persona', 'finalize'].includes(action ?? ''))
         return await input.action(ctx, stored, action!, value ?? '');
