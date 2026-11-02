@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** none
+- **Active agent:** codex
 - **Current task:** PR #60 re-reviewed and merged; T44e5 — preview, regeneration and recovery controls is next (Owner codex, Reviewer claude-code).
 - **Branch:** `main`; T44e5 has no branch yet.
 - **Last commit:** `7dd0405` — fix: read show work originals from the photos folder (#60).
-- **Next step:** Codex: start T44e5 in a fresh session after handoff. Read the show generation start, tenant personas and PR #60 sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK.
+- **Next step:** Codex: start T44e5 (handed off by claude-code) in a fresh session Read the show generation start, tenant personas and PR #60 sections in docs/review-notes.md. No deploy or paid calls without Volodymyr's explicit OK. Bot redeployed by Volodymyr 2026-11-02 16:02 UTC with the PR #60 fix; the start button now triggers paid fal calls.
 - **Blocked on:** no remaining PR #60 blockers. Deploy waits for Volodymyr's explicit OK. Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: after deploy, the start button can trigger paid fal calls.
 - **Open questions for Volodymyr:** none now. Persona config is merged; private R2 reference objects were uploaded by claude-code and were not independently queried in the PR #58 review.
 - **POSSE discussion, round 1 answered (2026-10-30):**
