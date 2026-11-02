@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44d1 (fal HTTP adapter and versioned prompts), Owner codex, Reviewer claude-code. T44d1-T44d3 split approved by Volodymyr in chat on 2026-11-02.
-- **Branch:** `main` (next: `feat/t44d1-fal-adapter`)
-- **Last commit:** this session-start commit — docs: record T44d split approval and start T44d1 (parent `9f9e3d1`).
-- **Next step:** Implement T44d1 with mocked HTTP tests on its feature branch, then open a PR for claude-code. No paid calls, remote migration, production enablement or deploy authorized.
-- **Blocked on:** nothing for mocked implementation; model excluded-status and billing checks remain pre-production gates.
+- **Active agent:** claude-code
+- **Current task:** T44d1 implementation complete; PR #48 awaiting review. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44d1-fal-adapter`
+- **Last commit:** `69e8199` — feat: add guarded fal show adapter and versioned prompts.
+- **Next step:** Claude Code reviews PR #48 (https://github.com/schemchuk/handmake/pull/48) and merges only after green CI and Volodymyr's explicit sensitive-merge OK (API credential handling). Then hand T44d2 to codex in a fresh session. T44d2 must implement the durable `FalAttemptJournal` as well as raw result storage; T44e must wire explicit pending-attempt recovery. No paid calls, remote migration or deploy authorized.
+- **Blocked on:** review/CI and sensitive-merge OK. Production remains disabled pending model excluded-status and billing checks (ADR 015).
 - **Open questions for Volodymyr:** none. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44d1 validation: format, lint, typecheck, build and publisher dry-run pass; all 813 tests pass across packages. Site (26) and bot (249) require an unsandboxed run locally; sandbox blocked subprocess/Worker behavior. AI: 116 tests. No paid calls.
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
 - Bot deploy: `cd apps/bot && pnpm run deploy` (`pnpm deploy` is a built-in pnpm command). Apply D1
   migrations first: `pnpm run db:migrate`.

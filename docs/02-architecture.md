@@ -505,3 +505,25 @@ or discarding it. Each call checks current spend plus its configured estimate ag
 actual costs may differ from estimates, and unrelated text calls do not take the show lock.
 Raw media above 20 MB are charged but rejected; T44d must recheck size after marking/ingestion.
 Migration 0008 creates the lock table; it is tested locally, not applied remotely in this task.
+
+### fal show adapter (T44d1)
+
+`packages/ai/FalShowGenerator` implements the raw-media port with injected HTTP and a required
+`FalAttemptJournal`. The composition root must supply a durable atomic journal (T44d2); there is no
+production memory fallback. Reserve `(tenantId, showId, attemptId)` before POST, binding a SHA-256
+fingerprint of model, prompt, configured rate and input. Persist the provider request UUID before
+polling. A reserved attempt without a UUID requires operator reconciliation; never release it
+on timeout. A recorded UUID can resume reads without another submission. The T44c flow still
+requires explicit reconciliation of pending attempts without a durable raw result; T44e must wire
+that recovery path. Errors retain a validated request UUID, excluding upstream bodies and causes.
+
+Model ids and EUR rates come from tenant configuration. The adapter supports compatible image-edit
+and image-to-video payload schemas, not arbitrary fal models. `costEur` is a configured estimate,
+not a provider invoice amount. Calls default to disabled and require exact-model terms verification;
+production remains unwired until ADR 015's excluded-model and billing checks are resolved.
+
+Queue requests use a fixed HTTPS origin and constructed owner/app request routes, ignoring returned
+URLs. Media downloads accept only fal media hosts or the documented falserverless storage prefix,
+without credentials or redirects. HTTP/body timeouts, bounded polling, JSON limits and streamed
+20 MB media limits fail closed. Header/MIME probes are preliminary: decoding, marker verification
+and the approval gate remain T44d3. No adapter output is approved media.

@@ -104,3 +104,18 @@ flower). Outputs and the side-by-side page stay outside the repo (local review p
   close-up photos of the original for other works (no generated scene).
 - Prices change often; the ledger records actual prices per call, and the estimate above is rechecked at
   the first real show.
+
+## T44d1 documentation check (2026-11-02; no real calls)
+
+The official [image API](https://fal.ai/models/fal-ai/nano-banana-2/edit/api) and
+[video API](https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/image-to-video/api) pages still
+state commercial use. Neither retrieved page explicitly establishes excluded-model status.
+The [API Services terms](https://fal.ai/legal/api-services) still distinguish excluded models;
+this check does not clear the legal gate. Confirm status and applicable underlying-model terms
+with the operator before setting the adapter's exact-model verification list for real calls.
+Pricing reconciliation remains open; no new billing evidence was obtained.
+
+Implementation follows the official [queue submission](https://fal.ai/docs/api-reference/inference-api/queue/submit-path)
+and [status](https://fal.ai/docs/api-reference/inference-api/queue/status) contracts. The adapter
+uses configured EUR estimates, disables submission retries/fallback and never enables paid calls
+by default. This is a documentation check, not final legal advice or production authorization.

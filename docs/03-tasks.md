@@ -639,6 +639,7 @@ use the following implementation order. All subtasks: **Owner: codex · Reviewer
 No paid calls, production enablement, remote migrations or deployment are authorized.
 
 - **T44d1 — fal HTTP adapter and versioned prompts** (depends on T44c).
+  Implementation complete on `feat/t44d1-fal-adapter`; awaiting claude-code review.
   Change: implement `ShowGenerator` with injected HTTP transport, config-selected model ids,
   versioned prompts and image/video payloads; queue submission, bounded polling and media download.
   Retain provider request identity for reconciliation, including failures after submission;
@@ -651,6 +652,7 @@ No paid calls, production enablement, remote migrations or deployment are author
   malformed/oversized media and secret-safe errors.
 - **T44d2 — Durable raw result ingestion** (depends on T44d1).
   Change: implement immutable tenant/show/attempt-indexed `ShowResultStore` for raw bytes and receipt;
+  implement the T44d1 `FalAttemptJournal` with atomic reservation and immutable request-id recording;
   document the storage/runtime choice and raw-media resolution contract for T44e.
   Acceptance: bytes and receipt survive restart; retries are idempotent, collisions fail closed,
   tenants remain isolated, and raw results cannot be mistaken for approved marked media.
