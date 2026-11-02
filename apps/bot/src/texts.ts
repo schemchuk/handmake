@@ -7,7 +7,8 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
-  showPreviewReadyText: 'Онови перегляд, щоб побачити оригінали й готові результати.',
+  showPreviewReadyText:
+    'Онови перегляд, щоб побачити оригінали й готові результати. Для нового показу: /discard, потім /show.',
   showRefreshButton: 'Оновити перегляд',
   showOriginalLabel: (index: number) => `Оригінал роботи ${index}`,
   showMarkedLabel: (slot: string) => `ШІ-результат: ${slot}. Порівняй із оригіналами роботи.`,

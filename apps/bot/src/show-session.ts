@@ -136,7 +136,20 @@ export function registerShowSession(
         )
           return ctx.reply(texts.showSelectionErrorText);
         if (!show?.preview) return ctx.reply(texts.showUnavailableText);
-        return await show.preview(ctx, stored);
+        options.background(async () => {
+          try {
+            await show.preview!(ctx, stored);
+          } catch {
+            // External errors can contain credential-bearing URLs; log only fixed reasons.
+            console.error('show preview failed', 'background delivery failed');
+            try {
+              await ctx.reply(texts.showPreviewInterruptedText);
+            } catch {
+              console.error('show preview failed', 'notification failed');
+            }
+          }
+        });
+        return;
       }
       if (action === 'start') return await input.start(ctx, stored, value ?? '');
       if (['originals', 'reset', 'template', 'persona', 'finalize'].includes(action ?? ''))

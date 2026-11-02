@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e5a implemented; awaiting independent review. T44e5b/c remain separate tasks.
-- **Branch:** `feat/T44e5a-private-preview`.
-- **Last commit:** this implementation handoff commit — feat: add private version-bound show preview; parent `8969b9c`.
-- **Next step:** Claude Code: review the T44e5a PR from this branch, then merge after green CI and no blocking findings. Preview sends frozen originals and current marked PNG/MP4 as private documents; `/show` resumes unfinished/ready shows and offers version-bound refresh. No approval/publication controls yet. After merge, hand T44e5b to Codex for a fresh session.
-- **Blocked on:** independent review. No deploy or paid calls authorized for T44e5a. Last production deploy remains PR #61, version `bb70ef51-1d11-4eb7-b76b-619b7a9de801` (2026-11-02 16:20 UTC). Paid gates are open: the production start button can trigger paid fal calls.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** codex
+- **Current task:** PR #63 review: update the stale branch from main, retaining current preview fixes; then merge after green CI.
+- **Branch:** `fix/circle-join-link`; T44e5b has no branch yet.
+- **Last commit:** this merge commit — chore: update circle link PR from main. Conflict resolution approved by Volodymyr; all seven conflicted files retain main versions.
+- **Next step:** Codex: (1) review and merge PR #63 (Author claude-code, not sensitive: real circle joinUrl https://t.me/Faden_und_Stimmung + tests no longer depend on the placeholder). (2) Implement T44e5b in a fresh session on its own feature branch; criteria in docs/03-tasks.md. PR #62 re-reviewed by Claude Code after fix `4b875e0` (preview delivery in background/waitUntil): no findings, full bot suite 438/438, CI green. Further deploys and paid calls require explicit approval.
+- **Blocked on:** nothing for T44e5b. Bot deployed with T44e5a on Volodymyr's explicit chat OK, 2026-11-02 17:26 UTC: version `141d1a27-6675-4dc8-9a74-b8d58b0d0dd4`; no new migrations. Preview via /show → «Оновити перегляд» confirmed live by Volodymyr 2026-11-02 17:30 UTC (originals, marked images and video delivered). First live show ran end-to-end 2026-11-02 (draft 01M6ECR1Z295C1WN4H5C7BBNBB, workflow run 41480950631, 3 images + 5 s video marked in private R2, status ready, 0.70 EUR ledgered). Migration 0008 is applied remotely; show secrets/vars installed; private R2 bucket `handmake-show` exists. Paid gates are open: the start button can trigger paid fal calls.
+- **Open questions for Volodymyr:** none. The requested bot deployment is complete. Split approval authorizes implementation only; further deployment or paid calls need explicit approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
@@ -49,7 +49,6 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
-- T44e5a validation: full bot suite 434 tests passed before consolidating preview ownership into one D1 read; final preview/session suites pass 57 tests (including the new atomic D1 ownership case). Workspace typecheck/build, lint and formatting pass. Documents preserve exact bytes and filenames; stale/foreign sessions, mismatched receipts, missing media, superseded results and interrupted delivery are covered. No deploy, paid calls, workflows, secrets or migrations changed.
 - T44e4c validation: bot 401 tests pass, including explicit start, private snapshots, stale/concurrent input, failed preparation/dispatch retry and signed Worker handoff. Workspace typecheck/build, lint, formatting and staged gitleaks scan pass. No deploy, paid calls, secrets/vars or migrations changed.
 - T44e4a validation: bot 368 tests and core 213 tests pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Selection only: no generation dispatch, paid calls, workflow changes, migration or deploy.
 - T44e3 validation: full bot suite 350 tests; final transport suite 27 tests (three originals and real fal adapter with mocked HTTP); publisher 137 and AI 116 tests pass. Workspace typecheck/build, lint, format and actionlint pass. No paid calls or deploy.
