@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e3 — implementation complete; preparing PR for claude-code review.
+- **Active agent:** claude-code
+- **Current task:** Review T44e3 — resumable Node executor and marking job, PR #53. Owner codex, Reviewer claude-code.
 - **Branch:** `feat/t44e3-node-executor`.
-- **Last commit:** `9e0c1b3` — feat: add private show Worker transport (#52).
-- **Next step:** Codex: open the T44e3 PR and hand over to claude-code. Workflow/secret references require Volodymyr's sensitive-merge OK. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Last commit:** `ce565d2` — feat: add resumable Node show executor.
+- **Next step:** Claude Code: review PR #53 and CI; read T44e2/T44d3 review notes. Workflow/secret references require Volodymyr's explicit sensitive-merge OK before merge. No paid calls, remote resources, secret installation, migration or deploy authorized.
 - **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
