@@ -28,8 +28,8 @@ config.ai = {
 };
 config.shows = {
   models: [],
-  image: { model: 'image-v1', eurPerImage: 0.1 },
-  video: { model: 'video-v1', eurPerSecond: 0.1 },
+  image: { model: 'fixture/image', eurPerImage: 0.1 },
+  video: { model: 'fixture/video', eurPerSecond: 0.1 },
 };
 let mf: Miniflare, bucket: R2Bucket, db: D1Database;
 let drafts: ReturnType<typeof createD1DraftStore>;
@@ -37,7 +37,7 @@ let transport: ReturnType<typeof createShowTransport>;
 let flow: ReturnType<typeof createShowDraftFlow>;
 let show: string, job: string, version: number, attempt: string;
 const generator = { generateImage: vi.fn(), generateVideo: vi.fn() };
-const media = new Uint8Array([1, 2, 3]);
+let media = new Uint8Array([1, 2, 3]);
 beforeAll(async () => {
   mf = new Miniflare({ script: '', modules: true, r2Buckets: ['SHOW_MEDIA'] });
   bucket = (await mf.getR2Bucket('SHOW_MEDIA')) as unknown as R2Bucket;
@@ -48,6 +48,7 @@ afterAll(async () => {
   await mf.dispose();
 });
 beforeEach(async () => {
+  media = new Uint8Array([1, 2, 3]);
   // One tenant lock per fixture, as in production. Retain prior raw evidence.
   await db.prepare('DELETE FROM show_generation_locks').run();
   await db.prepare('DELETE FROM ai_costs').run();
@@ -66,7 +67,7 @@ beforeEach(async () => {
   await flow.configure((await drafts.get(tenant, show))!, {
     workId: show,
     template: 'interior',
-    originals: ['original'],
+    originals: ['original', 'second', 'third'],
     imageCount: 3,
     provider: { image: config.shows!.image, video: config.shows!.video },
   });
@@ -134,7 +135,7 @@ function receipt() {
     attemptId: attempt,
     ref: `show-raw:v1:${tenant}:${show}:${attempt}`,
     callId: `fal:${providerId}`,
-    model: 'image-v1',
+    model: 'fixture/image',
     promptVersion: 'show-interior@1',
     costEur: 0.1,
     mimeType: 'image/png',
@@ -327,4 +328,217 @@ it('disables show composition when either optional binding is missing', async ()
   expect(createShowRuntime({ ...env, SHOW_MEDIA: bucket })).toBeUndefined();
   expect(createShowRuntime({ ...env, SHOW_TRANSPORT_SECRET: secret })).toBeUndefined();
   expect((await createApp(env, botTexts).handle(await request('authorize'))).status).toBe(503);
+});
+
+// Node uses the real HTTP protocol and real marking gate against private R2/D1.
+async function nodeClient() {
+  const { createShowClient } = await import('../../publisher/src/show-executor');
+  return createShowClient({
+    origin: 'https://worker.test',
+    secret,
+    job: { tenantId: tenant, showId: show, jobId: job, version },
+    now: () => now,
+    fetch: async (url, init) => transport.handle(new Request(url, init)),
+  });
+}
+async function nodeFixture() {
+  const { markingFixtures } = await import('../../publisher/test/fixtures/show-marking');
+  const fixtures = await markingFixtures();
+  let client = await nodeClient();
+  const { executeShow } = await import('../../publisher/src/show-executor');
+  let submissions = 0;
+  const generate = async (
+    input: {
+      tenantId: string;
+      showId: string;
+      attemptId: string;
+      providerModel: string;
+      promptVersion: string;
+    },
+    video: boolean,
+  ) => {
+    const reservation = await client.journal.reserve(input, 'a'.repeat(64));
+    if (reservation.created) {
+      submissions++;
+      await client.journal.record(input, providerId);
+    } else if (!reservation.requestId) throw new Error('reconciliation required');
+    return {
+      callId: `fal:${providerId}`,
+      model: input.providerModel,
+      promptVersion: input.promptVersion,
+      costEur: video ? 0.5 : 0.1,
+      bytes: video ? fixtures.video : fixtures.image,
+      mimeType: video ? ('video/mp4' as const) : ('image/png' as const),
+    };
+  };
+  // Distinct provider identities, as required by per-call accounting.
+  let id = 0;
+  const generateUnique = async (input: Parameters<typeof generate>[0], video: boolean) => {
+    const result = await generate(input, video);
+    const ticket = await createR2ShowStorage(bucket).readAttempt(input);
+    return { ...result, callId: `fal:${ticket.requestId}` };
+  };
+  const journalRecord = client.journal.record;
+  client.journal.record = async (scope) =>
+    journalRecord(scope, `019a1b2c-3d4e-7f80-9a1b-${String(++id).padStart(12, '0')}`);
+  const generator = {
+    generateImage: vi.fn(async (input) => ({
+      ...(await generateUnique(input, false)),
+      mimeType: 'image/png' as const,
+    })),
+    generateVideo: vi.fn(async (input) => ({
+      ...(await generateUnique(input, true)),
+      mimeType: 'video/mp4' as const,
+    })),
+  };
+  return {
+    client,
+    generator,
+    run: () => executeShow(client, generator),
+    submissions: () => submissions,
+    resumeWith: (next: typeof client) => {
+      client = next;
+    },
+  };
+}
+it('executes and replays a Node job with separate raw/verified marked results', async () => {
+  const fixture = await nodeFixture();
+  await fixture.run();
+  expect(fixture.submissions()).toBe(4);
+  await fixture.run();
+  expect(fixture.submissions()).toBe(4);
+  const status = await fixture.client.call('status');
+  expect(Object.keys(status.outputs)).toHaveLength(4);
+  for (const output of Object.values(status.outputs) as { attemptId: string }[]) {
+    const raw = await fixture.client.raw.get(tenant, show, output.attemptId);
+    const marked = await fixture.client.marked.get(tenant, show, output.attemptId);
+    expect(marked!.ref).not.toBe(raw!.ref);
+    expect(marked!.result.bytes).not.toEqual(raw!.result.bytes);
+  }
+}, 60_000);
+it('resumes after a lost raw upload acknowledgement and a lost marked acknowledgement', async () => {
+  const fixture = await nodeFixture();
+  for (const store of [fixture.client.raw, fixture.client.marked]) {
+    const put = store.put;
+    const spy = vi.spyOn(store, 'put').mockImplementationOnce(async (...args) => {
+      await put(...args);
+      throw new Error('lost acknowledgement');
+    });
+    await expect(fixture.run()).rejects.toThrow();
+    expect(fixture.submissions()).toBe(1);
+    spy.mockRestore();
+  }
+  await fixture.run();
+  expect(fixture.submissions()).toBe(4);
+}, 60_000);
+it('resumes a recorded provider request after job expiry without another submission', async () => {
+  const fixture = await nodeFixture();
+  const generate = fixture.generator.generateImage.getMockImplementation()!;
+  fixture.generator.generateImage.mockImplementationOnce(async (input) => {
+    await generate(input);
+    throw new Error('provider wait interrupted');
+  });
+  await expect(fixture.run()).rejects.toThrow('interrupted');
+  const current = (await drafts.get(tenant, show))!;
+  const later = createShowTransport({ bucket, secret, drafts, flow, now: () => now + 3_600_001 });
+  job = (await later.open(tenant, show, current.version)).id;
+  version = current.version;
+  const { createShowClient, executeShow } = await import('../../publisher/src/show-executor');
+  const resumed = createShowClient({
+    origin: 'https://worker.test',
+    secret,
+    job: { tenantId: tenant, showId: show, jobId: job, version },
+    now: () => now + 3_600_001,
+    fetch: async (url, init) => later.handle(new Request(url, init)),
+  });
+  // Recovery only reads the recorded identity; no new paid submission for this attempt.
+  const record = resumed.journal.record;
+  let recoveredId = 10;
+  resumed.journal.record = async (scope) =>
+    record(scope, `019a1b2c-3d4e-7f80-9a1b-${String(++recoveredId).padStart(12, '0')}`);
+  fixture.resumeWith(resumed);
+  const pending = (await resumed.call('status')).pending.attemptId;
+  const grant = await resumed.grant(pending);
+  expect(grant.kind).toBe('image');
+  const result = await generate(grant.request as Parameters<typeof generate>[0]);
+  await resumed.raw.put(tenant, show, pending, result);
+  await executeShow(resumed, fixture.generator);
+  expect(fixture.submissions()).toBe(4);
+}, 60_000);
+it('rejects stale duplicate jobs and sanitizes errors containing secrets', async () => {
+  const client = await nodeClient();
+  job = (await transport.open(tenant, show, version)).id;
+  await expect(client.call('status')).rejects.toThrow(
+    'show transport rejected; resume from durable state',
+  );
+  const { createShowClient } = await import('../../publisher/src/show-executor');
+  const broken = createShowClient({
+    origin: 'https://worker.test',
+    secret,
+    job: { tenantId: tenant, showId: show, jobId: job, version },
+    fetch: async () => {
+      throw new Error(secret);
+    },
+  });
+  await expect(broken.call('status')).rejects.not.toThrow(secret);
+});
+it('retains billed raw evidence and stops new submissions when marking fails', async () => {
+  const fixture = await nodeFixture();
+  const generate = fixture.generator.generateImage.getMockImplementation()!;
+  fixture.generator.generateImage.mockImplementationOnce(async (input) => ({
+    ...(await generate(input)),
+    bytes: Buffer.from([1, 2, 3]),
+  }));
+  await expect(fixture.run()).rejects.toThrow('marking failed');
+  const status = await fixture.client.call('status');
+  expect(status.pending).toBeUndefined();
+  expect(Object.keys(status.outputs)).toHaveLength(1);
+  await expect(fixture.run()).rejects.toThrow('marking failed');
+  expect(fixture.submissions()).toBe(1);
+  const costs = await createAiCostLedger(db).summary(tenant, new Date(now));
+  expect(costs.total).toBe(0.1);
+}, 30_000);
+it('resumes the actual fal adapter through HTTP journal without repeating POST', async () => {
+  const { FalShowGenerator } = await import('@handmake/ai');
+  const { markingFixtures } = await import('../../publisher/test/fixtures/show-marking');
+  media = new Uint8Array((await markingFixtures()).image);
+  const client = await nodeClient();
+  const authorized = await client.call('authorize');
+  const pending = authorized.value.request.attemptId;
+  const grant = await client.grant(pending);
+  if (grant.kind !== 'image') throw new Error('expected image');
+  let posts = 0,
+    interrupted = true;
+  const adapter = new FalShowGenerator({
+    apiKey: 'fixture-key',
+    journal: client.journal,
+    config: () => config.shows!,
+    allowPaidCalls: true,
+    verifiedModels: ['fixture/image'],
+    maxPolls: 1,
+    fetch: async (url, init) => {
+      const target = String(url);
+      if (init?.method === 'POST') {
+        posts++;
+        return Response.json({ request_id: providerId });
+      }
+      if (target.endsWith('/status')) {
+        if (interrupted) {
+          interrupted = false;
+          throw new Error('secret upstream error');
+        }
+        return Response.json({ status: 'COMPLETED' });
+      }
+      if (target.startsWith('https://fal.media/'))
+        return new Response(media, { headers: { 'content-type': 'image/png' } });
+      return Response.json({ images: [{ url: 'https://fal.media/fixture.png' }] });
+    },
+  });
+  await expect(adapter.generateImage(grant.request)).rejects.toThrow('fal show: reconcile');
+  expect((await client.call('journal', pending)).value.requestId).toBe(providerId);
+  const result = await adapter.generateImage(grant.request);
+  await client.raw.put(tenant, show, pending, result);
+  expect((await client.call('checkpoint', pending)).value).toBe(true);
+  expect(posts).toBe(1);
+  expect((await createAiCostLedger(db).summary(tenant, new Date(now))).total).toBe(0.1);
 });

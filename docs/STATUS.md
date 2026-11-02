@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e3 — Resumable Node executor and marking job (docs/03-tasks.md). Owner codex, Reviewer claude-code. T44e2 merged as PR #52.
-- **Branch:** none yet; codex creates `feat/t44e3-node-executor`.
-- **Last commit:** `9e0c1b3` — feat: add private show Worker transport (#52).
-- **Next step:** Codex: implement T44e3 in a fresh session; read the T44e2/T44d3 sections of docs/review-notes.md first. Open a PR for claude-code review. New workflow/secret handling needs Volodymyr's sensitive-merge OK. No paid calls, remote resources, secret installation, migration or deploy authorized.
+- **Active agent:** claude-code
+- **Current task:** Review T44e3 — resumable Node executor and marking job, PR #53. Owner codex, Reviewer claude-code.
+- **Branch:** `feat/t44e3-node-executor`.
+- **Last commit:** `ce565d2` — feat: add resumable Node show executor.
+- **Next step:** Claude Code: review PR #53 and CI; read T44e2/T44d3 review notes. Workflow/secret references require Volodymyr's explicit sensitive-merge OK before merge. No paid calls, remote resources, secret installation, migration or deploy authorized.
 - **Blocked on:** nothing for implementation. Model terms/billing remain gates before the first real show; migration 0008 remains local only until separately authorized deployment.
 - **Open questions for Volodymyr:** none now. Actual persona identities/reference media remain configuration work before production shows.
 - **POSSE discussion, round 1 answered (2026-10-30):**
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e3 validation: full bot suite 350 tests; final transport suite 27 tests (three originals and real fal adapter with mocked HTTP); publisher 137 and AI 116 tests pass. Workspace typecheck/build, lint, format and actionlint pass. No paid calls or deploy.
 - T44e1 review-fix validation: bot 324 tests and core 213 tests passed; workspace typecheck, lint and format passed. Five invalid-billing cases assert an unchanged draft and a successful corrected retry; a controlled stale-callback interleaving verifies that another draft can acquire the tenant lock. Commit secret scan passed.
 - T44d3 validation: publisher 137 and bot 303 tests pass (bot uses `--maxWorkers 1` locally); format, lint, workspace typecheck/build and actionlint pass. Real PNG/JPEG/WebP and MP4 tests cover per-frame labels, metadata tampering, retries and separate R2 persistence. No paid calls or deploy.
 - If `main` ever gets branch protection or a ruleset, allow `github-actions[bot]` to push (content/ only), otherwise publish cannot commit. Checked at the T11 merge (2026-10-24): `main` is not protected.
