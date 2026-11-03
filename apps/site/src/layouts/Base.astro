@@ -13,7 +13,7 @@ interface Props {
   /** Path of this page in each language it exists in, e.g. { de: '/kreis/', uk: '/uk/kreis/' }. */
   alternates: Record<string, string>;
   /** Which nav entry is current. */
-  current?: 'home' | 'circle' | 'works' | 'collections';
+  current?: 'shows' | 'home' | 'circle' | 'works' | 'collections';
 }
 
 const { lang, title, description, alternates, current } = Astro.props;
@@ -65,6 +65,7 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
       <header class="site-header">
         <a class="wordmark" href={pagePath(lang, def)}>{tenant.name}</a>
         <nav class="nav" aria-label="Main">
+          <a href={pagePath(lang, def, 'shows')} aria-current={current === 'shows' ? 'page' : undefined}>{ui.showsHeading}</a>
           <a href={pagePath(lang, def, 'works')} aria-current={current === 'works' ? 'page' : undefined}>{ui.worksHeading}</a>
           <a href={pagePath(lang, def, 'collections')} aria-current={current === 'collections' ? 'page' : undefined}>{ui.collectionsHeading}</a>
           {site.circle?.texts[lang] && (

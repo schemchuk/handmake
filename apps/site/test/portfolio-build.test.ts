@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 
 import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
+import type { Show } from '@handmake/core';
 
 import { createPortfolioFixture, ids } from './fixtures/portfolio';
 
@@ -34,7 +35,80 @@ describe('portfolio fixture build', () => {
     const fixture = await createPortfolioFixture();
     const { root, dist, original } = fixture;
     try {
+      const marker = {
+        visible: 'KI-generiertes Model' as const,
+        machineReadable: { format: 'fixture', value: 'fixture' },
+      };
+      const generatedMetadata = {
+        provenance: 'ai-generated' as const,
+        model: 'fixture',
+        promptVersion: 'v1',
+        callId: 'fixture',
+        marker,
+      };
+      const show: Show = {
+        id: '01JBCA1B2C3D4E5F6G7H8J9K1A',
+        tenant: 'fixture',
+        date: '2026-11-03T12:00:00Z',
+        workId: ids.a,
+        template: 'worn',
+        provenance: 'ai-assisted',
+        model: {
+          id: 'fixture',
+          name: 'Fixture Persona',
+          look: 'fixture',
+          referenceImage: 'fixture',
+          fictional: true,
+          adult: true,
+        },
+        originals: [{ fileName: 'a.jpg', provenance: 'human' }],
+        images: [1, 2, 3].map((i) => ({ ...generatedMetadata, fileName: `image-${i}.png` })),
+        video: { ...generatedMetadata, fileName: 'video.mp4', durationSeconds: 5 },
+        versions: {
+          de: { description: 'DE show <b>fixture</b>', provenance: 'human' },
+          uk: { description: 'UA show fixture', provenance: 'ai-assisted' },
+        },
+      };
+      // Structural bytes test transport preservation; marker verification belongs to publication.
+      const marked = await sharp(original).png().toBuffer();
+      const video = Buffer.from('structural-video-fixture');
+      await fixture.store.saveShow(show, [
+        ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
+        { fileName: show.video.fileName, data: video },
+      ]);
+      const untranslatedShow = {
+        ...show,
+        id: '01JBCA1B2C3D4E5F6G7H8J9K1B',
+        date: '2026-11-04T12:00:00Z',
+        versions: { uk: show.versions.uk! },
+      };
+      await fixture.store.saveShow(untranslatedShow, [
+        ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
+        { fileName: show.video.fileName, data: video },
+      ]);
       await build(root, dist);
+      const showUrl = `shows/${show.id.toLowerCase()}`;
+      const showHtml = await html(dist, showUrl);
+      expect(showHtml.match(/<figcaption>KI-generiertes Model<\/figcaption>/g)).toHaveLength(4);
+      expect(showHtml).toContain('Fixture Persona');
+      expect(showHtml).toContain(`/works/${ids.a.toLowerCase()}/`);
+      expect(showHtml).toContain('DE show &lt;b&gt;fixture&lt;/b&gt;');
+      expect(showHtml).toContain('controls');
+      expect(showHtml).toContain(`rel="canonical" href="https://example.invalid/${showUrl}/"`);
+      expect(showHtml).toContain(`hreflang="uk" href="https://example.invalid/uk/${showUrl}/"`);
+      expect(await html(dist, `uk/${showUrl}`)).toContain('UA show fixture');
+      expect(await html(dist, 'shows')).not.toContain(untranslatedShow.id.toLowerCase());
+      expect(await html(dist, '')).toContain(`/${showUrl}/`);
+      expect(await html(dist, 'uk')).toContain(`/uk/shows/${untranslatedShow.id.toLowerCase()}/`);
+      await expect(
+        access(path.join(dist, `shows/${untranslatedShow.id.toLowerCase()}/index.html`)),
+      ).rejects.toThrow();
+      expect(
+        await readFile(path.join(dist, `show-media/${show.id.toLowerCase()}/image-1.png`)),
+      ).toEqual(marked);
+      expect(
+        await readFile(path.join(dist, `show-media/${show.id.toLowerCase()}/video.mp4`)),
+      ).toEqual(video);
       const workUrl = `works/${ids.a.toLowerCase()}`;
       const de = await html(dist, workUrl);
       const uk = await html(dist, `uk/${workUrl}`);

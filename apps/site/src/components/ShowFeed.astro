@@ -1,0 +1,21 @@
+---
+import type { Show } from '@handmake/core';
+import type { SiteData } from '../lib/site-data';
+import { pagePath } from '../lib/paths';
+import { showPage, showMediaPath } from '../lib/shows';
+import { excerpt } from '../lib/text';
+interface Props { shows: Show[]; lang: string; data: SiteData }
+const { shows, lang, data } = Astro.props;
+---
+<ol class="feed">
+  {shows.map((show) => <li class="entry">
+    <a href={pagePath(lang, data.site.defaultLanguage, showPage(show))}>
+      <figure>
+        <img src={showMediaPath(show, show.images[0]!.fileName)} alt="" loading="lazy" />
+        <figcaption>KI-generiertes Model</figcaption>
+      </figure>
+      <time datetime={show.date}>{new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: data.tenant.meetingSchedule.timezone }).format(new Date(show.date))}</time>
+      <p class="entry-text">{excerpt(show.versions[lang]!.description, 220)}</p>
+    </a>
+  </li>)}
+</ol>

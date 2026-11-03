@@ -1,0 +1,50 @@
+---
+import type { Show } from '@handmake/core';
+import Base from '../../../layouts/Base.astro';
+import Provenance from '../../../components/Provenance.astro';
+import { loadSiteData } from '../../../lib/site-data';
+import { showPage, showMediaPath } from '../../../lib/shows';
+import { langParam, pagePath } from '../../../lib/paths';
+import { uiStrings } from '../../../lib/i18n';
+import { excerpt, paragraphs } from '../../../lib/text';
+export async function getStaticPaths() {
+  const data = await loadSiteData();
+  return data.shows.flatMap((show) => data.tenant.languages.filter((lang) => show.versions[lang]).map((lang) => ({
+    params: { lang: langParam(lang, data.site.defaultLanguage), id: show.id.toLowerCase() }, props: { lang, show },
+  })));
+}
+interface Props { lang: string; show: Show }
+const { lang, show } = Astro.props;
+const data = await loadSiteData();
+const def = data.site.defaultLanguage;
+const ui = uiStrings(lang);
+const version = show.versions[lang]!;
+const title = excerpt(version.description, 60);
+const work = data.works.find((work) => work.id === show.workId && work.versions[lang]);
+const alternates = Object.fromEntries(data.tenant.languages.filter((code) => show.versions[code]).map((code) => [code, pagePath(code, def, showPage(show))]));
+---
+<Base lang={lang} title={title} description={excerpt(version.description)} alternates={alternates} current="shows">
+  <article class="wrap page">
+    <h1>{title}</h1>
+    <div class="page-body">
+      {paragraphs(version.description).map((text) => <p>{text}</p>)}
+      <Provenance value={version.provenance} lang={lang} />
+      {show.model && <p>{show.model.name}</p>}
+      {work && <p><a href={pagePath(lang, def, `works/${work.id.toLowerCase()}`)}>{ui.linkedWork}</a></p>}
+    </div>
+    <div class="work-gallery">
+      {show.images.map((image) => <figure>
+        <img src={showMediaPath(show, image.fileName)} alt={title} loading="lazy" style="width:100%;height:auto" />
+        <figcaption>KI-generiertes Model</figcaption>
+      </figure>)}
+      <figure>
+        <video controls playsinline preload="metadata" aria-label={title} style="width:100%;height:auto">
+          <source src={showMediaPath(show, show.video.fileName)} type="video/mp4" />
+          <a href={showMediaPath(show, show.video.fileName)}>{title}</a>
+        </video>
+        <figcaption>KI-generiertes Model</figcaption>
+      </figure>
+    </div>
+    <a class="back" href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a>
+  </article>
+</Base>

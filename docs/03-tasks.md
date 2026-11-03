@@ -861,6 +861,8 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     stability, tenant isolation and existing post/work publication.
 
 ### T45 — Shows on the site (F30, `site`)
+- Owner: codex · Reviewer: claude-code.
+- Status: implemented on `feat/t45-site-shows`; pending independent review.
 - Depends on: T44, T41
 - Change: shows list and show pages (images, video, work link, model name, "KI-generiertes Model"
   label), home page highlights the latest show, German default and `/uk/`.
