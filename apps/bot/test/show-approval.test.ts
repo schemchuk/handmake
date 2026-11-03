@@ -259,6 +259,7 @@ it('routes version-bound consent and frozen dispatch retries through the real bo
   expect((await stored()).draft.extras['showCancelled']).toBeUndefined();
   await bot.handleUpdate(textUpdate(11, '/show'));
   expect(JSON.stringify(calls)).toContain(`show:${id}:approve:1`);
+  expect(JSON.stringify(calls)).toContain(botTexts.showPublishRetryButton);
   await bot.handleUpdate(callbackQueryUpdate(11, 11, `show:${id}:approve:1`));
   await Promise.all(tasks);
   expect(jobs).toHaveLength(2);

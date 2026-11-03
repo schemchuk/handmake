@@ -10,6 +10,7 @@ export const botTexts = {
   showPreviewReadyText:
     'Онови перегляд, щоб побачити оригінали й готові результати. Для нового показу: /discard, потім /show.',
   showRetryButton: 'Продовжити генерацію',
+  showPublishRetryButton: 'Повторити публікацію',
   showRegenerateButton: (slot: string) =>
     slot === 'video' ? 'Перегенерувати відео' : `Перегенерувати фото ${Number(slot.slice(6)) + 1}`,
   showRefreshButton: 'Оновити перегляд',

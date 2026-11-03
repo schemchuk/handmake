@@ -62,7 +62,7 @@ export function registerShowSession(
             inline_keyboard: [
               [
                 {
-                  text: texts.showRetryButton,
+                  text: texts.showPublishRetryButton,
                   callback_data: `show:${stored.draft.draftId}:approve:${stored.draft.extras['showApprovalVersion']}`,
                 },
               ],
