@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T44e10 — author run-finish notifications and PR #77 review notes, PR #78 (Sensitive).
+- **Active agent:** codex
+- **Current task:** Fix PR #78 blocking finish-resume callback (returned to Codex by Volodymyr), plus its two review notes.
 - **Branch:** `feat/T44e10-show-run-finish`.
-- **Last commit:** `f6e32f7` — feat: notify authors when show runs finish.
-- **Next step:** Claude Code: independently review PR #78 and check CI. Merge requires Volodymyr's explicit OK because `show.yml` changes; the author must not merge. T44e9 and T44e10 bot changes are not deployed (separate OK needed). After merge hand back to Codex for the next owned task in a fresh session; T26 waits on H8.
+- **Last commit:** `4082f70` — docs: hand off T44e10 for independent review.
+- **Next step:** Codex: commit/push the validated PR #78 review fix, then return to claude-code for independent re-review. Sensitive merge and deployment still require separate approval.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
@@ -50,6 +50,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- PR #78 review fix: failed finish callbacks now use `retry`, collecting uses `start`, other states omit resume. Two D1-backed session tests route the actual finish notification button for paid-gate and failed outcomes through the bot. Session 48/48, notification 8/8 and publisher finish 4/4 tests pass; bot/publisher typecheck and changed-file lint/format pass. Ready-notification failures leave successful generation/recovery green; finish nonce idempotence is documented inline. No deploy, production dispatch, paid calls, workflows or secrets changed in this fix.
 - T44e10 validation: transport 48/48 across the full 47-test rerun and one added pending-grant test; approval 13/13, notification 5/5, publisher 177/177 pass. Workspace typecheck/build, changed-file lint/format, actionlint and staged secret scan pass. Initial new media test exceeded the default five-second timeout and contaminated a later assertion; the corrected full transport rerun passed. Sandbox Miniflare bind was denied; integration runs passed outside the sandbox. Finish claims delivery before Telegram (at most once); ambiguous delivery is not retried automatically. No deploy, production dispatch, paid calls, migrations or secret/var changes.
 - T44e9: 51/51 targeted approval/transport tests passed with local D1/R2; final backfill regressions 2/2 passed after executor failure reporting. Workspace typecheck/build and changed-file lint/format pass; bot/publisher typecheck passed after executor failure reporting. Initial accidental full-suite run was stopped after an unrelated show-start concurrency failure. No deployment, workflows, paid calls or production bucket settings changed.
 - T44e8 validation: approval/transport 50/50 plus the added dispatch-lease test 1/1 pass with local D1/R2. Mixed evidence sends no documents, failed dispatch retries, repeated refresh dispatches once, concurrent refresh and interrupted lease recovery are covered. Workspace typecheck/build and changed-file lint/format pass. The initial sandbox full-suite invocation was stopped after Miniflare failures; targeted unrestricted runs passed. No deployment, production dispatch, paid calls, workflows or secret changes.

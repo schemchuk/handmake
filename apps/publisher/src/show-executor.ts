@@ -235,20 +235,16 @@ export async function executeShow(
       let attempt: string | undefined = status.pending?.attemptId;
       if (!attempt) {
         if (status.recovery) {
-          await client.call(
-            'finish',
-            'next',
-            new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })),
-          );
+          await client
+            .call('finish', 'next', new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })))
+            .catch(() => undefined);
           return;
         }
         const authorized = await client.call('authorize');
         if (!authorized.value) {
-          await client.call(
-            'finish',
-            'next',
-            new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })),
-          );
+          await client
+            .call('finish', 'next', new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })))
+            .catch(() => undefined);
           return;
         }
         attempt = authorized.value.request.attemptId;
@@ -277,13 +273,15 @@ export async function executeShow(
       await prepare(attempt);
       if (status.recovery) {
         const latest = await client.call('status');
-        await client.call(
-          'finish',
-          'next',
-          new TextEncoder().encode(
-            JSON.stringify({ outcome: latest.pending ? 'failed' : 'ready' }),
-          ),
-        );
+        await client
+          .call(
+            'finish',
+            'next',
+            new TextEncoder().encode(
+              JSON.stringify({ outcome: latest.pending ? 'failed' : 'ready' }),
+            ),
+          )
+          .catch(() => undefined);
         return;
       }
     }

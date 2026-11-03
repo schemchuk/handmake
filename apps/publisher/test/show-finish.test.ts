@@ -1,3 +1,4 @@
+import { createShowClient, executeShow } from '../src/show-executor';
 import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
@@ -63,3 +64,31 @@ it('reports setup failures without dependencies or any provider secret', async (
     createHmac('sha256', 'fixture').update(message).digest('hex'),
   );
 });
+
+it.each([false, true])(
+  'keeps a successful execution green when ready notification fails (recovery=%s)',
+  async (recovery) => {
+    const outcomes: string[] = [];
+    const client = createShowClient({
+      origin: 'https://worker.test',
+      secret: 'fixture',
+      job: { tenantId: 'tenant', showId: 'show', jobId: 'job', version: 0 },
+      fetch: async (url, init) => {
+        const operation = new URL(String(url)).pathname.split('/').at(-1);
+        if (operation === 'status') return Response.json({ version: 0, outputs: {}, recovery });
+        if (operation === 'authorize') return Response.json({ version: 0, value: null });
+        if (operation === 'finish') {
+          outcomes.push(JSON.parse(new TextDecoder().decode(init!.body as Uint8Array)).outcome);
+          return new Response(null, { status: 409 });
+        }
+        throw new Error('unexpected operation');
+      },
+    });
+    const generateImage = vi.fn(),
+      generateVideo = vi.fn();
+    await expect(executeShow(client, { generateImage, generateVideo })).resolves.toBeUndefined();
+    expect(outcomes).toEqual(['ready']);
+    expect(generateImage).not.toHaveBeenCalled();
+    expect(generateVideo).not.toHaveBeenCalled();
+  },
+);

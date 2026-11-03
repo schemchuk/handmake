@@ -1,3 +1,5 @@
+import { Api } from 'grammy';
+import { createShowFinish } from '../src/show-finish';
 import { readFileSync } from 'node:fs';
 import { parseTenantConfig, showDraftDataSchema } from '@handmake/core';
 import type { Work } from '@handmake/core';
@@ -774,3 +776,32 @@ it('cancels a show without deleting output evidence and fences old callbacks', a
   await send('/show');
   expect((await drafts.getChatSession(tenant, '11'))?.draftId).not.toBe(id);
 });
+
+it.each(['paid-calls-disabled', 'failed'] as const)(
+  'resumes a failed show through the actual %s finish notification button',
+  async (outcome) => {
+    const id = await completedShow('failed');
+    const stored = (await get(id))!;
+    const delivery = vi
+      .spyOn(Api.prototype, 'sendMessage')
+      .mockResolvedValueOnce({} as Awaited<ReturnType<Api['sendMessage']>>);
+    let action: string;
+    try {
+      await createShowFinish('TEST_TOKEN', drafts)(stored, outcome, false);
+      const { reply_markup: markup } = delivery.mock.calls[0]![2] as {
+        reply_markup: { inline_keyboard: { text: string; callback_data?: string }[][] };
+      };
+      action = markup.inline_keyboard
+        .flat()
+        .find((entry) => entry.text === botTexts.showRetryButton)!.callback_data!;
+      expect(action).toBe(`show:${id}:retry:${stored.version}`);
+    } finally {
+      delivery.mockRestore();
+    }
+    await press(action);
+    await flush();
+    expect(start).toHaveBeenCalledExactlyOnceWith(stored, undefined);
+    expect(sentTexts(calls)).toContain(botTexts.showDispatchedText);
+    expect(sentTexts(calls)).not.toContain(botTexts.showSelectionErrorText);
+  },
+);

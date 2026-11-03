@@ -180,6 +180,7 @@ export function createShowTransport(deps: {
           return reply(409, { error: 'stale job' });
         const data = showDraftDataSchema.parse(draft.draft.extras['show']);
         // Finish accepts the dispatch version: setup failures have no checkpoint version.
+        // Nonce replay is harmless here: finished + etag claim delivery at most once.
         // Claim before delivery: ambiguous Telegram failures must never send a duplicate.
         if (operation === 'finish' && attemptId === 'next') {
           const { outcome } = JSON.parse(new TextDecoder().decode(bytes));

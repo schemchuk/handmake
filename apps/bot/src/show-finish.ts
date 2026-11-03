@@ -23,12 +23,14 @@ export function createShowFinish(token: string, drafts: Pick<D1DraftStore, 'chat
     await api.sendMessage(chat, text, {
       reply_markup: {
         inline_keyboard: [
-          ...(outcome !== 'ready' && !recovery && stored.draft.state !== 'ready'
+          ...(outcome !== 'ready' &&
+          !recovery &&
+          ['collecting', 'failed'].includes(stored.draft.state)
             ? [
                 [
                   {
                     text: botTexts.showRetryButton,
-                    callback_data: `show:${draftId}:start:${stored.version}`,
+                    callback_data: `show:${draftId}:${stored.draft.state === 'failed' ? 'retry' : 'start'}:${stored.version}`,
                   },
                 ],
               ]

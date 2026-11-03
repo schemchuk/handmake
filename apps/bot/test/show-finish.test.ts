@@ -50,3 +50,19 @@ it('rejects missing or non-private author destinations', async () => {
   ).rejects.toThrow('author chat unavailable');
   expect(sendMessage).not.toHaveBeenCalled();
 });
+
+it.each(['failed', 'translating', 'ready'] as const)(
+  'offers only a valid resume action for a %s show',
+  async (state) => {
+    await createShowFinish('test', { chatIdOf: async () => '123' })(
+      { ...stored, draft: { ...stored.draft, state } },
+      'failed',
+      false,
+    );
+    const buttons = sendMessage.mock.calls[0]![2].reply_markup.inline_keyboard.flat();
+    const resume = buttons.find((entry: { text: string }) => entry.text === 'Продовжити генерацію');
+    if (state === 'failed')
+      expect(resume.callback_data).toBe(`show:${stored.draft.draftId}:retry:12`);
+    else expect(resume).toBeUndefined();
+  },
+);
