@@ -908,7 +908,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   "already running" text; claim object removed after verification succeeds.
 
 #### T44e10 — Notify the author when a show run ends (`bot`, `publisher`, `workflows`) · Sensitive
-- Status: implemented in PR #78; blocking finish-resume callback and both review notes fixed, awaiting claude-code re-review and sensitive-merge approval.
+- Status: merged as PR #78 (`a893c9a`) with Volodymyr's OK; bot deployed 2026-11-03 (version `0baeb5b6`). Review notes moved to T44e11.
 - Owner: codex · Reviewer: claude-code · Depends on: T44e9 · Sensitive: touches
   `.github/workflows/show.yml`.
 - Review notes from PR #77: (1) `show-transport.ts` catch: wrap `bucket.delete(recoveryClaim)` in
@@ -937,6 +937,16 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - Tests: executor reports each outcome; CLI maps the paid-gate error; Worker sends once per job and
   rejects `finish` for an unknown job; workflow failure step uses only the transport secret.
 - After merge: the bot needs a deploy (Volodymyr's OK).
+
+#### T44e11 — Silent ready rejection after authorize (`publisher`)
+- Owner: codex · Reviewer: claude-code · Depends on: T44e10.
+- Review notes from PR #78: (1) `show-executor.ts`: when `authorize` returns no grant, `finish('ready')`
+  errors are swallowed; if the Worker rejects it with 409 `unfinished job` (outputs incomplete), the
+  run ends green and the author gets no message. Report `failed` in that case. (2) Rewrap the
+  "A new explicit generation retry…" and "Runner cancellation…" lines in `docs/show-recovery.md`.
+- Tests: executor sends `failed` after a rejected `ready` with incomplete outputs; a successful run
+  with a Telegram delivery failure stays green.
+- After merge: bot deploy not needed (publisher only).
 
 ### T45 — Shows on the site (F30, `site`)
 - Owner: codex · Reviewer: claude-code.
