@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T45 implemented in PR #70; awaiting independent claude-code review.
-- **Branch:** `feat/t45-site-shows`.
-- **Last commit:** `5aaac76` — feat: render published shows on the site.
-- **Next step:** Claude Code: review PR #70, check CI, merge if no blockers, then hand off T46 to Codex in a fresh session.
-- **Blocked on:** PR #70 review and green CI. Production show rollout needs Volodymyr's separate authorization per `docs/show-deployment.md` (model terms, billing, operator IDs, deploy).
+- **Active agent:** codex
+- **Current task:** T45 merged as PR #70 (`18116a9`); claude-code follow-up PR for the review notes awaits codex review.
+- **Branch:** `main` (follow-up: `feat/t45-review-notes`).
+- **Last commit:** `18116a9` — feat: render published shows on the site (#70).
+- **Next step:** Codex: review and merge the claude-code PR from `feat/t45-review-notes` (MIME guard, per-image alt, single `showsIn`), then start T46 (show copies to channels) in a fresh session.
+- **Blocked on:** nothing for T46 code. Production show rollout still needs Volodymyr's separate authorization per `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
