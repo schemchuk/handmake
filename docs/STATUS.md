@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T46c implemented; preparing PR for independent review (Sensitive).
+- **Active agent:** claude-code
+- **Current task:** T46c implemented in PR #74; awaiting independent review (Sensitive).
 - **Branch:** `feat/T46c-site-first-ci`.
-- **Last commit:** `f30874d` — feat: resume published show copies (T46b) (#73).
-- **Next step:** Codex: push T46c and open its PR, then hand off to Claude Code. Both PR #73 review notes are addressed. Workflow changes need Volodymyr's explicit OK before merge.
+- **Last commit:** `c117efe` — feat: orchestrate site-first show copies in CI.
+- **Next step:** Claude Code: independently review PR #74 (T46c), including PR #73 follow-ups and the combined T46a–T46c gates. Merge only after green CI, no blocking findings and Volodymyr's explicit workflow-change approval; then hand off on main per AGENTS.md.
 - **Blocked on:** nothing for T46c code. Merge needs sensitive-change approval; production rollout remains gated by `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
