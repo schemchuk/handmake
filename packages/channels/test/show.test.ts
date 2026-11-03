@@ -46,6 +46,18 @@ describe('show rendering', () => {
       captionLang: 'uk',
     });
   });
+  it('renders only tenant languages and requires a localized disclosure', () => {
+    const show = fixture();
+    expect(renderTelegramShow(show, { ...context, languages: ['uk'] })).toHaveLength(2);
+    show.versions.en = { ...show.versions.de!, description: 'English description' };
+    expect(renderTelegramShow(show, { ...context, languages: ['en'] })[0]).toMatchObject({
+      caption: expect.stringContaining('AI-generated model'),
+    });
+    show.versions.fr = show.versions.en;
+    expect(() => renderTelegramShow(show, { ...context, languages: ['fr'] })).toThrow(
+      'disclosure language',
+    );
+  });
   it('moves an overflowing caption into a reply without truncation and checks the complete message', () => {
     const show = fixture();
     show.versions.de!.description = 'x'.repeat(1024);

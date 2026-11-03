@@ -19,3 +19,4 @@ export { TelegramMediaSource } from './photos/telegram-media-source';
 export type { TelegramMediaSourceOptions } from './photos/telegram-media-source';
 export { buildWorkFromPayload, workPayloadSchema } from './build-work';
 export type { WorkPayload } from './build-work';
+export { runCopyShow } from './copy-show';

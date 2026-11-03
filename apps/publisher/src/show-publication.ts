@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { showPublicationSchema } from '@handmake/core';
 import type { Post, ShowMediaSource, TenantConfig } from '@handmake/core';
 import type { GitRepoContentStore } from '@handmake/stores';
@@ -12,9 +13,15 @@ export async function prepareShowPublication(
   source: ShowMediaSource,
 ) {
   const { show, media: refs } = showPublicationSchema.parse(payload.show);
+  const existing = await store.readShow(tenant.id, show.id);
+  if (existing && !isDeepStrictEqual(existing, show)) throw new Error('show identity is immutable');
+  const ledger = await store.readLedger(tenant.id, show.id);
+  if (!existing && ledger && Object.keys(ledger.channels).length)
+    throw new Error('show progress exists without published content');
   if (
-    Object.keys(show.versions).length !== tenant.languages.length ||
-    tenant.languages.some((lang) => !Object.hasOwn(show.versions, lang))
+    !existing &&
+    (Object.keys(show.versions).length !== tenant.languages.length ||
+      tenant.languages.some((lang) => !Object.hasOwn(show.versions, lang)))
   )
     throw new Error('show languages must match tenant languages');
   const work = await store.readWork(tenant.id, show.workId);
@@ -25,12 +32,12 @@ export async function prepareShowPublication(
   }
   if ((await store.readPost(tenant.id, show.id)) || (await store.readWork(tenant.id, show.id)))
     throw new Error('show id already belongs to other content');
-  const ledger = await store.readLedger(tenant.id, show.id);
-  if (ledger && Object.keys(ledger.channels).length)
-    throw new Error('show channel copies are not supported before T46');
   const media = [];
   for (const ref of refs) {
-    const data = await source.fetchMedia(ref.ref);
+    const data = existing
+      ? await store.readShowMedia(tenant.id, show.id, ref.fileName)
+      : await source.fetchMedia(ref.ref);
+    if (!data?.length) throw new Error('published show media is missing');
     const declared =
       ref.fileName === show.video.fileName
         ? show.video
