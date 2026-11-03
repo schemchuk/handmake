@@ -74,13 +74,15 @@ jobs:
           if jq -e '.kind == "show"' "$RUNNER_TEMP/payload.json" > /dev/null; then
             # Site deployment always reads main; refuse a different publication branch.
             test "$GITHUB_REF_NAME" = main
-            jq -er '
-              .tenantId | select(type == "string" and test("^[a-z0-9][a-z0-9-]*$")) |
-              "tenant_id=\(.)"' "$RUNNER_TEMP/payload.json" >> "$GITHUB_OUTPUT"
-            jq -er '
-              .draftId | select(type == "string" and test("^[0-9A-HJKMNP-TV-Z]{26}$")) |
-              "show_id=\(.)"' "$RUNNER_TEMP/payload.json" >> "$GITHUB_OUTPUT"
-            echo 'is_show=true' >> "$GITHUB_OUTPUT"
+            {
+              jq -er '
+                .tenantId | select(type == "string" and test("^[a-z0-9][a-z0-9-]*$")) |
+                "tenant_id=\(.)"' "$RUNNER_TEMP/payload.json"
+              jq -er '
+                .draftId | select(type == "string" and test("^[0-9A-HJKMNP-TV-Z]{26}$")) |
+                "show_id=\(.)"' "$RUNNER_TEMP/payload.json"
+              echo 'is_show=true'
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install show media validation tools
@@ -121,8 +123,13 @@ jobs:
       # would be rejected and the delivered posts would never be recorded.
       - name: Push published content
         if: always()
+        env:
+          PUBLISHER_GIT_NAME: github-actions[bot]
+          PUBLISHER_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
           set -euo pipefail
+          git config user.name "$PUBLISHER_GIT_NAME"
+          git config user.email "$PUBLISHER_GIT_EMAIL"
           for attempt in 1 2 3; do
             git pull --rebase origin "$GITHUB_REF_NAME"
             if git push origin "HEAD:${GITHUB_REF_NAME}"; then
@@ -206,8 +213,13 @@ jobs:
 
       - name: Push copy progress
         if: always()
+        env:
+          PUBLISHER_GIT_NAME: github-actions[bot]
+          PUBLISHER_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
           set -euo pipefail
+          git config user.name "$PUBLISHER_GIT_NAME"
+          git config user.email "$PUBLISHER_GIT_EMAIL"
           for attempt in 1 2 3; do
             git pull --rebase origin main
             if git push origin HEAD:main; then
