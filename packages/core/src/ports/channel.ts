@@ -1,4 +1,5 @@
 import type { Post } from '../post';
+import type { Show } from '../show';
 import type { SecretResolver } from './services';
 
 /**
@@ -24,7 +25,7 @@ export interface ChannelCapabilities {
 export type RemoteId = number | string;
 
 /**
- * One send operation. `photoIndexes` reference `post.photos`; `replyToOp`
+ * One send operation. `photoIndexes` reference the content's ordered images; `replyToOp`
  * references an earlier operation (by index) of the same render batch, so
  * `render` stays pure — adapters resolve it to a network id at delivery.
  */
@@ -36,6 +37,7 @@ export type SendOperation =
       captionLang?: string;
       replyToOp?: number;
     }
+  | { kind: 'video'; replyToOp?: number }
   | { kind: 'message'; text: string; lang: string; replyToOp?: number }
   | {
       kind: 'poll';
@@ -61,11 +63,13 @@ export interface DeliverContext {
    */
   settings: unknown;
   /**
-   * The post's processed photo bytes, aligned by index with
+   * The content's processed photo bytes (marked images for shows), aligned with
    * `SendOperation.photoIndexes`. The publisher assembles them via its
    * MediaSource; the adapter never downloads anything itself.
    */
   photos: Uint8Array[];
+  /** Approved marked video bytes; adapters must upload without re-encoding. */
+  video?: Uint8Array;
 }
 
 /**
@@ -83,10 +87,26 @@ export interface DeliverProgress {
   onDelivered(opIndex: number, remoteId: RemoteId): void | Promise<void>;
 }
 
+export interface ShowRenderContext {
+  site: { baseUrl: string; defaultLanguage: string };
+  languages: string[];
+}
+
+/** Fail explicitly when a registered channel cannot render shows. */
+export function renderChannelShow(
+  adapter: ChannelAdapter,
+  show: Show,
+  context: ShowRenderContext,
+): SendOperation[] {
+  if (!adapter.renderShow) throw new Error(`channel "${adapter.key}" does not support shows`);
+  return adapter.renderShow(show, context);
+}
+
 export interface ChannelAdapter {
   readonly key: string;
   readonly capabilities: ChannelCapabilities;
   render(post: Post, settings: unknown): SendOperation[];
+  renderShow?(show: Show, context: ShowRenderContext): SendOperation[];
   /**
    * Delivers ops in order and returns the complete remote id array
    * (known prefix + newly delivered), aligned by op index. Implementations

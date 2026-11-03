@@ -4,11 +4,18 @@ import type {
   DeliverProgress,
   PollResult,
   Post,
+  Show,
+  ShowRenderContext,
   RemoteId,
   SendOperation,
 } from '@handmake/core';
 
-import { renderTelegram, telegramCapabilities, type TelegramChannelSettings } from './render';
+import {
+  renderTelegram,
+  renderTelegramShow,
+  telegramCapabilities,
+  type TelegramChannelSettings,
+} from './render';
 
 export interface TelegramAdapterOptions {
   /** Bot token. Stored privately; never logged or included in errors. */
@@ -112,6 +119,10 @@ export class TelegramAdapter implements ChannelAdapter {
     return renderTelegram(post, settings);
   }
 
+  renderShow(show: Show, context: ShowRenderContext): SendOperation[] {
+    return renderTelegramShow(show, context);
+  }
+
   async deliver(
     ops: SendOperation[],
     ctx: DeliverContext,
@@ -126,16 +137,40 @@ export class TelegramAdapter implements ChannelAdapter {
     const start = progress?.startAt ?? 0;
     const known = progress?.knownIds ?? [];
     // Ledger invariant: knownIds is the exact delivered prefix.
-    if (start > ops.length || known.length !== start) {
+    if (!Number.isInteger(start) || start < 0 || start > ops.length || known.length !== start) {
       throw new TelegramAdapterError(
         `invalid progress: startAt ${start} with ${known.length} known ids for ${ops.length} ops`,
       );
     }
 
+    // Check required media before sending any part of the remaining batch.
+    for (let index = start; index < ops.length; index++) {
+      const op = ops[index]!;
+      if (
+        op.replyToOp !== undefined &&
+        (!Number.isInteger(op.replyToOp) || op.replyToOp < 0 || op.replyToOp >= index)
+      ) {
+        throw new TelegramAdapterError(
+          `replyToOp ${op.replyToOp} must reference an earlier operation`,
+        );
+      }
+      if (op.kind === 'mediaGroup') {
+        if (op.photoIndexes.length === 0)
+          throw new TelegramAdapterError('mediaGroup op has no photos to send');
+        for (const photoIndex of op.photoIndexes) {
+          if (!Number.isInteger(photoIndex) || !ctx.photos[photoIndex]?.length) {
+            throw new TelegramAdapterError(`op references missing photo at index ${photoIndex}`);
+          }
+        }
+      }
+      if (op.kind === 'video' && (!ctx.video || ctx.video.length === 0)) {
+        throw new TelegramAdapterError('video op requires video bytes');
+      }
+    }
     const ids: RemoteId[] = [...known];
     for (let i = start; i < ops.length; i++) {
       const op = ops[i]!;
-      const remoteId = await this.#sendWithRetry(op, chatId, ctx.photos, ids);
+      const remoteId = await this.#sendWithRetry(op, chatId, ctx.photos, ids, ctx.video);
       ids.push(remoteId);
       // Awaited BEFORE the next send, so the caller persists the ledger
       // between ops and the at-least-once window is a single op.
@@ -193,10 +228,11 @@ export class TelegramAdapter implements ChannelAdapter {
     chatId: string,
     photos: Uint8Array[],
     deliveredIds: RemoteId[],
+    video?: Uint8Array,
   ): Promise<RemoteId> {
     for (let attempt = 1; ; attempt++) {
       try {
-        return await this.#sendOnce(op, chatId, photos, deliveredIds);
+        return await this.#sendOnce(op, chatId, photos, deliveredIds, video);
       } catch (error) {
         if (error instanceof TelegramRateLimitError && attempt < this.#maxAttempts) {
           await this.#sleep(error.retryAfterMs);
@@ -212,8 +248,21 @@ export class TelegramAdapter implements ChannelAdapter {
     chatId: string,
     photos: Uint8Array[],
     deliveredIds: RemoteId[],
+    video?: Uint8Array,
   ): Promise<RemoteId> {
     const replyParameters = this.#replyParameters(op, deliveredIds);
+    if (op.kind === 'video') {
+      if (!video?.length) throw new TelegramAdapterError('video op requires video bytes');
+      const form = new FormData();
+      form.set('chat_id', chatId);
+      form.set('video', new Blob([video], { type: 'video/mp4' }), 'video.mp4');
+      if (replyParameters) form.set('reply_parameters', JSON.stringify(replyParameters));
+      const result = (await this.#call('sendVideo', form)) as { message_id?: unknown };
+      if (typeof result.message_id !== 'number') {
+        throw new TelegramAdapterError('Telegram sendVideo returned a malformed result');
+      }
+      return result.message_id;
+    }
     if (op.kind === 'poll') {
       const result = (await this.#call('sendPoll', {
         chat_id: chatId,
@@ -294,7 +343,7 @@ export class TelegramAdapter implements ChannelAdapter {
     }
     const form = new FormData();
     form.set('chat_id', chatId);
-    form.set('photo', new Blob([bytes]), 'photo0.jpg');
+    form.set('photo', photoBlob(bytes), `photo0.${photoExtension(bytes)}`);
     if (op.caption !== undefined) form.set('caption', op.caption);
     if (replyParameters) {
       form.set('reply_parameters', JSON.stringify(replyParameters));
@@ -315,7 +364,7 @@ export class TelegramAdapter implements ChannelAdapter {
       if (bytes === undefined) {
         throw new TelegramAdapterError(`op references missing photo at index ${photoIndex}`);
       }
-      form.set(`media${i}`, new Blob([bytes]), `photo${i}.jpg`);
+      form.set(`media${i}`, photoBlob(bytes), `photo${i}.${photoExtension(bytes)}`);
       const item: Record<string, unknown> = { type: 'photo', media: `attach://media${i}` };
       // The caption goes on the FIRST item only; captionLang stays off
       // the wire format.
@@ -385,4 +434,11 @@ export class TelegramAdapter implements ChannelAdapter {
 
 export function createTelegramAdapter(options: TelegramAdapterOptions): TelegramAdapter {
   return new TelegramAdapter(options);
+}
+
+function photoExtension(bytes: Uint8Array): string {
+  return bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71 ? 'png' : 'jpg';
+}
+function photoBlob(bytes: Uint8Array): Blob {
+  return new Blob([bytes], { type: photoExtension(bytes) === 'png' ? 'image/png' : 'image/jpeg' });
 }

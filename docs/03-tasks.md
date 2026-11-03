@@ -886,6 +886,7 @@ runner, and CI ordering changes. Keep these in three PRs under ~400 changed non-
 conditional on T26; these tasks must not introduce an Instagram-specific branch in the core.
 
 #### T46a — Show rendering and video delivery
+- Status: implemented on `feat/T46a-show-delivery`; awaiting claude-code review.
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T45, T40; first PR.
 - Change: extend the network-neutral channel contract for show rendering and video bytes/operations.
