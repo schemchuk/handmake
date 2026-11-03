@@ -38,7 +38,7 @@ shows so recovery evidence survives. A later retention policy needs an explicit 
 Parent T44e5 acceptance is covered by the preview/regeneration suites and the recovery tests:
 operator/author separation, lost grants, GET-only resumption with paid gates closed, no-request-ID
 locks, billed/no-spend reconciliation, cancellation, stale callbacks and retained evidence.
-Approval/publication integration remains T44e6. Independent review must confirm the parent gate.
+Approval/publication integration is covered by T44e6a/b/c. Independent review must confirm the parent gate.
 
 ## Author approval and dispatch (T44e6b)
 
@@ -57,5 +57,6 @@ stores that payload and enters `publishing`. Once approved, regeneration and dis
 If dispatch fails, `/show` offers retry using the same approved payload and show ID. An interrupted
 Worker dispatch can be reclaimed after the existing five-minute publishing timeout. Duplicate
 presses during that interval do not dispatch again. The existing publish runner and signed
-published callback handle delivery; end-to-end publisher verification and deployment gates
-remain T44e6c. No deployment or paid calls are authorized by this implementation.
+published callback handle delivery. T44e6c tests the complete publication path;
+[deployment and acceptance gates](show-deployment.md) distinguish recorded setup from pending
+production checks. No deployment or paid calls are authorized by this implementation.
