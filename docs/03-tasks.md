@@ -861,9 +861,9 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     stability, tenant isolation and existing post/work publication.
 
 #### T44e7 — Backfill verification for shows generated before T44e6a (`bot`, `publisher`)
-- Status: implemented on `feat/T44e7-verification-backfill`; awaiting claude-code review.
+- Status: done, PR #75 merged as `3ace26a`; bot deployed 2026-11-03 (version `15458a36`).
   Missing attestations trigger a recovery-only job from preview; retained outputs are verified
-  without generation grants or accounting checkpoints. Production backfill/deploy remains deferred.
+  without generation grants or accounting checkpoints. Production backfill of show `01M6ECR1…` pending.
 - Owner: codex · Reviewer: claude-code.
 - Problem: show `01M6ECR1Z295C1WN4H5C7BBNBB` (tenant `faden-und-stimmung`, chat `6127139155`) is
   `ready` v37 with 4 outputs (3 images + video, 0.70 EUR already paid on 2026-11-02). Raw and marked
@@ -884,6 +884,15 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - Tests: ready show with missing attestations → backfill → approval offered; no generation grant for a
   complete show; tampered marked object stays blocked; existing verified shows unchanged.
 - After merge: the bot needs a deploy (Volodymyr's OK); the backfill may need one `show.yml` run.
+
+#### T44e8 — Backfill dispatch hygiene (`bot`)
+- Owner: codex · Reviewer: claude-code.
+- Review notes from PR #75: (1) every «Оновити перегляд» press while verification is pending
+  dispatches another `show.yml` run; dispatch only when `open` creates a new recovery job (or
+  throttle). (2) If some attempts have evidence and a later one is missing, earlier documents are
+  sent before the backfill message; check all evidence before sending any document.
+- Tests: repeated refresh with a live recovery job dispatches once; mixed present/missing evidence
+  sends no documents and starts one backfill.
 
 ### T45 — Shows on the site (F30, `site`)
 - Owner: codex · Reviewer: claude-code.

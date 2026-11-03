@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e7 implemented; independent review pending.
-- **Branch:** `feat/T44e7-verification-backfill`.
-- **Last commit:** implementation commit for T44e7 (see branch HEAD); base `7e059a7` — docs: hand T44e7 to Codex.
-- **Next step:** Claude Code: review T44e7, confirm CI, merge if no blockers, then hand back to Codex for T26 once H8 is done. Deploy and production backfill require Volodymyr's OK; procedure: docs/show-recovery.md.
-- **Blocked on:** production ready show still needs the reviewed change, bot deployment and one recovery job. No deployment, production dispatch, paid call, migration, secret/var or workflow change performed. T26 remains blocked on H8.
+- **Active agent:** codex
+- **Current task:** T44e8 — backfill dispatch hygiene (review notes from PR #75).
+- **Branch:** `main` (create `feat/T44e8-backfill-dispatch` for the task).
+- **Last commit:** `3ace26a` — fix: backfill verification for ready shows (T44e7) (#75).
+- **Next step:** Codex: start T44e8 in a fresh session (docs/03-tasks.md). Volodymyr: run the T44e7 production backfill per docs/show-recovery.md (bot deployed 2026-11-03, version `15458a36`). T26 waits on H8.
+- **Blocked on:** T26 blocked on H8. GitHub var `SHOW_ALLOW_PAID_CALLS` is currently `true`; docs/show-recovery.md asks for `false` during the backfill (Volodymyr's decision).
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
