@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T45 follow-up reviewed by codex and merged as PR #71 (`c160554`); no blocking findings.
+- **Active agent:** none
+- **Current task:** T46 inspected; split into T46a (channel contract/video), T46b (resumable copies), T46c (site-first CI) proposed in docs/03-tasks.md. No implementation changes.
 - **Branch:** `main`.
-- **Last commit:** `c160554` — fix: address T45 site show review notes (#71).
-- **Next step:** Codex: start T46 (show copies to channels) in a fresh session.
-- **Blocked on:** nothing for T46 code. Production show rollout still needs Volodymyr's separate authorization per `docs/show-deployment.md`.
+- **Last commit:** `79f3482` — docs: hand off T46 after reviewing PR 71 (implementation baseline; split proposal is the following docs commit).
+- **Next step:** Volodymyr: approve the T46 split. Then set Active agent to codex and start T46a in a fresh session; reviewer is claude-code.
+- **Blocked on:** T46 split approval (task-plan gate, AGENTS.md). Production show rollout still needs Volodymyr's separate authorization per `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

@@ -871,11 +871,68 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - Tests: page build tests, label presence.
 
 ### T46 — Show copies to channels (F30-F31, `publisher`, `channels`)
+- Owner: codex · Reviewer: claude-code.
+- Status: split proposed 2026-11-03; awaiting Volodymyr's approval before implementation.
 - Depends on: T45, T40
 - Change: a show publishes to the site first, then Telegram (album + video + canonical link) and, once
   T26 exists, Instagram (carousel and Reels). A failed copy never blocks the site.
 - Acceptance: a show post links to its page; a re-run does not duplicate.
 - Tests: render per channel, ledger resume.
+
+The existing publisher deliberately saves shows with an empty channel list; the site job runs
+after publishing. T46 therefore needs a video-capable channel contract, a separate resumable copy
+runner, and CI ordering changes. Keep these in three PRs under ~400 changed non-test lines each
+(ADR 009). No production rollout or paid generation is included. Instagram delivery remains
+conditional on T26; these tasks must not introduce an Instagram-specific branch in the core.
+
+#### T46a — Show rendering and video delivery
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T45, T40; first PR.
+- Change: extend the network-neutral channel contract for show rendering and video bytes/operations.
+  Implement Telegram rendering as an image album, the short video and localized descriptions with
+  canonical show links and AI disclosure. Deliver marked PNG/MP4 bytes unchanged through the
+  existing adapter, reporting each operation through its existing progress callback. Keep ordinary
+  post rendering and delivery compatible. Do not wire production publishing in this PR.
+- Acceptance: rendering is deterministic; links use the tenant's site origin and localized show
+  routes. Descriptions are preserved, limits are checked, and the video replies to the album.
+  Resuming at the video uses the recorded album id without sending the album again. Core types
+  remain independent of a particular network; unsupported show delivery fails explicitly.
+- Tests: localized rendering and limits; exact uploaded media bytes, missing video, reply targets,
+  progress persistence and resume, rate limits and delivery errors; existing post/poll regressions.
+
+#### T46b — Resumable copies from published show content
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T46a; second PR.
+- Change: add a separate publisher command that reads a tenant-scoped show and its marked media from
+  the content store, without re-downloading draft references or regenerating media. Persist a stable
+  delivery plan before sending and reuse it on retries, so changes to language order, canonical
+  origin or rendering settings cannot change the meaning of a recorded operation prefix. Reuse the
+  channel registry, per-operation ledger and content-only Git commits. Support the empty ledger
+  created by site-only show publication and keep that publication path retryable after copies exist.
+- Acceptance: a repeated copy skips completed channels; failure after the album resumes at the
+  missing video/message. Copy failure preserves the published show, records the delivered prefix
+  and alerts the operator. A completed site-only show is not reverted to a failed draft because a
+  copy failed. A missing/cross-tenant show, missing media or invalid progress fails before sending.
+  Existing post/work delivery and callbacks keep their behavior. CI invocation is added in T46c.
+- Tests: real store/ledger round-trips, byte preservation and tenant isolation; successful retry,
+  partial failure, interrupted persistence, changed configuration, completed-channel skip and
+  site-publication retry after copies; notifier/callback and ordinary post/work regressions.
+
+#### T46c — Site-first CI orchestration · Sensitive
+- Owner: codex · Reviewer: claude-code.
+- Depends on: T46b; third PR.
+- Change: wire the copy command after successful content push and site deployment for shows.
+  Pass only the stable show identity/routing needed for copies; preserve live/test channel selection.
+  Keep delivery serialized, push ledger progress even on failure, and document retry/recovery in the
+  runbook. Reuse existing credentials; do not change production secrets, deploy the bot or generate
+  a paid show. Sensitive merge requires Volodymyr's explicit OK under AGENTS.md.
+- Acceptance: a failed site build/deploy sends no copies. A copy failure never prevents or undoes
+  site publication. Re-running the failed copy job reads current persisted progress and skips sent
+  operations, without requiring expiring draft media. Ordinary posts/works retain their existing
+  workflow behavior. The parent T46 closes only after all three PRs pass independent review.
+- Tests: actionlint and workflow ordering/routing checks, including site failure and copy failure;
+  local fixture execution of publication followed by copy failure/resume. Document a separately
+  authorized test-channel smoke run; do not imply it ran during implementation.
 
 ## Tasks v3: phase 2 (website), superseded in v4
 
