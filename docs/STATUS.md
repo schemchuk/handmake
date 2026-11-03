@@ -4,8 +4,8 @@
 - **Current task:** none. T46 closed: T46c merged as PR #74 (`961bf33`); no open review notes. Bot deployed from `main` at `a7953a5` on 2026-11-03 15:16 EET (Worker version `bd8371d4`, includes PRs #66-#74; no new D1 migrations; `SHOW_ALLOW_PAID_CALLS=false` unchanged).
 - **Branch:** `main`.
 - **Last commit:** `961bf33` — feat: orchestrate site-first show copies (T46c) (#74).
-- **Next step:** Codex: T26 (Instagram adapter) in a fresh session, the next task in the approved order, once H8 is done.
-- **Blocked on:** H8 (Volodymyr: Instagram Creator account, Meta app with Instagram Login API, token and IG user ID as secrets) for T26. The production show rollout is still gated by `docs/show-deployment.md`.
+- **Next step:** Codex: T44e7 (docs/03-tasks.md) in a fresh session — backfill missing verification for ready show `01M6ECR1Z295C1WN4H5C7BBNBB` so it can be approved without regeneration. After that, T26 (Instagram) once H8 is done.
+- **Blocked on:** the ready show cannot be approved until T44e7 is merged and the bot is redeployed (Volodymyr's OK). T26 is blocked on H8 (Volodymyr: Instagram Creator account, Meta app with Instagram Login API, token and IG user ID as secrets). The production show rollout is still gated by `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
