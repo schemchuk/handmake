@@ -6,7 +6,7 @@ import { InputFile } from 'grammy';
 import type { AppContext } from './context';
 import type { D1DraftStore, StoredDraft } from './draft-store';
 import { publishingStaleMs } from './draft-store';
-import { resolveVerifiedShowSnapshot } from './show-verification';
+import { MissingShowVerification, resolveVerifiedShowSnapshot } from './show-verification';
 import type { createShowVerificationStore } from './show-verification';
 
 export type ShowApproval = {
@@ -19,6 +19,7 @@ export function createShowApproval(deps: {
   drafts: D1DraftStore;
   verified: Pick<ReturnType<typeof createShowVerificationStore>, 'get'>;
   works: WorkReader;
+  backfill?: (stored: StoredDraft) => Promise<void>;
 }): ShowApproval {
   const { drafts } = deps;
   const current = async (ctx: AppContext, stored: StoredDraft) => {
@@ -68,7 +69,23 @@ export function createShowApproval(deps: {
         };
         if (item.slot === 'video') video = { ...metadata, durationSeconds: 5 };
         else images.push(metadata);
+      }).catch(async (error: unknown) => {
+        if (!(error instanceof MissingShowVerification) || !deps.backfill) throw error;
+        await current(ctx, stored);
+        try {
+          await deps.backfill(stored);
+        } catch {
+          await ctx.reply(
+            'Не вдалося запустити перевірку збережених файлів. Спробуйте «Оновити перегляд» ще раз.',
+          );
+          return;
+        }
+        await ctx.reply(
+          'Показ збережено. Запущено перевірку файлів без повторної генерації та оплати. Після завершення натисніть «Оновити перегляд».',
+          refreshKeyboard(stored, botTexts),
+        );
       });
+      if (!snapshot) return;
       const work = await deps.works.readWork(snapshot.tenantId, snapshot.plan.workId);
       if (!work || work.tenant !== snapshot.tenantId || work.id !== snapshot.plan.workId)
         throw new Error('linked work missing');

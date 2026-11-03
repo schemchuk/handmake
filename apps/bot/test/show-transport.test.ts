@@ -1,3 +1,6 @@
+import { createShowApproval } from '../src/show-approval';
+import type { AppContext } from '../src/context';
+import type { InputFile } from 'grammy';
 import { readFileSync } from 'node:fs';
 import { createDraft, newUlid, parseTenantConfig, showDraftDataSchema } from '@handmake/core';
 import { Miniflare } from 'miniflare';
@@ -818,4 +821,98 @@ it('fences cancellation, incomplete outputs and a generation changing during res
   const wrongTenant = structuredClone(stored);
   wrongTenant.draft.tenantId = 'other';
   await expect(resolve(wrongTenant)).rejects.toThrow('missing');
+}, 60_000);
+
+it('backfills a legacy ready show through a fresh recovery job and offers approval without spending', async () => {
+  const fixture = await nodeFixture();
+  await fixture.run();
+  const initial = (await drafts.get(tenant, show))!;
+  const before = await verifiedSnapshot();
+  for (const item of before.media)
+    await bucket.delete(`show-verified/v1/${tenant}/${show}/${item.evidence.attemptId}`);
+  const costs = (await db.prepare('SELECT * FROM ai_costs').all()).results;
+  const reply = vi.fn(async () => ({}));
+  const upload = vi.fn(async (file: InputFile) => ({
+    document: {
+      file_id: `tg-${file.filename}`,
+      file_unique_id: `unique-${file.filename}`,
+      file_name: file.filename,
+      file_size: ((await file.toRaw()) as Uint8Array).length,
+      mime_type: file.filename!.endsWith('.mp4') ? 'video/mp4' : 'image/png',
+    },
+  }));
+  await drafts.setChatSession(tenant, show, { kind: 'show', draftId: show }, new Date(now));
+  const ctx = {
+    tenantId: tenant,
+    chat: { id: show, type: 'private' },
+    reply,
+    replyWithDocument: upload,
+  } as unknown as AppContext;
+  const backfill = vi.fn(async () => {
+    const next = await transport.open(tenant, show, initial.version, true, true);
+    expect(next.id).not.toBe(job);
+    job = next.id;
+    version = initial.version;
+  });
+  const approval = createShowApproval({
+    drafts,
+    verified: createShowVerificationStore(bucket),
+    backfill,
+    works: {
+      readWork: async () => ({
+        id: show,
+        tenant,
+        date: new Date(now).toISOString(),
+        collection: 'fixture',
+        kind: 'interior',
+        photos: ['original.jpg'],
+        versions: { de: { description: 'Fixture', provenance: 'human' } },
+      }),
+      listWorks: async () => [],
+    },
+  });
+  await approval.present(ctx, initial);
+  expect(backfill).toHaveBeenCalledOnce();
+  expect(upload).not.toHaveBeenCalled();
+  expect(reply).toHaveBeenCalledWith(
+    expect.stringContaining('без повторної генерації'),
+    expect.anything(),
+  );
+  const { executeShow } = await import('../../publisher/src/show-executor');
+  const client = await nodeClient();
+  await executeShow(client, fixture.generator);
+  expect(await flow.authorize(tenant, show)).toBeUndefined();
+  await expect(client.call('authorize')).rejects.toThrow('transport rejected');
+  expect((await db.prepare('SELECT * FROM ai_costs').all()).results).toEqual(costs);
+  expect(fixture.submissions()).toBe(4);
+  expect((await drafts.get(tenant, show))!.version).toBe(initial.version);
+  expect((await verifiedSnapshot()).media.map((i) => i.evidence.attemptId)).toEqual(
+    before.media.map((i) => i.evidence.attemptId),
+  );
+  await approval.present(ctx, initial);
+  expect(upload.mock.calls.map(([file]) => file.filename)).toEqual([
+    'image-0.png',
+    'image-1.png',
+    'image-2.png',
+    'video.mp4',
+  ]);
+  expect(reply).toHaveBeenCalledWith(expect.stringContaining('Схвалити'), expect.anything());
+  expect(backfill).toHaveBeenCalledOnce();
+  // Missing evidence must never bless a marked file whose bytes no longer match its raw source.
+  const item = before.media[0]!;
+  await bucket.delete(`show-verified/v1/${tenant}/${show}/${item.evidence.attemptId}`);
+  await bucket.put(
+    `show-marked/v1/${tenant}/${show}/${item.evidence.attemptId}`,
+    new Uint8Array([1, 2, 3]),
+  );
+  version = (await drafts.get(tenant, show))!.version;
+  job = (await transport.open(tenant, show, version, true, true)).id;
+  const tampered = await nodeClient();
+  await expect(executeShow(tampered, fixture.generator)).rejects.toThrow();
+  expect(
+    await bucket.get(`show-verified/v1/${tenant}/${show}/${item.evidence.attemptId}`),
+  ).toBeNull();
+  await expect(verifiedSnapshot()).rejects.toThrow();
+  expect((await db.prepare('SELECT * FROM ai_costs').all()).results).toEqual(costs);
+  expect(fixture.submissions()).toBe(4);
 }, 60_000);

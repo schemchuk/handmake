@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** none. T46 closed: T46c merged as PR #74 (`961bf33`); no open review notes. Bot deployed from `main` at `a7953a5` on 2026-11-03 15:16 EET (Worker version `bd8371d4`, includes PRs #66-#74; no new D1 migrations; `SHOW_ALLOW_PAID_CALLS=false` unchanged).
-- **Branch:** `main`.
-- **Last commit:** `961bf33` — feat: orchestrate site-first show copies (T46c) (#74).
-- **Next step:** Codex: T44e7 (docs/03-tasks.md) in a fresh session — backfill missing verification for ready show `01M6ECR1Z295C1WN4H5C7BBNBB` so it can be approved without regeneration. After that, T26 (Instagram) once H8 is done.
-- **Blocked on:** the ready show cannot be approved until T44e7 is merged and the bot is redeployed (Volodymyr's OK). T26 is blocked on H8 (Volodymyr: Instagram Creator account, Meta app with Instagram Login API, token and IG user ID as secrets). The production show rollout is still gated by `docs/show-deployment.md`.
+- **Active agent:** claude-code
+- **Current task:** T44e7 implemented; independent review pending.
+- **Branch:** `feat/T44e7-verification-backfill`.
+- **Last commit:** implementation commit for T44e7 (see branch HEAD); base `7e059a7` — docs: hand T44e7 to Codex.
+- **Next step:** Claude Code: review T44e7, confirm CI, merge if no blockers, then hand back to Codex for T26 once H8 is done. Deploy and production backfill require Volodymyr's OK; procedure: docs/show-recovery.md.
+- **Blocked on:** production ready show still needs the reviewed change, bot deployment and one recovery job. No deployment, production dispatch, paid call, migration, secret/var or workflow change performed. T26 remains blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e7 validation: transport 37/37, approval and draft flow 58/58 pass with local D1/R2 and real marked media. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial sandbox run could not initialize Miniflare; unrestricted targeted suites passed. The new test covers missing attestations, a fresh recovery job, unchanged attempts/cost rows, four document uploads, approval offered and tampered media rejection. No production backfill, deployment, paid calls, workflows, migrations or secret/var changes.
 - PR #74 review fixes: grouped routing outputs and configured Git identity before both rebase/push loops. actionlint v1.7.12 with ShellCheck v0.11.0, workflow tests 11/11 and changed-file formatting pass. CI caught missing step env in the shell integration harness; the harness now passes the workflow env. Publisher 175/175 and publisher typecheck pass locally; full GitHub CI passed on `cfa7c6c` (run 41640589460). No deployment or publishing run.
 - T46c validation: publisher 175/175 tests pass; workspace typecheck/build, lint, formatting and actionlint pass. Workflow guards/routing and a local Git remote with failed-progress push, fresh checkout and resumed copies are covered. Recovery and separately authorized smoke procedure: docs/show-copies.md. No remote deployment, dispatch, paid generation or production secret changes.
 - T46b validation: publisher 160/160 plus the added operation-commit interruption case pass; channels 64/64, core 213/213 and stores 45/45 pass. Workspace typecheck/build, lint and formatting pass. Stored marked PNG/MP4 bytes, real Git ledger commits, failure/resume, config drift, tenant/progress guards and site callbacks are covered. Recovery: docs/show-copies.md. No workflow, deployment, production publishing, paid call or secret changes.

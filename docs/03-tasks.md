@@ -861,7 +861,9 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     stability, tenant isolation and existing post/work publication.
 
 #### T44e7 — Backfill verification for shows generated before T44e6a (`bot`, `publisher`)
-- Status: to do. Found 2026-11-03 after the bot deploy `bd8371d4`.
+- Status: implemented on `feat/T44e7-verification-backfill`; awaiting claude-code review.
+  Missing attestations trigger a recovery-only job from preview; retained outputs are verified
+  without generation grants or accounting checkpoints. Production backfill/deploy remains deferred.
 - Owner: codex · Reviewer: claude-code.
 - Problem: show `01M6ECR1Z295C1WN4H5C7BBNBB` (tenant `faden-und-stimmung`, chat `6127139155`) is
   `ready` v37 with 4 outputs (3 images + video, 0.70 EUR already paid on 2026-11-02). Raw and marked

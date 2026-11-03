@@ -60,3 +60,21 @@ presses during that interval do not dispatch again. The existing publish runner 
 published callback handle delivery. T44e6c tests the complete publication path;
 [deployment and acceptance gates](show-deployment.md) distinguish recorded setup from pending
 production checks. No deployment or paid calls are authorized by this implementation.
+
+## Legacy ready shows without attestations (T44e7)
+
+A ready show generated before verification evidence was introduced keeps its original raw and
+marked objects and paid attempt IDs. On “Refresh preview”, missing evidence now dispatches a
+reusable recovery-mode `show.yml` job. The author sees a verification-in-progress message and
+can refresh again after the workflow finishes. A dispatch failure leaves the ready show retryable.
+
+The existing Node prepare step verifies each retained marked object against its raw source and
+writes `show-verified/v1` evidence. Recovery mode rejects authorization, grants and provider journal
+writes; it performs no generation or accounting checkpoint. Keep `SHOW_ALLOW_PAID_CALLS=false`.
+Invalid evidence or mismatched marked/raw media fails closed rather than offering approval.
+Repeated refreshes reuse the live job identity; existing verified shows use the normal preview.
+
+After merge, deploy the bot only with Volodymyr's approval. For the retained production show,
+refresh its preview, wait for the recovery workflow, then refresh again. Confirm three PNGs and
+one MP4 plus the approval button, unchanged attempt IDs and no added `ai_costs` rows. This task's
+implementation and tests do not execute that production procedure or deploy anything.
