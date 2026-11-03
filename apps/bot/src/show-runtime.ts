@@ -1,4 +1,7 @@
 import type { ShowSourceImage } from '@handmake/core';
+import { createTenantLookup } from './allow-list';
+import { dispatchShow } from './show-start';
+import { showDraftDataSchema } from '@handmake/core';
 import { botTexts } from './texts';
 import { createShowPreview } from './show-preview';
 import { createR2MarkedShowStorage } from './show-storage';
@@ -56,8 +59,41 @@ export function createShowRuntime(env: Env) {
     drafts,
     flow,
   });
+  const operator = createTenantLookup(env.TELEGRAM_SHOW_OPERATOR_IDS ?? '{}');
   return {
     ...transport,
+    recovery: {
+      isOperator: (userId: number, tenantId: string) => operator(userId) === tenantId,
+      async recover(stored: import('./draft-store').StoredDraft) {
+        const { tenantId, draftId } = stored.draft;
+        const data = showDraftDataSchema.parse(stored.draft.extras['show']);
+        if (!data.pending || stored.draft.extras['showCancelled'])
+          throw new Error('stale recovery');
+        const job = await transport.open(tenantId, draftId, stored.version, true, true);
+        await dispatchShow(env.GITHUB_REPO, env.GITHUB_DISPATCH_TOKEN, {
+          tenantId,
+          showId: draftId,
+          jobId: job.id,
+          version: stored.version,
+        });
+      },
+      async reconcile(
+        stored: import('./draft-store').StoredDraft,
+        confirmation: import('./show-draft-flow').ShowReconciliation,
+      ) {
+        const latest = await drafts.get(stored.draft.tenantId, stored.draft.draftId);
+        if (!latest || latest.version !== stored.version) return false;
+        const data = showDraftDataSchema.parse(stored.draft.extras['show']);
+        if (!data.pending) return false;
+        return flow.reconcile(
+          stored.draft.tenantId,
+          stored.draft.draftId,
+          data.pending.attemptId,
+          confirmation,
+          stored.version,
+        );
+      },
+    },
     preview: createShowPreview({
       drafts,
       texts: botTexts,

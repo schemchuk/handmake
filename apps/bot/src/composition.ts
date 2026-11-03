@@ -145,6 +145,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
             token: env.GITHUB_DISPATCH_TOKEN,
           }),
           configs: tenantConfigs,
+          recovery: shows?.recovery,
           start: shows?.start,
           preview: shows?.preview,
         },

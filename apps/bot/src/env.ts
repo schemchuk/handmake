@@ -4,6 +4,8 @@
 export interface Env {
   /** Optional private binding; no production bucket is provisioned by T44e2. */
   SHOW_MEDIA?: R2Bucket;
+  /** Optional operator user-to-tenant map; absent means recovery is denied. */
+  TELEGRAM_SHOW_OPERATOR_IDS?: string;
   /** Dedicated HMAC secret for show transport; absence disables the endpoint. */
   SHOW_TRANSPORT_SECRET?: string;
   DB: D1Database;

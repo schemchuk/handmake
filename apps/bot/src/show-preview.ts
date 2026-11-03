@@ -27,6 +27,7 @@ export function createShowPreview(deps: {
         !latest ||
         latest.version !== stored.version ||
         latest.draft.kind !== 'show' ||
+        latest.draft.extras['showCancelled'] ||
         !['collecting', 'translating', 'failed', 'ready'].includes(latest.draft.state) ||
         JSON.stringify(showDraftDataSchema.parse(latest.draft.extras['show'])) !== identity
       )

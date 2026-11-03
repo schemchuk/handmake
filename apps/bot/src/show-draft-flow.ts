@@ -22,7 +22,12 @@ type Operation =
   | { kind: 'authorize' }
   | { kind: 'accept'; attemptId: string; result?: Result }
   | { kind: 'recover'; attemptId: string; recovery: ShowRecovery }
-  | { kind: 'reconcile'; attemptId: string; confirmation: ShowReconciliation };
+  | {
+      kind: 'reconcile';
+      attemptId: string;
+      confirmation: ShowReconciliation;
+      expectedVersion?: number;
+    };
 /** Adapter reads an immutable journal identity and resumes GETs only; no submission fallback. */
 export type ShowRecovery = {
   requestId(scope: {
@@ -95,7 +100,18 @@ export function createShowDraftFlow(deps: Deps) {
       operation?: Operation,
     ): Promise<boolean | ShowCallGrant> {
       const found = await drafts.get(tenantId, draftId);
-      if (!found || found.draft.kind !== 'show') return false;
+      if (
+        !found ||
+        found.draft.kind !== 'show' ||
+        (found.draft.extras['showCancelled'] && operation?.kind !== 'reconcile')
+      )
+        return false;
+      if (
+        operation?.kind === 'reconcile' &&
+        operation.expectedVersion !== undefined &&
+        found.version !== operation.expectedVersion
+      )
+        return false;
       let current = found;
       const data = showDraftDataSchema.parse(current.draft.extras['show']);
       if (
@@ -385,6 +401,7 @@ export function createShowDraftFlow(deps: Deps) {
       const data = showDraftDataSchema.parse(stored.draft.extras['show']);
       if (
         stored.draft.kind !== 'show' ||
+        stored.draft.extras['showCancelled'] ||
         stored.draft.state !== 'ready' ||
         data.pending ||
         ![
@@ -451,12 +468,14 @@ export function createShowDraftFlow(deps: Deps) {
       draftId: string,
       attemptId: string,
       confirmation: ShowReconciliation,
+      expectedVersion?: number,
     ) {
       return (
         (await flow.run(tenantId, draftId, undefined, {
           kind: 'reconcile',
           attemptId,
           confirmation,
+          expectedVersion,
         })) === true
       );
     },

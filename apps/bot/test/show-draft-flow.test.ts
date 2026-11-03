@@ -686,3 +686,45 @@ it('never lets a stale ready button take over an expired unknown generation leas
   await create(other);
   expect(await flow().generate(tenant, other)).toBe(false);
 });
+
+it('retains cancellation evidence and lock until explicit version-bound billing reconciliation', async () => {
+  const grant = (await flow().authorize(tenant, id))!;
+  const stored = await get();
+  const pending = (await data()).pending;
+  await drafts.updateShow(
+    { ...stored.draft, extras: { ...stored.draft.extras, showCancelled: true } },
+    stored.version,
+  );
+  expect(
+    await flow().accept(tenant, id, grant.request.attemptId, {
+      ...receipt(grant.request),
+      mimeType: 'image/png',
+    }),
+  ).toBe(false);
+  expect(await flow().authorize(tenant, id)).toBeUndefined();
+  await drafts.delete(tenant, id);
+  await drafts.deleteOlderThan(new Date('2030-01-01'));
+  expect((await data()).pending).toEqual(pending);
+  expect(await locks.acquireIdle(tenant, other, 'other', clock.now())).toBe(false);
+  const confirmation = {
+    operatorConfirmed: true as const,
+    note: 'Provider confirmed no charge',
+    billing: null,
+  };
+  expect(
+    await flow().reconcile(tenant, id, grant.request.attemptId, confirmation, stored.version),
+  ).toBe(false);
+  expect(
+    await flow().reconcile(
+      tenant,
+      id,
+      grant.request.attemptId,
+      confirmation,
+      (await get()).version,
+    ),
+  ).toBe(true);
+  expect((await data()).reconciled).toHaveLength(1);
+  expect((await get()).draft.extras['showCancelled']).toBe(true);
+  expect(await locks.acquireIdle(tenant, other, 'other', clock.now())).toBe(true);
+  expect(await flow().accept(tenant, id, grant.request.attemptId)).toBe(false);
+});

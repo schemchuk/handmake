@@ -57,6 +57,10 @@ const generator = {
 const preview = vi.fn(
   async (_ctx: unknown, _stored: import('../src/draft-store').StoredDraft) => {},
 );
+const recover = vi.fn(async (_stored: import('../src/draft-store').StoredDraft) => {});
+const reconcile = vi.fn(
+  async (_stored: import('../src/draft-store').StoredDraft, _confirmation: unknown) => true,
+);
 const start = vi.fn(async (_stored: import('../src/draft-store').StoredDraft) => {});
 function build(enabled = true, execution = true) {
   bot = createBot({
@@ -72,6 +76,11 @@ function build(enabled = true, execution = true) {
     },
     show: enabled
       ? {
+          recovery: {
+            isOperator: (id, scope) => id === 13 && scope === tenant,
+            recover,
+            reconcile,
+          },
           works: { listWorks, readWork },
           configs: { load },
           start: execution ? start : undefined,
@@ -121,7 +130,11 @@ beforeEach(async () => {
   tasks = [];
   await build();
 });
-const send = (text: string, user = 11) => bot.handleUpdate(textUpdate(user, text));
+const send = (text: string, user = 11) => {
+  const update = textUpdate(user, text);
+  update.message!.entities![0]!.length = text.split(' ')[0]!.length;
+  return bot.handleUpdate(update);
+};
 const press = (data: string, user = 11) => bot.handleUpdate(callbackQueryUpdate(user, user, data));
 const session = () => drafts.getChatSession(tenant, '11');
 const get = (id: string) => drafts.get(tenant, id);
@@ -301,7 +314,7 @@ it('discards only the active show and allows a fresh selection', async () => {
   await send('/show');
   const id = (await session())!.draftId!;
   await send('/discard');
-  expect(await get(id)).toBeUndefined();
+  expect((await get(id))!.draft.extras['showCancelled']).toBe(true);
   expect(await get(postId)).toBeDefined();
   await send('/show');
   expect((await session())!.draftId).not.toBe(id);
@@ -716,4 +729,48 @@ it('warns at the monthly target before routing regeneration through the normal b
   await flush();
   expect(sentTexts(calls)).toContain(botTexts.costTargetText);
   expect(start).toHaveBeenCalledTimes(1);
+});
+
+it('denies author reconciliation, accepts explicit operator recovery and rejects stale identity', async () => {
+  const id = await completedShow('failed');
+  const stored = (await get(id))!;
+  const data = showDraftDataSchema.parse(stored.draft.extras['show']);
+  data.pending = { attemptId: 'unknown-attempt', slot: 'image-0', at: new Date().toISOString() };
+  await drafts.updateShow(
+    { ...stored.draft, extras: { ...stored.draft.extras, show: data } },
+    stored.version,
+  );
+  const current = (await get(id))!;
+  const args = `${id} ${current.version} unknown-attempt`;
+  await send(`/show_recover ${args}`);
+  await send(`/show_reconcile ${args} {"operatorConfirmed":true,"note":"checked","billing":null}`);
+  expect(recover).not.toHaveBeenCalled();
+  expect(reconcile).not.toHaveBeenCalled();
+  await send(`/show_recover ${args}`, 13);
+  expect(recover).toHaveBeenCalledWith(current);
+  await send(
+    `/show_reconcile ${args} {"operatorConfirmed":true,"note":"checked","billing":null}`,
+    13,
+  );
+  expect(reconcile).toHaveBeenCalledTimes(1);
+  await send(`/show_recover ${id} ${stored.version} unknown-attempt`, 13);
+  await send(`/show_recover ${args}`, 12);
+  expect(recover).toHaveBeenCalledTimes(1);
+});
+
+it('cancels a show without deleting output evidence and fences old callbacks', async () => {
+  const id = await completedShow('ready');
+  await send('/show');
+  const action = button('regen');
+  const before = (await get(id))!;
+  await send('/discard');
+  const cancelled = (await get(id))!;
+  expect(cancelled.draft.extras['show']).toEqual(before.draft.extras['show']);
+  expect(cancelled.draft.extras['showCancelled']).toBe(true);
+  expect(await drafts.findShowForChat(tenant, '11')).toBeUndefined();
+  await press(action);
+  await flush();
+  expect(start).not.toHaveBeenCalled();
+  await send('/show');
+  expect((await drafts.getChatSession(tenant, '11'))?.draftId).not.toBe(id);
 });

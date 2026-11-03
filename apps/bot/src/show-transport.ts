@@ -7,7 +7,7 @@ export const showTransportPath = '/internal/shows/';
 const limit = 20_000_000;
 const part = /^[A-Za-z0-9_-]{1,128}$/;
 type Flow = Pick<ReturnType<typeof createShowDraftFlow>, 'authorize' | 'accept'>;
-type Job = { id: string; version: number; expires: number; busy?: number };
+type Job = { id: string; version: number; expires: number; busy?: number; recovery?: boolean };
 type Scope = { tenantId: string; showId: string; attemptId: string };
 
 /** No URLs or credentials in the protocol. All fields and exact bytes are signed. */
@@ -60,16 +60,22 @@ export function createShowTransport(deps: {
 
   return {
     /** Internal dispatch boundary only. Never exposed as an HTTP operation. */
-    async open(tenantId: string, showId: string, version: number, reuse = false) {
+    async open(tenantId: string, showId: string, version: number, reuse = false, recovery = false) {
       if (!secret || !part.test(tenantId) || !part.test(showId)) throw new Error('shows disabled');
       const draft = await drafts.get(tenantId, showId);
-      if (!draft || draft.draft.kind !== 'show' || draft.version !== version)
+      if (
+        !draft ||
+        draft.draft.kind !== 'show' ||
+        draft.version !== version ||
+        draft.draft.extras['showCancelled']
+      )
         throw new Error('stale show');
       const key = jobKey(tenantId, showId);
       const previous = await bucket.get(key);
       if (previous && reuse) {
         const { job } = await load(tenantId, showId);
-        if (job.version === version && job.expires > now()) return job;
+        if (job.version === version && job.expires > now() && !!job.recovery === recovery)
+          return job;
         // A newer draft or an expired execution gets a new identity. Pending attempts
         // retain their grant and immutable journal; reopening never authorizes a replacement.
         if (job.version > version) throw new Error('stale show');
@@ -78,8 +84,8 @@ export function createShowTransport(deps: {
         const busy = (await load(tenantId, showId)).job.busy;
         if (busy !== undefined && busy + 600_000 > now()) throw new Error('job requires recovery');
       }
-      const job: Job = { id: crypto.randomUUID(), version, expires: now() + 60 * 60_000 };
-      if (previous) {
+      const job: Job = { id: crypto.randomUUID(), version, expires: now() + 60 * 60_000, recovery };
+      if (previous && !recovery) {
         const prior = JSON.parse(await previous.text()) as Job;
         const data = showDraftDataSchema.parse(draft.draft.extras['show']);
         if (data.pending) {
@@ -148,6 +154,7 @@ export function createShowTransport(deps: {
         if (
           !draft ||
           draft.draft.kind !== 'show' ||
+          draft.draft.extras['showCancelled'] ||
           job.id !== jobId ||
           job.expires < now() ||
           (job.busy !== undefined && job.busy + 600_000 > now())
@@ -164,6 +171,7 @@ export function createShowTransport(deps: {
             version: draft.version,
             pending: data.pending,
             outputs: data.outputs,
+            recovery: job.recovery ?? false,
           });
         }
         if (job.version !== Number(versionText) || draft.version !== job.version)
@@ -203,6 +211,8 @@ export function createShowTransport(deps: {
         };
         let value: unknown;
         const json = () => JSON.parse(new TextDecoder().decode(bytes)) as Record<string, string>;
+        if (job.recovery && ['authorize', 'reserve', 'record', 'grant'].includes(operation!))
+          throw new Error('recovery is GET-only');
         if (operation === 'authorize') {
           const grant = await flow.authorize(scope.tenantId, scope.showId);
           value = grant ? await wireGrant(grant, bucket, job.id) : null;
@@ -223,6 +233,21 @@ export function createShowTransport(deps: {
           value = {
             raw: !!(await raw.results.get(scope.tenantId, scope.showId, scope.attemptId)),
             marked: !!(await marked.get(scope.tenantId, scope.showId, scope.attemptId)),
+          };
+        } else if (operation === 'recovery') {
+          if (!job.recovery || !data.pending || data.pending.attemptId !== attemptId)
+            throw new Error('stale recovery');
+          const ticket = await raw.readAttempt(scope);
+          if (!ticket.requestId) throw new Error('billing reconciliation required');
+          const video = data.pending.slot === 'video';
+          value = {
+            requestId: ticket.requestId,
+            video,
+            providerModel: video ? data.plan.provider.video.model : data.plan.provider.image.model,
+            promptVersion: video ? 'show-video@1' : `show-${data.plan.template}@1`,
+            costEur: video
+              ? data.plan.provider.video.eurPerSecond * 5
+              : data.plan.provider.image.eurPerImage,
           };
         } else if (operation === 'journal') {
           value = await raw.readAttempt(scope);

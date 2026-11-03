@@ -166,6 +166,40 @@ export class FalShowGenerator implements ShowGenerator {
         await o.journal.record(scope, requestId);
       }
       if (!requestId) throw new FalShowError('reconcile');
+      return await this.resume({
+        requestId,
+        providerModel: request.providerModel,
+        promptVersion: request.promptVersion,
+        costEur: price,
+        video,
+      });
+    } catch (error) {
+      if (error instanceof FalShowError)
+        throw new FalShowError(error.code, requestId ?? error.requestId);
+      throw new FalShowError('reconcile', requestId);
+    }
+  }
+
+  /** Resume an immutable journal ticket using GETs only; source media is unnecessary. */
+  async resume(request: {
+    requestId: string;
+    providerModel: string;
+    promptVersion: string;
+    costEur: number;
+    video: boolean;
+  }) {
+    const o = this.#options;
+    const requestId = requestIdSchema.parse(request.requestId);
+    const video = request.video;
+    if (
+      !o.apiKey.trim() ||
+      !/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_.-]+)+$/.test(request.providerModel) ||
+      request.providerModel.split('/').some((p) => p === '.' || p === '..') ||
+      !Number.isFinite(request.costEur) ||
+      request.costEur < 0
+    )
+      throw new FalShowError('invalid-input');
+    try {
       // Queue request routes use owner/app, excluding the model's endpoint path.
       // Ignore response URLs entirely: credentials only ever reach this constructed origin.
       const base = `${falQueueOrigin}/${request.providerModel.split('/').slice(0, 2).join('/')}/requests/${requestId}`;
@@ -200,9 +234,9 @@ export class FalShowGenerator implements ShowGenerator {
             callId: `fal:${requestId}`,
             model: request.providerModel,
             promptVersion: request.promptVersion,
-            costEur: price,
+            costEur: request.costEur,
             bytes,
-            mimeType,
+            mimeType: mimeType as ShowSourceImage['mimeType'] | 'video/mp4',
           };
         }
         if (poll + 1 < (o.maxPolls ?? 30))
@@ -212,9 +246,7 @@ export class FalShowGenerator implements ShowGenerator {
       }
       throw new FalShowError('timeout', requestId);
     } catch (error) {
-      if (error instanceof FalShowError)
-        throw new FalShowError(error.code, requestId ?? error.requestId);
-      throw new FalShowError('reconcile', requestId);
+      throw error instanceof FalShowError ? error : new FalShowError('reconcile', requestId);
     }
   }
 

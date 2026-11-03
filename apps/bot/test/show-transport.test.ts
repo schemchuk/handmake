@@ -583,3 +583,95 @@ it('keeps a stable live job identity for duplicate dispatch and refuses missing 
       ?.attemptId,
   ).toBe(attempt);
 });
+
+it('recovers a lost grant and unavailable sources via journal GETs with paid gates closed', async () => {
+  const { FalShowGenerator } = await import('@handmake/ai');
+  const { executeShow } = await import('../../publisher/src/show-executor');
+  const { markingFixtures } = await import('../../publisher/test/fixtures/show-marking');
+  media = new Uint8Array((await markingFixtures()).image);
+  await authorize();
+  const pending = attempt;
+  await call('reserve', { body: JSON.stringify({ fingerprint: 'b'.repeat(64) }) });
+  await call('record', { body: JSON.stringify({ requestId: providerId }) });
+  await bucket.delete(`show-grant/v1/${job}/${pending}`);
+  await bucket.delete(`show-source/v1/${job}/${pending}/source-0`);
+  job = (await transport.open(tenant, show, version, true, true)).id;
+  const client = await nodeClient();
+  const http = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+    expect(init?.method ?? 'GET').toBe('GET');
+    if (String(url).endsWith('/status')) return Response.json({ status: 'COMPLETED' });
+    if (String(url).startsWith('https://fal.media/'))
+      return new Response(media, { headers: { 'content-type': 'image/png' } });
+    return Response.json({ images: [{ url: 'https://fal.media/recovered.png' }] });
+  });
+  const adapter = new FalShowGenerator({
+    apiKey: 'fixture',
+    journal: client.journal,
+    config: () => config.shows!,
+    allowPaidCalls: false,
+    fetch: http,
+    maxPolls: 1,
+  });
+  await executeShow(client, adapter);
+  expect(http).toHaveBeenCalledTimes(3);
+  expect((await client.call('status')).pending).toBeUndefined();
+  expect((await client.call('status')).outputs['image-0'].attemptId).toBe(pending);
+  expect(await createR2MarkedShowStorage(bucket).get(tenant, show, pending)).toBeTruthy();
+  expect((await createAiCostLedger(db).summary(tenant, new Date(now))).total).toBe(0.1);
+  await expect(client.call('authorize')).rejects.toThrow('transport rejected');
+  await expect(
+    client.journal.reserve({ tenantId: tenant, showId: show, attemptId: pending }, 'c'.repeat(64)),
+  ).rejects.toThrow('transport rejected');
+  expect(generator.generateImage).not.toHaveBeenCalled();
+}, 60_000);
+
+it('retains an unknown journal reservation and tenant lock when GET recovery has no request id', async () => {
+  const { executeShow } = await import('../../publisher/src/show-executor');
+  await authorize();
+  await call('reserve', { body: JSON.stringify({ fingerprint: 'c'.repeat(64) }) });
+  job = (await transport.open(tenant, show, version, true, true)).id;
+  const client = await nodeClient();
+  const resume = vi.fn();
+  await expect(executeShow(client, { ...generator, resume })).rejects.toThrow('transport rejected');
+  expect(resume).not.toHaveBeenCalled();
+  expect((await client.call('status')).pending.attemptId).toBe(attempt);
+  expect(
+    await db
+      .prepare('SELECT * FROM show_generation_locks WHERE tenant_id = ?')
+      .bind(tenant)
+      .first(),
+  ).toBeTruthy();
+});
+
+it('rejects old signed callbacks after cancellation while retaining journal and billing evidence', async () => {
+  await authorize();
+  await call('reserve', { body: JSON.stringify({ fingerprint: 'd'.repeat(64) }) });
+  await call('record', { body: JSON.stringify({ requestId: providerId }) });
+  const before = (await drafts.get(tenant, show))!;
+  await drafts.updateShow(
+    { ...before.draft, extras: { ...before.draft.extras, showCancelled: true } },
+    before.version,
+  );
+  expect((await transport.handle(await request('checkpoint'))).status).toBe(409);
+  const confirmation = {
+    operatorConfirmed: true as const,
+    note: 'Provider invoice checked',
+    billing: { callId: `fal:${providerId}`, model: 'fixture/image', costEur: 0.1 },
+  };
+  expect(await flow.reconcile(tenant, show, attempt, confirmation)).toBe(true);
+  expect((await createAiCostLedger(db).summary(tenant, new Date(now))).total).toBe(0.1);
+  expect(
+    (
+      await createR2ShowStorage(bucket).readAttempt({
+        tenantId: tenant,
+        showId: show,
+        attemptId: attempt,
+      })
+    ).requestId,
+  ).toBe(providerId);
+  await drafts.deleteOlderThan(new Date('2030-01-01'));
+  const retained = (await drafts.get(tenant, show))!;
+  expect(showDraftDataSchema.parse(retained.draft.extras['show']).reconciled).toHaveLength(1);
+  expect(retained.draft.extras['showCancelled']).toBe(true);
+  await expect(transport.open(tenant, show, retained.version, true, true)).rejects.toThrow('stale');
+});

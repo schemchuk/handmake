@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e5b — merged as PR #64 (`c6eed9f`) after Claude Code review (no blocking findings, CI green). Next: T44e5c.
-- **Branch:** `main`.
-- **Last commit:** this docs commit — docs: record PR 64 merge; parent `c6eed9f` (feat: add show regeneration and resumable retry (T44e5b) (#64)).
-- **Next step:** Codex: implement T44e5c (operator reconciliation and safe discard) in a fresh session on its own branch; Claude Code reviews. Non-blocking notes from the #64 review: the `regenerate` branch inside `flow.run` duplicates `prepareRegeneration` and is no longer used by the bot buttons; a budget denial on regeneration shows the generic start-failed text. No deployment or paid calls authorized.
-- **Blocked on:** nothing for T44e5c. Unknown attempts retain their pending marker and tenant lock; missing grants need T44e5c operator reconciliation. Bot redeploy for T44e5b not requested (no migrations).
-- **Open questions for Volodymyr:** none. Implementation only; deployment and paid calls require separate explicit approval.
+- **Active agent:** claude-code
+- **Current task:** T44e5c — implemented; ready for independent review and T44e5 parent acceptance confirmation.
+- **Branch:** `feat/T44e5c-show-recovery`.
+- **Last commit:** this implementation commit — feat: add operator show recovery and safe discard (T44e5c); parent `5849ba4`.
+- **Next step:** Claude Code: review the task PR, confirm T44e5 acceptance, then merge only after CI is green and Volodymyr explicitly approves the sensitive operator-secret configuration change. No deployment or paid calls authorized.
+- **Blocked on:** independent review and sensitive merge approval. Operator access defaults to denied; configuring `TELEGRAM_SHOW_OPERATOR_IDS` and redeployment need separate authorization. Runbook: `docs/show-recovery.md`.
+- **Open questions for Volodymyr:** none for implementation; explicit sensitive merge approval remains required.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e5c validation: all 459 bot tests covered across runs (initial full run 457/458 with one invalid new fixture; corrected changed suites 120/120 plus final cancellation-journal test 1/1). AI 117/117, publisher 137/137; workspace typecheck/build, lint, format and staged secret scan pass. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
 - T44e5b validation: full bot run passed 452/453 with one invalid new fingerprint fixture; after correcting that fixture, the entire transport suite passed 29/29 (all 453 tests covered across the runs). Workspace typecheck/build, lint, formatting and staged secret scan pass. No deploy, paid call, workflow, secret or migration changes.
 - T44e4c validation: bot 401 tests pass, including explicit start, private snapshots, stale/concurrent input, failed preparation/dispatch retry and signed Worker handoff. Workspace typecheck/build, lint, formatting and staged gitleaks scan pass. No deploy, paid calls, secrets/vars or migrations changed.
 - T44e4a validation: bot 368 tests and core 213 tests pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Selection only: no generation dispatch, paid calls, workflow changes, migration or deploy.

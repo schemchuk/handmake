@@ -407,7 +407,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
 
     async delete(tenantId, draftId) {
       await db
-        .prepare('DELETE FROM drafts WHERE tenant_id = ? AND id = ?')
+        .prepare("DELETE FROM drafts WHERE tenant_id = ? AND id = ? AND kind != 'show'")
         .bind(tenantId, draftId)
         .run();
     },
@@ -437,6 +437,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .prepare(
           `${selectDraft} AND chat_id = ? AND kind = 'show'
          AND status IN ('collecting', 'translating', 'failed', 'ready')
+         AND json_extract(extras, '$.showCancelled') IS NULL
          ORDER BY created_at DESC LIMIT 1`,
         )
         .bind(tenantId, chatId)
@@ -665,7 +666,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
 
     async deleteOlderThan(cutoff) {
       const result = await db
-        .prepare('DELETE FROM drafts WHERE updated_at < ?')
+        .prepare("DELETE FROM drafts WHERE updated_at < ? AND kind != 'show'")
         .bind(cutoff.toISOString())
         .run();
       return result.meta.changes;
