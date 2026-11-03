@@ -54,13 +54,19 @@ export function createShowVerificationStore(bucket: Pick<R2Bucket, 'get' | 'put'
   };
 }
 
-/** Resolve one complete current generation; a later approval must CAS this version. */
+/** Resolve the current generation; approval must CAS this version. A visitor consumes
+ * one file at a time and the returned snapshot retains metadata only. */
 export async function resolveVerifiedShowSnapshot(
   deps: {
     drafts: Pick<D1DraftStore, 'get'>;
     verified: Pick<ReturnType<typeof createShowVerificationStore>, 'get'>;
   },
   stored: StoredDraft,
+  visit?: (
+    item: { slot: string } & Awaited<
+      ReturnType<ReturnType<typeof createShowVerificationStore>['get']>
+    >,
+  ) => Promise<void>,
 ) {
   stored = structuredClone(stored);
   const { tenantId, draftId } = stored.draft;
@@ -99,7 +105,12 @@ export async function resolveVerifiedShowSnapshot(
       output.result.mimeType !== (slot === 'video' ? 'video/mp4' : 'image/png')
     )
       throw new Error('show snapshot receipt mismatch');
-    media.push({ slot, ...output });
+    const item = { slot, ...output };
+    if (visit) {
+      await visit(item);
+      item.result = { ...item.result, bytes: new Uint8Array() };
+    }
+    media.push(item);
   }
   await assertCurrent();
   return { tenantId, showId: draftId, version: stored.version, plan: data.plan, media };
