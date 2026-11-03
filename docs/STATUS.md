@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T44e6b implementation complete; awaiting independent review.
+- **Current task:** T44e6b implementation complete (PR #67); awaiting independent review.
 - **Branch:** `feat/t44e6b-show-approval`.
-- **Last commit:** `3728a84` — docs: record PR 66 merge (implementation base; review branch HEAD).
-- **Next step:** Claude Code: review T44e6b, merge only after CI is green and no blocking findings remain. Then hand off T44e6c to Codex in a fresh session.
+- **Last commit:** `055bef8` — feat: freeze verified show approval and document dispatch.
+- **Next step:** Claude Code: review T44e6b (PR #67), merge only after CI is green and no blocking findings remain. Then hand off T44e6c to Codex in a fresh session.
 - **Blocked on:** independent review. No deployment or paid calls authorized; publication integration remains T44e6c.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
