@@ -818,7 +818,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   regeneration versus approval races, dispatch/callback retries, tenant isolation and post/work
   regressions. Keep live calls and deployment as separately authorized follow-up work.
 
-  **Proposed split (2026-11-03, pending Volodymyr's approval; no implementation yet):**
+  **Split approved by Volodymyr (2026-11-03; no implementation yet):**
   Inspection found that Node verifies marked bytes, but the Worker has no durable verification
   evidence to bind to approval. The generic publish handler explicitly rejects shows. Adding that
   boundary, immutable approval, document ingestion and end-to-end coverage in one PR would exceed

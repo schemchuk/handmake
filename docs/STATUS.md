@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T44e6 — implementation inspection complete; proposed T44e6a/b/c split awaits Volodymyr's approval in docs/03-tasks.md. No code changed.
+- **Active agent:** codex
+- **Current task:** T44e6 — T44e6a/b/c split approved by Volodymyr in chat on 2026-11-03. No code changed. Next: T44e6a.
 - **Branch:** `main`.
-- **Last commit:** this docs commit — docs: propose reviewable T44e6 subtasks.
-- **Next step:** Volodymyr: review the proposed split. After approval, Codex implements T44e6a in a fresh session on its own branch; Claude Code reviews.
-- **Blocked on:** approval of the revised task breakdown (AGENTS.md TASKS gate and ADR 009 PR size target). No deployment or paid calls authorized. T44e5c is merged as PR #65 (`75ebcd6`).
-- **Open questions for Volodymyr:** approve T44e6a/b/c; show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
+- **Last commit:** this docs commit — docs: record approval of T44e6 split; parent `0c1ac91` (docs: propose reviewable T44e6 subtasks).
+- **Next step:** Codex: implement T44e6a in a fresh session on its own branch; Claude Code reviews. T44e6b and T44e6c follow in separate sessions and PRs.
+- **Blocked on:** nothing for T44e6a. No deployment or paid calls authorized. T44e5c is merged as PR #65 (`75ebcd6`).
+- **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
