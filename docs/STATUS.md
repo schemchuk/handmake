@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** Fix PR #78 blocking finish-resume callback (returned to Codex by Volodymyr), plus its two review notes.
+- **Active agent:** claude-code
+- **Current task:** Re-review PR #78 after the blocking callback fix and both review notes.
 - **Branch:** `feat/T44e10-show-run-finish`.
-- **Last commit:** `4082f70` — docs: hand off T44e10 for independent review.
-- **Next step:** Codex: commit/push the validated PR #78 review fix, then return to claude-code for independent re-review. Sensitive merge and deployment still require separate approval.
+- **Last commit:** `aa9bf14` — fix: resume failed shows from finish notifications.
+- **Next step:** Claude Code: re-review PR #78 (`aa9bf14`) and check CI. The blocking finish button now uses `retry` for failed drafts, with actual callback-routing tests. Merge still needs Volodymyr's explicit OK (workflow change); bot deployment is separately gated. T44e9/T44e10 remain undeployed; T26 waits on H8.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
