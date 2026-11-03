@@ -45,31 +45,35 @@ export function createShowApproval(deps: {
       const media: ShowPublication['media'] = [];
       const images: ShowPublication['show']['images'] = [];
       let video: ShowVideo | undefined;
-      const snapshot = await resolveVerifiedShowSnapshot(deps, stored, async (item) => {
-        await current(ctx, stored);
-        const fileName = `${item.slot}.${item.slot === 'video' ? 'mp4' : 'png'}`;
-        const message = await ctx.replyWithDocument(new InputFile(item.result.bytes, fileName));
-        const doc = message.document;
-        if (
-          !doc?.file_id ||
-          !doc.file_unique_id ||
-          doc.file_name !== fileName ||
-          doc.file_size !== item.result.bytes.length ||
-          doc.mime_type !== item.result.mimeType
-        )
-          throw new Error('document identity mismatch');
-        media.push({ fileName, ref: doc.file_id });
-        const metadata = {
-          fileName,
-          provenance: 'ai-generated' as const,
-          model: item.result.model,
-          promptVersion: item.result.promptVersion,
-          callId: item.result.callId,
-          marker: item.evidence.marker,
-        };
-        if (item.slot === 'video') video = { ...metadata, durationSeconds: 5 };
-        else images.push(metadata);
-      }).catch(async (error: unknown) => {
+      const snapshot = await (async () => {
+        // Preflight every slot without retaining media before any Telegram upload.
+        await resolveVerifiedShowSnapshot(deps, stored, async () => {});
+        return resolveVerifiedShowSnapshot(deps, stored, async (item) => {
+          await current(ctx, stored);
+          const fileName = `${item.slot}.${item.slot === 'video' ? 'mp4' : 'png'}`;
+          const message = await ctx.replyWithDocument(new InputFile(item.result.bytes, fileName));
+          const doc = message.document;
+          if (
+            !doc?.file_id ||
+            !doc.file_unique_id ||
+            doc.file_name !== fileName ||
+            doc.file_size !== item.result.bytes.length ||
+            doc.mime_type !== item.result.mimeType
+          )
+            throw new Error('document identity mismatch');
+          media.push({ fileName, ref: doc.file_id });
+          const metadata = {
+            fileName,
+            provenance: 'ai-generated' as const,
+            model: item.result.model,
+            promptVersion: item.result.promptVersion,
+            callId: item.result.callId,
+            marker: item.evidence.marker,
+          };
+          if (item.slot === 'video') video = { ...metadata, durationSeconds: 5 };
+          else images.push(metadata);
+        });
+      })().catch(async (error: unknown) => {
         if (!(error instanceof MissingShowVerification) || !deps.backfill) throw error;
         await current(ctx, stored);
         try {

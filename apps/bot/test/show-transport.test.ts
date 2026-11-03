@@ -1,3 +1,4 @@
+import { dispatchShowBackfill } from '../src/show-backfill';
 import { createShowApproval } from '../src/show-approval';
 import type { AppContext } from '../src/context';
 import type { InputFile } from 'grammy';
@@ -828,8 +829,8 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
   await fixture.run();
   const initial = (await drafts.get(tenant, show))!;
   const before = await verifiedSnapshot();
-  for (const item of before.media)
-    await bucket.delete(`show-verified/v1/${tenant}/${show}/${item.evidence.attemptId}`);
+  // Earlier slots remain verified: no partial preview may escape before backfill.
+  await bucket.delete(`show-verified/v1/${tenant}/${show}/${before.media[2]!.evidence.attemptId}`);
   const costs = (await db.prepare('SELECT * FROM ai_costs').all()).results;
   const reply = vi.fn(async () => ({}));
   const upload = vi.fn(async (file: InputFile) => ({
@@ -848,11 +849,15 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
     reply,
     replyWithDocument: upload,
   } as unknown as AppContext;
+  const dispatch = vi
+    .fn<() => Promise<void>>()
+    .mockRejectedValueOnce(new Error('dispatch failed'))
+    .mockResolvedValue(undefined);
   const backfill = vi.fn(async () => {
     const next = await transport.open(tenant, show, initial.version, true, true);
-    expect(next.id).not.toBe(job);
     job = next.id;
     version = initial.version;
+    await dispatchShowBackfill(bucket, next, dispatch, now);
   });
   const approval = createShowApproval({
     drafts,
@@ -872,7 +877,11 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
     },
   });
   await approval.present(ctx, initial);
-  expect(backfill).toHaveBeenCalledOnce();
+  expect(reply).toHaveBeenCalledWith(expect.stringContaining('Не вдалося запустити перевірку'));
+  await approval.present(ctx, initial);
+  await approval.present(ctx, initial);
+  expect(backfill).toHaveBeenCalledTimes(3);
+  expect(dispatch).toHaveBeenCalledTimes(2);
   expect(upload).not.toHaveBeenCalled();
   expect(reply).toHaveBeenCalledWith(
     expect.stringContaining('без повторної генерації'),
@@ -897,7 +906,8 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
     'video.mp4',
   ]);
   expect(reply).toHaveBeenCalledWith(expect.stringContaining('Схвалити'), expect.anything());
-  expect(backfill).toHaveBeenCalledOnce();
+  expect(backfill).toHaveBeenCalledTimes(3);
+  expect(dispatch).toHaveBeenCalledTimes(2);
   // Missing evidence must never bless a marked file whose bytes no longer match its raw source.
   const item = before.media[0]!;
   await bucket.delete(`show-verified/v1/${tenant}/${show}/${item.evidence.attemptId}`);
@@ -916,3 +926,30 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
   expect((await db.prepare('SELECT * FROM ai_costs').all()).results).toEqual(costs);
   expect(fixture.submissions()).toBe(4);
 }, 60_000);
+
+it('leases concurrent backfill dispatch and retries an interrupted lease after expiry', async () => {
+  const recovery = { id: crypto.randomUUID(), expires: now + 3_600_000 };
+  let finish!: () => void;
+  const dispatch = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const first = dispatchShowBackfill(bucket, recovery, dispatch, now);
+  await vi.waitFor(() => expect(dispatch).toHaveBeenCalledOnce());
+  await dispatchShowBackfill(bucket, recovery, dispatch, now + 1);
+  expect(dispatch).toHaveBeenCalledOnce();
+  finish();
+  await first;
+  await dispatchShowBackfill(bucket, recovery, dispatch, now + 60_001);
+  expect(dispatch).toHaveBeenCalledOnce();
+
+  const interrupted = { ...recovery, id: crypto.randomUUID() };
+  await bucket.put(`show-backfill-dispatch/v1/${interrupted.id}`, String(now + 60_000));
+  const retry = vi.fn(async () => {});
+  await dispatchShowBackfill(bucket, interrupted, retry, now);
+  expect(retry).not.toHaveBeenCalled();
+  await dispatchShowBackfill(bucket, interrupted, retry, now + 60_001);
+  expect(retry).toHaveBeenCalledOnce();
+});
