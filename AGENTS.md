@@ -71,6 +71,9 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
   never merges its own PR. Sensitive PRs need Volodymyr's explicit OK in chat before the merge: changes to
   `.github/workflows/`, secret handling, legal texts, or processing of personal data. Volodymyr may veto or
   revert any merge.
+- Handoff after merge (added 2026-11-03): in that same STATUS.md update, the reviewer who merged sets
+  Active agent to `codex` and Next step to the next task for Codex to start in a fresh session, then
+  ends its session.
 - Exception (approved 2026-10-21, ADR 003): the publish workflow in GitHub Actions may commit published posts and ledger entries directly to `main`, under `content/` only, as the bot identity. It never touches any other path. Agents never use this exception.
 - Never force-push, never rewrite history, never commit `.env` or any secret. Run `git status` and `git diff --staged` before each commit and check for secrets.
 - If a push is rejected: `git pull --rebase`, resolve, push again; on non-trivial conflicts stop and ask me.

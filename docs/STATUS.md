@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** claude-code
+- **Active agent:** codex
 - **Current task:** T44e5b — merged as PR #64 (`c6eed9f`) after Claude Code review (no blocking findings, CI green). Next: T44e5c.
 - **Branch:** `main`.
 - **Last commit:** this docs commit — docs: record PR 64 merge; parent `c6eed9f` (feat: add show regeneration and resumable retry (T44e5b) (#64)).
