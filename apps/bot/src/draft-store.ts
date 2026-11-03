@@ -1,3 +1,4 @@
+import type { PublishJob } from '@handmake/core';
 import { createDraft, newUlid, postTypeSchema } from '@handmake/core';
 import type { Draft, DraftKind, DraftState } from '@handmake/core';
 
@@ -89,6 +90,7 @@ export interface D1DraftStore {
   update(draft: Draft, expectedVersion: number): Promise<boolean>;
   /** Work checkpoints/configuration: CAS protects texts and extras together without a migration. */
   updateWork(draft: Draft, expectedVersion: number): Promise<boolean>;
+  freezeShowApproval(stored: StoredDraft, job: PublishJob): Promise<boolean>;
   updateShow(draft: Draft, expectedVersion: number): Promise<boolean>;
   findShowForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
   getSessionShow(
@@ -347,6 +349,34 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes === 1;
     },
 
+    async freezeShowApproval(stored, job) {
+      const { draft, version } = stored;
+      if (
+        draft.kind !== 'show' ||
+        job.kind !== 'show' ||
+        job.tenantId !== draft.tenantId ||
+        job.postId !== draft.draftId
+      )
+        return false;
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+        SET status = 'publishing', extras = ?, updated_at = ?, version = version + 1
+        WHERE tenant_id = ? AND id = ? AND version = ? AND kind = 'show'
+        AND status = 'ready' AND json_extract(extras, '$.showCancelled') IS NULL
+        AND json_extract(extras, '$.showApproved') IS NULL`,
+        )
+        .bind(
+          JSON.stringify({ ...draft.extras, showApproved: job, showApprovalVersion: version }),
+          new Date().toISOString(),
+          draft.tenantId,
+          draft.draftId,
+          version,
+        )
+        .run();
+      return result.meta.changes === 1;
+    },
+
     async updateShow(draft, expectedVersion) {
       if (
         draft.kind !== 'show' ||
@@ -357,7 +387,8 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .prepare(
           `UPDATE drafts SET status = ?, texts = ?, extras = ?, updated_at = ?, version = version + 1
          WHERE tenant_id = ? AND id = ? AND version = ? AND kind = 'show'
-           AND status IN ('collecting', 'translating', 'failed', 'ready')`,
+           AND status IN ('collecting', 'translating', 'failed', 'ready')
+           AND json_extract(extras, '$.showApproved') IS NULL`,
         )
         .bind(
           draft.state,
@@ -436,7 +467,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const row = await db
         .prepare(
           `${selectDraft} AND chat_id = ? AND kind = 'show'
-         AND status IN ('collecting', 'translating', 'failed', 'ready')
+         AND status IN ('collecting', 'translating', 'failed', 'ready', 'publishing')
          AND json_extract(extras, '$.showCancelled') IS NULL
          ORDER BY created_at DESC LIMIT 1`,
         )

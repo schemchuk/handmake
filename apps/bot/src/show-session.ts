@@ -1,3 +1,4 @@
+import type { ShowApproval } from './show-approval';
 import { registerShowRecovery } from './show-recovery';
 import type { ShowRecoveryControls } from './show-recovery';
 import { isUlid } from '@handmake/core';
@@ -14,6 +15,7 @@ import type { ShowPreview } from './show-preview';
 import { createShowInput } from './show-input';
 
 export interface ShowSessionOptions {
+  approval?: ShowApproval;
   recovery?: ShowRecoveryControls;
   works: WorkReader;
   configs: TenantConfigSource;
@@ -52,7 +54,31 @@ export function registerShowSession(
       new Date(),
     );
   const present = async (ctx: AppContext, stored: StoredDraft) => {
+    if (stored.draft.state === 'published') return ctx.reply(texts.draftFinishedText);
     if (stored.draft.extras['show']) {
+      if (stored.draft.extras['showApproved'])
+        return ctx.reply(texts.publishingText, {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: texts.showRetryButton,
+                  callback_data: `show:${stored.draft.draftId}:approve:${stored.draft.extras['showApprovalVersion']}`,
+                },
+              ],
+            ],
+          },
+        });
+      if (stored.draft.state === 'ready' && show?.approval) {
+        options.background(async () => {
+          try {
+            await show.approval!.present(ctx, stored);
+          } catch {
+            await ctx.reply(texts.showPreviewInterruptedText).catch(() => undefined);
+          }
+        });
+        return ctx.reply(texts.showPreviewReadyText);
+      }
       if (stored.draft.state === 'collecting') return input.presentStart(ctx, stored);
       return ctx.reply(texts.showPreviewReadyText, refreshKeyboard(stored, texts));
     }
@@ -123,6 +149,19 @@ export function registerShowSession(
       if (!(await enabled(ctx.tenantId))) return ctx.reply(texts.showUnavailableText);
       const [, id, action, value] = ctx.callbackQuery.data.split(':');
       const stored = id && isUlid(id) ? await drafts.get(ctx.tenantId, id) : undefined;
+      if (action === 'approve' && stored && show?.approval) {
+        const job = await show.approval.approve(ctx, stored, value ?? '');
+        if (!job) return ctx.reply(texts.draftBusyText);
+        options.background(async () => {
+          try {
+            await options.publishRunner.run(job);
+          } catch {
+            await drafts.revertPublishing(ctx.tenantId, id!, new Date());
+            await ctx.reply(texts.publishFailedText).catch(() => undefined);
+          }
+        });
+        return ctx.reply(texts.publishingText);
+      }
       if (
         !stored ||
         stored.draft.kind !== 'show' ||
@@ -157,7 +196,9 @@ export function registerShowSession(
         if (!show?.preview) return ctx.reply(texts.showUnavailableText);
         options.background(async () => {
           try {
-            await show.preview!(ctx, stored);
+            if (stored.draft.state === 'ready' && show.approval)
+              await show.approval.present(ctx, stored);
+            else await show.preview!(ctx, stored);
           } catch {
             // External errors can contain credential-bearing URLs; log only fixed reasons.
             console.error('show preview failed', 'background delivery failed');

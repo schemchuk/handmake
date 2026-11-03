@@ -1,3 +1,5 @@
+import { createShowApproval } from './show-approval';
+import { createShowVerificationStore } from './show-verification';
 import type { ShowSourceImage } from '@handmake/core';
 import { createTenantLookup } from './allow-list';
 import { dispatchShow } from './show-start';
@@ -62,6 +64,11 @@ export function createShowRuntime(env: Env) {
   const operator = createTenantLookup(env.TELEGRAM_SHOW_OPERATOR_IDS ?? '{}');
   return {
     ...transport,
+    approval: createShowApproval({
+      drafts,
+      verified: createShowVerificationStore(bucket),
+      works: createGitHubWorkReader({ repo: env.GITHUB_REPO, ref: 'main' }),
+    }),
     recovery: {
       isOperator: (userId: number, tenantId: string) => operator(userId) === tenantId,
       async recover(stored: import('./draft-store').StoredDraft) {

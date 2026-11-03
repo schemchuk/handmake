@@ -146,6 +146,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
           }),
           configs: tenantConfigs,
           recovery: shows?.recovery,
+          approval: shows?.approval,
           start: shows?.start,
           preview: shows?.preview,
         },

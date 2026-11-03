@@ -39,3 +39,23 @@ Parent T44e5 acceptance is covered by the preview/regeneration suites and the re
 operator/author separation, lost grants, GET-only resumption with paid gates closed, no-request-ID
 locks, billed/no-spend reconciliation, cancellation, stale callbacks and retained evidence.
 Approval/publication integration remains T44e6. Independent review must confirm the parent gate.
+
+## Author approval and dispatch (T44e6b)
+
+For a ready show, `/show` delivers the current verified marked PNG/MP4 files as documents,
+then the linked work ID and complete language descriptions with their existing provenance.
+The version-bound approval button appears only after every returned document identity has
+passed filename, MIME type and exact size checks. Texts are inherited from the linked work;
+this step does not generate or rewrite them. Video duration remains the generation flow's
+fixed five seconds.
+
+Interrupted uploads or notifications can be retried through `/show`. A new preview invalidates
+older buttons. Regeneration or cancellation racing with approval either wins the version CAS
+or loses to the frozen publication; it cannot change an approved payload. Approval atomically
+stores that payload and enters `publishing`. Once approved, regeneration and discard are blocked.
+
+If dispatch fails, `/show` offers retry using the same approved payload and show ID. An interrupted
+Worker dispatch can be reclaimed after the existing five-minute publishing timeout. Duplicate
+presses during that interval do not dispatch again. The existing publish runner and signed
+published callback handle delivery; end-to-end publisher verification and deployment gates
+remain T44e6c. No deployment or paid calls are authorized by this implementation.

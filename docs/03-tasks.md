@@ -835,6 +835,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     Tests: successful verification, missing evidence, raw/unmarked media, altered bytes/receipts,
     stripped markers, duplicate/interrupted evidence delivery, stale generations and isolation.
   - **T44e6b — Immutable author approval and document dispatch** (depends on T44e6a).
+    Implementation complete on `feat/t44e6b-show-approval`; awaiting claude-code review.
     Present the exact proposed language versions and linked work with all verified marked media
     before offering version-bound approval. Reuse existing text provenance without silently
     rewriting the author's text. Upload PNG/MP4 as documents with stable names, check exact returned

@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e6a merged (PR #66, `869477e`); T44e6b not started.
-- **Branch:** `main`.
-- **Last commit:** `869477e` — feat: persist verified show snapshots (#66).
-- **Next step:** Codex: start T44e6b (immutable author approval and document dispatch) in a fresh session. Review notes for T44e6b: `get()` in `apps/bot/src/show-verification.ts` holds all marked outputs in memory (watch the 128 MB Worker limit); marker constants are duplicated in `packages/core/src/show-verification.ts` and `markerFor` in the publisher, consider one shared source.
-- **Blocked on:** nothing. No deployment or paid calls authorized; publication remains T44e6c.
+- **Active agent:** claude-code
+- **Current task:** T44e6b implementation complete; awaiting independent review.
+- **Branch:** `feat/t44e6b-show-approval`.
+- **Last commit:** `3728a84` — docs: record PR 66 merge (implementation base; review branch HEAD).
+- **Next step:** Claude Code: review T44e6b, merge only after CI is green and no blocking findings remain. Then hand off T44e6c to Codex in a fresh session.
+- **Blocked on:** independent review. No deployment or paid calls authorized; publication integration remains T44e6c.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e6b validation: 146/146 targeted bot tests pass (approval, session, verification transport, D1, runner and callback), including 11 new author-approval tests. Workspace typecheck/build, lint, formatting and staged secret scan pass. Initial full runs were interrupted; targeted real-media transport tests completed successfully. No deployment, paid calls, workflows, production secrets/vars or migrations changed. Approval consumes verified media sequentially; marker declaration constants remain duplicated in core/publisher for future cleanup.
 - T44e6a validation: bot 463/463, core 213/213, publisher 137/137 and AI 117/117 pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Signed verification evidence and current-generation resolution are implemented; approval/publication remain T44e6b/c. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
 - T44e5c validation: all 459 bot tests covered across runs (initial full run 457/458 with one invalid new fixture; corrected changed suites 120/120 plus final cancellation-journal test 1/1). AI 117/117, publisher 137/137; workspace typecheck/build, lint, format and staged secret scan pass. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
 - T44e5b validation: full bot run passed 452/453 with one invalid new fingerprint fixture; after correcting that fixture, the entire transport suite passed 29/29 (all 453 tests covered across the runs). Workspace typecheck/build, lint, formatting and staged secret scan pass. No deploy, paid call, workflow, secret or migration changes.
