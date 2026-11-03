@@ -924,7 +924,8 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
   site-publication retry after copies; notifier/callback and ordinary post/work regressions.
 
 #### T46c — Site-first CI orchestration · Sensitive
-- Status: implemented; review blocked (CI red), fixes pending and sensitive-merge approval.
+- Status: implemented; PR #74 review fixes complete, CI green on `cfa7c6c`; awaiting
+  claude-code re-review and sensitive-merge approval.
 - Review notes from PR #74 (fix in PR #74 itself, then hand back for re-review):
   1. Blocking: actionlint/shellcheck SC2129 at `.github/workflows/publish.yml:73`, step
      "Select show copy routing": group the three writes into one `{ ...; } >> "$GITHUB_OUTPUT"`
