@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e10 — notify the author when a show run ends (Sensitive, workflow change), plus review notes from PR #77.
-- **Branch:** `main` (create `feat/T44e10-show-run-finish` for the task).
-- **Last commit:** `f7dabf3` — fix: release and clean up show backfill claims (#77).
-- **Next step:** Codex: start T44e10 in a fresh session (docs/03-tasks.md), including the 4 review notes from PR #77. T44e9 merged but the bot is not deployed with it (deploy needs Volodymyr's OK). R2 lifecycle rule `expire-backfill-claims` (prefix `show-backfill-dispatch/v1/`, expire after 1 day) applied to `handmake-show` 2026-11-03. T26 waits on H8.
+- **Active agent:** claude-code
+- **Current task:** Re-review PR #78 after the blocking callback fix and both review notes.
+- **Branch:** `feat/T44e10-show-run-finish`.
+- **Last commit:** `aa9bf14` — fix: resume failed shows from finish notifications.
+- **Next step:** Claude Code: re-review PR #78 (`aa9bf14`) and check CI. The blocking finish button now uses `retry` for failed drafts, with actual callback-routing tests. Merge still needs Volodymyr's explicit OK (workflow change); bot deployment is separately gated. T44e9/T44e10 remain undeployed; T26 waits on H8.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
@@ -50,6 +50,8 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- PR #78 review fix: failed finish callbacks now use `retry`, collecting uses `start`, other states omit resume. Two D1-backed session tests route the actual finish notification button for paid-gate and failed outcomes through the bot. Session 48/48, notification 8/8 and publisher finish 4/4 tests pass; bot/publisher typecheck and changed-file lint/format pass. Ready-notification failures leave successful generation/recovery green; finish nonce idempotence is documented inline. No deploy, production dispatch, paid calls, workflows or secrets changed in this fix.
+- T44e10 validation: transport 48/48 across the full 47-test rerun and one added pending-grant test; approval 13/13, notification 5/5, publisher 177/177 pass. Workspace typecheck/build, changed-file lint/format, actionlint and staged secret scan pass. Initial new media test exceeded the default five-second timeout and contaminated a later assertion; the corrected full transport rerun passed. Sandbox Miniflare bind was denied; integration runs passed outside the sandbox. Finish claims delivery before Telegram (at most once); ambiguous delivery is not retried automatically. No deploy, production dispatch, paid calls, migrations or secret/var changes.
 - T44e9: 51/51 targeted approval/transport tests passed with local D1/R2; final backfill regressions 2/2 passed after executor failure reporting. Workspace typecheck/build and changed-file lint/format pass; bot/publisher typecheck passed after executor failure reporting. Initial accidental full-suite run was stopped after an unrelated show-start concurrency failure. No deployment, workflows, paid calls or production bucket settings changed.
 - T44e8 validation: approval/transport 50/50 plus the added dispatch-lease test 1/1 pass with local D1/R2. Mixed evidence sends no documents, failed dispatch retries, repeated refresh dispatches once, concurrent refresh and interrupted lease recovery are covered. Workspace typecheck/build and changed-file lint/format pass. The initial sandbox full-suite invocation was stopped after Miniflare failures; targeted unrestricted runs passed. No deployment, production dispatch, paid calls, workflows or secret changes.
 - T44e7 validation: transport 37/37, approval and draft flow 58/58 pass with local D1/R2 and real marked media. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial sandbox run could not initialize Miniflare; unrestricted targeted suites passed. The new test covers missing attestations, a fresh recovery job, unchanged attempts/cost rows, four document uploads, approval offered and tampered media rejection. No production backfill, deployment, paid calls, workflows, migrations or secret/var changes.

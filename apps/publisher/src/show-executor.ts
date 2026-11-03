@@ -1,3 +1,4 @@
+import { showFailureOutcome } from './show-outcome';
 import { createHmac, randomUUID, createHash } from 'node:crypto';
 import type {
   ShowGenerator,
@@ -233,9 +234,19 @@ export async function executeShow(
         await prepare(output.attemptId);
       let attempt: string | undefined = status.pending?.attemptId;
       if (!attempt) {
-        if (status.recovery) return;
+        if (status.recovery) {
+          await client
+            .call('finish', 'next', new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })))
+            .catch(() => undefined);
+          return;
+        }
         const authorized = await client.call('authorize');
-        if (!authorized.value) return;
+        if (!authorized.value) {
+          await client
+            .call('finish', 'next', new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })))
+            .catch(() => undefined);
+          return;
+        }
         attempt = authorized.value.request.attemptId;
       }
       if (!attempt) throw new Error('show grant unavailable');
@@ -260,11 +271,30 @@ export async function executeShow(
       if (!(await client.call('checkpoint', attempt)).value)
         throw new Error('show checkpoint rejected; inspect durable state');
       await prepare(attempt);
-      if (status.recovery) return;
+      if (status.recovery) {
+        const latest = await client.call('status');
+        await client
+          .call(
+            'finish',
+            'next',
+            new TextEncoder().encode(
+              JSON.stringify({ outcome: latest.pending ? 'failed' : 'ready' }),
+            ),
+          )
+          .catch(() => undefined);
+        return;
+      }
     }
     throw new Error('show step bound exceeded');
   } catch (error) {
     if (recovery) await client.call('backfill-release').catch(() => undefined);
+    await client
+      .call(
+        'finish',
+        'next',
+        new TextEncoder().encode(JSON.stringify({ outcome: showFailureOutcome(error) })),
+      )
+      .catch(() => undefined);
     throw error;
   }
 }

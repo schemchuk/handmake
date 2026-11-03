@@ -79,10 +79,11 @@ duplicate workflow; the existing transport fences still prevent repeated generat
 A suppressed refresh explicitly says verification is already running. A rejected authenticated
 recovery transport operation releases the dispatch claim so the next refresh can retry. The Node
 executor also reports recovery failures through a signed, recovery-only `backfill-release` operation,
-including local media verification failures; it preserves the original error if reporting fails. Failures
-before reaching the Worker (for example CI setup) remain suppressed until the job expires, at most
-one hour; end-of-run reporting is tracked separately in T44e10. Successful attestation of all
-current outputs removes the claim. No lifecycle rule is required for those successful claims.
+including local media verification failures; it preserves the original error if reporting fails.
+A signed `finish` operation reports ready, gate-closed or failed outcomes once per job. The workflow
+failure step also reports setup failures using only the transport secret; recovery failures release
+the claim and tell the author that operator action is needed before retrying. Successful attestation
+of all current outputs removes the claim. No lifecycle rule is required for those successful claims.
 For abandoned or pre-transport failed jobs, configure an R2 lifecycle rule on the show-media
 bucket: prefix `show-backfill-dispatch/v1/`, expire objects one day after creation. This exceeds
 the one-hour job lifetime and must not target any other evidence prefix. The rule is an operator
@@ -90,9 +91,24 @@ setup step; this PR does not apply production bucket settings. Until configured,
 claims remain retained (expired claims do not suppress a new job).
 All slots are verified before uploading any preview document, with media consumed one file at
 a time. This preflight deliberately reads each raw/marked media object twice per preview: once
-to validate all slots before any upload and once to deliver them without retaining all bytes. Existing verified shows use the normal preview.
+to validate all slots before any upload and once to deliver them without retaining all bytes.
+Existing verified shows use the normal preview.
 
 After merge, deploy the bot only with Volodymyr's approval. For the retained production show,
 refresh its preview, wait for the recovery workflow, then refresh again. Confirm three PNGs and
 one MP4 plus the approval button, unchanged attempt IDs and no added `ai_costs` rows. This task's
 implementation and tests do not execute that production procedure or deploy anything.
+
+A failing duplicate recovery run can release the dispatch claim while another run for the same
+job is live. A refresh may then dispatch one extra run; transport and journal fences still apply.
+Deterministic invalid/tampered media requires operator repair before another refresh can succeed.
+
+Finish claims the notification in R2 before calling Telegram, so retries and concurrent workflow
+fallbacks send at most one message per job. A failed or ambiguous Telegram delivery is not retried
+automatically; the author can still use `/show`. Notification failure does not fail a successful
+generation run. Resume buttons use `retry` for failed drafts and `start` only for collecting drafts.
+A new explicit generation retry gets a new job
+identity while retaining pending grants and durable results. Ready is accepted only when no
+attempt remains pending; generation jobs also require all output slots. Cancelled, expired and
+replaced jobs reject finish. Runner cancellation or a platform outage may prevent the workflow failure step from running.
+The gate-closed message refers only to the refused call: earlier saved results may have costs.

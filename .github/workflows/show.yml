@@ -44,3 +44,37 @@ jobs:
           SHOW_ALLOW_PAID_CALLS: ${{ vars.SHOW_ALLOW_PAID_CALLS }}
           SHOW_VERIFIED_MODELS: ${{ vars.SHOW_VERIFIED_MODELS }}
         run: pnpm --filter @handmake/publisher exec tsx src/show-cli.ts "$RUNNER_TEMP/show-job.json"
+      - name: Report setup or execution failure
+        if: failure()
+        env:
+          SHOW_JOB: ${{ inputs.payload }}
+          SHOW_WORKER_ORIGIN: ${{ vars.SHOW_WORKER_ORIGIN }}
+          SHOW_TRANSPORT_SECRET: ${{ secrets.SHOW_TRANSPORT_SECRET }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHash, createHmac, randomUUID } from 'node:crypto';
+          const job = JSON.parse(process.env.SHOW_JOB);
+          const part = /^[A-Za-z0-9_-]{1,128}$/;
+          if (![job.tenantId, job.showId, job.jobId].every(p => typeof p === 'string' && part.test(p)) ||
+              !Number.isSafeInteger(job.version) || job.version < 0) throw new Error('invalid job');
+          const origin = new URL(process.env.SHOW_WORKER_ORIGIN);
+          if (origin.protocol !== 'https:' || origin.username || origin.password ||
+              origin.pathname !== '/' || origin.search || origin.hash || !process.env.SHOW_TRANSPORT_SECRET)
+            throw new Error('invalid transport');
+          const url = new URL(`/internal/shows/${job.tenantId}/${job.showId}/${job.jobId}/${job.version}/next/finish`, origin);
+          const body = JSON.stringify({ outcome: 'failed' });
+          const time = String(Date.now()), nonce = randomUUID();
+          const message = ['POST', url.pathname, time, nonce, '', createHash('sha256').update(body).digest('hex')].join('\n');
+          try {
+            const response = await fetch(url, {
+              method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000), body,
+              headers: {
+                'x-show-time': time, 'x-show-nonce': nonce,
+                'x-show-signature': createHmac('sha256', process.env.SHOW_TRANSPORT_SECRET).update(message).digest('hex'),
+              },
+            });
+            await response.body?.cancel();
+            if (!response.ok) throw new Error();
+          } catch { console.error('Show failure notification rejected.'); process.exitCode = 1; }
+          NODE
