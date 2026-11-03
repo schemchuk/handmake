@@ -2,6 +2,7 @@ import { createDraft, showDraftDataSchema } from '@handmake/core';
 import type { Work, PublishJob } from '@handmake/core';
 import type { InputFile } from 'grammy';
 import { beforeEach, expect, it, vi } from 'vitest';
+import { MissingShowVerification } from '../src/show-verification';
 import { createShowApproval } from '../src/show-approval';
 import { createD1DraftStore } from '../src/draft-store';
 import type { AppContext } from '../src/context';
@@ -264,4 +265,44 @@ it('routes version-bound consent and frozen dispatch retries through the real bo
   await Promise.all(tasks);
   expect(jobs).toHaveLength(2);
   expect(jobs[1]).toEqual(jobs[0]);
+});
+
+it('reports a failed verification dispatch clearly and leaves the ready show retryable', async () => {
+  const initial = await stored();
+  const backfill = vi.fn(async () => {
+    throw new Error('dispatch failed');
+  });
+  const legacy = createShowApproval({
+    drafts: store,
+    backfill,
+    verified: {
+      get: async () => {
+        throw new MissingShowVerification();
+      },
+    },
+    works: { readWork: async () => work, listWorks: async () => [work] },
+  });
+  await legacy.present(ctx, initial);
+  expect(reply).toHaveBeenCalledWith(expect.stringContaining('Не вдалося запустити перевірку'));
+  expect(await stored()).toEqual(initial);
+  expect(upload).not.toHaveBeenCalled();
+});
+
+it('never dispatches a backfill for invalid evidence or a stale private session', async () => {
+  const backfill = vi.fn();
+  const invalid = createShowApproval({
+    drafts: store,
+    backfill,
+    verified: {
+      get: async () => {
+        throw new Error('verification integrity failed');
+      },
+    },
+    works: { readWork: async () => work, listWorks: async () => [work] },
+  });
+  await expect(invalid.present(ctx, await stored())).rejects.toThrow('integrity');
+  await expect(
+    invalid.present({ ...ctx, tenantId: 'other' } as AppContext, await stored()),
+  ).rejects.toThrow('stale');
+  expect(backfill).not.toHaveBeenCalled();
 });

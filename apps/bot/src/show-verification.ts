@@ -6,6 +6,8 @@ import {
 import type { D1DraftStore, StoredDraft } from './draft-store';
 import { createR2MarkedShowStorage, createR2ShowStorage } from './show-storage';
 
+export class MissingShowVerification extends Error {}
+
 type Scope = { tenantId: string; showId: string; attemptId: string };
 /** Private immutable attestation, written exclusively by the authenticated Node boundary. */
 export function createShowVerificationStore(bucket: Pick<R2Bucket, 'get' | 'put'>) {
@@ -25,7 +27,7 @@ export function createShowVerificationStore(bucket: Pick<R2Bucket, 'get' | 'put'
   };
   const read = async (scope: Scope) => {
     const object = await bucket.get(key(scope));
-    if (!object) throw new Error('verification missing');
+    if (!object) throw new MissingShowVerification('verification missing');
     if (!object.size || object.size > 4096) {
       await object.body.cancel();
       throw new Error('invalid verification');

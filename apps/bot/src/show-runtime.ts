@@ -66,6 +66,17 @@ export function createShowRuntime(env: Env) {
     ...transport,
     approval: createShowApproval({
       drafts,
+      backfill: async (stored) => {
+        const { tenantId, draftId } = stored.draft;
+        // Recovery jobs can prepare existing outputs but cannot authorize provider calls.
+        const job = await transport.open(tenantId, draftId, stored.version, true, true);
+        await dispatchShow(env.GITHUB_REPO, env.GITHUB_DISPATCH_TOKEN, {
+          tenantId,
+          showId: draftId,
+          jobId: job.id,
+          version: stored.version,
+        });
+      },
       verified: createShowVerificationStore(bucket),
       works: createGitHubWorkReader({ repo: env.GITHUB_REPO, ref: 'main' }),
     }),
