@@ -924,6 +924,15 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
   site-publication retry after copies; notifier/callback and ordinary post/work regressions.
 
 #### T46c — Site-first CI orchestration · Sensitive
+- Status: implemented; PR #74 review fixes complete, CI green on `cfa7c6c`; awaiting
+  claude-code re-review and sensitive-merge approval.
+- Review notes from PR #74 (fix in PR #74 itself, then hand back for re-review):
+  1. Blocking: actionlint/shellcheck SC2129 at `.github/workflows/publish.yml:73`, step
+     "Select show copy routing": group the three writes into one `{ ...; } >> "$GITHUB_OUTPUT"`
+     block. Run actionlint v1.7.12 locally before pushing; CI must be green.
+  2. Non-blocking: in "Push copy progress" and "Push published content", set
+     `git config user.name/user.email` from `PUBLISHER_GIT_NAME`/`PUBLISHER_GIT_EMAIL` before the
+     `git pull --rebase` loop, so a rebase after `main` moved can create commits.
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T46b; third PR.
 - Review notes from PR #73: in `apps/publisher/src/publish.ts`, require `TELEGRAM_BOT_TOKEN` when the

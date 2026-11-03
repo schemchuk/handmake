@@ -13,6 +13,7 @@ import type { DispatchPayload } from '../src/payload';
 import { runPublish } from '../src/publish';
 import { runCopyShow } from '../src/copy-show';
 import { TelegramAdapter } from '@handmake/channels';
+import { parse } from 'yaml';
 
 let root: string,
   payloadPath: string,
@@ -163,6 +164,28 @@ it('rejects changed approved content and reuses stored media after draft referen
   await run();
   expect(source.fetchMedia).not.toHaveBeenCalled();
 });
+
+it('requires a Telegram token only when downloading an unpublished show', async () => {
+  await expect(run({ showMediaSource: undefined })).rejects.toThrow(
+    'missing environment variable TELEGRAM_BOT_TOKEN',
+  );
+  expect(git.commit).not.toHaveBeenCalled();
+  await run();
+  await expect(run({ showMediaSource: undefined })).resolves.toMatchObject({ show });
+});
+
+it('fails all copies before delivery when a configured adapter lacks show support', async () => {
+  await run();
+  const c = copies();
+  const registry = new ChannelRegistry();
+  const adapter = new TelegramAdapter({ token: 'fixture' });
+  Object.defineProperty(adapter, 'renderShow', { value: undefined });
+  const deliver = vi.spyOn(adapter, 'deliver');
+  registry.register(adapter);
+  await expect(c.copy({ registry })).rejects.toThrow('does not support shows');
+  expect(deliver).not.toHaveBeenCalled();
+  expect((await store.readLedger(show.tenant, show.id))!.showCopyPlan).toBeUndefined();
+});
 it.each([
   { draftId: '01JBCA1B2C3D4E5F6G7H8J9K0A' },
   { tenantId: 'other' },
@@ -252,6 +275,62 @@ function copies() {
     },
   };
 }
+
+it('pushes failed progress with the CI shell and resumes from a fresh checkout', async () => {
+  const exec = promisify(execFile);
+  await exec('git', ['init', '-q', '-b', 'main'], { cwd: root });
+  await run({ git: undefined });
+  const remote = path.join(root, '.git/copy-origin.git');
+  await exec('git', ['init', '--bare', '-q', '-b', 'main', remote]);
+  await exec('git', ['remote', 'add', 'origin', remote], { cwd: root });
+  await exec('git', ['push', '-q', 'origin', 'main'], { cwd: root });
+  const c = copies();
+  await expect(c.copy({ git: undefined })).rejects.toThrow('interrupted');
+  const workflow = parse(
+    await readFile(new URL('../../../.github/workflows/publish.yml', import.meta.url), 'utf8'),
+  ) as {
+    jobs: Record<
+      string,
+      { steps: { name?: string; run?: string; env?: Record<string, string> }[] }
+    >;
+  };
+  const push = workflow.jobs['copy-show']!.steps.find((s) => s.name === 'Push copy progress')!;
+  const pushEnv = { ...process.env, ...push.env };
+  await exec('bash', ['-e', '-o', 'pipefail', '-c', push.run!], { cwd: root, env: pushEnv });
+  const checkout = await mkdtemp(path.join(tmpdir(), 'handmake-copy-retry-'));
+  try {
+    await exec('git', ['clone', '-q', remote, checkout]);
+    await mkdir(path.join(checkout, 'config/tenants'), { recursive: true });
+    await copyFile(
+      path.join(root, 'config/tenants/faden-und-stimmung.yaml'),
+      path.join(checkout, 'config/tenants/faden-und-stimmung.yaml'),
+    );
+    const freshStore = new GitRepoContentStore({ rootDir: checkout });
+    expect((await freshStore.readLedger(show.tenant, show.id))!.channels.telegram).toMatchObject({
+      status: 'failed',
+      remoteIds: [101],
+    });
+    source.fetchMedia.mockRejectedValue(new Error('draft expired'));
+    c.succeed();
+    await c.copy({ root: checkout, git: undefined });
+    await exec('bash', ['-e', '-o', 'pipefail', '-c', push.run!], {
+      cwd: checkout,
+      env: pushEnv,
+    });
+    expect(c.requests.map((r) => r.method)).toEqual([
+      'sendMediaGroup',
+      'sendVideo',
+      'sendVideo',
+      'sendMessage',
+    ]);
+    expect((await freshStore.readLedger(show.tenant, show.id))!.channels.telegram!.status).toBe(
+      'done',
+    );
+    expect(await freshStore.readShow(show.tenant, show.id)).toEqual(show);
+  } finally {
+    await rm(checkout, { recursive: true, force: true });
+  }
+}, 30_000);
 
 it('copies stored bytes, commits progress, resumes the saved plan and skips completed channels', async () => {
   const exec = promisify(execFile);

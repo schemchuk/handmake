@@ -64,6 +64,11 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
   if (!ledger.showCopyPlan) {
     if (Object.keys(ledger.channels).length) throw new Error('copy progress has no stable plan');
     if (!tenant.site) throw new Error('show copies require a site');
+    // Fail the entire batch before sending if any configured channel lacks show support.
+    // Silently skipping it would report an incomplete copy as successful.
+    for (const key of Object.keys(tenant.channels)) {
+      if (!registry.get(key).renderShow) throw new Error(`channel "${key}" does not support shows`);
+    }
     const channels = Object.fromEntries(
       Object.entries(tenant.channels).map(([key, settings]) => [
         key,

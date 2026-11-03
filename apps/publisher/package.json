@@ -14,14 +14,15 @@
     "dry-run": "tsx src/cli.ts --dry-run"
   },
   "dependencies": {
+    "@handmake/ai": "workspace:*",
     "@handmake/channels": "workspace:*",
     "@handmake/core": "workspace:*",
     "@handmake/stores": "workspace:*",
     "sharp": "^0.34.5",
-    "zod": "^4.6.7",
-    "@handmake/ai": "workspace:*"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "yaml": "^2.9.1"
   }
 }
