@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T44e6c implementation complete; awaiting independent review.
+- **Current task:** T44e6c implementation complete (PR #69); awaiting independent review.
 - **Branch:** `feat/t44e6c-publication-integration`.
-- **Last commit:** `9167bab` — docs: record PR 68 review and merge (implementation base; review branch HEAD).
-- **Next step:** Claude Code: review T44e6c and combined T44e6a/b/c acceptance evidence in docs/show-deployment.md. Close parent T44e6/T44e gates only after review and green CI, then merge and hand off T45 to Codex in a fresh session.
+- **Last commit:** `665aaf5` — test: verify approved show publication end to end.
+- **Next step:** Claude Code: review T44e6c (PR #69) and combined T44e6a/b/c acceptance evidence in docs/show-deployment.md. Close parent T44e6/T44e gates only after review and green CI, then merge and hand off T45 to Codex in a fresh session.
 - **Blocked on:** independent review. No deployment, remote setup or paid calls authorized; production gates remain separate in docs/show-deployment.md.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
