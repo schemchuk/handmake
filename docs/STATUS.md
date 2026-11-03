@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e11 — PR #79 blocking findings fixed; awaiting re-review.
-- **Branch:** `feat/T44e11-ready-rejection`.
-- **Last commit:** see branch HEAD — fix: distinguish unfinished shows from delivery failures.
-- **Next step:** Claude Code: re-review PR #79 and merge after green CI if no blocking findings. Only explicit `unfinished job` finish rejections propagate; generic client errors stay unchanged. Real Worker D1/R2 regressions cover empty authorization and claimed Telegram delivery failure. No Worker runtime changes or deploy needed. Live T44e10 notification check remains pending; T26 waits on H8.
+- **Active agent:** codex
+- **Current task:** none open; T44 show chain (T44e9-T44e11) merged.
+- **Branch:** `main`.
+- **Last commit:** `1448417` — fix: report rejected show completion (#79).
+- **Next step:** Codex: no unblocked task; T26 (Instagram) waits on H8. Bot deployed 2026-11-03 with T44e9 + T44e10 (version `0baeb5b6`); T44e11 is publisher-only and runs from `main` in `show.yml`, no deploy. Live check pending: the next `show.yml` run should message the author when it ends.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
