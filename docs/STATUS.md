@@ -3,8 +3,8 @@
 - **Active agent:** claude-code
 - **Current task:** T44e9 — implemented; awaiting independent review.
 - **Branch:** `feat/T44e9-backfill-claim`.
-- **Last commit:** `e387bde` — fix: suppress repeated show backfill dispatches (#76).
-- **Next step:** Claude Code: review T44e9 PR, check CI and merge if clear. Then hand off T44e10 to Codex in a fresh session. No deployment authorized. Configure the documented one-day R2 lifecycle rule for abandoned backfill claims separately.
+- **Last commit:** `52d08fd` — fix: release and clean up show backfill claims (implementation; handoff commit follows).
+- **Next step:** Claude Code: review T44e9 PR #77, check CI and merge if clear. Then hand off T44e10 to Codex in a fresh session. No deployment authorized. Configure the documented one-day R2 lifecycle rule for abandoned backfill claims separately.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
