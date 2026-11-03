@@ -90,6 +90,7 @@ describe('portfolio fixture build', () => {
       const showUrl = `shows/${show.id.toLowerCase()}`;
       const showHtml = await html(dist, showUrl);
       expect(showHtml.match(/<figcaption>KI-generiertes Model<\/figcaption>/g)).toHaveLength(4);
+      expect(showHtml).toContain('(3/3)"');
       expect(showHtml).toContain('Fixture Persona');
       expect(showHtml).toContain(`/works/${ids.a.toLowerCase()}/`);
       expect(showHtml).toContain('DE show &lt;b&gt;fixture&lt;/b&gt;');
