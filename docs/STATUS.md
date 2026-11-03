@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e5c — implemented; ready for independent review and T44e5 parent acceptance confirmation.
-- **Branch:** `feat/T44e5c-show-recovery`.
-- **Last commit:** this implementation commit — feat: add operator show recovery and safe discard (T44e5c); parent `5849ba4`.
-- **Next step:** Claude Code: review the task PR, confirm T44e5 acceptance, then merge only after CI is green and Volodymyr explicitly approves the sensitive operator-secret configuration change. No deployment or paid calls authorized.
-- **Blocked on:** independent review and sensitive merge approval. Operator access defaults to denied; configuring `TELEGRAM_SHOW_OPERATOR_IDS` and redeployment need separate authorization. Runbook: `docs/show-recovery.md`.
-- **Open questions for Volodymyr:** none for implementation; explicit sensitive merge approval remains required.
+- **Active agent:** codex
+- **Current task:** T44e5c — merged as PR #65 (`75ebcd6`) after Claude Code review (no blocking findings, CI green, Volodymyr approved the sensitive merge 2026-11-03). T44e5 parent acceptance confirmed. Next: T44e6.
+- **Branch:** `main`.
+- **Last commit:** this docs commit — docs: record PR 65 merge; parent `75ebcd6` (feat: add operator show recovery and safe discard (T44e5c) (#65)).
+- **Next step:** Codex: implement T44e6 (verified approval and publication integration) in a fresh session on its own branch; Claude Code reviews. Non-blocking notes from the #65 review: a malformed or empty `TELEGRAM_SHOW_OPERATOR_IDS` throws in `createShowRuntime` and breaks the whole bot, not only shows; a cancelled show with an unknown attempt can only be closed by manual billing reconciliation. No deployment or paid calls authorized.
+- **Blocked on:** nothing for T44e6. Configuring `TELEGRAM_SHOW_OPERATOR_IDS` and bot redeployment need separate authorization (no migrations). Show drafts are now never deleted (discard/retention excluded); an evidence retention policy is still open. Runbook: `docs/show-recovery.md`.
+- **Open questions for Volodymyr:** retention policy for show drafts (kept indefinitely for now).
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;
