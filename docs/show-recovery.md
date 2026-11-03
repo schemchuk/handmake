@@ -72,7 +72,12 @@ The existing Node prepare step verifies each retained marked object against its 
 writes `show-verified/v1` evidence. Recovery mode rejects authorization, grants and provider journal
 writes; it performs no generation or accounting checkpoint. Keep `SHOW_ALLOW_PAID_CALLS=false`.
 Invalid evidence or mismatched marked/raw media fails closed rather than offering approval.
-Repeated refreshes reuse the live job identity; existing verified shows use the normal preview.
+Repeated refreshes reuse the live job identity and suppress dispatch after a successful request.
+A failed dispatch releases its claim for immediate retry; an interrupted request can retry after
+a 60-second lease. If GitHub accepted a request whose response was lost, a retry may queue a
+duplicate workflow; the existing transport fences still prevent repeated generation or spending.
+All slots are verified before uploading any preview document, with media consumed one file at
+a time. Existing verified shows use the normal preview.
 
 After merge, deploy the bot only with Volodymyr's approval. For the retained production show,
 refresh its preview, wait for the recovery workflow, then refresh again. Confirm three PNGs and
