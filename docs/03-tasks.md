@@ -896,6 +896,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   sends no documents and starts one backfill.
 
 #### T44e9 — Backfill claim release and cleanup (`bot`)
+- Status: implemented on `feat/T44e9-backfill-claim`; awaiting claude-code review.
 - Owner: codex · Reviewer: claude-code.
 - Review notes from PR #76: (1) after a successful dispatch the claim holds until `job.expires`
   (1 h); if that `show.yml` run fails, refreshes stay suppressed while the author still reads

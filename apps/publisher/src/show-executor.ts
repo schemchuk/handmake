@@ -223,41 +223,48 @@ export async function executeShow(
     const evidence = await describeShowVerification(tenantId, showId, attempt, raw, output);
     await client.call('verified-put', attempt, new TextEncoder().encode(JSON.stringify(evidence)));
   };
-  // A show has at most five images and one video. Never spin on rejected checkpoints.
-  for (let step = 0; step < 7; step++) {
-    const status = await client.call('status');
-    for (const output of Object.values(status.outputs) as { attemptId: string }[])
-      await prepare(output.attemptId);
-    let attempt: string | undefined = status.pending?.attemptId;
-    if (!attempt) {
-      if (status.recovery) return;
-      const authorized = await client.call('authorize');
-      if (!authorized.value) return;
-      attempt = authorized.value.request.attemptId;
-    }
-    if (!attempt) throw new Error('show grant unavailable');
-    let stored = await client.raw.get(tenantId, showId, attempt);
-    if (!stored) {
-      let result: Result;
-      if (status.recovery) {
-        if (!generator.resume) throw new Error('GET recovery unavailable');
-        result = await generator.resume((await client.call('recovery', attempt)).value);
-      } else {
-        const grant = await client.grant(attempt);
-        result =
-          grant.kind === 'image'
-            ? await generator.generateImage(grant.request)
-            : await generator.generateVideo(grant.request);
+  let recovery = false;
+  try {
+    // A show has at most five images and one video. Never spin on rejected checkpoints.
+    for (let step = 0; step < 7; step++) {
+      const status = await client.call('status');
+      recovery = status.recovery === true;
+      for (const output of Object.values(status.outputs) as { attemptId: string }[])
+        await prepare(output.attemptId);
+      let attempt: string | undefined = status.pending?.attemptId;
+      if (!attempt) {
+        if (status.recovery) return;
+        const authorized = await client.call('authorize');
+        if (!authorized.value) return;
+        attempt = authorized.value.request.attemptId;
       }
-      await client.raw.put(tenantId, showId, attempt, result);
-      stored = await client.raw.get(tenantId, showId, attempt);
-      if (!stored) throw new Error('show result unavailable');
+      if (!attempt) throw new Error('show grant unavailable');
+      let stored = await client.raw.get(tenantId, showId, attempt);
+      if (!stored) {
+        let result: Result;
+        if (status.recovery) {
+          if (!generator.resume) throw new Error('GET recovery unavailable');
+          result = await generator.resume((await client.call('recovery', attempt)).value);
+        } else {
+          const grant = await client.grant(attempt);
+          result =
+            grant.kind === 'image'
+              ? await generator.generateImage(grant.request)
+              : await generator.generateVideo(grant.request);
+        }
+        await client.raw.put(tenantId, showId, attempt, result);
+        stored = await client.raw.get(tenantId, showId, attempt);
+        if (!stored) throw new Error('show result unavailable');
+      }
+      // Accounting happens even when marking fails; the next run marks the retained raw result.
+      if (!(await client.call('checkpoint', attempt)).value)
+        throw new Error('show checkpoint rejected; inspect durable state');
+      await prepare(attempt);
+      if (status.recovery) return;
     }
-    // Accounting happens even when marking fails; the next run marks the retained raw result.
-    if (!(await client.call('checkpoint', attempt)).value)
-      throw new Error('show checkpoint rejected; inspect durable state');
-    await prepare(attempt);
-    if (status.recovery) return;
+    throw new Error('show step bound exceeded');
+  } catch (error) {
+    if (recovery) await client.call('backfill-release').catch(() => undefined);
+    throw error;
   }
-  throw new Error('show step bound exceeded');
 }

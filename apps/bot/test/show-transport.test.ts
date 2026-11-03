@@ -857,7 +857,7 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
     const next = await transport.open(tenant, show, initial.version, true, true);
     job = next.id;
     version = initial.version;
-    await dispatchShowBackfill(bucket, next, dispatch, now);
+    return dispatchShowBackfill(bucket, next, dispatch, now);
   });
   const approval = createShowApproval({
     drafts,
@@ -880,6 +880,7 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
   expect(reply).toHaveBeenCalledWith(expect.stringContaining('Не вдалося запустити перевірку'));
   await approval.present(ctx, initial);
   await approval.present(ctx, initial);
+  expect(reply).toHaveBeenCalledWith(expect.stringContaining('уже триває'), expect.anything());
   expect(backfill).toHaveBeenCalledTimes(3);
   expect(dispatch).toHaveBeenCalledTimes(2);
   expect(upload).not.toHaveBeenCalled();
@@ -898,6 +899,7 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
   expect((await verifiedSnapshot()).media.map((i) => i.evidence.attemptId)).toEqual(
     before.media.map((i) => i.evidence.attemptId),
   );
+  expect(await bucket.get(`show-backfill-dispatch/v1/${job}`)).toBeNull();
   await approval.present(ctx, initial);
   expect(upload.mock.calls.map(([file]) => file.filename)).toEqual([
     'image-0.png',
@@ -917,12 +919,17 @@ it('backfills a legacy ready show through a fresh recovery job and offers approv
   );
   version = (await drafts.get(tenant, show))!.version;
   job = (await transport.open(tenant, show, version, true, true)).id;
+  await dispatchShowBackfill(bucket, { id: job, expires: now + 3_600_000 }, async () => {}, now);
   const tampered = await nodeClient();
   await expect(executeShow(tampered, fixture.generator)).rejects.toThrow();
   expect(
     await bucket.get(`show-verified/v1/${tenant}/${show}/${item.evidence.attemptId}`),
   ).toBeNull();
   await expect(verifiedSnapshot()).rejects.toThrow();
+  expect(await bucket.get(`show-backfill-dispatch/v1/${job}`)).toBeNull();
+  const retryDispatch = vi.fn(async () => {});
+  await dispatchShowBackfill(bucket, { id: job, expires: now + 3_600_000 }, retryDispatch, now);
+  expect(retryDispatch).toHaveBeenCalledOnce();
   expect((await db.prepare('SELECT * FROM ai_costs').all()).results).toEqual(costs);
   expect(fixture.submissions()).toBe(4);
 }, 60_000);

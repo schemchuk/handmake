@@ -7,12 +7,12 @@ export async function dispatchShowBackfill(
 ) {
   const key = `show-backfill-dispatch/v1/${job.id}`;
   const previous = await bucket.get(key);
-  if (previous && Number(await previous.text()) > now) return;
+  if (previous && Number(await previous.text()) > now) return 'running' as const;
   // A short lease suppresses concurrent refreshes; an interrupted request can retry.
   const claim = await bucket.put(key, String(now + 60_000), {
     onlyIf: previous ? { etagMatches: previous.etag } : { etagDoesNotMatch: '*' },
   });
-  if (!claim) return;
+  if (!claim) return 'running' as const;
   try {
     await dispatch();
   } catch (error) {
@@ -20,4 +20,5 @@ export async function dispatchShowBackfill(
     throw error;
   }
   await bucket.put(key, String(job.expires), { onlyIf: { etagMatches: claim.etag } });
+  return 'dispatched' as const;
 }

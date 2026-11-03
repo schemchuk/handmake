@@ -71,7 +71,7 @@ export function createShowRuntime(env: Env) {
         const { tenantId, draftId } = stored.draft;
         // Recovery jobs can prepare existing outputs but cannot authorize provider calls.
         const job = await transport.open(tenantId, draftId, stored.version, true, true);
-        await dispatchShowBackfill(bucket, job, () =>
+        return dispatchShowBackfill(bucket, job, () =>
           dispatchShow(env.GITHUB_REPO, env.GITHUB_DISPATCH_TOKEN, {
             tenantId,
             showId: draftId,

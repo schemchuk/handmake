@@ -124,6 +124,7 @@ export function createShowTransport(deps: {
         });
       if (!secret) return reply(503, { error: 'shows disabled' });
       let unlock: (() => Promise<void>) | undefined;
+      let recoveryClaim: string | undefined;
       try {
         const url = new URL(request.url);
         const parts = url.pathname.slice(showTransportPath.length).split('/');
@@ -165,11 +166,15 @@ export function createShowTransport(deps: {
           return reply(409, { error: 'stale job' });
         const data = showDraftDataSchema.parse(draft.draft.extras['show']);
         // Read-only restart discovery accepts an old version, never an old job identity.
-        if (operation === 'status' && attemptId === 'next') {
+        if (['status', 'backfill-release'].includes(operation!) && attemptId === 'next') {
+          if (operation === 'backfill-release' && !job.recovery)
+            return reply(409, { error: 'recovery required' });
           const replay = await bucket.put(`show-replay/v1/${job.id}/${nonce}`, '', {
             onlyIf: { etagDoesNotMatch: '*' },
           });
           if (!replay) return reply(409, { error: 'replay' });
+          if (operation === 'backfill-release')
+            await bucket.delete(`show-backfill-dispatch/v1/${job.id}`);
           return reply(200, {
             version: draft.version,
             pending: data.pending,
@@ -197,6 +202,7 @@ export function createShowTransport(deps: {
           { onlyIf: { etagMatches: etag } },
         );
         if (!locked) return reply(409, { error: 'job changed' });
+        if (job.recovery) recoveryClaim = `show-backfill-dispatch/v1/${job.id}`;
         unlock = async () => {
           const latest = await drafts.get(scope.tenantId, scope.showId);
           if (!latest) throw new Error('draft unavailable');
@@ -263,6 +269,21 @@ export function createShowTransport(deps: {
           )
             throw new Error('verification scope mismatch');
           await verified.attest(evidence);
+          if (job.recovery && !data.pending) {
+            const outputs = Object.values(data.outputs);
+            const complete =
+              outputs.length === data.plan.imageCount + 1 &&
+              (
+                await Promise.all(
+                  outputs.map((output) =>
+                    bucket.head(
+                      `show-verified/v1/${scope.tenantId}/${scope.showId}/${output.attemptId}`,
+                    ),
+                  ),
+                )
+              ).every(Boolean);
+            if (complete) await bucket.delete(`show-backfill-dispatch/v1/${job.id}`);
+          }
         } else if (operation === 'checkpoint') {
           value = await flow.accept(scope.tenantId, scope.showId, scope.attemptId);
         } else if (operation === 'raw-put' || operation === 'marked-put') {
@@ -328,6 +349,7 @@ export function createShowTransport(deps: {
         unlock = undefined;
         return reply(200, { version: job.version, value: value ?? null });
       } catch {
+        if (recoveryClaim) await bucket.delete(recoveryClaim);
         console.warn('show transport operation rejected');
         return reply(409, { error: 'show operation rejected; inspect durable state before retry' });
       } finally {
