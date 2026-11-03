@@ -902,7 +902,7 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
   progress persistence and resume, rate limits and delivery errors; existing post/poll regressions.
 
 #### T46b — Resumable copies from published show content
-- Status: implemented in PR #73; awaiting claude-code review. Recovery: `docs/show-copies.md`.
+- Status: merged as PR #73 (`f30874d`) after claude-code review. Recovery: `docs/show-copies.md`.
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T46a; second PR.
 - Review notes from PR #72: in `renderTelegramShow`, render only `context.languages` (a version in a
@@ -926,6 +926,10 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
 #### T46c — Site-first CI orchestration · Sensitive
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T46b; third PR.
+- Review notes from PR #73: in `apps/publisher/src/publish.ts`, require `TELEGRAM_BOT_TOKEN` when the
+  show is not yet published (the `''` fallback gives an unclear fetch error); in `copy-show.ts`,
+  decide whether a configured channel without `renderShow` is skipped or fails the copy, before
+  T26 adds Instagram.
 - Change: wire the copy command after successful content push and site deployment for shows.
   Pass only the stable show identity/routing needed for copies; preserve live/test channel selection.
   Keep delivery serialized, push ledger progress even on failure, and document retry/recovery in the

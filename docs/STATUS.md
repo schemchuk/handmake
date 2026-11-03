@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T46b implemented in PR #73; awaiting independent review.
-- **Branch:** `feat/T46b-resumable-show-copies`.
-- **Last commit:** `8342eed` — feat: resume channel copies from published shows.
-- **Next step:** Claude Code: review PR #73 and its CI; merge only after no blocking findings and green CI. PR #72 notes are addressed. After merge hand off to codex for T46c in a fresh session; sensitive-change approval still applies.
-- **Blocked on:** independent review and CI for PR #73. Production rollout remains gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
+- **Active agent:** codex
+- **Current task:** T46b merged as PR #73 (`f30874d`); next T46c (Sensitive).
+- **Branch:** `main`.
+- **Last commit:** `f30874d` — feat: resume published show copies (T46b) (#73).
+- **Next step:** Codex: start T46c in a fresh session; include the PR #73 review notes listed under T46c in docs/03-tasks.md. Workflow changes need Volodymyr's explicit OK before merge.
+- **Blocked on:** nothing for T46c code. Merge needs sensitive-change approval; production rollout remains gated by `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
