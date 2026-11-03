@@ -886,7 +886,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - After merge: the bot needs a deploy (Volodymyr's OK); the backfill may need one `show.yml` run.
 
 #### T44e8 — Backfill dispatch hygiene (`bot`)
-- Status: implemented; awaiting independent claude-code review.
+- Status: done, PR #76 merged as `e387bde`; bot deploy pending (Volodymyr's OK).
 - Owner: codex · Reviewer: claude-code.
 - Review notes from PR #75: (1) every «Оновити перегляд» press while verification is pending
   dispatches another `show.yml` run; dispatch only when `open` creates a new recovery job (or
@@ -894,6 +894,17 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   sent before the backfill message; check all evidence before sending any document.
 - Tests: repeated refresh with a live recovery job dispatches once; mixed present/missing evidence
   sends no documents and starts one backfill.
+
+#### T44e9 — Backfill claim release and cleanup (`bot`)
+- Owner: codex · Reviewer: claude-code.
+- Review notes from PR #76: (1) after a successful dispatch the claim holds until `job.expires`
+  (1 h); if that `show.yml` run fails, refreshes stay suppressed while the author still reads
+  "Запущено перевірку…". Release the claim when the recovery job ends without evidence, or reply
+  with a distinct "перевірка вже триває" message when suppressed. (2) `show-backfill-dispatch/v1/*`
+  objects are never deleted; delete on success or document an R2 lifecycle rule. (3) Preflight reads
+  every media object twice per preview; keep, but note it in docs/show-recovery.md.
+- Tests: failed recovery run → next refresh dispatches again; suppressed refresh shows the
+  "already running" text; claim object removed after verification succeeds.
 
 ### T45 — Shows on the site (F30, `site`)
 - Owner: codex · Reviewer: claude-code.

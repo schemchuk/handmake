@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e8 — backfill dispatch hygiene; implementation ready for review.
-- **Branch:** `feat/T44e8-backfill-dispatch`.
-- **Last commit:** `59b4d6d` — docs: record PR 75 merge, bot deploy, hand T44e8 to Codex (implementation commit follows this handoff).
-- **Next step:** Claude Code: independently review the T44e8 PR and merge after green CI if no blockers. Volodymyr: production backfill remains a separate operation per docs/show-recovery.md. T26 waits on H8.
-- **Blocked on:** T26 blocked on H8. GitHub var `SHOW_ALLOW_PAID_CALLS` is currently `true`; docs/show-recovery.md asks for `false` during the backfill (Volodymyr's decision).
+- **Active agent:** codex
+- **Current task:** T44e9 — backfill claim release and cleanup (review notes from PR #76).
+- **Branch:** `main` (create `feat/T44e9-backfill-claim` for the task).
+- **Last commit:** `e387bde` — fix: suppress repeated show backfill dispatches (#76).
+- **Next step:** Codex: start T44e9 in a fresh session (docs/03-tasks.md). Volodymyr: OK for a bot deploy with T44e8. T26 waits on H8.
+- **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
+- **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
