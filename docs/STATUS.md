@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e6b implementation complete (PR #67); awaiting independent review.
-- **Branch:** `feat/t44e6b-show-approval`.
-- **Last commit:** `055bef8` — feat: freeze verified show approval and document dispatch.
-- **Next step:** Claude Code: review T44e6b (PR #67), merge only after CI is green and no blocking findings remain. Then hand off T44e6c to Codex in a fresh session.
-- **Blocked on:** independent review. No deployment or paid calls authorized; publication integration remains T44e6c.
+- **Active agent:** codex
+- **Current task:** T44e6b merged (PR #67, `49a5a4e`); T44e6c not started.
+- **Branch:** `main`.
+- **Last commit:** `49a5a4e` — feat: freeze verified show approval and document dispatch (#67).
+- **Next step:** Codex: start T44e6c (publication integration and deployment gates) in a fresh session. Review notes: (1) the retry button after a failed publish reuses `showRetryButton` ("Продовжити генерацію"), which is the wrong label for publishing, so add a dedicated text; (2) Telegram document `file_id` identity is checked only by name, size and MIME, so the publisher must re-verify the marker on the downloaded bytes; (3) an approved show cannot be discarded or regenerated (`updateShow` is blocked), so decide whether that is intended.
+- **Blocked on:** nothing. No deployment or paid calls authorized.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
