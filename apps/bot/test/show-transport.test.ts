@@ -993,6 +993,50 @@ it('rejects unknown jobs, invalid outcomes and premature ready notifications', a
   expect(notify).not.toHaveBeenCalled();
 });
 
+it('reports failed through the Worker when empty authorization leaves incomplete outputs', async () => {
+  const { executeShow } = await import('../../publisher/src/show-executor');
+  const notify = vi.fn();
+  // Model an authorization refusal without changing the stored incomplete draft.
+  const authorize = vi.spyOn(flow, 'authorize').mockResolvedValue(undefined);
+  transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+  const client = await nodeClient();
+  try {
+    await expect(executeShow(client, generator)).rejects.toThrow('transport rejected');
+    expect(authorize).toHaveBeenCalledOnce();
+    expect(notify).toHaveBeenCalledExactlyOnceWith(expect.anything(), 'failed', false);
+    expect(generator.generateImage).not.toHaveBeenCalled();
+    expect(generator.generateVideo).not.toHaveBeenCalled();
+    expect((await call('finish', { body: '{"outcome":"failed"}' })).status).toBe(200);
+    expect(notify).toHaveBeenCalledOnce();
+  } finally {
+    authorize.mockRestore();
+  }
+});
+
+it('keeps completed execution green after the Worker claims an undelivered ready message', async () => {
+  const notify = vi.fn().mockRejectedValue(new Error('delivery uncertain'));
+  transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+  const fixture = await nodeFixture();
+  const finishes: { status: number; error?: string }[] = [];
+  const handle = transport.handle.bind(transport);
+  vi.spyOn(transport, 'handle').mockImplementation(async (req) => {
+    const response = await handle(req);
+    if (new URL(req.url).pathname.endsWith('/finish'))
+      finishes.push({
+        status: response.status,
+        ...((await response.clone().json()) as { error?: string }),
+      });
+    return response;
+  });
+  await expect(fixture.run()).resolves.toBeUndefined();
+  expect(finishes).toEqual([
+    { status: 409, error: 'show operation rejected; inspect durable state before retry' },
+  ]);
+  expect(notify).toHaveBeenCalledExactlyOnceWith(expect.anything(), 'ready', false);
+  expect((await call('finish', { body: '{"outcome":"ready"}' })).status).toBe(200);
+  expect(notify).toHaveBeenCalledOnce();
+}, 60_000);
+
 it('claims finish before an ambiguous delivery and opens a fresh job for explicit retry', async () => {
   const notify = vi.fn().mockRejectedValue(new Error('delivery uncertain'));
   transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });

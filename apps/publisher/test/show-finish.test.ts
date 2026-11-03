@@ -79,7 +79,10 @@ it.each([false, true])(
         if (operation === 'authorize') return Response.json({ version: 0, value: null });
         if (operation === 'finish') {
           outcomes.push(JSON.parse(new TextDecoder().decode(init!.body as Uint8Array)).outcome);
-          return new Response(null, { status: 500 });
+          return Response.json(
+            { error: 'show operation rejected; inspect durable state before retry' },
+            { status: 409 },
+          );
         }
         throw new Error('unexpected operation');
       },
@@ -117,7 +120,7 @@ it('reports failed when ready is rejected after authorize returns no grant', asy
   const generateImage = vi.fn(),
     generateVideo = vi.fn();
   await expect(executeShow(client, { generateImage, generateVideo })).rejects.toThrow(
-    'show transport conflict; inspect durable state',
+    'show transport rejected; resume from durable state',
   );
   expect(outcomes).toEqual(['ready', 'failed']);
   expect(generateImage).not.toHaveBeenCalled();

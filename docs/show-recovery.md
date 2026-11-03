@@ -106,7 +106,9 @@ Deterministic invalid/tampered media requires operator repair before another ref
 Finish claims the notification in R2 before calling Telegram, so retries and concurrent workflow
 fallbacks send at most one message per job. A failed or ambiguous Telegram delivery is not retried
 automatically; the author can still use `/show`. Notification failure does not fail a successful
-generation run. Resume buttons use `retry` for failed drafts and `start` only for collecting drafts.
+generation run. When authorization returns no grant, the executor reports `failed` only for
+the explicit `unfinished job` ready rejection; other finish errors may follow a delivery claim.
+Resume buttons use `retry` for failed drafts and `start` only for collecting drafts.
 A new explicit generation retry gets a new job identity while retaining pending grants and
 durable results. Ready is accepted only when no attempt remains pending; generation jobs also
 require all output slots. Cancelled, expired and replaced jobs reject finish. Runner cancellation

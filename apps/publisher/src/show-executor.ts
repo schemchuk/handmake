@@ -17,7 +17,7 @@ export type ShowJob = { tenantId: string; showId: string; jobId: string; version
 const part = /^[A-Za-z0-9_-]{1,128}$/;
 const limit = 20_000_000;
 
-class ShowTransportConflict extends Error {}
+class ShowIncompleteCompletion extends Error {}
 
 /** Private, signed transport. No automatic retries of mutations or provider submissions. */
 export function createShowClient(options: {
@@ -77,9 +77,8 @@ export function createShowClient(options: {
           'x-show-signature': createHmac('sha256', options.secret).update(message).digest('hex'),
         },
       });
-      if (!response.ok) {
+      if (!response.ok && (operation !== 'finish' || response.status !== 409)) {
         await response.body?.cancel();
-        if (response.status === 409) throw new ShowTransportConflict();
         throw new Error();
       }
       const chunks: Uint8Array[] = [];
@@ -102,14 +101,21 @@ export function createShowClient(options: {
         body.set(chunk, offset);
         offset += chunk.length;
       }
+      if (!response.ok) {
+        // Only this explicit rejection proves completion was refused before notification.
+        // Other 409 responses include ambiguous delivery failures after the finish claim.
+        if (JSON.parse(new TextDecoder().decode(body)).error === 'unfinished job')
+          throw new ShowIncompleteCompletion();
+        throw new Error();
+      }
       if (operation.endsWith('-get') || operation.startsWith('source-')) return { body, response };
       const parsed = JSON.parse(new TextDecoder().decode(body));
       if (!Number.isSafeInteger(parsed.version) || parsed.version < version) throw new Error();
       version = parsed.version;
       return parsed;
     } catch (error) {
-      if (error instanceof ShowTransportConflict)
-        throw new ShowTransportConflict('show transport conflict; inspect durable state');
+      if (error instanceof ShowIncompleteCompletion)
+        throw new ShowIncompleteCompletion('show transport rejected; resume from durable state');
       throw new Error('show transport rejected; resume from durable state');
     }
   }
@@ -252,7 +258,7 @@ export async function executeShow(
             .catch((error) => {
               // A rejected completion must reach the failure reporter; delivery may fail
               // after the Worker has already accepted and claimed the notification.
-              if (error instanceof ShowTransportConflict) throw error;
+              if (error instanceof ShowIncompleteCompletion) throw error;
             });
           return;
         }
