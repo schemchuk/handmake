@@ -1,4 +1,6 @@
 ---
+import ShowFeed from '../../components/ShowFeed.astro';
+import { showsIn } from '../../lib/shows';
 import Base from '../../layouts/Base.astro';
 import Stitch from '../../components/Stitch.astro';
 import { uiStrings } from '../../lib/i18n';
@@ -32,6 +34,10 @@ const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code,
       <h1>{data.tenant.name}</h1>
     </section>
     <Stitch draw />
+    {showsIn(data, lang).length > 0 && <section aria-label={ui.showsHeading}>
+      <h2><a href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a></h2>
+      <ShowFeed shows={showsIn(data, lang).slice(0, 1)} lang={lang} data={data} />
+    </section>}
     <h2 class="visually-hidden">{ui.postsHeading}</h2>
     {
       posts.length === 0 ? (

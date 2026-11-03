@@ -7,6 +7,7 @@ import { GitRepoContentStore } from '@handmake/stores';
 
 import { bundledLatinFamily } from './font-families';
 import { loadPortfolio } from './portfolio';
+import { loadShows } from './shows';
 
 /** Post types that belong on the public blog; announcements, reminders and polls stay in channels. */
 export const siteVisibleTypes: ReadonlySet<Post['type']> = new Set(['free']);
@@ -17,7 +18,8 @@ export interface SitePost {
   languages: string[];
 }
 
-export interface SiteData extends Awaited<ReturnType<typeof loadPortfolio>> {
+export interface SiteData
+  extends Awaited<ReturnType<typeof loadPortfolio>>, Awaited<ReturnType<typeof loadShows>> {
   tenant: TenantConfig;
   site: SiteConfig;
   posts: SitePost[];
@@ -101,6 +103,7 @@ export function loadSiteData(): Promise<SiteData> {
       site: tenant.site,
       posts: visiblePosts(await store.listPosts(tenant.id), tenant.languages),
       ...(await loadPortfolio(store, tenant.id)),
+      ...(await loadShows(store, tenant.id)),
       store,
       indexable,
     };

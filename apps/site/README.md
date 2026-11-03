@@ -86,3 +86,16 @@ PATH="$PWD/apps/bot/node_modules/.bin:$PATH" wrangler pages deploy apps/site/dis
 Requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment.
 If deployment requests `--force` or delegates to Workers, stop and ask Volodymyr;
 do not add the flag or expand token permissions.
+
+## Shows
+
+Published shows are read through `ShowContentStore`, linked to their real work, and listed newest
+first at `/shows/` and `/uk/shows/`. Only existing language versions receive detail routes; the
+home page highlights the latest show available in its language. Each generated image and video
+has a visible `KI-generiertes Model` caption. Fictional persona names come from the approved show
+snapshot. A work link appears only when that work has the current language version.
+
+`/show-media/<id>/<file>` serves declared approved media without resizing or re-encoding, preserving
+embedded marking evidence byte for byte. Missing declared media or a dangling work reference fails
+the build. The site does not read private generation storage or start generation. Publication-time
+marker verification remains the publisher's responsibility.

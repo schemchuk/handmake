@@ -1,5 +1,8 @@
 /** UI strings per language. A tenant language without an entry here fails the build. */
 export interface UiStrings {
+  showsHeading: string;
+  noShows: string;
+  linkedWork: string;
   skip: string;
   worksHeading: string;
   collectionsHeading: string;
@@ -21,6 +24,9 @@ export interface UiStrings {
 
 const strings: Record<string, UiStrings> = {
   de: {
+    showsHeading: 'Shows',
+    noShows: 'Noch keine Shows.',
+    linkedWork: 'Originalarbeit',
     skip: 'Zum Inhalt springen',
     worksHeading: 'Arbeiten',
     collectionsHeading: 'Kollektionen',
@@ -40,6 +46,9 @@ const strings: Record<string, UiStrings> = {
     language: 'Sprache',
   },
   uk: {
+    showsHeading: 'Покази',
+    noShows: 'Поки що немає показів.',
+    linkedWork: 'Оригінальна робота',
     skip: 'Перейти до вмісту',
     worksHeading: 'Роботи',
     collectionsHeading: 'Колекції',

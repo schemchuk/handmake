@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T44e6c merged (PR #69, `8890601`); parent T44e6/T44e acceptance closed; T45 not started.
-- **Branch:** `main`.
+- **Current task:** T45 implemented; site tests and workspace checks passed; preparing PR.
+- **Branch:** `feat/t45-site-shows`.
 - **Last commit:** `8890601` — test: verify approved show publication end to end (#69).
-- **Next step:** Codex: start T45 (shows on the site) in a fresh session.
+- **Next step:** Codex: publish T45 PR and hand off to claude-code for independent review.
 - **Blocked on:** nothing for T45. Production show rollout needs Volodymyr's separate authorization per `docs/show-deployment.md` (model terms, billing, operator IDs, deploy).
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
