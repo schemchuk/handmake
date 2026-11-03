@@ -939,6 +939,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - After merge: the bot needs a deploy (Volodymyr's OK).
 
 #### T44e11 — Silent ready rejection after authorize (`publisher`)
+- Status: implemented on `feat/T44e11-ready-rejection`; awaiting claude-code review.
 - Owner: codex · Reviewer: claude-code · Depends on: T44e10.
 - Review notes from PR #78: (1) `show-executor.ts`: when `authorize` returns no grant, `finish('ready')`
   errors are swallowed; if the Worker rejects it with 409 `unfinished job` (outputs incomplete), the

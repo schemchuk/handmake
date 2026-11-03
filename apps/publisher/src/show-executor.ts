@@ -17,6 +17,8 @@ export type ShowJob = { tenantId: string; showId: string; jobId: string; version
 const part = /^[A-Za-z0-9_-]{1,128}$/;
 const limit = 20_000_000;
 
+class ShowTransportConflict extends Error {}
+
 /** Private, signed transport. No automatic retries of mutations or provider submissions. */
 export function createShowClient(options: {
   origin: string;
@@ -77,6 +79,7 @@ export function createShowClient(options: {
       });
       if (!response.ok) {
         await response.body?.cancel();
+        if (response.status === 409) throw new ShowTransportConflict();
         throw new Error();
       }
       const chunks: Uint8Array[] = [];
@@ -104,7 +107,9 @@ export function createShowClient(options: {
       if (!Number.isSafeInteger(parsed.version) || parsed.version < version) throw new Error();
       version = parsed.version;
       return parsed;
-    } catch {
+    } catch (error) {
+      if (error instanceof ShowTransportConflict)
+        throw new ShowTransportConflict('show transport conflict; inspect durable state');
       throw new Error('show transport rejected; resume from durable state');
     }
   }
@@ -244,7 +249,11 @@ export async function executeShow(
         if (!authorized.value) {
           await client
             .call('finish', 'next', new TextEncoder().encode(JSON.stringify({ outcome: 'ready' })))
-            .catch(() => undefined);
+            .catch((error) => {
+              // A rejected completion must reach the failure reporter; delivery may fail
+              // after the Worker has already accepted and claimed the notification.
+              if (error instanceof ShowTransportConflict) throw error;
+            });
           return;
         }
         attempt = authorized.value.request.attemptId;
