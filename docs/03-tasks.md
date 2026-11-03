@@ -924,6 +924,7 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
   site-publication retry after copies; notifier/callback and ordinary post/work regressions.
 
 #### T46c — Site-first CI orchestration · Sensitive
+- Status: implemented; pending independent review and sensitive-merge approval.
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T46b; third PR.
 - Review notes from PR #73: in `apps/publisher/src/publish.ts`, require `TELEGRAM_BOT_TOKEN` when the

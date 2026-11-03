@@ -137,8 +137,12 @@ export async function runPublish(
           payload,
           tenant,
           store,
-          deps.showMediaSource ??
-            new TelegramMediaSource({ token: env['TELEGRAM_BOT_TOKEN'] ?? '' }),
+          deps.showMediaSource ?? {
+            fetchMedia: (ref) =>
+              new TelegramMediaSource({ token: requiredEnv('TELEGRAM_BOT_TOKEN', env) }).fetchMedia(
+                ref,
+              ),
+          },
         )
       : undefined;
   const publication = workPublication ?? showPublication;

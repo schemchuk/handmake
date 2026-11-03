@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T46b merged as PR #73 (`f30874d`); next T46c (Sensitive).
-- **Branch:** `main`.
+- **Current task:** T46c implemented; preparing PR for independent review (Sensitive).
+- **Branch:** `feat/T46c-site-first-ci`.
 - **Last commit:** `f30874d` — feat: resume published show copies (T46b) (#73).
-- **Next step:** Codex: start T46c in a fresh session; include the PR #73 review notes listed under T46c in docs/03-tasks.md. Workflow changes need Volodymyr's explicit OK before merge.
+- **Next step:** Codex: push T46c and open its PR, then hand off to Claude Code. Both PR #73 review notes are addressed. Workflow changes need Volodymyr's explicit OK before merge.
 - **Blocked on:** nothing for T46c code. Merge needs sensitive-change approval; production rollout remains gated by `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T46c validation: publisher 175/175 tests pass; workspace typecheck/build, lint, formatting and actionlint pass. Workflow guards/routing and a local Git remote with failed-progress push, fresh checkout and resumed copies are covered. Recovery and separately authorized smoke procedure: docs/show-copies.md. No remote deployment, dispatch, paid generation or production secret changes.
 - T46b validation: publisher 160/160 plus the added operation-commit interruption case pass; channels 64/64, core 213/213 and stores 45/45 pass. Workspace typecheck/build, lint and formatting pass. Stored marked PNG/MP4 bytes, real Git ledger commits, failure/resume, config drift, tenant/progress guards and site callbacks are covered. Recovery: docs/show-copies.md. No workflow, deployment, production publishing, paid call or secret changes.
 - T46a validation: channels 63/63 and core 213/213 tests pass; workspace typecheck/build, lint and formatting pass. Publisher 137/137 passes with one worker and a 30-second timeout after an initial 136/137 run with one timeout during concurrent build. Tests assert unchanged uploaded PNG/MP4 bytes using structural fixtures, not real Telegram playback or server-side preservation. No production publishing, paid calls, workflow, deployment or secret changes.
 - PR #71 review: CI passed; local site tests 29/29 and site typecheck passed. The sandboxed run had one child-process diagnostic failure; the unrestricted rerun passed. MIME guard, indexed image alt text and latest-show selection reviewed. No workflow, secret, deployment or production changes.
