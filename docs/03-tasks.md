@@ -886,7 +886,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - After merge: the bot needs a deploy (Volodymyr's OK); the backfill may need one `show.yml` run.
 
 #### T44e8 — Backfill dispatch hygiene (`bot`)
-- Status: done, PR #76 merged as `e387bde`; bot deploy pending (Volodymyr's OK).
+- Status: done, PR #76 merged as `e387bde`; bot deployed 2026-11-03 (version `5adb7478`).
 - Owner: codex · Reviewer: claude-code.
 - Review notes from PR #75: (1) every «Оновити перегляд» press while verification is pending
   dispatches another `show.yml` run; dispatch only when `open` creates a new recovery job (or
