@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -144,12 +144,23 @@ export class GitRepoContentStore extends GitShowContentStore implements ContentS
       throw error;
     }
     const ledger = parseLedger(json);
+    if (ledger.postId !== postId) throw new Error('ledger identity mismatch');
     return ledger.tenantId === tenantId ? ledger : undefined;
   }
 
   async writeLedger(ledger: PublishLedger): Promise<void> {
     const ledgerDir = path.join(this.#rootDir, 'content', 'ledger');
     await mkdir(ledgerDir, { recursive: true });
-    await writeFile(path.join(ledgerDir, `${ledger.postId}.json`), serializeLedger(ledger));
+    const target = path.join(ledgerDir, `${ledger.postId}.json`);
+    try {
+      const existing = parseLedger(await readFile(target, 'utf8'));
+      if (existing.tenantId !== ledger.tenantId || existing.postId !== ledger.postId)
+        throw new Error('ledger identity mismatch');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    const pending = `${target}.pending`;
+    await writeFile(pending, serializeLedger(ledger));
+    await rename(pending, target);
   }
 }

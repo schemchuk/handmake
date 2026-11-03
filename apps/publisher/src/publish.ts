@@ -78,7 +78,7 @@ export class PublishError extends Error {
   }
 }
 
-function defaultRegistry(
+export function defaultRegistry(
   tenant: TenantConfig,
   env: NodeJS.ProcessEnv,
   channels = Object.keys(tenant.channels),
@@ -138,7 +138,7 @@ export async function runPublish(
           tenant,
           store,
           deps.showMediaSource ??
-            new TelegramMediaSource({ token: requiredEnv('TELEGRAM_BOT_TOKEN', env) }),
+            new TelegramMediaSource({ token: env['TELEGRAM_BOT_TOKEN'] ?? '' }),
         )
       : undefined;
   const publication = workPublication ?? showPublication;
@@ -254,7 +254,8 @@ export async function runPublish(
   // run reports success — any channel failure has already thrown above.
   const callbackUrl = env['PUBLISH_CALLBACK_URL'];
   const callbackSecret = env['PUBLISH_CALLBACK_SECRET'];
-  const ledgerEntries = Object.entries(ledger.channels);
+  // Site publication is complete independently of later copy delivery.
+  const ledgerEntries = showPublication ? [] : Object.entries(ledger.channels);
   if (callbackUrl && !callbackSecret) {
     log('PUBLISH_CALLBACK_SECRET missing; published callback not sent');
     await notify(

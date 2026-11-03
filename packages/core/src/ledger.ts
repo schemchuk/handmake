@@ -25,10 +25,44 @@ export const ledgerEntrySchema = z.object({
 });
 export type LedgerEntryParsed = z.infer<typeof ledgerEntrySchema>;
 
+const replyToOp = z.number().int().nonnegative().optional();
+const operationSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('mediaGroup'),
+    photoIndexes: z.array(z.number().int().nonnegative()).min(1),
+    caption: z.string().optional(),
+    captionLang: z.string().optional(),
+    replyToOp,
+  }),
+  z.object({ kind: z.literal('video'), replyToOp }),
+  z.object({ kind: z.literal('message'), text: z.string(), lang: z.string(), replyToOp }),
+  z.object({
+    kind: z.literal('poll'),
+    question: z.string(),
+    options: z.array(z.string()),
+    replyToOp,
+  }),
+]);
+
+/** Immutable copy snapshot: operations, secret names/settings and ordered media hashes. */
+export const showCopyPlanSchema = z.object({
+  version: z.literal(1),
+  mediaHashes: z.array(z.string().regex(/^[a-f0-9]{64}$/)).min(4),
+  channels: z.record(
+    z.string(),
+    z.object({
+      operations: z.array(operationSchema).min(1),
+      settings: z.unknown(),
+    }),
+  ),
+});
+export type ShowCopyPlan = z.infer<typeof showCopyPlanSchema>;
+
 export const publishLedgerSchema = z.object({
   tenantId: z.string().min(1),
   postId: z.string().min(1),
   channels: z.record(z.string(), ledgerEntrySchema),
+  showCopyPlan: showCopyPlanSchema.optional(),
 });
 export type PublishLedgerParsed = z.infer<typeof publishLedgerSchema>;
 

@@ -1,3 +1,4 @@
+import type { ShowCopyPlan } from '../ledger';
 import type { Show } from '../show';
 import type { Post, PostType } from '../post';
 import type { Collection, Work } from '../work';
@@ -24,6 +25,7 @@ export interface PublishLedger {
   tenantId: string;
   postId: string;
   channels: Record<string, LedgerEntry>;
+  showCopyPlan?: ShowCopyPlan;
 }
 
 export interface PhotoFile {

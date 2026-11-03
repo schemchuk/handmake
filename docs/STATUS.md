@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T46a merged as PR #72 (`805082e`); next T46b.
-- **Branch:** `main`.
+- **Current task:** T46b implemented; preparing PR and claude-code handoff.
+- **Branch:** `feat/T46b-resumable-show-copies`.
 - **Last commit:** `805082e` — feat: render shows and deliver marked channel video (T46a) (#72).
-- **Next step:** Codex: start T46b in a fresh session; include the PR #72 review notes listed under T46b in docs/03-tasks.md.
+- **Next step:** Codex: push T46b and open its PR, then hand off to claude-code for independent review. PR #72 language/disclosure notes are addressed.
 - **Blocked on:** nothing for T46b. Production rollout remains gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T46b validation: publisher 160/160 plus the added operation-commit interruption case pass; channels 64/64, core 213/213 and stores 45/45 pass. Workspace typecheck/build, lint and formatting pass. Stored marked PNG/MP4 bytes, real Git ledger commits, failure/resume, config drift, tenant/progress guards and site callbacks are covered. Recovery: docs/show-copies.md. No workflow, deployment, production publishing, paid call or secret changes.
 - T46a validation: channels 63/63 and core 213/213 tests pass; workspace typecheck/build, lint and formatting pass. Publisher 137/137 passes with one worker and a 30-second timeout after an initial 136/137 run with one timeout during concurrent build. Tests assert unchanged uploaded PNG/MP4 bytes using structural fixtures, not real Telegram playback or server-side preservation. No production publishing, paid calls, workflow, deployment or secret changes.
 - PR #71 review: CI passed; local site tests 29/29 and site typecheck passed. The sandboxed run had one child-process diagnostic failure; the unrestricted rerun passed. MIME guard, indexed image alt text and latest-show selection reviewed. No workflow, secret, deployment or production changes.
 - T45 validation: site 29/29 tests, workspace typecheck/build, lint, formatting and staged secret scan pass. Fixture builds cover localized show pages, AI captions, persona/work links, latest-show selection, escaping and byte-preserved PNG/MP4 delivery. Structural media fixtures do not test playback or re-verify markers; publisher verification remains the publication gate. No workflows, deployment, paid calls or production settings changed.

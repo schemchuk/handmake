@@ -3,15 +3,16 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promi
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { showSchema } from '@handmake/core';
+import { ChannelRegistry, showSchema } from '@handmake/core';
 import type { PublishedCallbackBody, Show, Work } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
-import sharp from 'sharp';
 import { markingFixtures } from './fixtures/show-marking';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { parseDispatchPayload } from '../src/payload';
 import type { DispatchPayload } from '../src/payload';
 import { runPublish } from '../src/publish';
+import { runCopyShow } from '../src/copy-show';
+import { TelegramAdapter } from '@handmake/channels';
 
 let root: string,
   payloadPath: string,
@@ -92,6 +93,7 @@ beforeEach(async () => {
   callback.send.mockClear();
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await rm(root, { recursive: true, force: true });
 });
 
@@ -152,17 +154,14 @@ it.each(['image', 'video', 'download'] as const)(
     expect(git.commit).not.toHaveBeenCalled();
   },
 );
-it('rejects changed approved content or media on retry', async () => {
+it('rejects changed approved content and reuses stored media after draft references expire', async () => {
   await run();
   show.video.promptVersion = 'changed@2';
   await expect(run()).rejects.toThrow('immutable');
   show.video.promptVersion = 'interior@1';
-  source.fetchMedia.mockResolvedValue(new Uint8Array(await sharp(image).negate().png().toBuffer()));
-  // Leave the video valid so the immutable image comparison is reached.
-  source.fetchMedia.mockImplementation(async (ref) =>
-    ref.endsWith('.mp4') ? video : new Uint8Array(await sharp(image).negate().png().toBuffer()),
-  );
-  await expect(run()).rejects.toThrow('marking failed');
+  source.fetchMedia.mockClear().mockRejectedValue(new Error('expired'));
+  await run();
+  expect(source.fetchMedia).not.toHaveBeenCalled();
 });
 it.each([
   { draftId: '01JBCA1B2C3D4E5F6G7H8J9K0A' },
@@ -195,7 +194,7 @@ it('refuses a conflicting channel ledger before any download', async () => {
       telegram: { status: 'done', remoteIds: [], updatedAt: show.date },
     },
   });
-  await expect(run()).rejects.toThrow('before T46');
+  await expect(run()).rejects.toThrow('without published content');
   expect(source.fetchMedia).not.toHaveBeenCalled();
 });
 
@@ -204,4 +203,214 @@ it('rejects valid but unmarked media even when dispatch declares a marker', asyn
   source.fetchMedia.mockImplementation(async (ref) => (ref.endsWith('.mp4') ? video : raw));
   await expect(run()).rejects.toThrow('marking failed');
   expect(git.commit).not.toHaveBeenCalled();
+});
+
+function copies() {
+  const requests: { method: string; body: FormData }[] = [];
+  let failVideo = true;
+  const fetchImpl = vi.fn(async (url: unknown, init?: RequestInit) => {
+    const method = String(url).split('/').at(-1)!;
+    const body = init!.body instanceof FormData ? init!.body : new FormData();
+    if (typeof init!.body === 'string')
+      for (const [key, value] of Object.entries(JSON.parse(init!.body)))
+        body.set(key, typeof value === 'string' ? value : JSON.stringify(value));
+    requests.push({ method, body });
+    if (method === 'sendVideo' && failVideo) throw new Error('network interrupted');
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        result:
+          method === 'sendMediaGroup'
+            ? [{ message_id: 101 }, { message_id: 102 }, { message_id: 103 }]
+            : { message_id: 200 + requests.length },
+      }),
+    );
+  });
+  const registry = new ChannelRegistry();
+  const adapter = new TelegramAdapter({ token: 'fixture', fetchImpl });
+  const render = vi.spyOn(adapter, 'renderShow');
+  registry.register(adapter);
+  const notifier = { notify: vi.fn(async () => {}) };
+  const copy = (overrides = {}) =>
+    runCopyShow(show.tenant, show.id, {
+      root,
+      git,
+      registry,
+      notifier,
+      callback,
+      env: {},
+      secrets: { resolve: async (name) => name },
+      ...overrides,
+    });
+  return {
+    copy,
+    requests,
+    render,
+    notifier,
+    succeed: () => {
+      failVideo = false;
+    },
+  };
+}
+
+it('copies stored bytes, commits progress, resumes the saved plan and skips completed channels', async () => {
+  const exec = promisify(execFile);
+  await exec('git', ['init', '-q'], { cwd: root });
+  await run({ git: undefined });
+  source.fetchMedia.mockClear().mockRejectedValue(new Error('expired'));
+  callback.send.mockClear();
+  const c = copies();
+  await expect(c.copy({ git: undefined })).rejects.toThrow('interrupted');
+  expect(c.requests.map((r) => r.method)).toEqual(['sendMediaGroup', 'sendVideo']);
+  const partial = await store.readLedger(show.tenant, show.id);
+  expect(partial!.channels.telegram).toMatchObject({ status: 'failed', remoteIds: [101] });
+  expect(partial!.showCopyPlan).toBeDefined();
+  expect(c.notifier.notify).toHaveBeenCalledWith(
+    'operator',
+    expect.stringContaining('copy failed'),
+  );
+  expect(callback.send).not.toHaveBeenCalled();
+  expect(await store.readShow(show.tenant, show.id)).toEqual(show);
+  const album = c.requests[0]!.body;
+  const uploaded = [...album.values()].filter((value): value is File => typeof value !== 'string');
+  expect(uploaded).toHaveLength(3);
+  for (const file of uploaded) expect(new Uint8Array(await file.arrayBuffer())).toEqual(image);
+  const config = path.join(root, 'config/tenants/faden-und-stimmung.yaml');
+  const yaml = await readFile(config, 'utf8');
+  await writeFile(
+    config,
+    yaml
+      .replace('https://fadenundstimmung.de', 'https://changed.example')
+      .replace('TELEGRAM_CHANNEL_ID', 'CHANGED_CHANNEL_ID')
+      .replace('languages: [uk, de]', 'languages: [de, uk]'),
+  );
+  c.render.mockImplementation(() => {
+    throw new Error('must reuse plan');
+  });
+  c.succeed();
+  const done = await c.copy({ git: undefined });
+  expect(done.ledger.showCopyPlan).toEqual(partial!.showCopyPlan);
+  expect(c.requests.map((r) => r.method)).toEqual([
+    'sendMediaGroup',
+    'sendVideo',
+    'sendVideo',
+    'sendMessage',
+  ]);
+  expect(c.requests[2]!.body.get('reply_parameters')).toContain('101');
+  const videoFile = c.requests[2]!.body.get('video') as File;
+  expect(new Uint8Array(await videoFile.arrayBuffer())).toEqual(video);
+  expect(c.requests[2]!.body.get('chat_id')).toBe('TELEGRAM_CHANNEL_ID');
+  expect(c.requests[3]!.body.get('text')).not.toContain('changed.example');
+  expect((await c.copy({ git: undefined })).skipped).toEqual(['telegram']);
+  expect(c.requests).toHaveLength(4);
+  await run({ git: undefined });
+  expect(callback.send).toHaveBeenCalledWith(
+    expect.objectContaining({ kind: 'show', channels: {} }),
+  );
+  expect(source.fetchMedia).not.toHaveBeenCalled();
+  expect((await store.readLedger(show.tenant, show.id))!.channels.telegram!.status).toBe('done');
+  const tracked = (await exec('git', ['ls-files'], { cwd: root })).stdout.trim().split('\n');
+  expect(tracked.every((file) => file.startsWith('content/'))).toBe(true);
+}, 30_000);
+
+it('keeps site publication retryable while channel copies remain failed', async () => {
+  await run();
+  const c = copies();
+  await expect(c.copy()).rejects.toThrow();
+  source.fetchMedia.mockClear().mockRejectedValue(new Error('expired'));
+  callback.send.mockClear();
+  await run();
+  expect(callback.send).toHaveBeenCalledWith(
+    expect.objectContaining({ channels: {}, kind: 'show' }),
+  );
+  expect((await store.readLedger(show.tenant, show.id))!.channels.telegram!.status).toBe('failed');
+  expect(source.fetchMedia).not.toHaveBeenCalled();
+});
+
+it.each(['commit', 'operation-commit', 'write'] as const)(
+  'resumes after an interrupted operation %s',
+  async (failure) => {
+    await run();
+    const c = copies();
+    c.succeed();
+    if (failure === 'commit') git.commit.mockRejectedValueOnce(new Error('initial commit failed'));
+    else if (failure === 'operation-commit')
+      git.commit
+        .mockResolvedValueOnce(true)
+        .mockRejectedValueOnce(new Error('operation commit failed'));
+    else {
+      const original = GitRepoContentStore.prototype.writeLedger;
+      const write = vi.spyOn(GitRepoContentStore.prototype, 'writeLedger');
+      // Initial plan persists; the first operation write fails once.
+      write
+        .mockImplementationOnce(async function (this: GitRepoContentStore, ledger) {
+          return original.call(this, ledger);
+        })
+        .mockRejectedValueOnce(new Error('operation write failed'));
+    }
+    await expect(c.copy()).rejects.toThrow();
+    const firstCount = c.requests.filter((r) => r.method === 'sendMediaGroup').length;
+    await c.copy();
+    expect(c.requests.filter((r) => r.method === 'sendMediaGroup')).toHaveLength(
+      failure === 'commit' ? 1 : firstCount,
+    );
+    vi.restoreAllMocks();
+  },
+);
+
+it.each([
+  'missing-show',
+  'tenant',
+  'missing-media',
+  'unmarked',
+  'prefix',
+  'done-prefix',
+  'plan',
+  'hash',
+  'foreign-ledger',
+  'identity',
+  'channels',
+  'reply',
+  'index',
+] as const)('rejects %s before sending', async (failure) => {
+  await run();
+  const c = copies();
+  if (failure === 'missing-show') await rm(path.join(root, `content/shows/${show.id}/index.md`));
+  else if (failure === 'tenant') {
+    await expect(runCopyShow('other', show.id, { root, git })).rejects.toThrow('tenant');
+    expect(c.requests).toEqual([]);
+    return;
+  } else if (failure === 'missing-media')
+    await rm(path.join(root, `content/shows/${show.id}/clip.mp4`));
+  else if (failure === 'unmarked')
+    await writeFile(
+      path.join(root, `content/shows/${show.id}/image-0.png`),
+      (await markingFixtures()).image,
+    );
+  else if (failure === 'foreign-ledger') {
+    await writeFile(
+      path.join(root, `content/ledger/${show.id}.json`),
+      JSON.stringify({ tenantId: 'other', postId: show.id, channels: {} }),
+    );
+  } else {
+    await expect(c.copy()).rejects.toThrow();
+    const ledger = (await store.readLedger(show.tenant, show.id))!;
+    if (failure === 'prefix') ledger.channels.telegram!.remoteIds = Array(20).fill(1);
+    if (failure === 'done-prefix') ledger.channels.telegram!.status = 'done';
+    if (failure === 'plan') delete ledger.showCopyPlan;
+    if (failure === 'hash') ledger.showCopyPlan!.mediaHashes[0] = '0'.repeat(64);
+    if (failure === 'identity') ledger.postId = show.workId;
+    if (failure === 'channels') delete ledger.channels.telegram;
+    if (failure === 'reply') ledger.showCopyPlan!.channels.telegram!.operations[1]!.replyToOp = 1;
+    if (failure === 'index') {
+      const op = ledger.showCopyPlan!.channels.telegram!.operations[0]!;
+      if (op.kind === 'mediaGroup') op.photoIndexes = [99];
+    }
+    if (failure === 'identity')
+      await writeFile(path.join(root, `content/ledger/${show.id}.json`), JSON.stringify(ledger));
+    else await store.writeLedger(ledger);
+    c.requests.length = 0;
+  }
+  await expect(c.copy()).rejects.toThrow();
+  expect(c.requests).toEqual([]);
 });

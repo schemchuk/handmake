@@ -1,12 +1,14 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { runCopyShow } from './copy-show';
 import { runDryRun } from './dry-run';
 import { TelegramNotifier } from './notify/telegram-notifier';
 import { runPublish } from './publish';
 
 const USAGE = [
   'usage: publisher --dry-run <payload.json> [--root <dir>]',
+  '       publisher copy-show <tenantId> <showId> [--root <dir>]',
   '       publisher publish <payload.json> [--root <dir>]',
 ].join('\n');
 
@@ -34,12 +36,17 @@ function parseRoot(args: string[]): string | undefined | null {
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   const args = [...argv];
   const command = args.shift();
-  if (command !== '--dry-run' && command !== 'publish') {
+  if (command !== '--dry-run' && command !== 'publish' && command !== 'copy-show') {
     console.error(USAGE);
     return 2;
   }
   const payloadPath = args.shift();
   if (!payloadPath) {
+    console.error(USAGE);
+    return 2;
+  }
+  const showId = command === 'copy-show' ? args.shift() : undefined;
+  if (command === 'copy-show' && !showId) {
     console.error(USAGE);
     return 2;
   }
@@ -49,7 +56,13 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
     return 2;
   }
   try {
-    if (command === '--dry-run') {
+    if (command === 'copy-show') {
+      const notifier = envNotifier();
+      await runCopyShow(payloadPath, showId!, {
+        ...(root ? { root } : {}),
+        ...(notifier ? { notifier } : {}),
+      });
+    } else if (command === '--dry-run') {
       await runDryRun(payloadPath, root ? { root } : {});
     } else {
       const notifier = envNotifier();
@@ -60,9 +73,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
     }
     return 0;
   } catch (error) {
-    console.error(
-      `${command === 'publish' ? 'publish' : 'dry-run'} failed: ${(error as Error).message}`,
-    );
+    console.error(`${command} failed: ${(error as Error).message}`);
     return 1;
   }
 }

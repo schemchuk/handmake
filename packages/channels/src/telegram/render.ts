@@ -171,12 +171,12 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
   if (show.images.length < 3 || show.images.length > 5 || !show.video) {
     throw new TelegramRenderError('show requires 3-5 images and a video');
   }
-  const languages = [
-    ...new Set([
-      ...context.languages.filter((lang) => show.versions[lang]),
-      ...Object.keys(show.versions),
-    ]),
-  ];
+  const languages = [...new Set(context.languages.filter((lang) => show.versions[lang]))];
+  const disclosures: Record<string, string> = {
+    de: 'KI-generiertes Model',
+    uk: 'Модель згенерована ШІ (KI-generiertes Model)',
+    en: 'AI-generated model',
+  };
   if (!languages.length) throw new TelegramRenderError('show requires descriptions');
   const ops: SendOperation[] = [
     {
@@ -188,8 +188,8 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
   for (const [index, lang] of languages.entries()) {
     if (!/^[a-z]{2}$/.test(lang)) throw new TelegramRenderError('invalid show language');
     const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
-    const disclosure =
-      lang === 'uk' ? 'Модель згенерована ШІ (KI-generiertes Model)' : 'KI-generiertes Model';
+    const disclosure = disclosures[lang];
+    if (!disclosure) throw new TelegramRenderError(`unsupported show disclosure language: ${lang}`);
     const text = `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`;
     if (text.length > telegramCapabilities.messageLimit) {
       throw new TelegramRenderError(`show description for "${lang}" exceeds message limit`);
