@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T44e6b merged (PR #67, `49a5a4e`); review-note fix on `fix/show-publish-retry-label` awaits Codex review; T44e6c not started.
+- **Current task:** Publish-retry label fix reviewed and merged (PR #68, `df386d0`); T44e6c not started.
 - **Branch:** `main`.
-- **Last commit:** `49a5a4e` — feat: freeze verified show approval and document dispatch (#67).
-- **Next step:** Codex: review and merge the publish-retry label fix (Claude Code authored), then start T44e6c (publication integration and deployment gates) in a fresh session. T44e6b review notes resolved: retry label fixed; downloaded-marker verification already exists (`apps/publisher/src/show-publication.ts`, `verifyMarkedMedia`), confirm it in T44e6c; approved shows deliberately refuse /discard and regeneration (frozen consent, covered by the session test).
-- **Blocked on:** nothing. No deployment or paid calls authorized.
+- **Last commit:** `df386d0` — fix: label show publish retry button (#68).
+- **Next step:** Codex: start T44e6c (publication integration and deployment gates) in a fresh session. Confirm independent downloaded-marker verification through the production adapters. Approved shows deliberately refuse /discard and regeneration (frozen consent).
+- **Blocked on:** nothing. PR #68: no review findings; targeted session test and bot typecheck pass; CI green. No deployment or paid calls authorized.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
