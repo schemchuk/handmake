@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T46 split into T46a-T46c approved by Volodymyr in chat 2026-11-03. T46a is ready for implementation.
-- **Branch:** `main`.
-- **Last commit:** `9f2e0c1` — docs: propose reviewable T46 implementation split (approval recorded in the following docs commit).
-- **Next step:** Codex: start T46a (show rendering and video delivery) in a fresh session; reviewer is claude-code.
-- **Blocked on:** nothing for T46a code. Production show rollout still needs Volodymyr's separate authorization per `docs/show-deployment.md`; T46c merge needs separate sensitive-change approval.
+- **Active agent:** claude-code
+- **Current task:** T46a implemented in PR #72; independent review pending.
+- **Branch:** `feat/T46a-show-delivery`.
+- **Last commit:** `0bcb9a4` — feat: render shows and deliver marked channel video.
+- **Next step:** Claude Code: review PR #72 (https://github.com/schemchuk/handmake/pull/72) and CI, then merge if approved. Hand off T46b to Codex in a fresh session after merge.
+- **Blocked on:** independent review. Production rollout remains separately gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T46a validation: channels 63/63 and core 213/213 tests pass; workspace typecheck/build, lint and formatting pass. Publisher 137/137 passes with one worker and a 30-second timeout after an initial 136/137 run with one timeout during concurrent build. Tests assert unchanged uploaded PNG/MP4 bytes using structural fixtures, not real Telegram playback or server-side preservation. No production publishing, paid calls, workflow, deployment or secret changes.
 - PR #71 review: CI passed; local site tests 29/29 and site typecheck passed. The sandboxed run had one child-process diagnostic failure; the unrestricted rerun passed. MIME guard, indexed image alt text and latest-show selection reviewed. No workflow, secret, deployment or production changes.
 - T45 validation: site 29/29 tests, workspace typecheck/build, lint, formatting and staged secret scan pass. Fixture builds cover localized show pages, AI captions, persona/work links, latest-show selection, escaping and byte-preserved PNG/MP4 delivery. Structural media fixtures do not test playback or re-verify markers; publisher verification remains the publication gate. No workflows, deployment, paid calls or production settings changed.
 - T44e6c validation: full bot suite 479/479 and publisher 137/137 pass, including five new production-adapter publication integration cases with real local D1/R2, marked PNG/MP4 and Git commits. Workspace typecheck/build, lint, formatting and staged secret scan pass. Tests cover downloaded marker stripping/tampering, immutable dispatch and callback retries, persistence recovery, work linkage and tenant isolation. No runtime code, dependencies, workflows, secrets/vars, migrations, remote setup, deployment or paid calls changed. Parent T44e6/T44e gates await independent combined review; rollout checklist and evidence map: docs/show-deployment.md.

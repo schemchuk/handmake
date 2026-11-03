@@ -1,4 +1,10 @@
-import type { ChannelCapabilities, Post, SendOperation } from '@handmake/core';
+import type {
+  ChannelCapabilities,
+  Post,
+  Show,
+  ShowRenderContext,
+  SendOperation,
+} from '@handmake/core';
 
 /**
  * Pure part of the Telegram ChannelAdapter (T05): turns a post into the
@@ -152,5 +158,49 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
     ops.push({ kind: 'message', text, lang, replyToOp: 0 });
   }
 
+  return ops;
+}
+
+/** Show descriptions remain verbatim; disclosure and canonical links are appended. */
+export function renderTelegramShow(show: Show, context: ShowRenderContext): SendOperation[] {
+  const { baseUrl, defaultLanguage } = context.site;
+  const origin = new URL(baseUrl);
+  if (origin.protocol !== 'https:' || origin.origin !== baseUrl) {
+    throw new TelegramRenderError('show site baseUrl must be an HTTPS origin');
+  }
+  if (show.images.length < 3 || show.images.length > 5 || !show.video) {
+    throw new TelegramRenderError('show requires 3-5 images and a video');
+  }
+  const languages = [
+    ...new Set([
+      ...context.languages.filter((lang) => show.versions[lang]),
+      ...Object.keys(show.versions),
+    ]),
+  ];
+  if (!languages.length) throw new TelegramRenderError('show requires descriptions');
+  const ops: SendOperation[] = [
+    {
+      kind: 'mediaGroup',
+      photoIndexes: show.images.map((_, index) => index),
+    },
+    { kind: 'video', replyToOp: 0 },
+  ];
+  for (const [index, lang] of languages.entries()) {
+    if (!/^[a-z]{2}$/.test(lang)) throw new TelegramRenderError('invalid show language');
+    const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
+    const disclosure =
+      lang === 'uk' ? 'Модель згенерована ШІ (KI-generiertes Model)' : 'KI-generiertes Model';
+    const text = `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`;
+    if (text.length > telegramCapabilities.messageLimit) {
+      throw new TelegramRenderError(`show description for "${lang}" exceeds message limit`);
+    }
+    if (index === 0 && text.length <= telegramCapabilities.captionLimit) {
+      const album = ops[0] as Extract<SendOperation, { kind: 'mediaGroup' }>;
+      album.caption = text;
+      album.captionLang = lang;
+    } else {
+      ops.push({ kind: 'message', text, lang, replyToOp: 0 });
+    }
+  }
   return ops;
 }

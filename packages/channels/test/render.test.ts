@@ -123,7 +123,7 @@ describe('renderTelegram: layout (O1)', () => {
     const ops = renderTelegram(makePost({ texts }));
     expect(
       ops.map((op) =>
-        op.kind === 'message' ? op.lang : op.kind === 'poll' ? 'poll' : op.captionLang,
+        op.kind === 'message' ? op.lang : op.kind === 'mediaGroup' ? op.captionLang : op.kind,
       ),
     ).toEqual(['uk', 'de', 'en']);
   });
@@ -157,7 +157,7 @@ describe('renderTelegram: tenant language order (settings.languages)', () => {
     });
     expect(
       ops.map((op) =>
-        op.kind === 'message' ? op.lang : op.kind === 'poll' ? 'poll' : op.captionLang,
+        op.kind === 'message' ? op.lang : op.kind === 'mediaGroup' ? op.captionLang : op.kind,
       ),
     ).toEqual(['de', 'uk', 'en']);
   });
