@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T45 merged as PR #70 (`18116a9`); claude-code follow-up PR for the review notes awaits codex review.
-- **Branch:** `main` (follow-up: `feat/t45-review-notes`).
-- **Last commit:** `18116a9` — feat: render published shows on the site (#70).
-- **Next step:** Codex: review and merge the claude-code PR from `feat/t45-review-notes` (MIME guard, per-image alt, single `showsIn`), then start T46 (show copies to channels) in a fresh session.
+- **Current task:** T45 follow-up reviewed by codex and merged as PR #71 (`c160554`); no blocking findings.
+- **Branch:** `main`.
+- **Last commit:** `c160554` — fix: address T45 site show review notes (#71).
+- **Next step:** Codex: start T46 (show copies to channels) in a fresh session.
 - **Blocked on:** nothing for T46 code. Production show rollout still needs Volodymyr's separate authorization per `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- PR #71 review: CI passed; local site tests 29/29 and site typecheck passed. The sandboxed run had one child-process diagnostic failure; the unrestricted rerun passed. MIME guard, indexed image alt text and latest-show selection reviewed. No workflow, secret, deployment or production changes.
 - T45 validation: site 29/29 tests, workspace typecheck/build, lint, formatting and staged secret scan pass. Fixture builds cover localized show pages, AI captions, persona/work links, latest-show selection, escaping and byte-preserved PNG/MP4 delivery. Structural media fixtures do not test playback or re-verify markers; publisher verification remains the publication gate. No workflows, deployment, paid calls or production settings changed.
 - T44e6c validation: full bot suite 479/479 and publisher 137/137 pass, including five new production-adapter publication integration cases with real local D1/R2, marked PNG/MP4 and Git commits. Workspace typecheck/build, lint, formatting and staged secret scan pass. Tests cover downloaded marker stripping/tampering, immutable dispatch and callback retries, persistence recovery, work linkage and tenant isolation. No runtime code, dependencies, workflows, secrets/vars, migrations, remote setup, deployment or paid calls changed. Parent T44e6/T44e gates await independent combined review; rollout checklist and evidence map: docs/show-deployment.md.
 - T44e6b validation: 146/146 targeted bot tests pass (approval, session, verification transport, D1, runner and callback), including 11 new author-approval tests. Workspace typecheck/build, lint, formatting and staged secret scan pass. Initial full runs were interrupted; targeted real-media transport tests completed successfully. No deployment, paid calls, workflows, production secrets/vars or migrations changed. Approval consumes verified media sequentially; marker declaration constants remain duplicated in core/publisher for future cleanup.
