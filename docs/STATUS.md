@@ -4,7 +4,7 @@
 - **Current task:** T44e9 — backfill claim release and cleanup (review notes from PR #76).
 - **Branch:** `main` (create `feat/T44e9-backfill-claim` for the task).
 - **Last commit:** `e387bde` — fix: suppress repeated show backfill dispatches (#76).
-- **Next step:** Codex: start T44e9 in a fresh session (docs/03-tasks.md). Bot with T44e8 deployed 2026-11-03 (version `5adb7478`). T26 waits on H8.
+- **Next step:** Codex: start T44e9 in a fresh session (docs/03-tasks.md), then T44e10 (author notification when a show run ends; Sensitive, workflow change). Bot with T44e8 deployed 2026-11-03 (version `5adb7478`). T26 waits on H8.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.

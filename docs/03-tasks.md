@@ -906,6 +906,29 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 - Tests: failed recovery run → next refresh dispatches again; suppressed refresh shows the
   "already running" text; claim object removed after verification succeeds.
 
+#### T44e10 — Notify the author when a show run ends (`bot`, `publisher`, `workflows`) · Sensitive
+- Owner: codex · Reviewer: claude-code · Depends on: T44e9 · Sensitive: touches
+  `.github/workflows/show.yml`.
+- Problem (2026-11-03): after «Запустити генерацію» the bot says "Результати готуються" and goes
+  silent. Two `show.yml` runs failed with `SHOW_ALLOW_PAID_CALLS=false` and the author was never
+  told; a later paid run succeeded (10 min) and the author was not told either, so it looked like
+  money was charged with no result.
+- Change: add a transport operation (e.g. `finish`) the executor calls once per run with an outcome:
+  `ready` (no pending attempt left), `paid-calls-disabled` (generator refused because the paid gate
+  is closed), or `failed`. `show-cli.ts` classifies the error instead of swallowing it. Add an
+  `if: failure()` step in `show.yml` that reports `failed` when the CLI never reached the Worker
+  (install or setup failure). The Worker sends the author one message per job: ready → "Результати
+  готові" with the «Оновити перегляд» button; paid gate closed → that generation is paused, nothing
+  was charged, «Продовжити генерацію» works once paid calls are allowed; failed → nothing new was
+  generated beyond what is stored, «Продовжити генерацію» resumes. No secrets, prompts or provider
+  errors in the message.
+- Acceptance: a run with the gate closed tells the author within a minute of the failure; a
+  successful run tells the author without a `/show`; a repeated `finish` for the same job sends no
+  second message; recovery (backfill) runs keep their own messages from T44e7-T44e9.
+- Tests: executor reports each outcome; CLI maps the paid-gate error; Worker sends once per job and
+  rejects `finish` for an unknown job; workflow failure step uses only the transport secret.
+- After merge: the bot needs a deploy (Volodymyr's OK).
+
 ### T45 — Shows on the site (F30, `site`)
 - Owner: codex · Reviewer: claude-code.
 - Status: merged as PR #70 (`18116a9`) after claude-code review; review notes in a follow-up PR.
