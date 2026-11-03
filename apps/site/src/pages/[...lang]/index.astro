@@ -21,6 +21,7 @@ const data = await loadSiteData();
 const def = data.site.defaultLanguage;
 const ui = uiStrings(lang);
 const posts = postsIn(data, lang);
+const latestShow = showsIn(data, lang)[0];
 const date = new Intl.DateTimeFormat(lang, {
   dateStyle: 'long',
   timeZone: data.tenant.meetingSchedule.timezone,
@@ -34,9 +35,9 @@ const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code,
       <h1>{data.tenant.name}</h1>
     </section>
     <Stitch draw />
-    {showsIn(data, lang).length > 0 && <section aria-label={ui.showsHeading}>
+    {latestShow && <section aria-label={ui.showsHeading}>
       <h2><a href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a></h2>
-      <ShowFeed shows={showsIn(data, lang).slice(0, 1)} lang={lang} data={data} />
+      <ShowFeed shows={[latestShow]} lang={lang} data={data} />
     </section>}
     <h2 class="visually-hidden">{ui.postsHeading}</h2>
     {
