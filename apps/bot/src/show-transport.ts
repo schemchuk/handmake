@@ -3,6 +3,8 @@ import type { D1DraftStore } from './draft-store';
 import type { createShowDraftFlow, ShowCallGrant } from './show-draft-flow';
 import { createR2MarkedShowStorage, createR2ShowStorage } from './show-storage';
 
+import { createShowVerificationStore } from './show-verification';
+
 export const showTransportPath = '/internal/shows/';
 const limit = 20_000_000;
 const part = /^[A-Za-z0-9_-]{1,128}$/;
@@ -43,6 +45,7 @@ export function createShowTransport(deps: {
   const now = deps.now ?? Date.now;
   const raw = createR2ShowStorage(bucket);
   const marked = createR2MarkedShowStorage(bucket);
+  const verified = createShowVerificationStore(bucket);
   const jobKey = (tenant: string, show: string) => `show-job/v1/${tenant}/${show}`;
   const load = async (tenant: string, show: string) => {
     const object = await bucket.get(jobKey(tenant, show));
@@ -251,6 +254,15 @@ export function createShowTransport(deps: {
           };
         } else if (operation === 'journal') {
           value = await raw.readAttempt(scope);
+        } else if (operation === 'verified-put') {
+          const evidence = JSON.parse(new TextDecoder().decode(bytes));
+          if (
+            evidence.tenantId !== scope.tenantId ||
+            evidence.showId !== scope.showId ||
+            evidence.attemptId !== scope.attemptId
+          )
+            throw new Error('verification scope mismatch');
+          await verified.attest(evidence);
         } else if (operation === 'checkpoint') {
           value = await flow.accept(scope.tenantId, scope.showId, scope.attemptId);
         } else if (operation === 'raw-put' || operation === 'marked-put') {

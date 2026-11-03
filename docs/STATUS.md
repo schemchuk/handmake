@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e6 — T44e6a/b/c split approved by Volodymyr in chat on 2026-11-03. No code changed. Next: T44e6a.
-- **Branch:** `main`.
-- **Last commit:** this docs commit — docs: record approval of T44e6 split; parent `0c1ac91` (docs: propose reviewable T44e6 subtasks).
-- **Next step:** Codex: implement T44e6a in a fresh session on its own branch; Claude Code reviews. T44e6b and T44e6c follow in separate sessions and PRs.
-- **Blocked on:** nothing for T44e6a. No deployment or paid calls authorized. T44e5c is merged as PR #65 (`75ebcd6`).
+- **Active agent:** claude-code
+- **Current task:** T44e6a implemented; awaiting independent review of durable verified marked snapshots.
+- **Branch:** `feat/t44e6a-verified-snapshot`.
+- **Last commit:** this implementation commit — feat: persist verified show snapshots; parent `cb80f42` (docs: record approval of T44e6 split).
+- **Next step:** Claude Code: review T44e6a and its PR, then merge only after green CI and no blocking findings. After merge, hand off to Codex for T44e6b in a fresh session.
+- **Blocked on:** independent review. No deployment or paid calls authorized; author approval/publication remain T44e6b/c.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e6a validation: bot 463/463, core 213/213, publisher 137/137 and AI 117/117 pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Signed verification evidence and current-generation resolution are implemented; approval/publication remain T44e6b/c. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
 - T44e5c validation: all 459 bot tests covered across runs (initial full run 457/458 with one invalid new fixture; corrected changed suites 120/120 plus final cancellation-journal test 1/1). AI 117/117, publisher 137/137; workspace typecheck/build, lint, format and staged secret scan pass. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
 - T44e5b validation: full bot run passed 452/453 with one invalid new fingerprint fixture; after correcting that fixture, the entire transport suite passed 29/29 (all 453 tests covered across the runs). Workspace typecheck/build, lint, formatting and staged secret scan pass. No deploy, paid call, workflow, secret or migration changes.
 - T44e4c validation: bot 401 tests pass, including explicit start, private snapshots, stale/concurrent input, failed preparation/dispatch retry and signed Worker handoff. Workspace typecheck/build, lint, formatting and staged gitleaks scan pass. No deploy, paid calls, secrets/vars or migrations changed.

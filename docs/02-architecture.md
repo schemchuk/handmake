@@ -608,6 +608,21 @@ it verifies the raw linkage and provider receipt, persists separate marked bytes
 cached bytes on retry without generating anything. Use `createR2MarkedShowStorage` for the marked
 store. Its `show-marked:v1:` references cannot resolve through `resolveRaw`. Transport must retain
 the marked bytes (for example, Telegram document uploads); compressed photo uploads may strip XMP.
+
+T44e6a adds durable verification evidence at `show-verified/v1/<tenant>/<show>/<attempt>` in
+that same private bucket. Only after `prepare` succeeds does Node send signed `verified-put` with
+scope, raw/marked SHA-256 digests, both receipts and the marker declaration. The Worker compares
+this attestation with independently read immutable objects and writes it conditionally; identical
+redelivery is safe after a lost acknowledgement. A marked upload alone never grants verification.
+The Worker does not decode image/video markers or import Node tooling: it trusts the authenticated
+Node verifier and detects later changes by recomputing hashes and comparing the complete evidence.
+`resolveVerifiedShowSnapshot` requires a complete, ready, non-cancelled current draft, verifies each
+output receipt and attested media (including the 20 MB transport limit), and rereads the draft
+version after resolution. Its version must be used for the atomic approval fence in T44e6b.
+Retired attempts keep their evidence for recovery but cannot enter a current snapshot. Retain the
+`show-verified/` prefix alongside raw/marked objects; do not apply replay-object lifecycle cleanup.
+Author approval, document ingestion and publication integration remain T44e6b/c.
+
 The publisher independently verifies markers after download before saving/committing show content.
 CI installs FFmpeg for real media tests; the existing publish job installs it only for show payloads.
 No new publishing/render workflow or production endpoint is added.

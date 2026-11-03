@@ -6,7 +6,7 @@ import type {
   ShowResultStore,
   ShowSourceImage,
 } from '@handmake/core';
-import { showReceiptSchema } from '@handmake/core';
+import { describeShowVerification, showReceiptSchema } from '@handmake/core';
 import { createShowMarkingGate } from './marking';
 
 type Grant =
@@ -216,7 +216,13 @@ export async function executeShow(
 ) {
   const gate = createShowMarkingGate(client.raw, client.marked);
   const { tenantId, showId } = client.job;
-  const prepare = (attempt: string) => gate.prepare(tenantId, showId, attempt);
+  const prepare = async (attempt: string) => {
+    const output = await gate.prepare(tenantId, showId, attempt);
+    const raw = await client.raw.get(tenantId, showId, attempt);
+    if (!raw) throw new Error('verified raw result missing');
+    const evidence = await describeShowVerification(tenantId, showId, attempt, raw, output);
+    await client.call('verified-put', attempt, new TextEncoder().encode(JSON.stringify(evidence)));
+  };
   // A show has at most five images and one video. Never spin on rejected checkpoints.
   for (let step = 0; step < 7; step++) {
     const status = await client.call('status');

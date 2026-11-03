@@ -9,6 +9,7 @@ import { createShowDraftFlow } from '../src/show-draft-flow';
 import { createShowGenerationLocks } from '../src/show-generation-locks';
 import { createR2ShowStorage, createR2MarkedShowStorage } from '../src/show-storage';
 import { createShowTransport, showRequestSignature } from '../src/show-transport';
+import { createShowVerificationStore, resolveVerifiedShowSnapshot } from '../src/show-verification';
 import { createShowRuntime } from '../src/show-runtime';
 import type { Env } from '../src/env';
 import { botTexts } from '../src/texts';
@@ -409,6 +410,9 @@ it('executes and replays a Node job with separate raw/verified marked results', 
   expect(fixture.submissions()).toBe(4);
   const status = await fixture.client.call('status');
   expect(Object.keys(status.outputs)).toHaveLength(4);
+  const snapshot = await verifiedSnapshot();
+  expect(snapshot.media.map((m) => m.slot)).toEqual(['image-0', 'image-1', 'image-2', 'video']);
+  expect(snapshot.media.every((m) => m.evidence.markedSha256 !== m.evidence.rawSha256)).toBe(true);
   for (const output of Object.values(status.outputs) as { attemptId: string }[]) {
     const raw = await fixture.client.raw.get(tenant, show, output.attemptId);
     const marked = await fixture.client.marked.get(tenant, show, output.attemptId);
@@ -675,3 +679,143 @@ it('rejects old signed callbacks after cancellation while retaining journal and 
   expect(retained.draft.extras['showCancelled']).toBe(true);
   await expect(transport.open(tenant, show, retained.version, true, true)).rejects.toThrow('stale');
 });
+
+async function verifiedSnapshot(stored?: NonNullable<Awaited<ReturnType<typeof drafts.get>>>) {
+  return resolveVerifiedShowSnapshot(
+    { drafts, verified: createShowVerificationStore(bucket) },
+    stored ?? (await drafts.get(tenant, show))!,
+  );
+}
+
+it('recovers an interrupted verification acknowledgement without new paid submissions', async () => {
+  const fixture = await nodeFixture();
+  const call = fixture.client.call;
+  let interrupted = false;
+  vi.spyOn(fixture.client, 'call').mockImplementation(async (...args) => {
+    const value = await call(...args);
+    if (args[0] === 'verified-put' && !interrupted) {
+      interrupted = true;
+      throw new Error('lost verification acknowledgement');
+    }
+    return value;
+  });
+  await expect(fixture.run()).rejects.toThrow('lost verification');
+  expect(fixture.submissions()).toBe(1);
+  await expect(verifiedSnapshot()).rejects.toThrow();
+  await fixture.run();
+  await verifiedSnapshot();
+  expect(fixture.submissions()).toBe(4);
+}, 60_000);
+
+it('rejects missing evidence, altered receipts, altered bytes and cross-tenant attestations', async () => {
+  const fixture = await nodeFixture();
+  await fixture.run();
+  const snapshot = await verifiedSnapshot();
+  const output = snapshot.media[0]!;
+  const evidence = output.evidence;
+  const key = `show-verified/v1/${tenant}/${show}/${evidence.attemptId}`;
+  const original = JSON.stringify(evidence);
+  await bucket.delete(key);
+  await expect(verifiedSnapshot()).rejects.toThrow('verification missing');
+  const verified = createShowVerificationStore(bucket);
+  await expect(verified.attest({ ...evidence, tenantId: 'other' })).rejects.toThrow();
+  await expect(verified.attest({ ...evidence, rawSha256: '0'.repeat(64) })).rejects.toThrow();
+  // Recovery can redeliver identical evidence, never a different claim.
+  await verified.attest(evidence);
+  await verified.attest(evidence);
+  await bucket.put(
+    key,
+    JSON.stringify({ ...evidence, markedReceipt: { ...evidence.markedReceipt, costEur: 99 } }),
+  );
+  await expect(verifiedSnapshot()).rejects.toThrow('integrity');
+  await expect(verified.attest(evidence)).rejects.toThrow('collision');
+  await bucket.put(key, original);
+  const mediaKey = `show-marked/v1/${tenant}/${show}/${evidence.attemptId}`;
+  const mediaObject = (await bucket.get(mediaKey))!;
+  const bytes = new Uint8Array(await mediaObject.arrayBuffer());
+  const metadata = mediaObject.customMetadata;
+  // Even a self-consistent storage checksum cannot replace attested marked bytes.
+  const { createHash } = await import('node:crypto');
+  const changed = bytes.slice();
+  changed[changed.length - 1] = changed[changed.length - 1]! ^ 1;
+  await bucket.put(mediaKey, changed, {
+    customMetadata: { ...metadata, sha256: createHash('sha256').update(changed).digest('hex') },
+  });
+  await expect(verifiedSnapshot()).rejects.toThrow('integrity');
+  await bucket.put(mediaKey, bytes, { customMetadata: metadata });
+  const rawKey = `show-raw/v1/${tenant}/${show}/${evidence.attemptId}`;
+  const rawObject = (await bucket.get(rawKey))!;
+  await bucket.put(rawKey, await rawObject.arrayBuffer(), {
+    customMetadata: {
+      ...rawObject.customMetadata,
+      receipt: '{}',
+    },
+  });
+  await expect(verifiedSnapshot()).rejects.toThrow();
+}, 60_000);
+
+it('rejects raw or stripped media and never attests a failed Node marking gate', async () => {
+  const fixture = await nodeFixture();
+  const put = fixture.client.marked.put;
+  const { stripImageMetadata } = await import('../../publisher/test/fixtures/show-marking');
+  vi.spyOn(fixture.client.marked, 'put').mockImplementationOnce(async (t, s, a, result) => {
+    // Re-encode without XMP, retaining the visible footer.
+    await put(t, s, a, { ...result, bytes: await stripImageMetadata(result.bytes) });
+  });
+  await expect(fixture.run()).rejects.toThrow('marking failed');
+  const stored = (await drafts.get(tenant, show))!;
+  const output = Object.values(showDraftDataSchema.parse(stored.draft.extras['show']).outputs)[0]!;
+  expect(await bucket.get(`show-verified/v1/${tenant}/${show}/${output.attemptId}`)).toBeNull();
+  await expect(verifiedSnapshot()).rejects.toThrow();
+  const raw = (await fixture.client.raw.get(tenant, show, output.attemptId))!;
+  const { describeShowVerification } = await import('@handmake/core');
+  await expect(
+    describeShowVerification(tenant, show, output.attemptId, raw, {
+      ...raw,
+      ref: raw.ref.replace('show-raw:', 'show-marked:'),
+    }),
+  ).rejects.toThrow();
+}, 60_000);
+
+it('fences cancellation, incomplete outputs and a generation changing during resolution', async () => {
+  const fixture = await nodeFixture();
+  await fixture.run();
+  const stored = (await drafts.get(tenant, show))!;
+  const verified = createShowVerificationStore(bucket);
+  const resolve = (current: typeof stored, get = verified.get) =>
+    resolveVerifiedShowSnapshot(
+      {
+        drafts: { get: async () => current },
+        verified: { get },
+      },
+      current,
+    );
+  const cancelled = structuredClone(stored);
+  cancelled.draft.extras['showCancelled'] = true;
+  await expect(resolve(cancelled)).rejects.toThrow('stale');
+  const incomplete = structuredClone(stored);
+  const data = showDraftDataSchema.parse(incomplete.draft.extras['show']);
+  delete data.outputs['image-0'];
+  incomplete.draft.extras['show'] = data;
+  await expect(resolve(incomplete)).rejects.toThrow('incomplete');
+  let reads = 0;
+  await expect(
+    resolveVerifiedShowSnapshot(
+      {
+        drafts: {
+          get: async () => (++reads === 1 ? stored : { ...stored, version: stored.version + 1 }),
+        },
+        verified,
+      },
+      stored,
+    ),
+  ).rejects.toThrow('stale');
+  const superseded = structuredClone(stored);
+  const staleData = showDraftDataSchema.parse(superseded.draft.extras['show']);
+  staleData.outputs['image-0']!.attemptId = 'superseded';
+  superseded.draft.extras['show'] = staleData;
+  await expect(resolve(superseded)).rejects.toThrow('missing');
+  const wrongTenant = structuredClone(stored);
+  wrongTenant.draft.tenantId = 'other';
+  await expect(resolve(wrongTenant)).rejects.toThrow('missing');
+}, 60_000);
