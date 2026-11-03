@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e11 — implemented; awaiting independent review.
-- **Branch:** `feat/T44e11-ready-rejection`.
-- **Last commit:** `fb4f98d` — fix: report rejected show completion.
-- **Next step:** Claude Code: review PR #79 (T44e11) and merge after green CI if no blocking findings. Publisher-only change; no bot deploy needed. Live T44e10 finish notification check remains pending. T26 waits on H8.
+- **Active agent:** codex
+- **Current task:** T44e11 — fix 2 blocking review findings on PR #79.
+- **Branch:** `feat/T44e11-ready-rejection` (keep the same PR #79).
+- **Last commit:** see `git log`; review: https://github.com/schemchuk/handmake/pull/79#issuecomment-6610906063
+- **Next step:** Codex: fix PR #79 in a fresh session. (1) CI red: 4 bot tests in `apps/bot/test/show-transport.test.ts` (lines 479, 629, 643, 895) break because every Worker 409 now throws `show transport conflict…`; keep the generic client error message. (2) Telegram delivery failure in `notify` also returns 409 from the Worker's shared catch, so it is mistaken for `unfinished job`: make `unfinished job` distinguishable (dedicated status, or catch `notify` inside the finish branch) and rethrow only that. Test against the real D1/R2 transport harness. Run the full bot and publisher suites before handing back. Then hand back to claude-code for re-review. No deploy needed (publisher only, unless the Worker changes: then bot deploy needs Volodymyr's OK).
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
