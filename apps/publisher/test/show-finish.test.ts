@@ -79,7 +79,10 @@ it.each([false, true])(
         if (operation === 'authorize') return Response.json({ version: 0, value: null });
         if (operation === 'finish') {
           outcomes.push(JSON.parse(new TextDecoder().decode(init!.body as Uint8Array)).outcome);
-          return new Response(null, { status: 409 });
+          return Response.json(
+            { error: 'show operation rejected; inspect durable state before retry' },
+            { status: 409 },
+          );
         }
         throw new Error('unexpected operation');
       },
@@ -92,3 +95,34 @@ it.each([false, true])(
     expect(generateVideo).not.toHaveBeenCalled();
   },
 );
+
+it('reports failed when ready is rejected after authorize returns no grant', async () => {
+  const outcomes: string[] = [];
+  const client = createShowClient({
+    origin: 'https://worker.test',
+    secret: 'fixture',
+    job: { tenantId: 'tenant', showId: 'show', jobId: 'job', version: 0 },
+    fetch: async (url, init) => {
+      const operation = new URL(String(url)).pathname.split('/').at(-1);
+      // No pending grant, but planned outputs are still missing.
+      if (operation === 'status') return Response.json({ version: 0, outputs: {} });
+      if (operation === 'authorize') return Response.json({ version: 0, value: null });
+      if (operation === 'finish') {
+        const { outcome } = JSON.parse(new TextDecoder().decode(init!.body as Uint8Array));
+        outcomes.push(outcome);
+        return outcome === 'ready'
+          ? Response.json({ error: 'unfinished job' }, { status: 409 })
+          : Response.json({ version: 0 });
+      }
+      throw new Error('unexpected operation');
+    },
+  });
+  const generateImage = vi.fn(),
+    generateVideo = vi.fn();
+  await expect(executeShow(client, { generateImage, generateVideo })).rejects.toThrow(
+    'show transport rejected; resume from durable state',
+  );
+  expect(outcomes).toEqual(['ready', 'failed']);
+  expect(generateImage).not.toHaveBeenCalled();
+  expect(generateVideo).not.toHaveBeenCalled();
+});
