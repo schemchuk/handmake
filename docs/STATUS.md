@@ -1,7 +1,7 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** none. T46 closed: T46c merged as PR #74 (`961bf33`); no open review notes.
+- **Current task:** none. T46 closed: T46c merged as PR #74 (`961bf33`); no open review notes. Bot deployed from `main` at `a7953a5` on 2026-11-03 15:16 EET (Worker version `bd8371d4`, includes PRs #66-#74; no new D1 migrations; `SHOW_ALLOW_PAID_CALLS=false` unchanged).
 - **Branch:** `main`.
 - **Last commit:** `961bf33` — feat: orchestrate site-first show copies (T46c) (#74).
 - **Next step:** Codex: T26 (Instagram adapter) in a fresh session, the next task in the approved order, once H8 is done.
