@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -51,3 +51,23 @@ async function create() {
 }
 
 export const stripImageMetadata = (bytes: Uint8Array) => sharp(bytes).png().toBuffer();
+
+export const tamperImageMetadata = (bytes: Uint8Array) =>
+  sharp(bytes).withXmp('<x:xmpmeta xmlns:x="adobe:ns:meta/">tampered</x:xmpmeta>').png().toBuffer();
+
+export async function stripVideoMetadata(bytes: Uint8Array) {
+  const dir = await mkdtemp(path.join(tmpdir(), 'handmake-strip-fixture-'));
+  try {
+    const input = path.join(dir, 'input.mp4'),
+      output = path.join(dir, 'output.mp4');
+    await writeFile(input, bytes);
+    await promisify(execFile)(
+      'ffmpeg',
+      ['-v', 'error', '-i', input, '-map_metadata', '-1', '-c', 'copy', output],
+      { timeout: 60_000 },
+    );
+    return new Uint8Array(await readFile(output));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}

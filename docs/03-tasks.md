@@ -846,6 +846,8 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     Tests: author flow, exact document bytes and `.png` names, failed/partial uploads, stale buttons,
     regeneration/approval races, duplicate approval, dispatch retries and tenant isolation.
   - **T44e6c — Publication integration and deployment gates** (depends on T44e6b).
+    Implementation complete on `feat/t44e6c-publication-integration`; awaiting claude-code review.
+    Parent T44e6/T44e acceptance remains pending combined review; rollout gates: `docs/show-deployment.md`.
     Exercise the mocked author-to-publisher-to-callback flow through the production adapters.
     Confirm independent downloaded-marker verification, immutable retries, work linkage and
     post/work regressions. Document the deployment checklist, distinguishing already applied

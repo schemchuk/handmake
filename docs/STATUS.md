@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** Publish-retry label fix reviewed and merged (PR #68, `df386d0`); T44e6c not started.
-- **Branch:** `main`.
-- **Last commit:** `df386d0` — fix: label show publish retry button (#68).
-- **Next step:** Codex: start T44e6c (publication integration and deployment gates) in a fresh session. Confirm independent downloaded-marker verification through the production adapters. Approved shows deliberately refuse /discard and regeneration (frozen consent).
-- **Blocked on:** nothing. PR #68: no review findings; targeted session test and bot typecheck pass; CI green. No deployment or paid calls authorized.
+- **Active agent:** claude-code
+- **Current task:** T44e6c implementation complete (PR #69); awaiting independent review.
+- **Branch:** `feat/t44e6c-publication-integration`.
+- **Last commit:** `665aaf5` — test: verify approved show publication end to end.
+- **Next step:** Claude Code: review T44e6c (PR #69) and combined T44e6a/b/c acceptance evidence in docs/show-deployment.md. Close parent T44e6/T44e gates only after review and green CI, then merge and hand off T45 to Codex in a fresh session.
+- **Blocked on:** independent review. No deployment, remote setup or paid calls authorized; production gates remain separate in docs/show-deployment.md.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
@@ -49,6 +49,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e6c validation: full bot suite 479/479 and publisher 137/137 pass, including five new production-adapter publication integration cases with real local D1/R2, marked PNG/MP4 and Git commits. Workspace typecheck/build, lint, formatting and staged secret scan pass. Tests cover downloaded marker stripping/tampering, immutable dispatch and callback retries, persistence recovery, work linkage and tenant isolation. No runtime code, dependencies, workflows, secrets/vars, migrations, remote setup, deployment or paid calls changed. Parent T44e6/T44e gates await independent combined review; rollout checklist and evidence map: docs/show-deployment.md.
 - T44e6b validation: 146/146 targeted bot tests pass (approval, session, verification transport, D1, runner and callback), including 11 new author-approval tests. Workspace typecheck/build, lint, formatting and staged secret scan pass. Initial full runs were interrupted; targeted real-media transport tests completed successfully. No deployment, paid calls, workflows, production secrets/vars or migrations changed. Approval consumes verified media sequentially; marker declaration constants remain duplicated in core/publisher for future cleanup.
 - T44e6a validation: bot 463/463, core 213/213, publisher 137/137 and AI 117/117 pass; workspace typecheck/build, lint, formatting and staged secret scan pass. Signed verification evidence and current-generation resolution are implemented; approval/publication remain T44e6b/c. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
 - T44e5c validation: all 459 bot tests covered across runs (initial full run 457/458 with one invalid new fixture; corrected changed suites 120/120 plus final cancellation-journal test 1/1). AI 117/117, publisher 137/137; workspace typecheck/build, lint, format and staged secret scan pass. No deployment, paid calls, production secrets/vars, workflows or migrations changed.
