@@ -379,6 +379,54 @@ export function createShowDraftFlow(deps: Deps) {
   };
   return {
     configure: flow.configure,
+    /** Invalidate before dispatch, using the same tenant lock and optimistic version fence. */
+    async prepareRegeneration(stored: StoredDraft, slot: string) {
+      const { tenantId, draftId } = stored.draft;
+      const data = showDraftDataSchema.parse(stored.draft.extras['show']);
+      if (
+        stored.draft.kind !== 'show' ||
+        stored.draft.state !== 'ready' ||
+        data.pending ||
+        ![
+          ...Array.from({ length: data.plan.imageCount }, (_, i) => `image-${i}`),
+          'video',
+        ].includes(slot)
+      )
+        throw new Error('invalid regeneration');
+      const lease = crypto.randomUUID();
+      if (!(await locks.acquireIdle(tenantId, draftId, lease, now())))
+        throw new Error('show is busy');
+      try {
+        const tenant = await configs.load(tenantId);
+        if (tenant.id !== tenantId || !tenant.ai || !tenant.shows)
+          throw new Error('show generation is disabled');
+        await assertCanStartShow(ledger, tenantId, tenant.ai, now());
+        const summary = await ledger.summary(tenantId, now());
+        const estimate =
+          data.plan.provider.video.eurPerSecond * 5 +
+          (slot === 'video' ? 0 : data.plan.provider.image.eurPerImage);
+        if (summary.total + estimate > tenant.ai.monthlyTargetEur + tenant.ai.toleranceEur)
+          throw new Error('show call would exceed the monthly cap');
+        for (const key of slot === 'video' ? ['video'] : [slot, 'video']) {
+          if (data.outputs[key]) data.retired.push(data.outputs[key]!);
+          delete data.outputs[key];
+        }
+        if (
+          !(await drafts.updateShow(
+            {
+              ...stored.draft,
+              state: 'failed',
+              updatedAt: now().toISOString(),
+              extras: { ...stored.draft.extras, show: data },
+            },
+            stored.version,
+          ))
+        )
+          throw new Error('stale show');
+      } finally {
+        await locks.release(tenantId, lease);
+      }
+    },
     async generate(tenantId: string, draftId: string, regenerate?: string) {
       return (await flow.run(tenantId, draftId, regenerate)) === true;
     },

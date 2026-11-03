@@ -732,7 +732,7 @@ with canonical JSON key order: tenantId, showId, jobId, version. A retry after f
 dispatch reuses the same unexpired job and immutable plan. Competing preparation loses the draft
 CAS; stale input cannot replace the plan. Duplicate dispatch shares the workflow concurrency group;
 the existing transport fences, tenant lock and provider journal remain the paid-call authority.
-Expired or progressed jobs require T44e5 recovery rather than silently opening another job.
+T44e5b reopens expired or progressed jobs through the same transport recovery boundary described above.
 
 Production requires both SHOW_MEDIA and SHOW_TRANSPORT_SECRET; missing bindings disable execution.
 Provider credentials, verified-model and paid-execution gates stay in the Node workflow. Worker
@@ -763,4 +763,25 @@ in one D1 query to stay within the Worker subrequest budget. A changed draft/ses
 remaining delivery. Telegram messages already delivered cannot be recalled atomically; partial
 previews never authorize publication. Missing originals or unfinished/unavailable marked media
 are reported with a refresh button; interrupted delivery asks the author to reopen `/show`.
-Regeneration, recovery controls and verified publication remain T44e5b/c and T44e6.
+Operator recovery controls and verified publication remain T44e5c and T44e6.
+
+
+### Show regeneration and resumable retry (T44e5b)
+
+Ready previews offer one version-bound action per image and video; failed shows offer explicit
+continuation. Callbacks require the current private author session and draft version. Regeneration
+acquires an idle tenant lock without taking over expired execution ownership, checks the remaining
+budget for the replacement and dependent video, and atomically retires their receipts. Replacing
+any image removes its current output and the video; other images and all historical evidence stay.
+The new version immediately invalidates previous previews. Preparation itself never submits a paid
+request. A failed dispatch leaves a resumable failed draft with the immutable plan and missing slots.
+
+Start/retry rechecks the draft version, uses the existing transport open boundary, and dispatches
+canonical coordinates. Matching live jobs keep their identity; expired or progressed jobs get a new
+identity with the pending grant and bounded sources copied first. Unknown outcomes keep their
+pending marker and tenant lock. Missing grants require operator reconciliation, never another
+submission. The Node executor resumes the journalled attempt before authorizing a missing slot;
+each new call still passes the existing budget gates. Repeated dispatches share concurrency and
+journal fences. At the monthly target, the author also sees a warning before dispatch; existing
+operator threshold notices remain unchanged. Preparation/dispatch diagnostics retain fixed safe
+reasons and HTTP status only. No deployment or paid call is authorized by this implementation.

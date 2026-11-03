@@ -69,9 +69,10 @@ export function createShowTransport(deps: {
       const previous = await bucket.get(key);
       if (previous && reuse) {
         const { job } = await load(tenantId, showId);
-        if (job.version !== version || job.expires <= now())
-          throw new Error('job requires recovery');
-        return job;
+        if (job.version === version && job.expires > now()) return job;
+        // A newer draft or an expired execution gets a new identity. Pending attempts
+        // retain their grant and immutable journal; reopening never authorizes a replacement.
+        if (job.version > version) throw new Error('stale show');
       }
       if (previous) {
         const busy = (await load(tenantId, showId)).job.busy;

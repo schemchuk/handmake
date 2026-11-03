@@ -9,6 +9,9 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
 export const botTexts = {
   showPreviewReadyText:
     'Онови перегляд, щоб побачити оригінали й готові результати. Для нового показу: /discard, потім /show.',
+  showRetryButton: 'Продовжити генерацію',
+  showRegenerateButton: (slot: string) =>
+    slot === 'video' ? 'Перегенерувати відео' : `Перегенерувати фото ${Number(slot.slice(6)) + 1}`,
   showRefreshButton: 'Оновити перегляд',
   showOriginalLabel: (index: number) => `Оригінал роботи ${index}`,
   showMarkedLabel: (slot: string) => `ШІ-результат: ${slot}. Порівняй із оригіналами роботи.`,

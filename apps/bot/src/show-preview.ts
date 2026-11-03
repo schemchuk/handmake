@@ -115,6 +115,29 @@ export function refreshKeyboard(stored: StoredDraft, texts: BotTexts) {
   return {
     reply_markup: {
       inline_keyboard: [
+        ...(stored.draft.state === 'ready'
+          ? [
+              ...Array.from(
+                { length: showDraftDataSchema.parse(stored.draft.extras['show']).plan.imageCount },
+                (_, i) => `image-${i}`,
+              ),
+              'video',
+            ].map((slot) => [
+              {
+                text: texts.showRegenerateButton(slot),
+                callback_data: `show:${stored.draft.draftId}:regen:${stored.version}.${slot}`,
+              },
+            ])
+          : stored.draft.state === 'failed'
+            ? [
+                [
+                  {
+                    text: texts.showRetryButton,
+                    callback_data: `show:${stored.draft.draftId}:retry:${stored.version}`,
+                  },
+                ],
+              ]
+            : []),
         [
           {
             text: texts.showRefreshButton,

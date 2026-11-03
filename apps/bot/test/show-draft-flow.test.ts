@@ -614,3 +614,75 @@ it('releases an acquired lease when a stale callback loses its first checkpoint'
   expect((await data()).pending).toBeUndefined();
   expect(await locks.acquire(tenant, other, 'next-show', clock.now())).toBe(true);
 });
+
+it.each(['image-1', 'video'])(
+  'prepares %s replacement without spending and resumes only missing slots',
+  async (slot) => {
+    await flow().generate(tenant, id);
+    const before = await data();
+    const stored = await get();
+    await flow().prepareRegeneration(stored, slot);
+    const prepared = await data();
+    expect((await get()).draft.state).toBe('failed');
+    expect(prepared.outputs[slot]).toBeUndefined();
+    expect(prepared.outputs['video']).toBeUndefined();
+    expect(prepared.outputs['image-0']).toEqual(before.outputs['image-0']);
+    expect(prepared.retired).toHaveLength(slot === 'video' ? 1 : 2);
+    expect(image).toHaveBeenCalledTimes(3);
+    expect(video).toHaveBeenCalledTimes(1);
+    await expect(flow().prepareRegeneration(stored, slot)).rejects.toThrow('stale');
+    await flow().generate(tenant, id);
+    expect(image).toHaveBeenCalledTimes(slot === 'video' ? 3 : 4);
+    expect(video).toHaveBeenCalledTimes(2);
+    expect((await get()).draft.state).toBe('ready');
+  },
+);
+it('allows replacement above the warning threshold but denies unaffordable replacement without invalidating preview', async () => {
+  await flow().generate(tenant, id);
+  await spend(19.2);
+  expect((await ledger.summary(tenant, clock.now())).total).toBe(20);
+  await flow().prepareRegeneration(await get(), 'video');
+  await flow().generate(tenant, id);
+  config.ai!.monthlyTargetEur = 20;
+  config.ai!.toleranceEur = 0.6;
+  const before = await get();
+  await expect(flow().prepareRegeneration(before, 'image-0')).rejects.toThrow('cap');
+  expect(await get()).toEqual(before);
+});
+it('serializes concurrent replacement actions and rejects invalid slots', async () => {
+  await flow().generate(tenant, id);
+  const stored = await get();
+  await expect(flow().prepareRegeneration(stored, 'image-9')).rejects.toThrow('invalid');
+  const attempts = await Promise.allSettled([
+    flow().prepareRegeneration(stored, 'image-0'),
+    flow().prepareRegeneration(stored, 'image-1'),
+  ]);
+  expect(attempts.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+  expect((await data()).retired).toHaveLength(2);
+  expect(image).toHaveBeenCalledTimes(3);
+});
+it('does not clear an unknown paid attempt when retrying or requesting replacement', async () => {
+  image.mockRejectedValueOnce(new Error('unknown outcome'));
+  await expect(flow().generate(tenant, id)).rejects.toThrow('unknown');
+  const before = await get();
+  await expect(flow().prepareRegeneration(before, 'image-0')).rejects.toThrow('invalid');
+  await expect(flow().authorize(tenant, id)).rejects.toThrow('reconciliation');
+  expect(await get()).toEqual(before);
+  expect(image).toHaveBeenCalledTimes(1);
+  await create(other);
+  expect(await flow().generate(tenant, other)).toBe(false);
+});
+
+it('never lets a stale ready button take over an expired unknown generation lease', async () => {
+  await flow().generate(tenant, id);
+  const ready = await get();
+  await flow().prepareRegeneration(ready, 'video');
+  video.mockRejectedValueOnce(new Error('unknown outcome'));
+  await expect(flow().generate(tenant, id)).rejects.toThrow('unknown');
+  clock.advance(11 * 60_000);
+  const uncertain = await get();
+  await expect(flow().prepareRegeneration(ready, 'image-0')).rejects.toThrow('busy');
+  expect(await get()).toEqual(uncertain);
+  await create(other);
+  expect(await flow().generate(tenant, other)).toBe(false);
+});
