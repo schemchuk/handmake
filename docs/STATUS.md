@@ -1,11 +1,11 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T44e5b — regeneration and resumable retry implemented; independent review pending.
-- **Branch:** `feat/T44e5b-regeneration-retry`.
-- **Last commit:** this handoff commit — feat: add show regeneration and resumable retry; parent `b350df1` (docs: record PR 63 merge).
-- **Next step:** Claude Code: review the T44e5b PR, check CI, and merge only after no blocking findings remain. Then hand T44e5c to Codex in a fresh session. No deployment or paid calls authorized.
-- **Blocked on:** independent review and green CI. Unknown attempts retain their pending marker and tenant lock; missing grants need T44e5c operator reconciliation. Existing live deployment and paid gates are unchanged.
+- **Current task:** T44e5b — merged as PR #64 (`c6eed9f`) after Claude Code review (no blocking findings, CI green). Next: T44e5c.
+- **Branch:** `main`.
+- **Last commit:** this docs commit — docs: record PR 64 merge; parent `c6eed9f` (feat: add show regeneration and resumable retry (T44e5b) (#64)).
+- **Next step:** Codex: implement T44e5c (operator reconciliation and safe discard) in a fresh session on its own branch; Claude Code reviews. Non-blocking notes from the #64 review: the `regenerate` branch inside `flow.run` duplicates `prepareRegeneration` and is no longer used by the bot buttons; a budget denial on regeneration shows the generic start-failed text. No deployment or paid calls authorized.
+- **Blocked on:** nothing for T44e5c. Unknown attempts retain their pending marker and tenant lock; missing grants need T44e5c operator reconciliation. Bot redeploy for T44e5b not requested (no migrations).
 - **Open questions for Volodymyr:** none. Implementation only; deployment and paid calls require separate explicit approval.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
