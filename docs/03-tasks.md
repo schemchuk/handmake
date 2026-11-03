@@ -872,7 +872,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 
 ### T46 — Show copies to channels (F30-F31, `publisher`, `channels`)
 - Owner: codex · Reviewer: claude-code.
-- Status: split proposed 2026-11-03; awaiting Volodymyr's approval before implementation.
+- Status: split approved by Volodymyr in chat 2026-11-03; implement T46a-T46c in order.
 - Depends on: T45, T40
 - Change: a show publishes to the site first, then Telegram (album + video + canonical link) and, once
   T26 exists, Instagram (carousel and Reels). A failed copy never blocks the site.
