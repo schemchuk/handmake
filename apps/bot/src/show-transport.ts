@@ -1,5 +1,6 @@
 import { showDraftDataSchema, showReceiptSchema } from '@handmake/core';
-import type { D1DraftStore } from './draft-store';
+import type { ShowFinishOutcome } from './show-finish';
+import type { StoredDraft, D1DraftStore } from './draft-store';
 import type { createShowDraftFlow, ShowCallGrant } from './show-draft-flow';
 import { createR2MarkedShowStorage, createR2ShowStorage } from './show-storage';
 
@@ -9,7 +10,14 @@ export const showTransportPath = '/internal/shows/';
 const limit = 20_000_000;
 const part = /^[A-Za-z0-9_-]{1,128}$/;
 type Flow = Pick<ReturnType<typeof createShowDraftFlow>, 'authorize' | 'accept'>;
-type Job = { id: string; version: number; expires: number; busy?: number; recovery?: boolean };
+type Job = {
+  id: string;
+  version: number;
+  expires: number;
+  busy?: number;
+  recovery?: boolean;
+  finished?: boolean;
+};
 type Scope = { tenantId: string; showId: string; attemptId: string };
 
 /** No URLs or credentials in the protocol. All fields and exact bytes are signed. */
@@ -39,6 +47,7 @@ export function createShowTransport(deps: {
   secret: string;
   drafts: Pick<D1DraftStore, 'get'>;
   flow: Flow;
+  notify?: (stored: StoredDraft, outcome: ShowFinishOutcome, recovery: boolean) => Promise<void>;
   now?: () => number;
 }) {
   const { bucket, secret, drafts, flow } = deps;
@@ -77,7 +86,12 @@ export function createShowTransport(deps: {
       const previous = await bucket.get(key);
       if (previous && reuse) {
         const { job } = await load(tenantId, showId);
-        if (job.version === version && job.expires > now() && !!job.recovery === recovery)
+        if (
+          !job.finished &&
+          job.version === version &&
+          job.expires > now() &&
+          !!job.recovery === recovery
+        )
           return job;
         // A newer draft or an expired execution gets a new identity. Pending attempts
         // retain their grant and immutable journal; reopening never authorizes a replacement.
@@ -165,6 +179,30 @@ export function createShowTransport(deps: {
         )
           return reply(409, { error: 'stale job' });
         const data = showDraftDataSchema.parse(draft.draft.extras['show']);
+        // Finish accepts the dispatch version: setup failures have no checkpoint version.
+        // Claim before delivery: ambiguous Telegram failures must never send a duplicate.
+        if (operation === 'finish' && attemptId === 'next') {
+          const { outcome } = JSON.parse(new TextDecoder().decode(bytes));
+          if (!['ready', 'paid-calls-disabled', 'failed'].includes(outcome))
+            return reply(400, { error: 'invalid outcome' });
+          if (job.finished) return reply(200, { version: draft.version });
+          if (
+            outcome === 'ready' &&
+            (data.pending ||
+              (!job.recovery && Object.keys(data.outputs).length !== data.plan.imageCount + 1))
+          )
+            return reply(409, { error: 'unfinished job' });
+          const claimed = await bucket.put(
+            jobKey(scope.tenantId, scope.showId),
+            JSON.stringify({ ...job, finished: true }),
+            { onlyIf: { etagMatches: etag } },
+          );
+          if (!claimed) return reply(409, { error: 'job changed' });
+          if (job.recovery)
+            await bucket.delete(`show-backfill-dispatch/v1/${job.id}`).catch(() => undefined);
+          await deps.notify?.(draft, outcome, job.recovery ?? false);
+          return reply(200, { version: draft.version });
+        }
         // Read-only restart discovery accepts an old version, never an old job identity.
         if (['status', 'backfill-release'].includes(operation!) && attemptId === 'next') {
           if (operation === 'backfill-release' && !job.recovery)
@@ -349,7 +387,7 @@ export function createShowTransport(deps: {
         unlock = undefined;
         return reply(200, { version: job.version, value: value ?? null });
       } catch {
-        if (recoveryClaim) await bucket.delete(recoveryClaim);
+        if (recoveryClaim) await bucket.delete(recoveryClaim).catch(() => undefined);
         console.warn('show transport operation rejected');
         return reply(409, { error: 'show operation rejected; inspect durable state before retry' });
       } finally {

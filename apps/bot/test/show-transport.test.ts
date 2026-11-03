@@ -960,3 +960,123 @@ it('leases concurrent backfill dispatch and retries an interrupted lease after e
   await dispatchShowBackfill(bucket, interrupted, retry, now + 60_001);
   expect(retry).toHaveBeenCalledOnce();
 });
+
+it.each(['ready', 'paid-calls-disabled', 'failed'] as const)(
+  'finishes %s at most once per job',
+  async (outcome) => {
+    const notify = vi.fn();
+    transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+    if (outcome === 'ready') {
+      const fixture = await nodeFixture();
+      await fixture.run();
+    } else {
+      const client = await nodeClient();
+      await client.call('finish', 'next', new TextEncoder().encode(JSON.stringify({ outcome })));
+    }
+    expect(notify).toHaveBeenCalledExactlyOnceWith(expect.anything(), outcome, false);
+    const response = await call('finish', {
+      attempt: 'next',
+      body: JSON.stringify({ outcome }),
+    });
+    expect(response.status).toBe(200);
+    expect(notify).toHaveBeenCalledTimes(1);
+  },
+  60_000,
+);
+
+it('rejects unknown jobs, invalid outcomes and premature ready notifications', async () => {
+  const notify = vi.fn();
+  transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+  expect((await call('finish', { job: 'unknown', body: '{"outcome":"failed"}' })).status).toBe(409);
+  expect((await call('finish', { body: '{"outcome":"provider-secret"}' })).status).toBe(400);
+  expect((await call('finish', { body: '{"outcome":"ready"}' })).status).toBe(409);
+  expect(notify).not.toHaveBeenCalled();
+});
+
+it('claims finish before an ambiguous delivery and opens a fresh job for explicit retry', async () => {
+  const notify = vi.fn().mockRejectedValue(new Error('delivery uncertain'));
+  transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+  const body = '{"outcome":"failed"}';
+  expect((await call('finish', { body })).status).toBe(409);
+  expect((await call('finish', { body })).status).toBe(200);
+  expect(notify).toHaveBeenCalledTimes(1);
+  expect((await transport.open(tenant, show, version, true)).id).not.toBe(job);
+});
+
+it.each(['paid-calls-disabled', 'failed'] as const)(
+  'executor reports %s while preserving the original error',
+  async (outcome) => {
+    const { executeShow } = await import('../../publisher/src/show-executor');
+    const { FalShowError } = await import('@handmake/ai');
+    const notify = vi.fn();
+    transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+    const client = await nodeClient();
+    const error =
+      outcome === 'paid-calls-disabled'
+        ? new FalShowError('disabled')
+        : new Error('private provider detail');
+    await expect(
+      executeShow(client, {
+        generateImage: async () => {
+          throw error;
+        },
+        generateVideo: generator.generateVideo,
+      }),
+    ).rejects.toBe(error);
+    expect(notify).toHaveBeenCalledExactlyOnceWith(expect.anything(), outcome, false);
+    // A workflow fallback knows only the original dispatch version, not the checkpoint version.
+    expect((await call('finish', { body: '{"outcome":"failed"}' })).status).toBe(200);
+    expect(notify).toHaveBeenCalledTimes(1);
+  },
+);
+
+it('claims concurrent finish requests once', async () => {
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const notify = vi.fn(() => waiting);
+  transport = createShowTransport({ bucket, secret, drafts, flow, notify, now: () => now });
+  const first = call('finish', { body: '{"outcome":"failed"}' });
+  await vi.waitFor(() => expect(notify).toHaveBeenCalledOnce());
+  const duplicate = await call('finish', { body: '{"outcome":"failed"}' });
+  expect(duplicate.status).toBe(200);
+  release();
+  expect((await first).status).toBe(200);
+  expect(notify).toHaveBeenCalledOnce();
+});
+
+it('keeps recovery rejection at 409 when deleting the dispatch claim fails', async () => {
+  job = (await transport.open(tenant, show, version, false, true)).id;
+  const failingBucket = new Proxy(bucket, {
+    get(target, key) {
+      if (key === 'delete')
+        return async () => {
+          throw new Error('R2 unavailable');
+        };
+      const value = Reflect.get(target, key);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  transport = createShowTransport({ bucket: failingBucket, secret, drafts, flow, now: () => now });
+  expect((await call('authorize')).status).toBe(409);
+});
+
+it('retains pending grants when retrying a finished gate-closed job', async () => {
+  await authorize();
+  const pending = attempt;
+  const grant = await bucket.get(`show-grant/v1/${job}/${pending}`);
+  const body = '{"outcome":"paid-calls-disabled"}';
+  expect((await call('finish', { attempt: 'next', body })).status).toBe(200);
+  const oldJob = job;
+  job = (await transport.open(tenant, show, version, true)).id;
+  expect(job).not.toBe(oldJob);
+  expect(await (await bucket.get(`show-grant/v1/${job}/${pending}`))!.text()).toBe(
+    await grant!.text(),
+  );
+  const status = (await (await call('status', { attempt: 'next' })).json()) as {
+    pending: { attemptId: string };
+  };
+  expect(status.pending.attemptId).toBe(pending);
+  expect((await db.prepare('SELECT * FROM ai_costs').all()).results).toEqual([]);
+});

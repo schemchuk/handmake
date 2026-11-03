@@ -1,11 +1,13 @@
+import { showFailureOutcome } from './show-outcome';
 import { readFile } from 'node:fs/promises';
 import { parseTenantConfig } from '@handmake/core';
 import { FalShowGenerator } from '@handmake/ai';
 import { createShowClient, executeShow } from './show-executor';
 
+let client: ReturnType<typeof createShowClient> | undefined;
 try {
   const payload = JSON.parse(await readFile(process.argv[2]!, 'utf8'));
-  const client = createShowClient({
+  client = createShowClient({
     origin: process.env['SHOW_WORKER_ORIGIN'] ?? '',
     secret: process.env['SHOW_TRANSPORT_SECRET'] ?? '',
     job: payload,
@@ -24,7 +26,14 @@ try {
     maxPolls: 600,
   });
   await executeShow(client, generator);
-} catch {
+} catch (error) {
+  await client
+    ?.call(
+      'finish',
+      'next',
+      new TextEncoder().encode(JSON.stringify({ outcome: showFailureOutcome(error) })),
+    )
+    .catch(() => undefined);
   console.error('Show execution stopped; inspect durable state before resuming.');
   process.exitCode = 1;
 }

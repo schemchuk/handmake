@@ -908,6 +908,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   "already running" text; claim object removed after verification succeeds.
 
 #### T44e10 — Notify the author when a show run ends (`bot`, `publisher`, `workflows`) · Sensitive
+- Status: implemented and locally validated; awaiting claude-code review in the task PR.
 - Owner: codex · Reviewer: claude-code · Depends on: T44e9 · Sensitive: touches
   `.github/workflows/show.yml`.
 - Review notes from PR #77: (1) `show-transport.ts` catch: wrap `bucket.delete(recoveryClaim)` in

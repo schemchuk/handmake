@@ -1,3 +1,4 @@
+import { createShowFinish } from './show-finish';
 import { dispatchShowBackfill } from './show-backfill';
 import { createShowApproval } from './show-approval';
 import { createShowVerificationStore } from './show-verification';
@@ -59,6 +60,7 @@ export function createShowRuntime(env: Env) {
   const transport = createShowTransport({
     bucket,
     secret: env.SHOW_TRANSPORT_SECRET,
+    notify: createShowFinish(env.TELEGRAM_BOT_TOKEN, drafts),
     drafts,
     flow,
   });
