@@ -1,5 +1,49 @@
 {
   "tenantId": "faden-und-stimmung",
   "postId": "01M6ECR1Z295C1WN4H5C7BBNBB",
-  "channels": {}
+  "channels": {
+    "telegram": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-03T14:06:43.578Z"
+    }
+  },
+  "showCopyPlan": {
+    "version": 1,
+    "mediaHashes": [
+      "97a98df1583bf24b34c7134fcc6784f7accf29b5f5e58b52b2f1c2668f0e28c9",
+      "dc7c4b3f9a5d17be4580a9f403d3f7190f62b07993e4c1bd693e46164aff9203",
+      "74892cb963c18bf503971e99a31f4d99c76bde21553b3117c283e871ba3650d8",
+      "c23a77fa5b400afdd15a6dfb89bf37684d053bc414b31d4b6c011c0ade8eb988"
+    ],
+    "channels": {
+      "telegram": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Зроблені вручну. Незамінні холодними осінніми вечорами.\n\nМодель згенерована ШІ (KI-generiertes Model)\nhttps://fadenundstimmung.de/uk/shows/01m6ecr1z295c1wn4h5c7bbnbb/",
+            "captionLang": "uk"
+          },
+          {
+            "kind": "video",
+            "replyToOp": 0
+          },
+          {
+            "kind": "message",
+            "text": "Von Hand gemacht. Unverzichtbar an kalten Herbstabenden.\n\nKI-generiertes Model\nhttps://fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/",
+            "lang": "de",
+            "replyToOp": 0
+          }
+        ],
+        "settings": {
+          "channelId": "TELEGRAM_CHANNEL_ID"
+        }
+      }
+    }
+  }
 }
