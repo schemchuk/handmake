@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T46a implementation complete; independent review pending.
+- **Current task:** T46a implemented in PR #72; independent review pending.
 - **Branch:** `feat/T46a-show-delivery`.
-- **Last commit:** `23d0d9a` — docs: record T46 split approval and hand off T46a (session baseline; implementation is this branch's HEAD).
-- **Next step:** Claude Code: review T46a PR and CI, then merge if approved. Hand off T46b to Codex in a fresh session after merge.
+- **Last commit:** `0bcb9a4` — feat: render shows and deliver marked channel video.
+- **Next step:** Claude Code: review PR #72 (https://github.com/schemchuk/handmake/pull/72) and CI, then merge if approved. Hand off T46b to Codex in a fresh session after merge.
 - **Blocked on:** independent review. Production rollout remains separately gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
