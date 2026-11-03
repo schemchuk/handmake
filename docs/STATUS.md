@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T44e9 — backfill claim release and cleanup (review notes from PR #76).
-- **Branch:** `main` (create `feat/T44e9-backfill-claim` for the task).
+- **Active agent:** claude-code
+- **Current task:** T44e9 — implemented; awaiting independent review.
+- **Branch:** `feat/T44e9-backfill-claim`.
 - **Last commit:** `e387bde` — fix: suppress repeated show backfill dispatches (#76).
-- **Next step:** Codex: start T44e9 in a fresh session (docs/03-tasks.md), then T44e10 (author notification when a show run ends; Sensitive, workflow change). Bot with T44e8 deployed 2026-11-03 (version `5adb7478`). T26 waits on H8.
+- **Next step:** Claude Code: review T44e9 PR, check CI and merge if clear. Then hand off T44e10 to Codex in a fresh session. No deployment authorized. Configure the documented one-day R2 lifecycle rule for abandoned backfill claims separately.
 - **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
 - **Blocked on:** T26 blocked on H8.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
@@ -50,6 +50,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T44e9: 51/51 targeted approval/transport tests passed with local D1/R2; final backfill regressions 2/2 passed after executor failure reporting. Workspace typecheck/build and changed-file lint/format pass; bot/publisher typecheck passed after executor failure reporting. Initial accidental full-suite run was stopped after an unrelated show-start concurrency failure. No deployment, workflows, paid calls or production bucket settings changed.
 - T44e8 validation: approval/transport 50/50 plus the added dispatch-lease test 1/1 pass with local D1/R2. Mixed evidence sends no documents, failed dispatch retries, repeated refresh dispatches once, concurrent refresh and interrupted lease recovery are covered. Workspace typecheck/build and changed-file lint/format pass. The initial sandbox full-suite invocation was stopped after Miniflare failures; targeted unrestricted runs passed. No deployment, production dispatch, paid calls, workflows or secret changes.
 - T44e7 validation: transport 37/37, approval and draft flow 58/58 pass with local D1/R2 and real marked media. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial sandbox run could not initialize Miniflare; unrestricted targeted suites passed. The new test covers missing attestations, a fresh recovery job, unchanged attempts/cost rows, four document uploads, approval offered and tampered media rejection. No production backfill, deployment, paid calls, workflows, migrations or secret/var changes.
 - PR #74 review fixes: grouped routing outputs and configured Git identity before both rebase/push loops. actionlint v1.7.12 with ShellCheck v0.11.0, workflow tests 11/11 and changed-file formatting pass. CI caught missing step env in the shell integration harness; the harness now passes the workflow env. Publisher 175/175 and publisher typecheck pass locally; full GitHub CI passed on `cfa7c6c` (run 41640589460). No deployment or publishing run.

@@ -19,7 +19,7 @@ export function createShowApproval(deps: {
   drafts: D1DraftStore;
   verified: Pick<ReturnType<typeof createShowVerificationStore>, 'get'>;
   works: WorkReader;
-  backfill?: (stored: StoredDraft) => Promise<void>;
+  backfill?: (stored: StoredDraft) => Promise<void | 'dispatched' | 'running'>;
 }): ShowApproval {
   const { drafts } = deps;
   const current = async (ctx: AppContext, stored: StoredDraft) => {
@@ -77,7 +77,14 @@ export function createShowApproval(deps: {
         if (!(error instanceof MissingShowVerification) || !deps.backfill) throw error;
         await current(ctx, stored);
         try {
-          await deps.backfill(stored);
+          const outcome = await deps.backfill(stored);
+          if (outcome === 'running') {
+            await ctx.reply(
+              'Перевірка файлів уже триває. Натисніть «Оновити перегляд» після завершення. Якщо запуск не завершиться, повторна спроба стане доступною протягом години.',
+              refreshKeyboard(stored, botTexts),
+            );
+            return;
+          }
         } catch {
           await ctx.reply(
             'Не вдалося запустити перевірку збережених файлів. Спробуйте «Оновити перегляд» ще раз.',

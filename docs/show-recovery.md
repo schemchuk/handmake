@@ -76,8 +76,21 @@ Repeated refreshes reuse the live job identity and suppress dispatch after a suc
 A failed dispatch releases its claim for immediate retry; an interrupted request can retry after
 a 60-second lease. If GitHub accepted a request whose response was lost, a retry may queue a
 duplicate workflow; the existing transport fences still prevent repeated generation or spending.
+A suppressed refresh explicitly says verification is already running. A rejected authenticated
+recovery transport operation releases the dispatch claim so the next refresh can retry. The Node
+executor also reports recovery failures through a signed, recovery-only `backfill-release` operation,
+including local media verification failures; it preserves the original error if reporting fails. Failures
+before reaching the Worker (for example CI setup) remain suppressed until the job expires, at most
+one hour; end-of-run reporting is tracked separately in T44e10. Successful attestation of all
+current outputs removes the claim. No lifecycle rule is required for those successful claims.
+For abandoned or pre-transport failed jobs, configure an R2 lifecycle rule on the show-media
+bucket: prefix `show-backfill-dispatch/v1/`, expire objects one day after creation. This exceeds
+the one-hour job lifetime and must not target any other evidence prefix. The rule is an operator
+setup step; this PR does not apply production bucket settings. Until configured, these abandoned
+claims remain retained (expired claims do not suppress a new job).
 All slots are verified before uploading any preview document, with media consumed one file at
-a time. Existing verified shows use the normal preview.
+a time. This preflight deliberately reads each raw/marked media object twice per preview: once
+to validate all slots before any upload and once to deliver them without retaining all bytes. Existing verified shows use the normal preview.
 
 After merge, deploy the bot only with Volodymyr's approval. For the retained production show,
 refresh its preview, wait for the recovery workflow, then refresh again. Confirm three PNGs and
