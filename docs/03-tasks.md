@@ -860,6 +860,29 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     Tests: full flow, marker stripping/tampering, publication/callback retries, approved-snapshot
     stability, tenant isolation and existing post/work publication.
 
+#### T44e7 — Backfill verification for shows generated before T44e6a (`bot`, `publisher`)
+- Status: to do. Found 2026-11-03 after the bot deploy `bd8371d4`.
+- Owner: codex · Reviewer: claude-code.
+- Problem: show `01M6ECR1Z295C1WN4H5C7BBNBB` (tenant `faden-und-stimmung`, chat `6127139155`) is
+  `ready` v37 with 4 outputs (3 images + video, 0.70 EUR already paid on 2026-11-02). Raw and marked
+  objects exist in R2 for all 4 attempts, but `show-verified/v1/...` is missing for all of them,
+  because attestation (`verified-put`, PR #66) did not exist when they were generated. `/show` then
+  fails in `resolveVerifiedShowSnapshot` ("verification missing") and the author only sees
+  "Перегляд перервано або результати змінились", so the show can never be approved.
+- Change: give a `ready` show with missing attestations a way to get them without regeneration or
+  paid calls. Reuse `executeShow`'s existing `prepare` step (marking gate + `verified-put`) for the
+  existing outputs. For example, the Worker detects missing attestation when presenting a ready show
+  and dispatches an attest-only `show.yml` job, then tells the author to refresh. An operator command
+  is also acceptable. A fresh job record must not reopen authorization: `authorize` must return
+  nothing for a complete show, and `SHOW_ALLOW_PAID_CALLS` stays `false`. Replace the misleading
+  "interrupted" reply with a clear state message for this case.
+- Acceptance: after the bot deploy and one backfill, `/show` → «Оновити перегляд» for show
+  `01M6ECR1…` sends the 3 PNGs and the MP4 and offers «Схвалити показ», with the same attempt IDs.
+  No fal call is made and no `ai_costs` row is added. A marked/raw mismatch still blocks approval.
+- Tests: ready show with missing attestations → backfill → approval offered; no generation grant for a
+  complete show; tampered marked object stays blocked; existing verified shows unchanged.
+- After merge: the bot needs a deploy (Volodymyr's OK); the backfill may need one `show.yml` run.
+
 ### T45 — Shows on the site (F30, `site`)
 - Owner: codex · Reviewer: claude-code.
 - Status: merged as PR #70 (`18116a9`) after claude-code review; review notes in a follow-up PR.
