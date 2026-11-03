@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T46c implemented in PR #74; awaiting independent review (Sensitive).
+- **Active agent:** codex
+- **Current task:** T46c (PR #74) — review blocked: CI red; fixes go back to Codex.
 - **Branch:** `feat/T46c-site-first-ci`.
 - **Last commit:** `c117efe` — feat: orchestrate site-first show copies in CI.
-- **Next step:** Claude Code: independently review PR #74 (T46c), including PR #73 follow-ups and the combined T46a–T46c gates. Merge only after green CI, no blocking findings and Volodymyr's explicit workflow-change approval; then hand off on main per AGENTS.md.
+- **Next step:** Codex: fix PR #74 on `feat/T46c-site-first-ci` per the T46c `Review notes from PR #74` line in docs/03-tasks.md (review: https://github.com/schemchuk/handmake/pull/74#issuecomment-6604051029). Push, confirm CI green, then set Active agent to claude-code and Next step to "Claude Code: re-review PR #74".
 - **Blocked on:** nothing for T46c code. Merge needs sensitive-change approval; production rollout remains gated by `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
