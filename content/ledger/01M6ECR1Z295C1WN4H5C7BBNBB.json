@@ -4,7 +4,9 @@
   "channels": {
     "telegram": {
       "status": "pending",
-      "remoteIds": [],
+      "remoteIds": [
+        25
+      ],
       "updatedAt": "2026-11-03T14:06:43.578Z"
     }
   },
