@@ -896,7 +896,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   sends no documents and starts one backfill.
 
 #### T44e9 — Backfill claim release and cleanup (`bot`)
-- Status: implemented on `feat/T44e9-backfill-claim`; awaiting claude-code review.
+- Status: merged as PR #77 (`f7dabf3`) after claude-code review; review notes moved to T44e10.
 - Owner: codex · Reviewer: claude-code.
 - Review notes from PR #76: (1) after a successful dispatch the claim holds until `job.expires`
   (1 h); if that `show.yml` run fails, refreshes stay suppressed while the author still reads
@@ -910,6 +910,13 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 #### T44e10 — Notify the author when a show run ends (`bot`, `publisher`, `workflows`) · Sensitive
 - Owner: codex · Reviewer: claude-code · Depends on: T44e9 · Sensitive: touches
   `.github/workflows/show.yml`.
+- Review notes from PR #77: (1) `show-transport.ts` catch: wrap `bucket.delete(recoveryClaim)` in
+  `.catch(() => undefined)` so an R2 failure does not turn the 409 into a 500; (2) the claim is
+  released on deterministic recovery failures (tampered/invalid media), so each refresh dispatches
+  another run that fails the same way: the `failed` message for recovery runs must say a retry will
+  not help without operator action; (3) a failing duplicate run can release the claim while another
+  run for the same job is live (one extra dispatch, fenced): note it in `docs/show-recovery.md`;
+  (4) rewrap the long "This preflight deliberately reads…" line in `docs/show-recovery.md`.
 - Problem (2026-11-03): after «Запустити генерацію» the bot says "Результати готуються" and goes
   silent. Two `show.yml` runs failed with `SHOW_ALLOW_PAID_CALLS=false` and the author was never
   told; a later paid run succeeded (10 min) and the author was not told either, so it looked like
