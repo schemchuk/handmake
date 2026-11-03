@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T44e6a implemented; awaiting independent review of durable verified marked snapshots.
-- **Branch:** `feat/t44e6a-verified-snapshot`.
-- **Last commit:** this implementation commit — feat: persist verified show snapshots; parent `cb80f42` (docs: record approval of T44e6 split).
-- **Next step:** Claude Code: review T44e6a and its PR, then merge only after green CI and no blocking findings. After merge, hand off to Codex for T44e6b in a fresh session.
-- **Blocked on:** independent review. No deployment or paid calls authorized; author approval/publication remain T44e6b/c.
+- **Active agent:** codex
+- **Current task:** T44e6a merged (PR #66, `869477e`); T44e6b not started.
+- **Branch:** `main`.
+- **Last commit:** `869477e` — feat: persist verified show snapshots (#66).
+- **Next step:** Codex: start T44e6b (immutable author approval and document dispatch) in a fresh session. Review notes for T44e6b: `get()` in `apps/bot/src/show-verification.ts` holds all marked outputs in memory (watch the 128 MB Worker limit); marker constants are duplicated in `packages/core/src/show-verification.ts` and `markerFor` in the publisher, consider one shared source.
+- **Blocked on:** nothing. No deployment or paid calls authorized; publication remains T44e6c.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
