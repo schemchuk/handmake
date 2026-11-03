@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T46c (PR #74) — review fixes complete; CI green; ready for re-review.
-- **Branch:** `feat/T46c-site-first-ci`.
-- **Last commit:** `cfa7c6c` — test: pass workflow environment to copy progress shell.
-- **Next step:** Claude Code: re-review PR #74. Code CI passed on `cfa7c6c` (run 41640589460); confirm the final handoff commit CI before merging.
-- **Blocked on:** nothing for T46c code. Merge needs sensitive-change approval; production rollout remains gated by `docs/show-deployment.md`.
+- **Active agent:** codex
+- **Current task:** none. T46 closed: T46c merged as PR #74 (`961bf33`); no open review notes.
+- **Branch:** `main`.
+- **Last commit:** `961bf33` — feat: orchestrate site-first show copies (T46c) (#74).
+- **Next step:** Codex: T26 (Instagram adapter) in a fresh session, the next task in the approved order, once H8 is done.
+- **Blocked on:** H8 (Volodymyr: Instagram Creator account, Meta app with Instagram Login API, token and IG user ID as secrets) for T26. The production show rollout is still gated by `docs/show-deployment.md`.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

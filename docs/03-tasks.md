@@ -872,7 +872,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
 
 ### T46 — Show copies to channels (F30-F31, `publisher`, `channels`)
 - Owner: codex · Reviewer: claude-code.
-- Status: split approved by Volodymyr in chat 2026-11-03; implement T46a-T46c in order.
+- Status: done 2026-11-03: T46a (PR #72), T46b (PR #73) and T46c (PR #74) merged after claude-code review.
 - Depends on: T45, T40
 - Change: a show publishes to the site first, then Telegram (album + video + canonical link) and, once
   T26 exists, Instagram (carousel and Reels). A failed copy never blocks the site.
@@ -924,8 +924,8 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
   site-publication retry after copies; notifier/callback and ordinary post/work regressions.
 
 #### T46c — Site-first CI orchestration · Sensitive
-- Status: implemented; PR #74 review fixes complete, CI green on `cfa7c6c`; awaiting
-  claude-code re-review and sensitive-merge approval.
+- Status: merged as PR #74 (`961bf33`) after claude-code re-review and Volodymyr's sensitive-merge OK
+  (2026-11-03). Both PR #74 review notes and both PR #73 notes are fixed in it.
 - Review notes from PR #74 (fix in PR #74 itself, then hand back for re-review):
   1. Blocking: actionlint/shellcheck SC2129 at `.github/workflows/publish.yml:73`, step
      "Select show copy routing": group the three writes into one `{ ...; } >> "$GITHUB_OUTPUT"`
