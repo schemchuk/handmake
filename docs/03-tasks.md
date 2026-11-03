@@ -886,7 +886,7 @@ runner, and CI ordering changes. Keep these in three PRs under ~400 changed non-
 conditional on T26; these tasks must not introduce an Instagram-specific branch in the core.
 
 #### T46a — Show rendering and video delivery
-- Status: implemented on `feat/T46a-show-delivery`; awaiting claude-code review.
+- Status: merged as PR #72 (`805082e`) after claude-code review.
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T45, T40; first PR.
 - Change: extend the network-neutral channel contract for show rendering and video bytes/operations.
@@ -904,6 +904,9 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
 #### T46b — Resumable copies from published show content
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T46a; second PR.
+- Review notes from PR #72: in `renderTelegramShow`, render only `context.languages` (a version in a
+  non-tenant language gets a canonical link the site never builds); move the AI disclosure into a
+  per-language map instead of German for every language except `uk`.
 - Change: add a separate publisher command that reads a tenant-scoped show and its marked media from
   the content store, without re-downloading draft references or regenerating media. Persist a stable
   delivery plan before sending and reuse it on retries, so changes to language order, canonical

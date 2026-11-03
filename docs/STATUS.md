@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T46a implemented in PR #72; independent review pending.
-- **Branch:** `feat/T46a-show-delivery`.
-- **Last commit:** `0bcb9a4` — feat: render shows and deliver marked channel video.
-- **Next step:** Claude Code: review PR #72 (https://github.com/schemchuk/handmake/pull/72) and CI, then merge if approved. Hand off T46b to Codex in a fresh session after merge.
-- **Blocked on:** independent review. Production rollout remains separately gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
+- **Active agent:** codex
+- **Current task:** T46a merged as PR #72 (`805082e`); next T46b.
+- **Branch:** `main`.
+- **Last commit:** `805082e` — feat: render shows and deliver marked channel video (T46a) (#72).
+- **Next step:** Codex: start T46b in a fresh session; include the PR #72 review notes listed under T46b in docs/03-tasks.md.
+- **Blocked on:** nothing for T46b. Production rollout remains gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

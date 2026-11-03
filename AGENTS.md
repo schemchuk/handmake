@@ -74,6 +74,10 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
 - Handoff after merge (added 2026-11-03): in that same STATUS.md update, the reviewer who merged sets
   Active agent to `codex` and Next step to the next task for Codex to start in a fresh session, then
   ends its session.
+- Review notes (added 2026-11-03): the reviewer never fixes non-blocking findings itself. It lists
+  them in the PR review comment and adds them to the next Codex task in docs/03-tasks.md (a
+  `Review notes from PR #N` line) and to STATUS.md Next step, so Codex fixes them in that task's PR.
+  Blocking findings still stop the merge and go back to the PR author.
 - Exception (approved 2026-10-21, ADR 003): the publish workflow in GitHub Actions may commit published posts and ledger entries directly to `main`, under `content/` only, as the bot identity. It never touches any other path. Agents never use this exception.
 - Never force-push, never rewrite history, never commit `.env` or any secret. Run `git status` and `git diff --staged` before each commit and check for secrets.
 - If a push is rejected: `git pull --rebase`, resolve, push again; on non-trivial conflicts stop and ask me.
