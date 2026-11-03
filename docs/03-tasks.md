@@ -818,7 +818,11 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   regeneration versus approval races, dispatch/callback retries, tenant isolation and post/work
   regressions. Keep live calls and deployment as separately authorized follow-up work.
 
-  **Split approved by Volodymyr (2026-11-03; no implementation yet):**
+  **Accepted (claude-code review, 2026-11-03):** T44e6a/b/c merged with green CI; the parent T44e6
+  and T44e acceptance gates are closed. Production, legal, billing and deployment gates stay open
+  in `docs/show-deployment.md`.
+
+  **Split approved by Volodymyr (2026-11-03):**
   Inspection found that Node verifies marked bytes, but the Worker has no durable verification
   evidence to bind to approval. The generic publish handler explicitly rejects shows. Adding that
   boundary, immutable approval, document ingestion and end-to-end coverage in one PR would exceed
@@ -826,7 +830,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   in a fresh session and its own PR, targeting under 400 changed non-test lines.
   All subtasks: **Owner: codex · Reviewer: claude-code**. No deployment or paid calls authorized.
   - **T44e6a — Durable verified marked snapshot** (depends on T44e5).
-    Implementation complete on `feat/t44e6a-verified-snapshot`; awaiting claude-code review.
+    Merged as PR #66 (`869477e`) after claude-code review.
     Extend the authenticated Node/Worker boundary to persist verification evidence only after
     `createShowMarkingGate.prepare` succeeds. Bind evidence to tenant, show, attempt, raw and
     marked byte digests, receipt and marker declaration. Recheck stored integrity and transport
@@ -835,7 +839,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     Tests: successful verification, missing evidence, raw/unmarked media, altered bytes/receipts,
     stripped markers, duplicate/interrupted evidence delivery, stale generations and isolation.
   - **T44e6b — Immutable author approval and document dispatch** (depends on T44e6a).
-    Implementation complete on `feat/t44e6b-show-approval`; awaiting claude-code review.
+    Merged as PR #67 (`49a5a4e`) after claude-code review; retry-label fix PR #68.
     Present the exact proposed language versions and linked work with all verified marked media
     before offering version-bound approval. Reuse existing text provenance without silently
     rewriting the author's text. Upload PNG/MP4 as documents with stable names, check exact returned
@@ -846,8 +850,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
     Tests: author flow, exact document bytes and `.png` names, failed/partial uploads, stale buttons,
     regeneration/approval races, duplicate approval, dispatch retries and tenant isolation.
   - **T44e6c — Publication integration and deployment gates** (depends on T44e6b).
-    Implementation complete on `feat/t44e6c-publication-integration`; awaiting claude-code review.
-    Parent T44e6/T44e acceptance remains pending combined review; rollout gates: `docs/show-deployment.md`.
+    Merged as PR #69 (`8890601`) after claude-code review. Rollout gates: `docs/show-deployment.md`.
     Exercise the mocked author-to-publisher-to-callback flow through the production adapters.
     Confirm independent downloaded-marker verification, immutable retries, work linkage and
     post/work regressions. Document the deployment checklist, distinguishing already applied
