@@ -818,6 +818,41 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   regeneration versus approval races, dispatch/callback retries, tenant isolation and post/work
   regressions. Keep live calls and deployment as separately authorized follow-up work.
 
+  **Proposed split (2026-11-03, pending Volodymyr's approval; no implementation yet):**
+  Inspection found that Node verifies marked bytes, but the Worker has no durable verification
+  evidence to bind to approval. The generic publish handler explicitly rejects shows. Adding that
+  boundary, immutable approval, document ingestion and end-to-end coverage in one PR would exceed
+  the ADR 009 target. Preserve the parent acceptance above across these sequential subtasks, each
+  in a fresh session and its own PR, targeting under 400 changed non-test lines.
+  All subtasks: **Owner: codex · Reviewer: claude-code**. No deployment or paid calls authorized.
+  - **T44e6a — Durable verified marked snapshot** (depends on T44e5).
+    Extend the authenticated Node/Worker boundary to persist verification evidence only after
+    `createShowMarkingGate.prepare` succeeds. Bind evidence to tenant, show, attempt, raw and
+    marked byte digests, receipt and marker declaration. Recheck stored integrity and transport
+    size when resolving a current generation snapshot; reject incomplete, superseded, cancelled
+    or cross-tenant results. Do not import Node image/video tooling into the Worker.
+    Tests: successful verification, missing evidence, raw/unmarked media, altered bytes/receipts,
+    stripped markers, duplicate/interrupted evidence delivery, stale generations and isolation.
+  - **T44e6b — Immutable author approval and document dispatch** (depends on T44e6a).
+    Present the exact proposed language versions and linked work with all verified marked media
+    before offering version-bound approval. Reuse existing text provenance without silently
+    rewriting the author's text. Upload PNG/MP4 as documents with stable names, check exact returned
+    document identities and transport limits, and freeze the validated show publication payload
+    atomically against regeneration/cancellation. Reuse T44b's publish runner and callback path;
+    dispatch retries must use the same approved snapshot. Approval must remain recoverable after
+    interrupted upload, notification or dispatch without approving a different generation.
+    Tests: author flow, exact document bytes and `.png` names, failed/partial uploads, stale buttons,
+    regeneration/approval races, duplicate approval, dispatch retries and tenant isolation.
+  - **T44e6c — Publication integration and deployment gates** (depends on T44e6b).
+    Exercise the mocked author-to-publisher-to-callback flow through the production adapters.
+    Confirm independent downloaded-marker verification, immutable retries, work linkage and
+    post/work regressions. Document the deployment checklist, distinguishing already applied
+    setup from deferred exact-model terms/billing, private-bucket/binding, migration and deployment
+    gates. Do not execute remote setup, deployment or paid calls. Close the parent T44e6 and T44e
+    acceptance gates only after the combined evidence passes review.
+    Tests: full flow, marker stripping/tampering, publication/callback retries, approved-snapshot
+    stability, tenant isolation and existing post/work publication.
+
 ### T45 — Shows on the site (F30, `site`)
 - Depends on: T44, T41
 - Change: shows list and show pages (images, video, work link, model name, "KI-generiertes Model"
