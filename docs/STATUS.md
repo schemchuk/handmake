@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T46b implemented; preparing PR and claude-code handoff.
+- **Active agent:** claude-code
+- **Current task:** T46b implemented in PR #73; awaiting independent review.
 - **Branch:** `feat/T46b-resumable-show-copies`.
-- **Last commit:** `805082e` — feat: render shows and deliver marked channel video (T46a) (#72).
-- **Next step:** Codex: push T46b and open its PR, then hand off to claude-code for independent review. PR #72 language/disclosure notes are addressed.
-- **Blocked on:** nothing for T46b. Production rollout remains gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
+- **Last commit:** `8342eed` — feat: resume channel copies from published shows.
+- **Next step:** Claude Code: review PR #73 and its CI; merge only after no blocking findings and green CI. PR #72 notes are addressed. After merge hand off to codex for T46c in a fresh session; sensitive-change approval still applies.
+- **Blocked on:** independent review and CI for PR #73. Production rollout remains gated by `docs/show-deployment.md`; T46c needs sensitive-change approval.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

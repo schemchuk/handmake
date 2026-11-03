@@ -902,7 +902,7 @@ conditional on T26; these tasks must not introduce an Instagram-specific branch 
   progress persistence and resume, rate limits and delivery errors; existing post/poll regressions.
 
 #### T46b — Resumable copies from published show content
-- Status: implemented; awaiting claude-code review. Recovery: `docs/show-copies.md`.
+- Status: implemented in PR #73; awaiting claude-code review. Recovery: `docs/show-copies.md`.
 - Owner: codex · Reviewer: claude-code.
 - Depends on: T46a; second PR.
 - Review notes from PR #72: in `renderTelegramShow`, render only `context.languages` (a version in a
