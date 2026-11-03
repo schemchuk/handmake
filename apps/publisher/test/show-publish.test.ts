@@ -288,9 +288,15 @@ it('pushes failed progress with the CI shell and resumes from a fresh checkout',
   await expect(c.copy({ git: undefined })).rejects.toThrow('interrupted');
   const workflow = parse(
     await readFile(new URL('../../../.github/workflows/publish.yml', import.meta.url), 'utf8'),
-  ) as { jobs: Record<string, { steps: { name?: string; run?: string }[] }> };
-  const push = workflow.jobs['copy-show']!.steps.find((s) => s.name === 'Push copy progress')!.run!;
-  await exec('bash', ['-e', '-o', 'pipefail', '-c', push], { cwd: root });
+  ) as {
+    jobs: Record<
+      string,
+      { steps: { name?: string; run?: string; env?: Record<string, string> }[] }
+    >;
+  };
+  const push = workflow.jobs['copy-show']!.steps.find((s) => s.name === 'Push copy progress')!;
+  const pushEnv = { ...process.env, ...push.env };
+  await exec('bash', ['-e', '-o', 'pipefail', '-c', push.run!], { cwd: root, env: pushEnv });
   const checkout = await mkdtemp(path.join(tmpdir(), 'handmake-copy-retry-'));
   try {
     await exec('git', ['clone', '-q', remote, checkout]);
@@ -307,7 +313,10 @@ it('pushes failed progress with the CI shell and resumes from a fresh checkout',
     source.fetchMedia.mockRejectedValue(new Error('draft expired'));
     c.succeed();
     await c.copy({ root: checkout, git: undefined });
-    await exec('bash', ['-e', '-o', 'pipefail', '-c', push], { cwd: checkout });
+    await exec('bash', ['-e', '-o', 'pipefail', '-c', push.run!], {
+      cwd: checkout,
+      env: pushEnv,
+    });
     expect(c.requests.map((r) => r.method)).toEqual([
       'sendMediaGroup',
       'sendVideo',
