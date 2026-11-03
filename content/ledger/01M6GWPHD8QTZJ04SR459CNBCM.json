@@ -1,5 +1,49 @@
 {
   "tenantId": "faden-und-stimmung",
   "postId": "01M6GWPHD8QTZJ04SR459CNBCM",
-  "channels": {}
+  "channels": {
+    "telegram": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-03T16:06:56.736Z"
+    }
+  },
+  "showCopyPlan": {
+    "version": 1,
+    "mediaHashes": [
+      "f6cc67938db7f153d9e741094bdf8fd6e8094e80bd1beb1e7e4294fd53f87e99",
+      "6891eb16268af031682d5c81e1b8149280f0c72afd42eeb2b8097c525e5fa508",
+      "f8e02c1b8351094380f72094633bcbc6455d310204d9f64905c19cfeb6385709",
+      "dd0651e46291e307616df1eb54f63f55a9e38a507645739f52ce5cdca251c4d1"
+    ],
+    "channels": {
+      "telegram": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Елемент жіночої сумочки крупним планом.\n\nМодель згенерована ШІ (KI-generiertes Model)\nhttps://fadenundstimmung.de/uk/shows/01m6gwphd8qtzj04sr459cnbcm/",
+            "captionLang": "uk"
+          },
+          {
+            "kind": "video",
+            "replyToOp": 0
+          },
+          {
+            "kind": "message",
+            "text": "Ein Detail einer Damenhandtasche in Nahaufnahme.\n\nKI-generiertes Model\nhttps://fadenundstimmung.de/shows/01m6gwphd8qtzj04sr459cnbcm/",
+            "lang": "de",
+            "replyToOp": 0
+          }
+        ],
+        "settings": {
+          "channelId": "TELEGRAM_CHANNEL_ID"
+        }
+      }
+    }
+  }
 }
