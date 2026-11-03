@@ -49,3 +49,5 @@ async function create() {
     await rm(dir, { recursive: true, force: true });
   }
 }
+
+export const stripImageMetadata = (bytes: Uint8Array) => sharp(bytes).png().toBuffer();

@@ -826,6 +826,7 @@ No paid calls, bucket creation, remote migrations or deployment are authorized.
   in a fresh session and its own PR, targeting under 400 changed non-test lines.
   All subtasks: **Owner: codex · Reviewer: claude-code**. No deployment or paid calls authorized.
   - **T44e6a — Durable verified marked snapshot** (depends on T44e5).
+    Implementation complete on `feat/t44e6a-verified-snapshot`; awaiting claude-code review.
     Extend the authenticated Node/Worker boundary to persist verification evidence only after
     `createShowMarkingGate.prepare` succeeds. Bind evidence to tenant, show, attempt, raw and
     marked byte digests, receipt and marker declaration. Recheck stored integrity and transport
