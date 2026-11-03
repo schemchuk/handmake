@@ -489,3 +489,24 @@ describe('versioned show prompts', () => {
     expect(() => showImagePrompt({ ...request, promptVersion: 'unknown' })).toThrow('unsupported');
   });
 });
+
+it('resumes a journal identity using GETs without source bytes or permission to submit', async () => {
+  const fixture = setup({ allowPaidCalls: false, verifiedModels: [] }, [
+    json({ status: 'COMPLETED' }),
+    json({ images: [{ url: 'https://v3.fal.media/output.png' }] }),
+    new Response(png, { headers: { 'content-type': 'image/png' } }),
+  ]);
+  const reserve = vi.spyOn(fixture.options.journal, 'reserve');
+  const result = await fixture.generator.resume({
+    requestId: id,
+    providerModel: config.image.model,
+    promptVersion: request.promptVersion,
+    costEur: 0.1,
+    video: false,
+  });
+  expect(result.callId).toBe(`fal:${id}`);
+  expect(fixture.fetch.mock.calls.every(([, init]) => !init?.method || init.method === 'GET')).toBe(
+    true,
+  );
+  expect(reserve).not.toHaveBeenCalled();
+});

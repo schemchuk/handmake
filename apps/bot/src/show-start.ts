@@ -55,6 +55,7 @@ export function createShowStart(deps: {
       !part.test(tenantId) ||
       !part.test(draftId) ||
       stored.draft.kind !== 'show' ||
+      stored.draft.extras['showCancelled'] ||
       !['collecting', 'failed', 'ready'].includes(stored.draft.state)
     )
       throw new Error('stale show');
@@ -141,27 +142,12 @@ export function createShowStart(deps: {
     }
     showDraftDataSchema.parse(stored.draft.extras['show']);
     const job = await deps.open(tenantId, draftId, stored.version);
-    // Exact key order and stable job identity make retries share the workflow concurrency group.
-    const payload = JSON.stringify({
-      tenantId,
-      showId: draftId,
-      jobId: job.id,
-      version: stored.version,
-    });
-    const response = await fetchImpl(
-      `https://api.github.com/repos/${deps.repo}/actions/workflows/show.yml/dispatches`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${deps.token}`,
-          Accept: 'application/vnd.github+json',
-          'User-Agent': 'handmake-bot',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ref: 'main', inputs: { payload } }),
-      },
+    await dispatchShow(
+      deps.repo,
+      deps.token,
+      { tenantId, showId: draftId, jobId: job.id, version: stored.version },
+      fetchImpl,
     );
-    if (response.status !== 204) throw new Error(`show dispatch failed: HTTP ${response.status}`);
   };
 }
 
@@ -197,4 +183,31 @@ export async function readShowImage(response: Response): Promise<ShowSourceImage
     offset += chunk.length;
   }
   return { bytes, mimeType: mimeType as ShowSourceImage['mimeType'] };
+}
+
+/** Canonical dispatch shared by generation and GET-only operator recovery. */
+export async function dispatchShow(
+  repo: string,
+  token: string,
+  job: { tenantId: string; showId: string; jobId: string; version: number },
+  fetchImpl: typeof fetch = fetch,
+) {
+  // Exact key order and stable job identity make retries share the workflow concurrency group.
+  const payload = JSON.stringify({
+    ...job,
+  });
+  const response = await fetchImpl(
+    `https://api.github.com/repos/${repo}/actions/workflows/show.yml/dispatches`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'handmake-bot',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref: 'main', inputs: { payload } }),
+    },
+  );
+  if (response.status !== 204) throw new Error(`show dispatch failed: HTTP ${response.status}`);
 }

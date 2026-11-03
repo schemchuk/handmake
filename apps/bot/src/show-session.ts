@@ -1,3 +1,5 @@
+import { registerShowRecovery } from './show-recovery';
+import type { ShowRecoveryControls } from './show-recovery';
 import { isUlid } from '@handmake/core';
 import type { WorkReader } from '@handmake/core';
 import type { Bot } from 'grammy';
@@ -12,6 +14,7 @@ import type { ShowPreview } from './show-preview';
 import { createShowInput } from './show-input';
 
 export interface ShowSessionOptions {
+  recovery?: ShowRecoveryControls;
   works: WorkReader;
   configs: TenantConfigSource;
   start?: ShowStart;
@@ -25,6 +28,7 @@ export function registerShowSession(
   options: CreateBotOptions,
   startWork: (ctx: AppContext) => Promise<unknown>,
 ) {
+  registerShowRecovery(bot, options);
   const { drafts, texts, show } = options;
   const input = createShowInput(options);
   const enabled = async (tenantId: string) => {
@@ -122,6 +126,7 @@ export function registerShowSession(
       if (
         !stored ||
         stored.draft.kind !== 'show' ||
+        stored.draft.extras['showCancelled'] ||
         !['collecting', 'translating', 'failed', 'ready'].includes(stored.draft.state) ||
         (!['preview', 'retry', 'regen'].includes(action ?? '') &&
           stored.draft.state !== 'collecting') ||

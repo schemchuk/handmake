@@ -204,7 +204,15 @@ export function createShowClient(options: {
 /** One workflow owns a job; concurrent duplicates are fenced by Worker + durable journal. */
 export async function executeShow(
   client: ReturnType<typeof createShowClient>,
-  generator: ShowGenerator,
+  generator: ShowGenerator & {
+    resume?: (ticket: {
+      requestId: string;
+      providerModel: string;
+      promptVersion: string;
+      costEur: number;
+      video: boolean;
+    }) => Promise<Result>;
+  },
 ) {
   const gate = createShowMarkingGate(client.raw, client.marked);
   const { tenantId, showId } = client.job;
@@ -216,6 +224,7 @@ export async function executeShow(
       await prepare(output.attemptId);
     let attempt: string | undefined = status.pending?.attemptId;
     if (!attempt) {
+      if (status.recovery) return;
       const authorized = await client.call('authorize');
       if (!authorized.value) return;
       attempt = authorized.value.request.attemptId;
@@ -223,11 +232,17 @@ export async function executeShow(
     if (!attempt) throw new Error('show grant unavailable');
     let stored = await client.raw.get(tenantId, showId, attempt);
     if (!stored) {
-      const grant = await client.grant(attempt);
-      const result: Result =
-        grant.kind === 'image'
-          ? await generator.generateImage(grant.request)
-          : await generator.generateVideo(grant.request);
+      let result: Result;
+      if (status.recovery) {
+        if (!generator.resume) throw new Error('GET recovery unavailable');
+        result = await generator.resume((await client.call('recovery', attempt)).value);
+      } else {
+        const grant = await client.grant(attempt);
+        result =
+          grant.kind === 'image'
+            ? await generator.generateImage(grant.request)
+            : await generator.generateVideo(grant.request);
+      }
       await client.raw.put(tenantId, showId, attempt, result);
       stored = await client.raw.get(tenantId, showId, attempt);
       if (!stored) throw new Error('show result unavailable');
@@ -236,6 +251,7 @@ export async function executeShow(
     if (!(await client.call('checkpoint', attempt)).value)
       throw new Error('show checkpoint rejected; inspect durable state');
     await prepare(attempt);
+    if (status.recovery) return;
   }
   throw new Error('show step bound exceeded');
 }
