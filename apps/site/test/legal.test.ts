@@ -36,14 +36,15 @@ describe('legal publication policy', () => {
     '<iframe src="https://external.example/">',
     '<img src="https:&#47;&#47;external.example/a">',
     '<script src="https://static.cloudflareinsights.com/other.js"></script>',
+    '<script src="https://static.cloudflareinsights.com/beacon.min.js"></script>',
     '<script>fetch("https://external.example")</script>',
     '<base href="https://external.example/">',
   ])('rejects external or active content: %s', (html) => {
     expect(() => checkResources(html, 'https://example.invalid')).toThrow();
   });
-  it('accepts local resources, ordinary external links and only the analytics script exception', () => {
+  it('accepts local resources and ordinary external links', () => {
     checkResources(
-      '<link rel="stylesheet" href="/a.css"><style>@font-face{src:url(/font.woff2)}</style><img src="/a.png"><a href="https://telegram.org/privacy">Policy</a><script src="https://static.cloudflareinsights.com/beacon.min.js"></script>',
+      '<link rel="stylesheet" href="/a.css"><style>@font-face{src:url(/font.woff2)}</style><img src="/a.png"><a href="https://telegram.org/privacy">Policy</a>',
       'https://example.invalid',
     );
     expect(() =>
@@ -77,5 +78,33 @@ it('generates sitemap only for approved indexing and fails a built external font
     );
   } finally {
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+it('names the rejected CSS file without exposing its contents', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'css-policy-'));
+  try {
+    await writeFile(path.join(dir, 'private.css'), String.raw`p{content:"\private-fixture"}`);
+    await expect(finalizeSite(dir, 'https://example.invalid', false)).rejects.toThrow(
+      'private.css: Unsupported CSS resource syntax',
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+it('loads legal templates from SITE_REPO_ROOT', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'legal-root-'));
+  try {
+    await mkdir(path.join(root, 'docs/legal'), { recursive: true });
+    await writeFile(
+      path.join(root, 'docs/legal/impressum.de.html'),
+      '<p>Custom {{IMPRESSUM_NAME}}</p>',
+    );
+    expect(renderLegal('impressum', { ...env, SITE_REPO_ROOT: root })).toBe(
+      '<p>Custom Fixture&lt;&amp;&quot; IMPRESSUM_NAME</p>',
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });

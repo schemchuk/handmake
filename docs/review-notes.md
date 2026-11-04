@@ -40,7 +40,7 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 
 ## Site workflow (T39, PR #35)
 - A failure of the `site` job in `publish.yml` raises no Telegram alert (the alert covers only the `publish` job). The post is already published; re-run the failed job. Consider an operator alert in a later task.
-- Test-channel publish runs also commit a post and trigger the site deploy, so test posts reach the site. Harmless while the site is `noindex` and has no domain; decide before T41 whether to filter them.
+- T41b resolves test posts reaching the site: test-channel runs persist `siteExcluded: true`; site lists, pages, media and sitemap all use the filtered post set. Works/shows have separate publication flows.
 - Deploy runs after channel delivery, so a "Mehr auf der Website" link (T40) can briefly point to a page that does not exist yet. T40 must account for this.
 - First deploy must be started by hand (Actions → Site → Run workflow on `main`) to confirm locked Wrangler 4.152.0 does not need `--force` for the existing Pages project.
 
@@ -162,3 +162,5 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 ## Show work photo path (PR #60)
 - (Codex re-review, 2026-11-02) Previous P1 resolved in 583ec50: token URLs are rejected by the logging filter; regression coverage verifies fallback logging and author failure replies. The regex checks message format rather than a literal allowlist; non-blocking for current error paths.
 - The photos/ correction matches the work store layout. Local show-session and show-start suites pass 45/45 (`--maxWorkers 1 --testTimeout=30000`); CI green. Merged as PR #60 (`7dd0405`). No deploy or paid calls.
+
+- T41b independent code review of PR #80 commit `89640da`: additions are inserted before the required `m15` marker, attribution is preserved, and missing markers fail closed. Current legal text uses server-side zone statistics after the subsequent beacon removal. No code blockers found; this review does not replace the author’s legal approval or verify providers’ legal claims.

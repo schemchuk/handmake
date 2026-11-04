@@ -5,10 +5,9 @@ import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 /** Inspect parsed HTML, including CSS in attributes and style elements. Never echo input. */
 export function checkResources(html: string, baseUrl: string): void {
   const own = new URL(baseUrl).origin;
-  const check = (value: string, beacon = false) => {
+  const check = (value: string) => {
     const url = new URL(value.trim(), baseUrl);
     if (url.origin === own && ['https:', 'http:'].includes(url.protocol)) return;
-    if (beacon && url.href === 'https://static.cloudflareinsights.com/beacon.min.js') return;
     throw new Error('Disallowed external resource in generated site');
   };
   const css = (value: string) => {
@@ -25,8 +24,7 @@ export function checkResources(html: string, baseUrl: string): void {
       for (const [key, value] of Object.entries(attrs)) {
         if (key.startsWith('on') || key === 'srcdoc') throw new Error('Unsupported active content');
         if (key === 'style') css(value);
-        if (['src', 'poster', 'background', 'action'].includes(key))
-          check(value, node.tagName === 'script');
+        if (['src', 'poster', 'background', 'action'].includes(key)) check(value);
         if (key === 'srcset')
           for (const entry of value.split(',')) check(entry.trim().split(/\s+/)[0]!);
         if (
@@ -59,7 +57,14 @@ export async function finalizeSite(
       if (entry.isDirectory()) await visit(file);
       else if (/\.(html|css)$/.test(entry.name)) {
         const source = await readFile(file, 'utf8');
-        checkResources(entry.name.endsWith('.css') ? `<style>${source}</style>` : source, baseUrl);
+        try {
+          checkResources(
+            entry.name.endsWith('.css') ? `<style>${source}</style>` : source,
+            baseUrl,
+          );
+        } catch (error) {
+          throw new Error(`${path.relative(directory, file)}: ${(error as Error).message}`);
+        }
         if (entry.name.endsWith('.html'))
           pages.push(path.relative(directory, file).split(path.sep).join('/'));
       }

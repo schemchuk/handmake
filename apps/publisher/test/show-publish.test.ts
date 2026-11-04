@@ -351,7 +351,7 @@ it('copies stored bytes, commits progress, resumes the saved plan and skips comp
   expect(callback.send).not.toHaveBeenCalled();
   expect(await store.readShow(show.tenant, show.id)).toEqual(show);
   const album = c.requests[0]!.body;
-  const uploaded = [...album.values()].filter((value): value is File => typeof value !== 'string');
+  const uploaded = [...album.values()].filter((value) => typeof value !== 'string');
   expect(uploaded).toHaveLength(3);
   for (const file of uploaded) expect(new Uint8Array(await file.arrayBuffer())).toEqual(image);
   const config = path.join(root, 'config/tenants/faden-und-stimmung.yaml');

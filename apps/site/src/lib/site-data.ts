@@ -54,7 +54,7 @@ export function readTenantConfig(root: string, tenantId = process.env.SITE_TENAN
 /** `languages` are the tenant's: a text in a language the site does not serve gets no page. */
 export function visiblePosts(posts: Post[], tenantLanguages: string[]): SitePost[] {
   return posts
-    .filter((post) => siteVisibleTypes.has(post.type))
+    .filter((post) => siteVisibleTypes.has(post.type) && !post.siteExcluded)
     .map((post) => ({
       post,
       languages: tenantLanguages.filter((lang) => lang in post.texts),

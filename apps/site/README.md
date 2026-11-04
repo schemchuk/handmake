@@ -115,9 +115,9 @@ upload the generated site as a CI artifact or paste its legal pages into PR comm
 The published legal pages necessarily disclose the supplied contact information.
 
 Every Astro build checks generated HTML and CSS for external resources; only our
-origin and the exact Cloudflare Web Analytics script are allowed. Ordinary external
-links in legal texts are allowed. Analytics is injected by Pages after deployment,
-so verify the deployed page and browser network requests as well. Root `404.html`
+origin is allowed. Ordinary external links in legal texts are allowed. Statistics
+come from Cloudflare zone traffic data without a browser script; keep Pages Web
+Analytics disabled and verify the deployed page has no beacon. Root `404.html`
 disables Pages' SPA fallback; localized `/uk/404/` is also available.
 
 Go-live checklist (record evidence in the T41 PR):
@@ -137,3 +137,7 @@ Technical sources for the additions:
 [Cloudflare analytics](https://developers.cloudflare.com/web-analytics/about/),
 [Cloudflare privacy](https://www.cloudflare.com/privacypolicy/),
 [Telegram privacy](https://telegram.org/privacy).
+
+Posts with frontmatter `siteExcluded: true` have no site pages, list entries, media
+routes or sitemap entries. Test-channel publish runs set it automatically; retries
+preserve the flag. Existing posts without the field remain visible.

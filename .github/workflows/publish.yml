@@ -94,6 +94,9 @@ jobs:
 
       - name: Publish to channels
         env:
+          SITE_EXCLUDE_POST: >-
+            ${{ !((github.event_name == 'workflow_dispatch' && inputs.live)
+              || (github.event_name == 'repository_dispatch' && github.event.client_payload.live == true)) }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           # Live channel only when explicitly asked for: the live tick on a
           # manual run, or client_payload.live from the bot (its PUBLISH_LIVE

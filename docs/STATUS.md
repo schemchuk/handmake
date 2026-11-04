@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T41b — test posts off the site, beacon exception removed, indexing on (docs/03-tasks.md).
-- **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: record live legal pages check.
-- **Next step:** Codex: T41b in a fresh session on `feat/T41b-site-visibility`, first item the PR #80 review notes (review `89640da`). After T41b: T47 (claude-code with Volodymyr), then T40. Live check 2026-11-04 after Site run 41845013428: legal pages 200 in both languages with real values, footer links, no beacon, unknown URL 404, noindex and robots Disallow, no sitemap.
+- **Current task:** T41b — implementation validated; indexing commit and PR next.
+- **Branch:** `feat/T41b-site-visibility`.
+- **Last commit:** see `git log -1` — feat: exclude test posts from the public site.
+- **Next step:** Codex: enable indexing in the final task commit, open PR and hand off to claude-code.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** resolved 2026-11-04: test posts hidden via T41b, then indexing on; analytics beacon replaced by Cloudflare zone statistics (§25 TDDDG); fal.ai DPA with SCCs is part of its terms. Author should reread the changed analytics paragraph in the Datenschutzerklärung. Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
@@ -50,6 +50,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T41b validation: site 46/46, publisher 180/180, core 213/213; workspace typecheck/build, lint, formatting and actionlint pass. Sandboxed site malformed-document test lost child-process diagnostics; unrestricted full rerun passed. Initial concurrent tests hit five-second timeouts; publisher passed with one worker and 30-second limit. Existing publisher test File type mismatch fixed by inferred narrowing. No deploy, publishing or paid calls. PR #80 commit 89640da code review recorded in review-notes.md.
 - T44e11 review-fix validation: full bot 505/505 and publisher 180/180 tests pass; workspace typecheck/build, lint and changed-file formatting pass. Sandbox transport run could not bind Miniflare (EPERM); full bot suite passed outside the sandbox. Only the explicit bounded finish response `unfinished job` gets a typed rejection; other Worker 409 errors retain the generic message and ambiguous delivery keeps successful execution green. Two real D1/R2 Worker regressions cover both paths. No deployment, workflows, paid calls, migrations, Worker runtime or secrets changed.
 - PR #78 review fix: failed finish callbacks now use `retry`, collecting uses `start`, other states omit resume. Two D1-backed session tests route the actual finish notification button for paid-gate and failed outcomes through the bot. Session 48/48, notification 8/8 and publisher finish 4/4 tests pass; bot/publisher typecheck and changed-file lint/format pass. Ready-notification failures leave successful generation/recovery green; finish nonce idempotence is documented inline. No deploy, production dispatch, paid calls, workflows or secrets changed in this fix.
 - T44e10 validation: transport 48/48 across the full 47-test rerun and one added pending-grant test; approval 13/13, notification 5/5, publisher 177/177 pass. Workspace typecheck/build, changed-file lint/format, actionlint and staged secret scan pass. Initial new media test exceeded the default five-second timeout and contaminated a later assertion; the corrected full transport rerun passed. Sandbox Miniflare bind was denied; integration runs passed outside the sandbox. Finish claims delivery before Telegram (at most once); ambiguous delivery is not retried automatically. No deploy, production dispatch, paid calls, migrations or secret/var changes.

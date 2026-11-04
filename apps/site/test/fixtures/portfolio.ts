@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { Work } from '@handmake/core';
@@ -24,6 +24,11 @@ export async function createPortfolioFixture() {
   delete tenant.site!.circle;
   await mkdir(path.join(root, 'config/tenants'), { recursive: true });
   await writeFile(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
+  await cp(
+    path.join(findRepoRoot(import.meta.dirname), 'docs/legal'),
+    path.join(root, 'docs/legal'),
+    { recursive: true },
+  );
   const store = new GitRepoContentStore({ rootDir: root });
   // Structural image fixtures only; never copied into real content or claimed as handmade items.
   const original = await sharp({

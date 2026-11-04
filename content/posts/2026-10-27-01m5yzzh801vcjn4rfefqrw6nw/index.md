@@ -12,6 +12,7 @@ versions:
     provenance: human
   de:
     provenance: human
+siteExcluded: true
 ---
 
 <!-- lang:uk -->
