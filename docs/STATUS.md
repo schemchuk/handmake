@@ -3,9 +3,9 @@
 - **Active agent:** codex
 - **Current task:** T41b — test posts off the site, beacon exception removed, indexing on (docs/03-tasks.md).
 - **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: resolve T41 open questions, plan T41b.
-- **Next step:** Volodymyr: disable Web Analytics in the Pages project `fadenundstimmung` (H14 revert), then run `gh workflow run site.yml --ref main` and tell claude-code to verify the live legal pages. Codex: T41b in a fresh session on `feat/T41b-site-visibility`, first item the PR #80 review notes (review `89640da`). After T41b: T47 (claude-code with Volodymyr), then T40.
-- **Blocked on:** Site deploy and H14 revert need Volodymyr. T26a-c wait on H8; T48 waits on H15.
+- **Last commit:** see `git log -1` — docs: record live legal pages check.
+- **Next step:** Codex: T41b in a fresh session on `feat/T41b-site-visibility`, first item the PR #80 review notes (review `89640da`). After T41b: T47 (claude-code with Volodymyr), then T40. Live check 2026-11-04 after Site run 41845013428: legal pages 200 in both languages with real values, footer links, no beacon, unknown URL 404, noindex and robots Disallow, no sitemap.
+- **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** resolved 2026-11-04: test posts hidden via T41b, then indexing on; analytics beacon replaced by Cloudflare zone statistics (§25 TDDDG); fal.ai DPA with SCCs is part of its terms. Author should reread the changed analytics paragraph in the Datenschutzerklärung. Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
