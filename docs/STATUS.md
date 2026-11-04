@@ -4,8 +4,8 @@
 - **Current task:** T41 — legal pages and go-live (tasks v5, spec v7 approved 2026-11-04).
 - **Branch:** `main`.
 - **Last commit:** see `git log -1` — docs: plan tasks v5 with T41 first.
-- **Next step:** Volodymyr does H11 (Impressum fields as secrets + legal texts from a free lawyer generator) and H14 (Cloudflare Web Analytics on the Pages project); then Codex starts T41 in a fresh session on `feat/T41-legal-pages`. After T41: T47 end-to-end check (claude-code with Volodymyr), then T40, T26a-c (Instagram, Facebook, Threads), T48, T49, contest. Order: docs/03-tasks.md "Order of work (v5)".
-- **Blocked on:** T41 waits on H11 and H14 (Volodymyr). T26a-c wait on H8 (now covers Instagram, Facebook Page and Threads in one Meta app). T48 waits on H15.
+- **Next step:** Volodymyr does H14 (Cloudflare Web Analytics on the Pages project; H11 done 2026-11-04, texts in `docs/legal/`); then Codex starts T41 in a fresh session on `feat/T41-legal-pages`. After T41: T47 end-to-end check (claude-code with Volodymyr), then T40, T26a-c (Instagram, Facebook, Threads), T48, T49, contest. Order: docs/03-tasks.md "Order of work (v5)".
+- **Blocked on:** T41 waits on H14 (Volodymyr). T26a-c wait on H8 (now covers Instagram, Facebook Page and Threads in one Meta app). T48 waits on H15.
 - **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Live check pending: the next `show.yml` run should message the author when it ends (part of T47).
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
