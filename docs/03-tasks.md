@@ -398,6 +398,9 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   without a clickable link (bio link instead). Flag `featureFlags.canonicalLinks` so posts made before
   the site is live stay unchanged.
 - Acceptance: a published post links to a page that exists after the rebuild; flag off → unchanged ops.
+- Review notes from PR #81: README line that a draft first published to the test channel stays
+  `siteExcluded` on a later live re-dispatch with the same draft id; raise the timeout of the flaky
+  `apps/bot/test/show-transport.test.ts` grants test (timed out at 5 s on main CI run 41845320494).
 - Tests: URL builder, render per channel, flag.
 
 ### T41 — Legal pages and go-live (`site`) · Sensitive
@@ -1124,6 +1127,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   defect becomes a small fix task inserted after T47.
 - Acceptance: every flow marked pass or fail with evidence (message, URL or run link); no secrets or
   personal data in the doc.
+- Review notes from PR #81: check whether a show published from a test run can reach the site
+  (shows do not carry `siteExcluded`).
 - Tests: n/a (manual check).
 
 ### T26a — Instagram adapter · revised in v5

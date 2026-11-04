@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T41b — ready for independent review; sensitive workflow changes.
-- **Branch:** `feat/T41b-site-visibility`.
-- **Last commit:** see `git log -1` — chore: enable site indexing after test post filtering.
-- **Next step:** Claude Code: review T41b PR and CI, including PR #80 commit 89640da review notes. Sensitive merge requires Volodymyr’s explicit OK. After merge, hand off to codex per protocol; T47 belongs to claude-code with Volodymyr before T40.
+- **Current task:** T47 — end-to-end check (claude-code with Volodymyr). T41b merged as PR #81.
+- **Branch:** `main`.
+- **Last commit:** see `git log -1` — docs: record T41b merge and handoff.
+- **Next step:** Site deploy (Actions → Site on `main`) to make indexing live, then check robots, sitemap without the two test posts, no `noindex`. Then T47 in a fresh claude-code session with Volodymyr (review note from PR #81 in T47). After T47: Codex T40, including the PR #81 review notes.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** resolved 2026-11-04: test posts hidden via T41b, then indexing on; analytics beacon replaced by Cloudflare zone statistics (§25 TDDDG); fal.ai DPA with SCCs is part of its terms. Author should reread the changed analytics paragraph in the Datenschutzerklärung. Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
