@@ -99,3 +99,41 @@ snapshot. A work link appears only when that work has the current language versi
 embedded marking evidence byte for byte. Missing declared media or a dangling work reference fails
 the build. The site does not read private generation storage or start generation. Publication-time
 marker verification remains the publisher's responsibility.
+
+## Legal pages and go-live (T41)
+
+The reviewed generator sources are in `docs/legal/`; preserve their attribution.
+`services.de.html` contains project-specific additions awaiting Volodymyr and the
+ author's review. German legal text is served on both language routes. These drafts
+are not a final legal assessment; confirm provider coverage, legal bases, transfers
+and retention against the actual configuration before approval.
+
+Local and CI builds use named placeholders when legal fields are absent. The deploy
+workflow requires all four `IMPRESSUM_*` secrets (see `.env.example`). Values are
+HTML-escaped and never intentionally logged. GitHub masks secret values; do not
+upload the generated site as a CI artifact or paste its legal pages into PR comments.
+The published legal pages necessarily disclose the supplied contact information.
+
+Every Astro build checks generated HTML and CSS for external resources; only our
+origin and the exact Cloudflare Web Analytics script are allowed. Ordinary external
+links in legal texts are allowed. Analytics is injected by Pages after deployment,
+so verify the deployed page and browser network requests as well. Root `404.html`
+disables Pages' SPA fallback; localized `/uk/404/` is also available.
+
+Go-live checklist (record evidence in the T41 PR):
+
+1. Review `/impressum/`, `/datenschutz/` and their `/uk/` versions with real values
+   privately. Record Volodymyr's and the author's explicit approvals without values.
+2. Resolve the carried review note about test-channel posts reaching the public site
+   (`docs/review-notes.md`); confirm the content intended to be indexed.
+3. After both approvals, set `SITE_INDEXABLE: 'true'` in `site.yml` in a reviewed
+   follow-up commit. Builds then require legal fields, reject configured placeholders,
+   remove `noindex`, allow crawling and generate `sitemap.xml`.
+4. The reviewer merges only after CI passes and Volodymyr explicitly authorizes this
+   sensitive PR. Run Site, verify HTTPS, legal links, analytics, sitemap and an unknown
+   URL returning HTTP 404. Until then the deploy workflow keeps indexing disabled.
+
+Technical sources for the additions:
+[Cloudflare analytics](https://developers.cloudflare.com/web-analytics/about/),
+[Cloudflare privacy](https://www.cloudflare.com/privacypolicy/),
+[Telegram privacy](https://telegram.org/privacy).

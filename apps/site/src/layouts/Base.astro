@@ -94,6 +94,8 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <footer class="wrap site-footer">
       <Stitch />
       <span>{tenant.name}</span>
+      <a href={pagePath(lang, def, 'impressum')}>Impressum</a>
+      <a href={pagePath(lang, def, 'datenschutz')}>Datenschutzerklärung</a>
     </footer>
   </body>
 </html>

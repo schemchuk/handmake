@@ -16,6 +16,7 @@
     "@handmake/core": "workspace:*",
     "@handmake/stores": "workspace:*",
     "astro": "^6.4.8",
+    "parse5": "^8.1.0",
     "sharp": "^0.34.5"
   }
 }

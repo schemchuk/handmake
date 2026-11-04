@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T41 — legal pages and go-live (tasks v5, spec v7 approved 2026-11-04).
-- **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: plan tasks v5 with T41 first.
-- **Next step:** H11 and H14 done 2026-11-04 (legal texts in `docs/legal/`); Codex starts T41 in a fresh session on `feat/T41-legal-pages`. After T41: T47 end-to-end check (claude-code with Volodymyr), then T40, T26a-c (Instagram, Facebook, Threads), T48, T49, contest. Order: docs/03-tasks.md "Order of work (v5)".
-- **Blocked on:** T26a-c wait on H8 (now covers Instagram, Facebook Page and Threads in one Meta app). T48 waits on H15.
-- **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Live check pending: the next `show.yml` run should message the author when it ends (part of T47).
+- **Active agent:** claude-code
+- **Current task:** T41 — implementation ready for independent review; go-live approvals pending.
+- **Branch:** `feat/T41-legal-pages`.
+- **Last commit:** see `git log -1` — feat: add legal pages and publication checks.
+- **Next step:** Review the T41 PR. Site tests 41/41 passed outside sandbox; final added sitemap/build-policy test passed (13/13 legal tests). Site typecheck, lint, formatting, build and actionlint passed. Workspace typecheck fails in unchanged `apps/publisher/test/show-publish.test.ts:354,356` (File/FormDataEntryValue types). Review `docs/legal/services.de.html` with Volodymyr and the author, record both legal-page approvals, resolve the test-channel content note, then enable indexing in a follow-up commit. Sensitive merge needs Volodymyr's explicit OK. After T41: T47 in a fresh session.
+- **Blocked on:** Both rendered legal-page confirmations and sensitive merge approval; no deployment performed. T26a-c wait on H8; T48 waits on H15.
+- **Open questions for Volodymyr:** Confirm legal additions and final rendered pages with the author; decide whether existing test-channel posts may be indexed. Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

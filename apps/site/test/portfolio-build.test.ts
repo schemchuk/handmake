@@ -21,6 +21,11 @@ async function build(root: string, dist: string) {
       SITE_REPO_ROOT: root,
       SITE_TENANT: 'fixture',
       SITE_INDEXABLE: 'false',
+      SITE_REQUIRE_LEGAL: 'true',
+      IMPRESSUM_NAME: 'Legal Fixture Name',
+      IMPRESSUM_STREET: 'Legal Fixture Street',
+      IMPRESSUM_CITY: 'Legal Fixture City',
+      IMPRESSUM_EMAIL: 'legal-fixture@example.invalid',
       ASTRO_TELEMETRY_DISABLED: '1',
       NODE_ENV: 'production',
     },
@@ -86,7 +91,22 @@ describe('portfolio fixture build', () => {
         ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
         { fileName: show.video.fileName, data: video },
       ]);
-      await build(root, dist);
+      const result = await build(root, dist);
+      for (const value of [
+        'Legal Fixture Name',
+        'Legal Fixture Street',
+        'Legal Fixture City',
+        'legal-fixture@example.invalid',
+      ]) {
+        expect(result.stdout + result.stderr).not.toContain(value);
+        for (const route of ['impressum', 'datenschutz', 'uk/impressum', 'uk/datenschutz']) {
+          expect(await html(dist, route)).toContain(value);
+        }
+      }
+      expect(await readFile(path.join(dist, '404.html'), 'utf8')).toContain('Seite nicht gefunden');
+      expect(await html(dist, 'uk/404')).toContain('Сторінку не знайдено');
+      await expect(access(path.join(dist, 'sitemap.xml'))).rejects.toThrow();
+      expect(await readFile(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /');
       const showUrl = `shows/${show.id.toLowerCase()}`;
       const showHtml = await html(dist, showUrl);
       expect(showHtml.match(/<figcaption>KI-generiertes Model<\/figcaption>/g)).toHaveLength(4);
