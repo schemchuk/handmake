@@ -32,7 +32,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H9 | Random `NAMES_ENDPOINT_SECRET` (`openssl rand -hex 32`) as GitHub Secret and Worker secret. | T28 |
 | H10 | Cloudflare Pages project; API token scoped to Pages deploy only; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Secrets. Domain fadenundstimmung.de is registered (INWX) and its zone is active on Cloudflare (done 2026-10-30); attaching it to Pages is part of T39. **Done 2026-10-31:** Pages project `fadenundstimmung` (Direct Upload, created with `wrangler pages project create --force`), both secrets set. | T39 |
 | H11 | Impressum fields (author's name, home address, email) as GitHub Secrets `IMPRESSUM_NAME`, `IMPRESSUM_STREET` (street and house number), `IMPRESSUM_CITY` (postal code and city), `IMPRESSUM_EMAIL` (T41 adds these names to `.env.example`). The generator texts reach T41 with the placeholders `{{IMPRESSUM_NAME}}`, `{{IMPRESSUM_STREET}}`, `{{IMPRESSUM_CITY}}`, `{{IMPRESSUM_EMAIL}}` in place of the real values. Generate the Impressum and Datenschutzerklärung texts with a free generator by lawyers (for example datenschutz-generator.de or e-recht24), listing the processors from T41, and hand the result to the T41 owner; Volodymyr and the author confirm the final pages. **Done 2026-11-04:** the four secrets are set; texts in `docs/legal/` (`datenschutz.de.html` from datenschutz-generator.de free version, its attribution line must stay; `impressum.de.html` from e-recht24 free generator, Privatperson, §18 MStV line, no phone). The free Datenschutz modules cover hosting/CDN, logfiles, blog, email contact, web analytics, Instagram, Facebook Page and Threads; T41 adds short paragraphs for Cloudflare (named), Cloudflare Web Analytics and the Telegram channel, marked for Volodymyr's and the author's review. A shop later needs the paid license. | T41 |
-| H14 | Enable Cloudflare Web Analytics for the Pages project `fadenundstimmung` (dashboard toggle, cookieless). **Done 2026-11-04:** enabled in the Pages project Metrics tab; the beacon is injected from the next deployment. | T41 |
+| H14 | Enable Cloudflare Web Analytics for the Pages project `fadenundstimmung` (dashboard toggle, cookieless). **Done 2026-11-04:** enabled in the Pages project Metrics tab. **Reverted 2026-11-04:** Volodymyr disables it again (the JS beacon reads browser data, a §25 TDDDG consent risk); visits are read from the Cloudflare zone traffic statistics instead, which need no script. | T41, T41b |
 | H15 | Email service account with EU hosting and a data processing agreement (Brevo or MailerLite, decided in T48); the author prepares one free embroidery pattern as a PDF (lead magnet). | T48 |
 | H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. **Done 2026-11-01:** 11 photos of 3 works received (blouse with cross-stitch, crocheted pillow cover, crocheted flower appliqué), kept locally and NOT committed (public repo, author's works). Usable: blouse 1-3, pillow 1-2, appliqué 4 and 6; blurry or process shots skipped (pillow 3, appliqué 1-3, 5). Author's consent to send them to AI providers is still needed before T43. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
@@ -399,11 +399,6 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   the site is live stay unchanged.
 - Acceptance: a published post links to a page that exists after the rebuild; flag off → unchanged ops.
 - Tests: URL builder, render per channel, flag.
-- Review notes from PR #80: (0) first review commit `89640da` (Datenschutz additions moved before
-  `m15`, analytics module rewritten; written by the reviewer at Volodymyr's request, merged without
-  independent review); (1) `apps/site/src/lib/legal.ts` resolves `docs/legal/` from
-  `findRepoRoot(process.cwd())` and ignores `SITE_REPO_ROOT`, unlike `site-data.ts`; (2) the CSS check
-  in `build-policy.ts` rejects any backslash with a generic error; name the file, never echo content.
 
 ### T41 — Legal pages and go-live (`site`) · Sensitive
 - Depends on: T40, H11
@@ -1075,12 +1070,34 @@ winners are no longer on the site). The text below is kept for history.
 
 ## Order of work (v5)
 
-T41 (legal pages and go-live) → T47 (end-to-end check) → T40 (canonical links) → T26a → T26b →
+T41 (legal pages and go-live) → T41b (test posts off the site, indexing on) → T47 (end-to-end check) → T40 (canonical links) → T26a → T26b →
 T26c (Instagram, Facebook, Threads) → T48 (email and lead magnet) → T49 (comment inbox) → T27-T32
 (contest on all networks) → T33, T34. Owner codex, reviewer claude-code unless stated; each PR under
 ~400 changed non-test lines (ADR 009). Fixes found by T47 are inserted right after it.
 
 T41 changes in v5: depends on H11 and H14 only (not on T40); scope as below.
+
+T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
+
+### T41b — Keep test posts off the site, drop the beacon, enable indexing (`site`, `publisher`) · Sensitive
+- Owner: codex · Reviewer: claude-code · Depends on: T41, H14 revert
+- Change: (1) a post can be excluded from the site by a frontmatter field (posts stay in `content/`,
+  ledger and Telegram untouched); set it on the two test posts `01JBCA1B2C3D4E5F6G7H8J9K0M` («Сьогоднішнє
+  засідання…») and `01M5YZZH801VCJN4RFEFQRW6NW` («Тест після оновлення GitHub Actions»); publish runs to
+  the test channel (`live` off) set it automatically, so future test posts never reach the site.
+  (2) Remove the Cloudflare Web Analytics script exception from `build-policy.ts` and its tests; update
+  `apps/site/README.md` (statistics come from the Cloudflare zone, no script). (3) Last commit of the
+  PR: `SITE_INDEXABLE: 'true'` in `site.yml` (both legal approvals recorded in PR #80; Volodymyr
+  decided 2026-11-04 to index once the test posts are hidden).
+- Acceptance: a fixture build excludes a flagged post from lists, pages and sitemap; a test-channel
+  publish run writes the flag; the build fails on any external script, the beacon included; indexable
+  build has no `noindex` and a sitemap without the two test posts.
+- Tests: flag filter, publish flag for test runs, resource check, sitemap.
+- Review notes from PR #80 (fix in this PR): (0) first review commit `89640da` (Datenschutz additions moved before
+  `m15`, analytics module rewritten; written by the reviewer at Volodymyr's request, merged without
+  independent review); (1) `apps/site/src/lib/legal.ts` resolves `docs/legal/` from
+  `findRepoRoot(process.cwd())` and ignores `SITE_REPO_ROOT`, unlike `site-data.ts`; (2) the CSS check
+  in `build-policy.ts` rejects any backslash with a generic error; name the file, never echo content.
 
 ### T41 — Legal pages and go-live (`site`) · Sensitive · revised in v5
 - Owner: codex · Reviewer: claude-code · Depends on: H11, H14

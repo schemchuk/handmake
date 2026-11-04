@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T41 merged (PR #80, `5b6d017`); legal pages approved by Volodymyr and the author 2026-11-04.
+- **Active agent:** codex
+- **Current task:** T41b — test posts off the site, beacon exception removed, indexing on (docs/03-tasks.md).
 - **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: record T41 merge and handoff.
-- **Next step:** Volodymyr runs the Site workflow (`gh workflow run site.yml --ref main`); then verify live `/impressum/`, `/datenschutz/`, `/uk/` versions, footer links, analytics beacon and HTTP 404 for an unknown URL. Then T47 (claude-code with Volodymyr), then Codex T40 starting with the PR #80 review notes (first: review `89640da`).
-- **Blocked on:** Site deploy needs Volodymyr (agent deploy not permitted). Indexing stays off (`SITE_INDEXABLE: 'false'`) until the test-channel content note is decided. T26a-c wait on H8; T48 waits on H15.
-- **Open questions for Volodymyr:** may existing test-channel posts be indexed (gates `SITE_INDEXABLE`)? fal.ai DPA accepted (Datenschutz names SCCs)? §25 TDDDG for the analytics beacon (legal check). Draft retention policy remains open. T47 must verify the show finish notification.
+- **Last commit:** see `git log -1` — docs: resolve T41 open questions, plan T41b.
+- **Next step:** Volodymyr: disable Web Analytics in the Pages project `fadenundstimmung` (H14 revert), then run `gh workflow run site.yml --ref main` and tell claude-code to verify the live legal pages. Codex: T41b in a fresh session on `feat/T41b-site-visibility`, first item the PR #80 review notes (review `89640da`). After T41b: T47 (claude-code with Volodymyr), then T40.
+- **Blocked on:** Site deploy and H14 revert need Volodymyr. T26a-c wait on H8; T48 waits on H15.
+- **Open questions for Volodymyr:** resolved 2026-11-04: test posts hidden via T41b, then indexing on; analytics beacon replaced by Cloudflare zone statistics (§25 TDDDG); fal.ai DPA with SCCs is part of its terms. Author should reread the changed analytics paragraph in the Datenschutzerklärung. Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
