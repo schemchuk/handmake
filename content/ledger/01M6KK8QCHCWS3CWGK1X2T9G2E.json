@@ -1,5 +1,49 @@
 {
   "tenantId": "faden-und-stimmung",
   "postId": "01M6KK8QCHCWS3CWGK1X2T9G2E",
-  "channels": {}
+  "channels": {
+    "telegram": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-04T16:23:01.144Z"
+    }
+  },
+  "showCopyPlan": {
+    "version": 1,
+    "mediaHashes": [
+      "45a4f64ae1ab68066d02d87366a72639cf54f1e1a07b2045e5e56a5f8b0a5d80",
+      "b15fff403f58db40ff4b52da8aa0f7f0655eb892e4ff57096a7b6c2252619db9",
+      "2e3c307a3dff2f6f862d542d1e7f157eb0a6282ad012d19dd36c260b4192b23f",
+      "1b7ca92f2ab45cc00de062fb3f6e364a139e097a09c09b8170c9ac493dbb4f70"
+    ],
+    "channels": {
+      "telegram": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Жіноча блуза, оздоблена вишивкою з трояндами.\n\nМодель згенерована ШІ (KI-generiertes Model)\nhttps://fadenundstimmung.de/uk/shows/01m6kk8qchcws3cwgk1x2t9g2e/",
+            "captionLang": "uk"
+          },
+          {
+            "kind": "video",
+            "replyToOp": 0
+          },
+          {
+            "kind": "message",
+            "text": "Damenbluse, verziert mit einer Rosenstickerei.\n\nKI-generiertes Model\nhttps://fadenundstimmung.de/shows/01m6kk8qchcws3cwgk1x2t9g2e/",
+            "lang": "de",
+            "replyToOp": 0
+          }
+        ],
+        "settings": {
+          "channelId": "TELEGRAM_CHANNEL_ID"
+        }
+      }
+    }
+  }
 }
