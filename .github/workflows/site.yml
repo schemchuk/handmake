@@ -3,6 +3,14 @@ name: Site
 on:
   workflow_call:
     secrets:
+      IMPRESSUM_NAME:
+        required: true
+      IMPRESSUM_STREET:
+        required: true
+      IMPRESSUM_CITY:
+        required: true
+      IMPRESSUM_EMAIL:
+        required: true
       CLOUDFLARE_API_TOKEN:
         required: true
       CLOUDFLARE_ACCOUNT_ID:
@@ -38,6 +46,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build site
+        env:
+          SITE_REQUIRE_LEGAL: 'true'
+          # Keep false until both approvals are recorded in the T41 PR.
+          SITE_INDEXABLE: 'false'
+          IMPRESSUM_NAME: ${{ secrets.IMPRESSUM_NAME }}
+          IMPRESSUM_STREET: ${{ secrets.IMPRESSUM_STREET }}
+          IMPRESSUM_CITY: ${{ secrets.IMPRESSUM_CITY }}
+          IMPRESSUM_EMAIL: ${{ secrets.IMPRESSUM_EMAIL }}
         run: pnpm --filter @handmake/site build
 
       - name: Deploy to Pages

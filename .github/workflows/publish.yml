@@ -163,6 +163,10 @@ jobs:
       contents: read
     uses: ./.github/workflows/site.yml
     secrets:
+      IMPRESSUM_NAME: ${{ secrets.IMPRESSUM_NAME }}
+      IMPRESSUM_STREET: ${{ secrets.IMPRESSUM_STREET }}
+      IMPRESSUM_CITY: ${{ secrets.IMPRESSUM_CITY }}
+      IMPRESSUM_EMAIL: ${{ secrets.IMPRESSUM_EMAIL }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 

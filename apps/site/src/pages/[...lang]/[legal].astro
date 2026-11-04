@@ -1,0 +1,24 @@
+---
+import Base from '../../layouts/Base.astro';
+import { renderLegal } from '../../lib/legal';
+import { langParam, pagePath } from '../../lib/paths';
+import { loadSiteData } from '../../lib/site-data';
+
+export async function getStaticPaths() {
+  const { tenant, site } = await loadSiteData();
+  return tenant.languages.flatMap((lang) => ['impressum', 'datenschutz'].map((legal) => ({
+    params: { lang: langParam(lang, site.defaultLanguage), legal }, props: { lang, legal },
+  })));
+}
+const { lang, legal } = Astro.props;
+const { tenant, site } = await loadSiteData();
+const alternates = Object.fromEntries(tenant.languages.map((code) => [code, pagePath(code, site.defaultLanguage, legal)]));
+const title = legal === 'impressum' ? 'Impressum' : 'Datenschutzerklärung';
+const content = renderLegal(legal);
+---
+<Base lang={lang} title={title} alternates={alternates}>
+  <article class="wrap page">
+    {lang !== 'de' && <p>Юридично визначальною є німецька версія тексту.</p>}
+    <div lang="de" set:html={content} />
+  </article>
+</Base>
