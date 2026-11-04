@@ -1,13 +1,13 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** none open; T44 show chain (T44e9-T44e11) merged.
+- **Current task:** T41 — legal pages and go-live (tasks v5, spec v7 approved 2026-11-04).
 - **Branch:** `main`.
-- **Last commit:** `1448417` — fix: report rejected show completion (#79).
-- **Next step:** Codex: no unblocked task; T26 (Instagram) waits on H8. Bot deployed 2026-11-03 with T44e9 + T44e10 (version `0baeb5b6`); T44e11 is publisher-only and runs from `main` in `show.yml`, no deploy. Live check pending: the next `show.yml` run should message the author when it ends.
-- **Done 2026-11-03:** T44e7 production backfill for show `01M6ECR1Z295C1WN4H5C7BBNBB` succeeded (bot `15458a36`, two recovery `show.yml` runs with `SHOW_ALLOW_PAID_CALLS=false`); the author approved, the show is live at fadenundstimmung.de/shows/01m6ecr1z295c1wn4h5c7bbnbb/ and copied to the Telegram channel (messages 25, 28, 29). `ai_costs` unchanged not confirmed by a D1 query.
-- **Blocked on:** T26 blocked on H8.
-- **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Existing deployment and model/billing gates remain separate; see docs/show-recovery.md and docs/review-notes.md.
+- **Last commit:** see `git log -1` — docs: plan tasks v5 with T41 first.
+- **Next step:** Volodymyr does H11 (Impressum fields as secrets + legal texts from a free lawyer generator) and H14 (Cloudflare Web Analytics on the Pages project); then Codex starts T41 in a fresh session on `feat/T41-legal-pages`. After T41: T47 end-to-end check (claude-code with Volodymyr), then T40, T26a-c (Instagram, Facebook, Threads), T48, T49, contest. Order: docs/03-tasks.md "Order of work (v5)".
+- **Blocked on:** T41 waits on H11 and H14 (Volodymyr). T26a-c wait on H8 (now covers Instagram, Facebook Page and Threads in one Meta app). T48 waits on H15.
+- **Open questions for Volodymyr:** show draft retention policy remains open (drafts are kept indefinitely). Live check pending: the next `show.yml` run should message the author when it ends (part of T47).
+- **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
   2. Domains Volodymyr owns: eko-flow.de, couchhelp.eu, coachhelp.de. None matches a crafts brand;

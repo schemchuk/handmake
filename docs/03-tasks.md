@@ -2,7 +2,10 @@
 
 Small reviewable tasks with Owner, Reviewer, acceptance criteria and tests.
 
-Status: **approved v4 (2026-10-30).** v4 re-orders the work for spec v6
+Status: **approved v5 (2026-11-04).** v5 follows spec v7 (audience first, legal safety first): T41
+first, then an end-to-end check, then Instagram, Facebook and Threads together, email, comment inbox
+and the contest on all networks; see "Order of work (v5)".
+v4 (approved 2026-10-30) re-orders the work for spec v6
 (POSSE: site first, then AI shows, then Instagram and contest) and adds T39-T46; see "Order of work (v4)".
 v3 (approved 2026-10-28) re-plans phase 1b and phase 2 for spec v5 and
 architecture v3.1, from the task split in docs/reviews/2026-10-28-v5-review.md. v2 (approved
@@ -25,10 +28,12 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H5 | Put secrets into GitHub Secrets and Worker secrets (names in `.env.example`). | T11, T16 |
 | H6 | ~~Decide O1 and O2~~ done 2026-10-21. | T05, T00, T10 |
 | H7 | Random `PUBLISH_CALLBACK_SECRET` (e.g. `openssl rand -hex 32`) as GitHub Secret and Worker secret. | T19 |
-| H8 | Instagram: author switches her account to Creator; Meta developer app with Instagram Login API; long-lived token and IG user ID as secrets. | T26 |
+| H8 | Meta (extended in v5): author switches her Instagram account to Creator or Business; a Facebook Page and a Threads profile for the brand; one Meta developer app with Instagram, Pages and Threads APIs; long-lived tokens and account/page IDs as secrets. Every profile links to the Impressum. | T26a-T26c, T49 |
 | H9 | Random `NAMES_ENDPOINT_SECRET` (`openssl rand -hex 32`) as GitHub Secret and Worker secret. | T28 |
 | H10 | Cloudflare Pages project; API token scoped to Pages deploy only; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Secrets. Domain fadenundstimmung.de is registered (INWX) and its zone is active on Cloudflare (done 2026-10-30); attaching it to Pages is part of T39. **Done 2026-10-31:** Pages project `fadenundstimmung` (Direct Upload, created with `wrangler pages project create --force`), both secrets set. | T39 |
-| H11 | Impressum fields as GitHub Secrets (names in `.env.example`); confirm the legal page texts. | T41 |
+| H11 | Impressum fields (author's name, home address, email) as GitHub Secrets (names in `.env.example`, added by T41). Generate the Impressum and Datenschutzerklärung texts with a free generator by lawyers (for example datenschutz-generator.de or e-recht24), listing the processors from T41, and hand the result to the T41 owner; Volodymyr and the author confirm the final pages. | T41 |
+| H14 | Enable Cloudflare Web Analytics for the Pages project `fadenundstimmung` (dashboard toggle, cookieless). | T41 |
+| H15 | Email service account with EU hosting and a data processing agreement (Brevo or MailerLite, decided in T48); the author prepares one free embroidery pattern as a PDF (lead magnet). | T48 |
 | H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. **Done 2026-11-01:** 11 photos of 3 works received (blouse with cross-stitch, crocheted pillow cover, crocheted flower appliqué), kept locally and NOT committed (public repo, author's works). Usable: blouse 1-3, pillow 1-2, appliqué 4 and 6; blurry or process shots skipped (pillow 3, appliqué 1-3, 5). Author's consent to send them to AI providers is still needed before T43. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
 
@@ -357,7 +362,7 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Acceptance: a developer can deploy a test tenant from the docs alone (checked by kimi-code).
 - Tests: n/a (docs); links checked.
 
-## Order of work (v4)
+## Order of work (v4), superseded by v5
 
 T35 → T39 → T40 → T41 (site live on fadenundstimmung.de, channel posts link to it) → T42 (cost
 ledger) → T36 → T43 (spike, ADR 015) → T44 → T45 → T46 (AI shows) → T26 (Instagram) → T27-T32
@@ -1060,6 +1065,96 @@ winners are no longer on the site). The text below is kept for history.
   checklist: legal texts, Datenschutzerklärung with all processors (incl. Cloudflare for contest names).
 - Acceptance: a publish run updates the live site; a manual rebuild works without a payload.
 - Tests: actionlint; manual run documented in the PR.
+
+## Tasks v5: legal first, end-to-end check, Meta channels, funnel (spec v7)
+
+## Order of work (v5)
+
+T41 (legal pages and go-live) → T47 (end-to-end check) → T40 (canonical links) → T26a → T26b →
+T26c (Instagram, Facebook, Threads) → T48 (email and lead magnet) → T49 (comment inbox) → T27-T32
+(contest on all networks) → T33, T34. Owner codex, reviewer claude-code unless stated; each PR under
+~400 changed non-test lines (ADR 009). Fixes found by T47 are inserted right after it.
+
+T41 changes in v5: depends on H11 and H14 only (not on T40); scope as below.
+
+### T41 — Legal pages and go-live (`site`) · Sensitive · revised in v5
+- Owner: codex · Reviewer: claude-code · Depends on: H11, H14
+- Change: Impressum and Datenschutzerklärung pages (`/impressum/`, `/datenschutz/`, also under `/uk/`
+  with the German legal text as the binding version) built from the H11 texts; the name, address and
+  email come from secrets at build time (never committed, masked in the build log) and feed both the
+  Impressum and the controller section of the Datenschutzerklärung. Footer link to both on every page.
+  Processors listed: Cloudflare (Pages, Workers, D1, R2, Web Analytics), GitHub, Telegram, Anthropic,
+  fal.ai, INWX. A build check fails if a page loads fonts, scripts, iframes or images from any host
+  other than our own domain and the Cloudflare Web Analytics beacon. Unknown paths return a real 404
+  page instead of the home page. `.env.example` gets the secret names. Go-live: after Volodymyr and the
+  author confirm the pages, `noindex` is removed and the sitemap enabled.
+- Acceptance: a fixture build shows no Impressum value in logs or committed files; both legal pages
+  and the 404 exist in both languages; the third-party check fails on a test page with an external
+  font; go-live only after both confirmations (recorded in the PR).
+- Tests: page build tests, masking, third-party host check, 404.
+
+### T47 — End-to-end check of what exists · Owner: claude-code with Volodymyr · Reviewer: Volodymyr
+- Depends on: T41
+- Change: walk every live flow once in production and record the result in `docs/e2e-v7.md`: post
+  (UA → DE, preview, edit, publish to Telegram and site), work and collection, a show run through
+  approval and copy to Telegram (includes the T44e11 finish message to the author), site rebuild,
+  `/cost`, operator failure alert, `/show_status`. Any paid show run needs Volodymyr's OK first. Each
+  defect becomes a small fix task inserted after T47.
+- Acceptance: every flow marked pass or fail with evidence (message, URL or run link); no secrets or
+  personal data in the doc.
+- Tests: n/a (manual check).
+
+### T26a — Instagram adapter · revised in v5
+- Owner: codex · Reviewer: claude-code · Depends on: T25, T40, H8 · Sensitive: new secrets
+- Change: T26 as written above, plus the v7 caption rules from F33: the first ~125 characters carry
+  the message (the bot preview shows that window), at most 5 hashtags (hard limit), carousels in 4:5
+  (1080x1350, crop or pad without cutting the work), shows as a carousel of their images plus the AI
+  label in the caption. A shared Meta token/refresh helper in `channels` is reused by T26b-T26c.
+  Rules ported from instagram-agent-skill (MIT) keep its license notice in the ported file.
+- Acceptance and tests: as T26, plus caption window, hashtag limit and 4:5 framing tests.
+
+### T26b — Facebook Page adapter (F33, `channels`) · Sensitive: new secrets
+- Owner: codex · Reviewer: claude-code · Depends on: T26a
+- Change: `FacebookPageChannel` via the Pages API: photo or multi-photo post with the German caption
+  and the canonical link (clickable on Facebook); registered and enabled by tenant config.
+- Acceptance: one live post appears once; a re-run skips it via the ledger; a failure does not block
+  other channels and alerts the operator.
+- Tests: mocked Graph API, single vs multi photo, errors.
+
+### T26c — Threads adapter (F33, `channels`) · Sensitive: new secrets
+- Owner: codex · Reviewer: claude-code · Depends on: T26a
+- Change: `ThreadsChannel` via the Threads API: text plus image or carousel, 500-character limit shown
+  in the preview, canonical link in the text.
+- Acceptance and tests: as T26b.
+
+### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data
+- Owner: codex · Reviewer: claude-code · Depends on: T41, H15
+- Change: ADR 013 email part accepted with the chosen provider (EU hosting, DPA). Sign-up form on the
+  site (German and Ukrainian) posting to the provider's double opt-in form; the provider sends the
+  pattern PDF after confirmation. No addresses touch our storage or logs. Datenschutzerklärung gets
+  the provider section (texts from the H11 generator, confirmed by Volodymyr). One call to action on
+  show and work pages.
+- Acceptance: a test address receives the confirmation mail, and the PDF only after confirming; the
+  third-party check from T41 allows only the provider's form endpoint.
+- Tests: form rendering, build check; the live opt-in is checked manually and recorded in the PR.
+
+### T49 — Comment inbox with author-approved replies (F34, `bot`, `channels`, `ai`) · Sensitive: reader data
+- Owner: codex · Reviewer: claude-code · Depends on: T26a-T26c
+- Change: `comments` capability on the Meta adapters (list new comments on our posts, reply). A cron
+  collects new comments into D1 (tenant, network, comment id, handle, text, status), sends each to
+  the author with a Ukrainian translation and a German draft reply (prompt with rules ported from
+  `/ig-reply`, MIT notice kept); buttons Send / Edit / Skip. Handled comments are deleted after 30
+  days; nothing reaches Git or logs. Costs are booked via `recordCost`.
+- Acceptance: a comment is answered at most once; skipped and sent comments disappear after 30 days;
+  only allow-listed users see the inbox.
+- Tests: mocked APIs, idempotent collect and reply, retention, cost booking.
+
+### Contest on all networks (T27-T32, revised in v5)
+- T30 also drafts one numbered carousel post per Meta network (no names, see T28 policy).
+- T31 also counts comment votes on those posts through the T49 comment reader (one vote per account
+  per network, digits 1..N only), adds the Telegram poll counts and shows the author the total;
+  commenter accounts are not stored after the result. Depends additionally on T49.
+- No prizes; if a prize is ever added, contest terms and the Meta disclaimer are required first.
 
 ## Later (not yet broken down)
 Phase 2b video (ADR 012), phase 3 metrics and email (ADR 013), phase 4 shop (ADR 014): started only when
