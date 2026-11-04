@@ -48,8 +48,8 @@ jobs:
       - name: Build site
         env:
           SITE_REQUIRE_LEGAL: 'true'
-          # Keep false until both approvals are recorded in the T41 PR.
-          SITE_INDEXABLE: 'false'
+          # Legal approvals recorded in PR #80; T41b excludes test posts before indexing.
+          SITE_INDEXABLE: 'true'
           IMPRESSUM_NAME: ${{ secrets.IMPRESSUM_NAME }}
           IMPRESSUM_STREET: ${{ secrets.IMPRESSUM_STREET }}
           IMPRESSUM_CITY: ${{ secrets.IMPRESSUM_CITY }}
