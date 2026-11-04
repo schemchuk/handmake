@@ -1,12 +1,12 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T41 — implementation ready for independent review; go-live approvals pending.
-- **Branch:** `feat/T41-legal-pages`.
-- **Last commit:** see `git log -1` — feat: add legal pages and publication checks.
-- **Next step:** Review the T41 PR. Site tests 41/41 passed outside sandbox; final added sitemap/build-policy test passed (13/13 legal tests). Site typecheck, lint, formatting, build and actionlint passed. Workspace typecheck fails in unchanged `apps/publisher/test/show-publish.test.ts:354,356` (File/FormDataEntryValue types). Review `docs/legal/services.de.html` with Volodymyr and the author, record both legal-page approvals, resolve the test-channel content note, then enable indexing in a follow-up commit. Sensitive merge needs Volodymyr's explicit OK. After T41: T47 in a fresh session.
-- **Blocked on:** Both rendered legal-page confirmations and sensitive merge approval; no deployment performed. T26a-c wait on H8; T48 waits on H15.
-- **Open questions for Volodymyr:** Confirm legal additions and final rendered pages with the author; decide whether existing test-channel posts may be indexed. Draft retention policy remains open. T47 must verify the show finish notification.
+- **Current task:** T41 merged (PR #80, `5b6d017`); legal pages approved by Volodymyr and the author 2026-11-04.
+- **Branch:** `main`.
+- **Last commit:** see `git log -1` — docs: record T41 merge and handoff.
+- **Next step:** Volodymyr runs the Site workflow (`gh workflow run site.yml --ref main`); then verify live `/impressum/`, `/datenschutz/`, `/uk/` versions, footer links, analytics beacon and HTTP 404 for an unknown URL. Then T47 (claude-code with Volodymyr), then Codex T40 starting with the PR #80 review notes (first: review `89640da`).
+- **Blocked on:** Site deploy needs Volodymyr (agent deploy not permitted). Indexing stays off (`SITE_INDEXABLE: 'false'`) until the test-channel content note is decided. T26a-c wait on H8; T48 waits on H15.
+- **Open questions for Volodymyr:** may existing test-channel posts be indexed (gates `SITE_INDEXABLE`)? fal.ai DPA accepted (Datenschutz names SCCs)? §25 TDDDG for the analytics beacon (legal check). Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

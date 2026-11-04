@@ -399,6 +399,11 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
   the site is live stay unchanged.
 - Acceptance: a published post links to a page that exists after the rebuild; flag off → unchanged ops.
 - Tests: URL builder, render per channel, flag.
+- Review notes from PR #80: (0) first review commit `89640da` (Datenschutz additions moved before
+  `m15`, analytics module rewritten; written by the reviewer at Volodymyr's request, merged without
+  independent review); (1) `apps/site/src/lib/legal.ts` resolves `docs/legal/` from
+  `findRepoRoot(process.cwd())` and ignores `SITE_REPO_ROOT`, unlike `site-data.ts`; (2) the CSS check
+  in `build-policy.ts` rejects any backslash with a generic error; name the file, never echo content.
 
 ### T41 — Legal pages and go-live (`site`) · Sensitive
 - Depends on: T40, H11
