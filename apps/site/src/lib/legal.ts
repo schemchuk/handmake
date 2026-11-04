@@ -24,9 +24,13 @@ export function renderLegal(
   if (missing.length && (env.SITE_REQUIRE_LEGAL === 'true' || env.SITE_INDEXABLE === 'true')) {
     throw new Error(`Missing legal fields: ${missing.join(', ')}`);
   }
-  const source =
-    readFileSync(`${directory}${kind}.de.html`, 'utf8') +
-    (kind === 'datenschutz' ? readFileSync(`${directory}services.de.html`, 'utf8') : '');
+  let source = readFileSync(`${directory}${kind}.de.html`, 'utf8');
+  if (kind === 'datenschutz') {
+    // Project additions go before the closing generator sections (changes, glossary, attribution).
+    const marker = '<h2 id="m15">';
+    if (!source.includes(marker)) throw new Error('Datenschutz insertion point not found');
+    source = source.replace(marker, readFileSync(`${directory}services.de.html`, 'utf8') + marker);
+  }
   return source.replace(/\{\{(IMPRESSUM_[A-Z]+)\}\}/g, (_, key: string) =>
     escape(env[key] || `[${key}]`),
   );

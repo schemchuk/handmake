@@ -13,9 +13,11 @@ describe('legal publication policy', () => {
       for (const field of legalFields) expect(page).toContain(`Fixture&lt;&amp;&quot; ${field}`);
       expect(page).not.toContain('{{IMPRESSUM_');
     }
-    expect(renderLegal('datenschutz', env)).toContain(
-      'Erstellt mit kostenlosem Datenschutz-Generator',
-    );
+    const privacy = renderLegal('datenschutz', env);
+    expect(privacy).toContain('Erstellt mit kostenlosem Datenschutz-Generator');
+    const additions = privacy.indexOf('id="mServices"');
+    expect(additions).toBeGreaterThan(privacy.indexOf('id="m136"'));
+    expect(additions).toBeLessThan(privacy.indexOf('id="m15"'));
   });
   it('requires complete fields in production without disclosing any supplied value', () => {
     expect(() =>
