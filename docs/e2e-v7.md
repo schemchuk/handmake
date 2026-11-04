@@ -28,10 +28,26 @@ collection.
 | W2 | Collection texts from the form reach the site | pass | `/collections/` lists "Irisches Spitzenelement"; the collection page shows the DE title and description from the form. |
 | W3 | Work description | pass | Generated from the photos and caption (`provenance: ai-generated`, `describe-work-uk@1`, `humanize-de@1`). |
 
+| W4 | Repeat on 2026-11-04 after the D4 unblock: `/work` → "on a model" → new collection → 3 photos and caption → preview → publish (no channel announcement) | pass | Bot confirmed the publish; run [41858778611](https://github.com/schemchuk/handmake/actions/runs/41858778611); commit `ed53eed` adds work `01M6KJ8RHC6M3XY072Z980YZEM` and its collection; `/works/…`, `/uk/works/…` and the collection page return 200, the work is listed on `/works/`. |
+
+## Show
+
+Paid run approved by Volodymyr in chat (2026-11-04). Show `01M6KK8QCHCWS3CWGK1X2T9G2E` for work
+`01M6KJ8RHC6M3XY072Z980YZEM`, template "on a model", persona Lena, 3 originals.
+
+| # | Step | Result | Evidence |
+|---|---|---|---|
+| S1 | `/show` → work → template, persona, work photos → save → start | pass | Bot: "inputs saved", then "generation job dispatched" (17:37 local). |
+| S2 | Generation of the first image | fail | Show run [41859645677](https://github.com/schemchuk/handmake/actions/runs/41859645677) stopped after ~2 min. D1: draft `failed`, no outputs, pending attempt for `image-0` without a fal request id, no new `ai_costs` row, tenant generation lock still held. The cause is not logged (D6). |
+| S3 | Failure reaches the author | pass | Bot: "the run stopped … the operator checks possible unfinished costs", with "continue generation" and "refresh preview" buttons. |
+
 ## Defects found
 
 | # | Defect | Evidence | Fix task |
 |---|---|---|---|
 | D1 | Flaky bot test: `show-transport.test.ts` timed out (5000 ms) on a docs-only push; the second failure follows from the first. The same code passed CI before. | CI run [41849567117](https://github.com/schemchuk/handmake/actions/runs/41849567117) on `db308a7`. | to be added after T47 |
 | D2 | After Publish the bot says "the result will come here as a message", but the result goes only to the fixed `AUTHOR_CHAT_ID` chat, not to the chat that pressed Publish, and it is a technical English line (`published <id> to telegram`). | Post `01M6GWMCGBP2CT99VA1ZGZFBKP` published from Volodymyr's chat; the line arrived in the author's chat only (Volodymyr). | to be added after T47 |
+| D4 | A pending "Edit" survives publish and `/discard`: post `01M6GWMCGBP2CT99VA1ZGZFBKP` reached `published` with `pending_edit = 'de'`, so every later text in that chat went to the edit handler and got `editConflictText`; the `/work` collection form was never read. Only a successful edit clears the flag. | D1 query 2026-11-04: one row, `status = published`, `pending_edit = de`. Unblocked by hand with Volodymyr's OK (`UPDATE … SET pending_edit = NULL` on that id, 1 change). | to be added after T47 |
+| D5 | A show that waits for a new work (`awaitingWorkId`) stays stuck when that work draft is discarded and the work is published from a fresh draft: `/show` answers `showMissingWorkText`; only `/discard` + `/show` recovers. | Show draft `01M6KHW46GE0MH0T1GAXV20GSC` waited for discarded draft `01M6GX6M8S0QB4HHE3RDNNSN0J`; the work went out as `01M6KJ8RHC6M3XY072Z980YZEM`. | to be added after T47 |
+| D6 | A failed show run cannot be diagnosed: `show-cli.ts` logs only "Show execution stopped" and the fal adapter maps any non-OK HTTP answer to `provider` without the status code. | Run 41859645677 log; `packages/ai/src/fal-show-generator.ts` `#http`. | to be added after T47 |
 | D3 | `/work` "new collection" form does not say that its four lines describe the collection, not the work; Volodymyr took it for an unused form. | Form text `workFormText` in `apps/bot/src/texts.ts`; the work text comes from the caption. | to be added after T47 |

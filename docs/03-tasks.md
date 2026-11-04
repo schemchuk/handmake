@@ -1186,3 +1186,9 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 ## Later (not yet broken down)
 Phase 2b video (ADR 012), phase 3 metrics and email (ADR 013), phase 4 shop (ADR 014): started only when
 the T33 numbers show the channels are used. Mini App editor, scheduled publishing.
+
+Idea from Volodymyr (2026-11-04, T47 session), not yet a task: a "real model" show on the site,
+built from authentic photos of the work worn by Volodymyr, the author, or a faceless model (no
+identifiable face, so no consent paperwork), published without the AI label because nothing is
+generated. Needs a spec decision (show type, how authenticity is recorded in `provenance`) before
+it becomes a task.
