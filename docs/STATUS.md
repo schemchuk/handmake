@@ -4,7 +4,7 @@
 - **Current task:** T47 — end-to-end check (claude-code with Volodymyr). T41b merged as PR #81.
 - **Branch:** `main`.
 - **Last commit:** see `git log -1` — docs: record T41b merge and handoff.
-- **Next step:** Site deploy (Actions → Site on `main`) to make indexing live, then check robots, sitemap without the two test posts, no `noindex`. Then T47 in a fresh claude-code session with Volodymyr (review note from PR #81 in T47). After T47: Codex T40, including the PR #81 review notes.
+- **Next step:** T47 in a fresh claude-code session with Volodymyr (review note from PR #81 in T47). After T47: Codex T40, including the PR #81 review notes. Live check 2026-11-04 after Site run 41848654052 (deployment 4ebaf9bf): robots `Allow` + sitemap, no `noindex`, no beacon, both test posts absent from sitemap and 404 on the deployment; the custom domain still served one stale cached copy of `/uk/posts/01jbca1b2c3d4e5f6g7h8j9k0m/` (`x-robots-tag: noindex`, `s-maxage=604800`) until a zone cache purge of that URL.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** resolved 2026-11-04: test posts hidden via T41b, then indexing on; analytics beacon replaced by Cloudflare zone statistics (§25 TDDDG); fal.ai DPA with SCCs is part of its terms. Author should reread the changed analytics paragraph in the Datenschutzerklärung. Draft retention policy remains open. T47 must verify the show finish notification.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
