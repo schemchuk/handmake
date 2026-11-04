@@ -5,13 +5,13 @@ import { promisify } from 'node:util';
 
 import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
-import type { Show } from '@handmake/core';
+import type { Post, Show } from '@handmake/core';
 
 import { createPortfolioFixture, ids } from './fixtures/portfolio';
 
 const exec = promisify(execFile);
 const siteDir = path.resolve(import.meta.dirname, '..');
-async function build(root: string, dist: string) {
+async function build(root: string, dist: string, indexable = false) {
   return exec('pnpm', ['exec', 'astro', 'build', '--outDir', dist], {
     cwd: siteDir,
     timeout: 60_000,
@@ -20,7 +20,7 @@ async function build(root: string, dist: string) {
       ...process.env,
       SITE_REPO_ROOT: root,
       SITE_TENANT: 'fixture',
-      SITE_INDEXABLE: 'false',
+      SITE_INDEXABLE: String(indexable),
       SITE_REQUIRE_LEGAL: 'true',
       IMPRESSUM_NAME: 'Legal Fixture Name',
       IMPRESSUM_STREET: 'Legal Fixture Street',
@@ -200,3 +200,48 @@ describe('portfolio fixture build', () => {
     }
   }, 60_000);
 });
+
+it('excludes flagged posts and their media from an indexable build and sitemap', async () => {
+  const { root, dist, store } = await createPortfolioFixture();
+  try {
+    const post: Post = {
+      id: '01JBCA1B2C3D4E5F6G7H8J9K0M',
+      tenant: 'fixture',
+      date: '2026-11-04T10:00:00Z',
+      publishAt: 'now',
+      type: 'free',
+      photos: ['photo.jpg'],
+      channels: ['telegram'],
+      versions: { de: { provenance: 'human' }, uk: { provenance: 'human' } },
+      texts: { de: 'Hidden fixture text', uk: 'Hidden fixture text' },
+      siteExcluded: true,
+    };
+    await store.savePost(post, [{ fileName: 'photo.jpg', data: Buffer.from('hidden') }]);
+    const publicPost = {
+      ...post,
+      id: '01JBCA1B2C3D4E5F6G7H8J9K0N',
+      photos: [],
+      siteExcluded: false,
+      texts: { de: 'Public fixture text', uk: 'Public fixture text' },
+    };
+    await store.savePost(publicPost, []);
+    await build(root, dist, true);
+    const sitemap = await readFile(path.join(dist, 'sitemap.xml'), 'utf8');
+    expect(sitemap).toContain(publicPost.id.toLowerCase());
+    expect(sitemap).not.toContain(post.id.toLowerCase());
+    for (const prefix of ['', 'uk/']) {
+      const home = await html(dist, prefix);
+      expect(home).not.toContain('Hidden fixture text');
+      expect(home).not.toContain('noindex');
+      await expect(
+        access(path.join(dist, prefix, 'posts', post.id.toLowerCase())),
+      ).rejects.toThrow();
+      expect(await html(dist, prefix + 'posts/' + publicPost.id.toLowerCase())).toContain(
+        'Public fixture text',
+      );
+    }
+    await expect(access(path.join(dist, 'media', post.id.toLowerCase()))).rejects.toThrow();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}, 60_000);

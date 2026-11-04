@@ -157,6 +157,7 @@ export async function runPublish(
     // Re-running on another day reuses the original post folder.
     const existing = await store.readPost(post.tenant, post.id);
     if (existing) post.date = existing.date;
+    if (env.SITE_EXCLUDE_POST === 'true' || existing?.siteExcluded) post.siteExcluded = true;
     await store.savePost(post, photos);
   }
   const git = deps.git ?? createGitCommitter({ repoDir: root, env });

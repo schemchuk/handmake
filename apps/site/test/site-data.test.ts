@@ -35,6 +35,7 @@ describe('visiblePosts', () => {
     post('C', 'reminder', ['uk']),
     post('D', 'wotw-poll', ['uk']),
     post('E', 'free', ['uk']),
+    { ...post('F', 'free', ['de', 'uk']), siteExcluded: true },
   ];
 
   it('keeps only blog posts and records their languages', () => {

@@ -162,7 +162,7 @@ describe('runPublish', () => {
     const result = await runPublish(payloadPath, {
       cwd: repoDir,
       root: repoDir,
-      env: {},
+      env: { SITE_EXCLUDE_POST: 'true' },
       now,
       mediaSource: await mediaSourceWithFixture(),
       registry: makeRegistry(adapter),
@@ -176,6 +176,7 @@ describe('runPublish', () => {
 
     // Ledger on disk is done and carries the remote ids.
     const store = new GitRepoContentStore({ rootDir: repoDir });
+    expect((await store.readPost(tenantId, draftId))?.siteExcluded).toBe(true);
     const ledger = await store.readLedger(tenantId, draftId);
     expect(ledger?.channels.telegram).toEqual({
       status: 'done',
@@ -218,6 +219,7 @@ describe('runPublish', () => {
       logger: () => {},
     });
     expect(rerun.skipped).toEqual(['telegram']);
+    expect(rerun.post.siteExcluded).toBe(true);
     expect(adapter.deliveries).toHaveLength(1);
     expect(rerun.ledger.channels.telegram?.remoteIds).toEqual([
       'telegram-msg-1-0',

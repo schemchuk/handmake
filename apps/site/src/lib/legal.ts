@@ -8,7 +8,6 @@ export const legalFields = [
   'IMPRESSUM_CITY',
   'IMPRESSUM_EMAIL',
 ] as const;
-const directory = path.join(findRepoRoot(process.cwd()), 'docs/legal/');
 const escape = (value: string) =>
   value.replace(
     /[&<>"']/g,
@@ -20,6 +19,7 @@ export function renderLegal(
   kind: 'impressum' | 'datenschutz',
   env: NodeJS.ProcessEnv = process.env,
 ): string {
+  const directory = path.join(env.SITE_REPO_ROOT ?? findRepoRoot(process.cwd()), 'docs/legal/');
   const missing = legalFields.filter((key) => !env[key]?.trim());
   if (missing.length && (env.SITE_REQUIRE_LEGAL === 'true' || env.SITE_INDEXABLE === 'true')) {
     throw new Error(`Missing legal fields: ${missing.join(', ')}`);

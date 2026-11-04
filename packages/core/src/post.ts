@@ -48,6 +48,7 @@ export const frontmatterSchema = z
     date: isoDateTime,
     publishAt: z.union([z.literal('now'), isoDateTime]),
     type: postTypeSchema,
+    siteExcluded: z.boolean().optional(),
     photos: z.array(z.string().min(1)),
     channels: z.array(z.string().min(1)),
     poll: pollSchema.optional(),
