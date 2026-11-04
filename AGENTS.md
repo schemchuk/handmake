@@ -7,8 +7,8 @@
 
 ## Project
 "Faden und Stimmung" is a Telegram channel (already created, with our bot as channel admin) and an Instagram account for a weekly handmade circle in Landshut, Germany, led by Volodymyr's wife as a volunteer. Volodymyr is the technical side; she is the face of the project and decides tone and what gets published. Both participate voluntarily. Purposes:
-1. Real use: informing and attracting participants.
-2. Volodymyr's IT portfolio: must show real engineering (automation, CI/CD, documentation, clean repo), not a demo.
+1. Real use (changed 2026-11-04, spec v7): grow a social following for the author's brand across Instagram, Facebook, Threads and Telegram, turn it into email leads, monetize later (shop). The circle already has enough participants.
+2. Volodymyr's IT portfolio, as a by-product: must show real engineering (automation, CI/CD, documentation, clean repo), not a demo.
 3. Future product: the same platform offered to other volunteer groups and bloggers (multi-tenant, any social network). Not developed now, but the architecture must be ready for it: ports and adapters, tenant-aware data, pluggable channels and content stores. Commercialization of the circle itself stays a stub. Market research lives in docs/research/.
 
 Phases:
@@ -31,7 +31,7 @@ Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of
 - Germany/GDPR applies. A public site needs Impressum and Datenschutzerklärung. You are not a lawyer: flag legal questions to me, never present generated legal text as final.
 - Everything must be automated: content -> Telegram / Instagram -> website, triggered by CI. My wife writes; the pipeline does the rest.
 - Publishing must be idempotent: re-running CI never posts the same item twice.
-- Channels are pluggable: only Telegram and Instagram are built now, but nothing in the core may depend on a specific network.
+- Channels are pluggable: Telegram now, Instagram, Facebook and Threads next (built together), but nothing in the core may depend on a specific network.
 - Do NOT assume the tech stack. It is decided in the interview, from my goals and trade-offs you present.
 
 ## Environment
