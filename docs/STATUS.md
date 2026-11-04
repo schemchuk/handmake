@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T47 — end-to-end check (claude-code with Volodymyr). T41b merged as PR #81.
+- **Active agent:** codex
+- **Current task:** T47a — pending edit survives publish and discard. T47 done 2026-11-04 (docs/e2e-v7.md).
 - **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: record T41b merge and handoff.
-- **Next step:** T47 in a fresh claude-code session with Volodymyr (review note from PR #81 in T47). After T47: Codex T40, including the PR #81 review notes. Live check 2026-11-04 after Site run 41848654052 (deployment 4ebaf9bf): robots `Allow` + sitemap, no `noindex`, no beacon, both test posts absent from sitemap and 404 on the deployment; the custom domain still served one stale cached copy of `/uk/posts/01jbca1b2c3d4e5f6g7h8j9k0m/` (`x-robots-tag: noindex`, `s-maxage=604800`) until a zone cache purge of that URL.
+- **Last commit:** see `git log -1` — docs: close T47, plan fixes T47a-T47f.
+- **Next step:** Codex T47a in a fresh session, then T47b-T47f (fixes from T47, defects D1-D8 in docs/e2e-v7.md), then T40 including the PR #81 review notes. Reviewer of each: claude-code.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
-- **Open questions for Volodymyr:** resolved 2026-11-04: test posts hidden via T41b, then indexing on; analytics beacon replaced by Cloudflare zone statistics (§25 TDDDG); fal.ai DPA with SCCs is part of its terms. Author should reread the changed analytics paragraph in the Datenschutzerklärung. Draft retention policy remains open. T47 must verify the show finish notification.
+- **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

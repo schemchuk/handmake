@@ -53,15 +53,31 @@ GitHub showed show runs 41862598252 and 41864548868 and publish run 41866334659 
 minutes after the Worker had received all their calls; the Worker tail and D1 are the evidence for
 S5–S7.
 
+## Site rebuild, costs, operator controls
+
+| # | Step | Result | Evidence |
+|---|---|---|---|
+| R1 | Site rebuild after each publish | pass | `site / deploy` ran inside every publish run (post, work, show); the new pages were live within minutes (P6, W4, S7). |
+| R2 | `/cost` | pass | Bot, November: total 2.2264 EUR (show-image 0.90, show-video 1.20, text-generation 0.0485, translation 0.0779; 0.70 per show for 3 shows) equals the `ai_costs` sums in D1. fal bills $0.08 per image; the ledger books the €0.10 plan price, so it errs high. |
+| R3 | Operator failure alert | pass (automated) | Not forced live, to keep the live channel clean (as T17 A8). Tests `apps/publisher/test/telegram-notifier.test.ts` "sends the message to the operator chat id", "routes author and operator to their own chat ids"; `apps/publisher/test/publish.test.ts` "marks the channel failed mid-delivery …", "never lets a failing notifier change the publish outcome". |
+| R4 | `/show_status` | pass | `{"id":"01M6KK8QCHCWS3CWGK1X2T9G2E","version":33,"state":"published","cancelled":false,"reconciled":0,"outputs":["image-0","image-1","image-2","video"]}`, matches D1. |
+
+## Summary
+
+Every flow works end to end in production: post, work and collection, a paid show through
+approval to the site and Telegram, site rebuild, `/cost`, `/show_status`. Eight defects, none of
+them lost content or money; D4 and D7 each needed a manual step (a D1 fix, a second "continue
+generation"). Fix tasks T47a–T47f in docs/03-tasks.md, before T40.
+
 ## Defects found
 
 | # | Defect | Evidence | Fix task |
 |---|---|---|---|
-| D1 | Flaky bot test: `show-transport.test.ts` timed out (5000 ms) on a docs-only push; the second failure follows from the first. The same code passed CI before. | CI run [41849567117](https://github.com/schemchuk/handmake/actions/runs/41849567117) on `db308a7`. | to be added after T47 |
-| D2 | After Publish the bot says "the result will come here as a message", but the result goes only to the fixed `AUTHOR_CHAT_ID` chat, not to the chat that pressed Publish, and it is a technical English line (`published <id> to telegram`). | Post `01M6GWMCGBP2CT99VA1ZGZFBKP` published from Volodymyr's chat; the line arrived in the author's chat only (Volodymyr). | to be added after T47 |
-| D4 | A pending "Edit" survives publish and `/discard`: post `01M6GWMCGBP2CT99VA1ZGZFBKP` reached `published` with `pending_edit = 'de'`, so every later text in that chat went to the edit handler and got `editConflictText`; the `/work` collection form was never read. Only a successful edit clears the flag. | D1 query 2026-11-04: one row, `status = published`, `pending_edit = de`. Unblocked by hand with Volodymyr's OK (`UPDATE … SET pending_edit = NULL` on that id, 1 change). | to be added after T47 |
-| D5 | A show that waits for a new work (`awaitingWorkId`) stays stuck when that work draft is discarded and the work is published from a fresh draft: `/show` answers `showMissingWorkText`; only `/discard` + `/show` recovers. | Show draft `01M6KHW46GE0MH0T1GAXV20GSC` waited for discarded draft `01M6GX6M8S0QB4HHE3RDNNSN0J`; the work went out as `01M6KJ8RHC6M3XY072Z980YZEM`. | to be added after T47 |
-| D6 | A failed show run cannot be diagnosed: `show-cli.ts` logs only "Show execution stopped" and the fal adapter maps any non-OK HTTP answer to `provider` without the status code. | Run 41859645677 log; `packages/ai/src/fal-show-generator.ts` `#http`. | to be added after T47 |
-| D7 | The show `checkpoint` right after a fresh generation sometimes fails with 409; the same checkpoint succeeds on "continue generation". 2 of 5 slots failed (image-0 of the first run, the video). `flow.accept` threw, but the transport `catch` drops the error, so the cause is unknown. Each failure needs an extra manual resume and leaves a paid result unbooked until then. | Worker tail 2026-11-04 ~16:03 UTC: `checkpoint` 409 "show transport operation rejected" after `raw-put` 200; D1/R2 state in S4–S5. | to be added after T47 |
-| D8 | Shows and works published from a test-channel run reach the site: only posts get `siteExcluded`. | S9. | to be added after T47 |
-| D3 | `/work` "new collection" form does not say that its four lines describe the collection, not the work; Volodymyr took it for an unused form. | Form text `workFormText` in `apps/bot/src/texts.ts`; the work text comes from the caption. | to be added after T47 |
+| D1 | Flaky bot test: `show-transport.test.ts` timed out (5000 ms) on a docs-only push; the second failure follows from the first. The same code passed CI before. | CI run [41849567117](https://github.com/schemchuk/handmake/actions/runs/41849567117) on `db308a7`. | see Summary |
+| D2 | After Publish the bot says "the result will come here as a message", but the result goes only to the fixed `AUTHOR_CHAT_ID` chat, not to the chat that pressed Publish, and it is a technical English line (`published <id> to telegram`). | Post `01M6GWMCGBP2CT99VA1ZGZFBKP` published from Volodymyr's chat; the line arrived in the author's chat only (Volodymyr). | see Summary |
+| D4 | A pending "Edit" survives publish and `/discard`: post `01M6GWMCGBP2CT99VA1ZGZFBKP` reached `published` with `pending_edit = 'de'`, so every later text in that chat went to the edit handler and got `editConflictText`; the `/work` collection form was never read. Only a successful edit clears the flag. | D1 query 2026-11-04: one row, `status = published`, `pending_edit = de`. Unblocked by hand with Volodymyr's OK (`UPDATE … SET pending_edit = NULL` on that id, 1 change). | see Summary |
+| D5 | A show that waits for a new work (`awaitingWorkId`) stays stuck when that work draft is discarded and the work is published from a fresh draft: `/show` answers `showMissingWorkText`; only `/discard` + `/show` recovers. | Show draft `01M6KHW46GE0MH0T1GAXV20GSC` waited for discarded draft `01M6GX6M8S0QB4HHE3RDNNSN0J`; the work went out as `01M6KJ8RHC6M3XY072Z980YZEM`. | see Summary |
+| D6 | A failed show run cannot be diagnosed: `show-cli.ts` logs only "Show execution stopped" and the fal adapter maps any non-OK HTTP answer to `provider` without the status code. | Run 41859645677 log; `packages/ai/src/fal-show-generator.ts` `#http`. | see Summary |
+| D7 | The show `checkpoint` right after a fresh generation sometimes fails with 409; the same checkpoint succeeds on "continue generation". 2 of 5 slots failed (image-0 of the first run, the video). `flow.accept` threw, but the transport `catch` drops the error, so the cause is unknown. Each failure needs an extra manual resume and leaves a paid result unbooked until then. | Worker tail 2026-11-04 ~16:03 UTC: `checkpoint` 409 "show transport operation rejected" after `raw-put` 200; D1/R2 state in S4–S5. | see Summary |
+| D8 | Shows and works published from a test-channel run reach the site: only posts get `siteExcluded`. | S9. | see Summary |
+| D3 | `/work` "new collection" form does not say that its four lines describe the collection, not the work; Volodymyr took it for an unused form. | Form text `workFormText` in `apps/bot/src/texts.ts`; the work text comes from the caption. | see Summary |

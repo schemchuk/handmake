@@ -1078,6 +1078,9 @@ T26c (Instagram, Facebook, Threads) → T48 (email and lead magnet) → T49 (com
 (contest on all networks) → T33, T34. Owner codex, reviewer claude-code unless stated; each PR under
 ~400 changed non-test lines (ADR 009). Fixes found by T47 are inserted right after it.
 
+T47a-T47f added 2026-11-04 from the T47 check (docs/e2e-v7.md, defects D1-D8); they run after T47,
+before T40.
+
 T41 changes in v5: depends on H11 and H14 only (not on T40); scope as below.
 
 T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
@@ -1119,6 +1122,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: page build tests, masking, third-party host check, 404.
 
 ### T47 — End-to-end check of what exists · Owner: claude-code with Volodymyr · Reviewer: Volodymyr
+- Status: done 2026-11-04, record in docs/e2e-v7.md; defects D1-D8 became T47a-T47f.
 - Depends on: T41
 - Change: walk every live flow once in production and record the result in `docs/e2e-v7.md`: post
   (UA → DE, preview, edit, publish to Telegram and site), work and collection, a show run through
@@ -1130,6 +1134,56 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Review notes from PR #81: check whether a show published from a test run can reach the site
   (shows do not carry `siteExcluded`).
 - Tests: n/a (manual check).
+
+### T47a — Pending edit survives publish and discard (D4, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T47
+- Change: clear `pending_edit` whenever a draft leaves `collecting`/`ready` (publishing claim,
+  discard, show/work hand-offs) and ignore a pending edit whose draft is no longer editable, so a
+  stale flag can never capture the chat's text messages. Add a D1 migration only if needed.
+- Acceptance: press Edit DE, then Publish without sending text: the next text in that chat reaches
+  `/work` or a new draft, not `editConflictText`.
+- Tests: publish with an armed edit; discard with an armed edit; stale flag on a published draft.
+
+### T47b — Publish result reaches the chat that approved (D2, `publisher`, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T47
+- Change: after the signed published callback the bot sends a short Ukrainian result to the chat
+  that pressed Publish/approve (post, work, show), with the site link when there is one. The
+  publisher's `author` notice stays for `AUTHOR_CHAT_ID` but becomes Ukrainian and readable.
+- Acceptance: publishing from a non-author allow-listed chat gives that chat the result message.
+- Tests: callback → message to the stored chat id; duplicate callback sends once.
+
+### T47c — Diagnosable show failures and the checkpoint 409 (D6, D7, `publisher`, `ai`, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T47
+- Change: (1) log a sanitized cause in `show-cli.ts` and the transport `catch` (error class and
+  message, fal HTTP status; never tokens, URLs with keys, or media); (2) enable Worker
+  `[observability]` logs in `apps/bot/wrangler.toml`; (3) find and fix why `checkpoint` right after
+  a fresh generation threw in 2 of 5 slots on 2026-11-04 (image-0 after ~9 s, video after ~100 s)
+  while the same checkpoint passed on resume.
+- Acceptance: a failed run names its cause in the Actions or Worker log; a test reproduces the D7
+  path and passes after the fix.
+- Tests: error logging redaction; the reproduced checkpoint case.
+
+### T47d — Test-run shows and works stay off the site (D8, `publisher`, `site`)
+- Owner: codex · Reviewer: claude-code · Depends on: T47
+- Change: apply `SITE_EXCLUDE_POST`/`siteExcluded` to shows and works as T41b did for posts; the
+  site filters them from lists, pages, media and the sitemap.
+- Acceptance: a test-channel show or work run commits content with `siteExcluded: true` and has no
+  site page.
+- Tests: publisher marks shows/works; site filters them.
+
+### T47e — Smaller UX fixes (D3, D5, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T47a
+- Change: (1) the `/work` new-collection form text says the four lines describe the collection,
+  and the work text comes from the photo caption; (2) a show waiting for a new work whose draft was
+  discarded offers the work list again instead of `showMissingWorkText`.
+- Acceptance and tests: form text test; discarded awaited work → selection menu.
+
+### T47f — Flaky show transport test (D1, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T47
+- Change: make `apps/bot/test/show-transport.test.ts` "runs grants, private source reads, journal,
+  raw upload, checkpoint and separate marked storage" deterministic (or raise its timeout with a
+  reason); it timed out at 5000 ms on CI run 41849567117.
+- Tests: the suite passes 10 consecutive local runs.
 
 ### T26a — Instagram adapter · revised in v5
 - Owner: codex · Reviewer: claude-code · Depends on: T25, T40, H8 · Sensitive: new secrets
