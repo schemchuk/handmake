@@ -2,9 +2,9 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v6 (2026-10-30).** Previous: approved v5 (2026-10-28).
-Source: docs/00-interview.md, rounds 0-5, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v5 are listed in section 14.
+Status: **approved v7 (2026-11-04).** Previous: approved v6 (2026-10-30).
+Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
+Changes from v6 are listed in section 14.
 
 ## 1. Problem, vision and goals
 
@@ -29,15 +29,28 @@ pillows and embroideries, small appliqués and accessories) on AI-generated, fic
 works are shown; every generated image is labelled. The audience is the whole German-speaking area
 (DE/AT/CH); the circle in Landshut is one small page on the site.
 
-Goals, in priority order (unchanged from v4, confirmed 2026-10-28, Q10):
-1. **Portfolio.** Show businesses in Germany/EU that Volodymyr can automate a real process end to end
-   as a full-stack developer: bot, AI steps, publishing pipeline, media generation, CI/CD, tests, docs.
-2. **Real use and audience.** Inform and attract participants, entertain and grow a lead base.
-   Targets after about 3 months: 20 participants in the studio, 160 Telegram subscribers, 1000+
-   Instagram followers.
+**Vision v7 (viability check, 2026-11-04).** The circle in Landshut already has enough
+participants. The project now grows a social following for the brand across Instagram, Facebook,
+Threads and Telegram, turns followers into email leads through the site, and later monetizes them
+(for example an online shop). Legal safety comes first: nothing goes live that invites an Abmahnung.
+
+Goals, in priority order (changed 2026-11-04, interview round 6):
+1. **Audience and the author's business.** Grow followers across the networks and an email list for
+   a later shop. Every new task answers "how does this add followers or save the author's time?".
+   Targets after about 3 months: 160 Telegram subscribers, 1000+ Instagram followers (the
+   participant target is dropped).
+2. **Portfolio**, as a by-product: a live project with a real audience shows businesses in
+   Germany/EU that Volodymyr can automate a real process end to end (bot, AI steps, publishing,
+   media generation, CI/CD, tests, docs). Verification effort follows the risk of a change, not the
+   maximum for every step.
 3. **Resellable product.** The circle is the reference case of a platform for bloggers and groups. Not
    sold now, but the design must be ready for it (section 12) and the case must be convincing.
 4. **Monetization** of the author's work: designed now (section 8), switched on later.
+
+**Checkpoints.** First after 4 published shows (about mid-December 2026): do shows earn more views
+and new followers than ordinary work posts? If not, no further investment in show generation. Main
+check on 2027-01-21: follower counts per network. If the targets are far off, new features stop and
+the time goes into maintenance and the portfolio case.
 
 ## 2. Users and roles
 
@@ -124,7 +137,13 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   - **Winner.** Most votes. No votes, an unreadable result or a tie: the author picks among the (tied)
     candidates with buttons in the bot, and the post says so (changed 2026-10-28, replaces "AI picks").
   - **Result.** A result post announcing the winner is drafted for the author's Publish, for all
-    channels (Instagram has no poll API, so it gets the result post only).
+    channels.
+  - **Other networks (v7).** Instagram, Facebook and Threads have no poll API. Each gets one numbered
+    carousel post of the candidates; a vote is a comment with the work number. The bot reads the
+    comments of that post through the network API, counts one vote per account per network, adds the
+    Telegram poll counts and shows the author the total; she decides the winner. Commenter accounts
+    are used only for counting and are never stored after the result. No prizes, so no contest terms
+    are needed; adding a prize later needs terms and the Meta disclaimer first.
   - With fewer than 2 entries in a week, no poll is drafted and the author is told.
 
 ### Shows and AI budget (phase 2a, after the site)
@@ -141,6 +160,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     to the result, because the author checks that the embroidery pattern is unchanged.
   - **Labelling.** Every generated image carries a visible and machine-readable AI marker (EU AI Act
     art. 50); captions say "KI-generiertes Model".
+  - **Real people later (Q16).** If the author or Volodymyr ever appear in a show, real photos get
+    their own content type so the site and channels always tell generated from real images.
 - **F32** AI cost budget per tenant: a monthly target of 20 EUR with a 5 EUR tolerance. At 20 EUR the
   operator is warned; at 25 EUR new shows wait until next month. Every AI call (text, image, video) is
   booked in the ledger with its cost. The operator has a cost command (spent this month, per show, per
@@ -166,7 +187,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   - **Circle** (`/kreis/`): one page (what, when, where in Landshut, link to the Telegram channel). No
     participants' works and no contest results on the site (changed v6; consent and brand focus).
   - **Blog**: published posts.
-  - **Legal**: Impressum and Datenschutzerklärung (drafts for Volodymyr to verify, see Q2).
+  - **Legal**: Impressum and Datenschutzerklärung, linked from every page footer (see Q2 and
+    section 8).
 - **F23** The site is rebuilt and deployed automatically after each publish, on the custom domain
   fadenundstimmung.de. Site look and texts come from tenant configuration (theme, logo, languages), so
   another tenant gets its own site without code changes.
@@ -175,13 +197,33 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 - **F24** Collections and works are content types in the content store, created through the bot like
   posts (the author sends photos and a short note; AI drafts the description; she approves).
 
+### Social networks (phase 1b, v7)
+- **F33** Instagram, a Facebook Page and Threads are built together as three channel adapters behind
+  one Meta app and one setup step (H8), not one by one. All three get the same German copy of each
+  site-worthy item with the canonical link where the network allows it (otherwise "link in bio").
+  Caption rules (ported from instagram-agent-skill, MIT, with attribution): the first ~125 characters
+  carry the message, at most 5 hashtags, no stock phrases. Shows and multi-photo posts go out as
+  carousels in 4:5 (1080x1350). Every profile links to the Impressum.
+- **F34** Comment inbox: the bot collects new comments on our own posts from Instagram, Facebook and
+  Threads and sends them to the author in Telegram with a Ukrainian translation and a drafted German
+  reply (reply rules ported from `/ig-reply`). She sends, edits or skips; nothing is posted without
+  her press. Comment text and the commenter's handle are personal data of readers: kept only until
+  the comment is handled (at most 30 days), never in Git, listed in the Datenschutzerklärung.
+- Weekly planning and post-mortems (`/ig-plan`, `/ig-audit`) are not built: Volodymyr runs those
+  skills himself in Claude Code.
+
 ### Funnel and audience (phase 3)
 - **F25** Weekly audience metrics per channel (follower and subscriber counts, per-post reach where the
   API provides it) are collected without any personal data and shown to the operator and author.
+  Until then: Cloudflare Web Analytics on the site (cookieless, no consent banner) and manual
+  Telegram view counts per post.
 - **F26** Each channel and the site link to each other (cross-promotion), configured per tenant.
-- **F27** Email capture (phase 3, later): a sign-up form on the site via a ready email service with
-  double opt-in. Addresses live only in that service, never in the repo. Requires Volodymyr's explicit
-  approval (personal data) and an updated Datenschutzerklärung before it goes live.
+- **F27** Email capture: a sign-up form on the site via a ready email service with double opt-in
+  (EU hosting and a data processing agreement). Addresses live only in that service, never in the
+  repo. Lead magnet: a free embroidery pattern (PDF) by the author, sent after confirmation. Approved
+  in principle by Volodymyr (2026-11-04); goes live only with the updated Datenschutzerklärung.
+- **Funnel (v7):** networks (shows, works, contest) -> site page with one call to action -> email
+  sign-up -> Telegram channel as the warm step -> shop later, offered to the email list first.
 
 ### Monetization (phase 4, switched off)
 - **F28** A monetization switch per tenant (feature flag), off by default. Turning it on enables the
@@ -201,11 +243,11 @@ met (docs/e2e-mvp.md). Acceptance criteria for later phases are defined in the t
 | Phase | Content | Status |
 |---|---|---|
 | 1 | MVP: bot, translation, Telegram publishing, content repo | done |
-| 1b | F18 recurring posts (done), Instagram adapter, F19 contest (both after phase 2a) | in progress |
-| 2 | F22-F24, F31 website on fadenundstimmung.de: site, canonical links, legal pages | next (first) |
-| 2a | F30, F32 AI shows on virtual models, cost budget | after 2 |
-| 2b | F20-F21 video from the author's new works (the show video of F30 is the first use) | after 2a |
-| 3 | F25-F26 audience metrics and cross-promotion; F27 email capture (needs approval) | later |
+| 2 | F22-F24, F31 website on fadenundstimmung.de; legal pages and site analytics first | in progress |
+| 2a | F30, F32 AI shows on virtual models, cost budget | done (live check pending) |
+| 1b | F18 recurring posts (done); F33 Instagram, Facebook, Threads; F34 comment inbox; F19 contest | after the end-to-end check |
+| 3 | F27 email capture with lead magnet; F25-F26 metrics and cross-promotion | after the Meta channels |
+| 2b | F20-F21 video from the author's new works (the show video of F30 is the first use) | later |
 | 4 | F28-F29 monetization switch and shop | when the audience is large enough |
 | P | Offering for bloggers (business model decided after the circle case works, Q11) | later |
 
@@ -220,8 +262,9 @@ Presentation: a slide deck built from the author's photos and a guided Q&A, no t
 - **Stack:** TypeScript across bot, pipeline, site and video templates.
 - **Security:** secrets only in `.env` and GitHub Secrets / platform secret store; least-privilege tokens.
 - **Privacy:** GDPR applies. No participant or reader data in phases 1-2b. Texts and photos go to an
-  external AI API, which must be listed in the Datenschutzerklärung. F27 is the first feature that
-  stores personal data and needs explicit approval.
+  external AI API, which must be listed in the Datenschutzerklärung. Reader data appears only in F34
+  (comments, kept until handled) and F27 (email, held by the email service); both are listed in the
+  Datenschutzerklärung before they go live.
 - **AI transparency (flag, not legal advice):** AI-generated text, images and video are marked by
   `provenance`; whether public labelling is required (EU AI Act transparency duties) is checked before
   phase 2b.
@@ -233,7 +276,13 @@ Presentation: a slide deck built from the author's photos and a guided Q&A, no t
 ## 8. Monetization and legal prerequisites
 
 - Nothing paid is built before phase 4. The `offerings` config section stays empty until then.
-- Before F27 (email) and F29 (shop) go live, Volodymyr decides, with professional advice: the country
+- **Protection first (v7).** Before anything goes public: Impressum and Datenschutzerklärung from a
+  free generator by lawyers (not AI-written text), every processor listed, no third-party fonts,
+  embeds or trackers on the site, Impressum linked from every profile. AI-made images are labelled.
+- **Address.** While there are no sales, the Impressum uses the author's home address (Q2). At the
+  first sale: switch to an address service with a serviceable address and to lawyer-maintained legal
+  texts.
+- Before F29 (shop) goes live, Volodymyr decides, with professional advice: the country
   and form of business registration, tax status, consumer-law texts (terms, right of withdrawal),
   product-safety and packaging duties for shipped goods, and the updated privacy policy.
 - The volunteer status of the circle stays separate from the author's own shop.
@@ -241,7 +290,9 @@ Presentation: a slide deck built from the author's photos and a guided Q&A, no t
 ## 9. Non-goals and deferred features
 
 Not built now, but supported by design (a new channel = a new adapter, no core changes):
-- Facebook, Threads, TikTok, YouTube, X, Mastodon/Bluesky, nebenan.de, Meetup and others.
+- TikTok, YouTube, X, Mastodon/Bluesky, nebenan.de, Meetup and others (Facebook and Threads moved
+  into scope in v7, F33).
+- Automated planning, Stories and DMs; the instagram-agent-skill is used manually by Volodymyr.
 
 Non-goals in v6 (in addition to v5):
 - No fully AI-generated works or product images; only real works are shown (F30).
@@ -276,7 +327,9 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
   for knitted/embroidered items, and what a show really costs. Decided in a spike with real photos.
 - **Q9** Open (phase 2b): how the author hands a new work to the system for a video (photos, a clip,
   or both; one message or a guided flow).
-- **Q10** Resolved (2026-10-28): goal priority unchanged (portfolio first).
+- **Q10** Resolved again (2026-11-04): audience and the author's business first, portfolio as a
+  by-product (section 1).
+- **Q16** Deferred: real people in shows need a separate "real photo" content type (F30).
 - **Q11** Open (phase P): business model for bloggers (done-for-you setup vs self-service). Decides
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
@@ -330,14 +383,24 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 
 ## 13. Glossary
 
-- **Lead:** a person who agreed to hear from the author. Phases 1-2: channel followers and subscribers
-  (held by the networks, no data on our side). Phase 3: email subscribers via a ready service.
+- **Lead:** an email subscriber who confirmed the sign-up (double opt-in). Followers and channel
+  subscribers are the audience before that step (held by the networks, no data on our side).
 - **Double opt-in:** an email sign-up is only valid after the person confirms it via a link sent to
   that address (required practice in Germany).
-- **Funnel:** attract (content, contest, videos) -> engage (channel, weekly contest) -> capture (email,
-  phase 3) -> convert (shop, phase 4).
+- **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
+  capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14. Changes from v5 (v6)
+## 14. Changes from v6 (v7)
+
+- Vision v7 and goal order: audience and business first, portfolio as a by-product; participant
+  target dropped; checkpoints after 4 shows and on 2027-01-21.
+- New F33 (Instagram, Facebook, Threads together) and F34 (comment inbox with author approval).
+- F19 extended to all networks (comment votes, no prizes); F25 interim site analytics; F27 approved in
+  principle with a lead magnet; legal "protection first" rules in section 8.
+- Phases re-ordered: legal pages, then an end-to-end check, then the Meta channels, email, contest.
+- Q10 resolved again, Q16 added. Facebook and Threads removed from the deferred list.
+
+## 14a. Changes from v5 (v6)
 
 - Vision v6 (POSSE): own site first, channels as linked copies; brand «Faden und Stimmung»; AI shows.
 - F22 rewritten (German default, `/uk/`, shows, `/kreis/` page; contest winners removed from the site).

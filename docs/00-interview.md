@@ -126,3 +126,41 @@ Answers, part 2 (2026-10-28, multiple choice, all recommended options chosen):
 - The website presents the author and her collections, plus a blog; participants' works appear only
   in the contest section.
 - Reselling to bloggers: business model decided later; the architecture stays multi-tenant.
+
+## Round 6 — viability check (grill, 2026-11-04)
+
+State at the check: 14 days of work, about 79 PRs, 6 posts, 4 works, 2 shows published; the
+Telegram channel has 14 subscribers including the bot and the two of us; the first show went public
+on 2026-11-03.
+
+- Q1 Real user: the author uses the bot with Volodymyr's help and is willing to run everything
+  herself later; for now she is busy making works and running the circle. AI models are used because
+  neither of us wants to model. If we ever appear in shows ourselves, the product must separate
+  generated from real photos (new content type later, not now).
+- Q2-Q3 Success check: no site analytics existed, so show reaction could not be measured. Accepted:
+  Cloudflare Web Analytics on the site (cookieless) and manual Telegram view counts until F25;
+  first check after 4 shows (about mid-December 2026), main check on 2027-01-21.
+- Q4 Audience: the circle in Landshut already has enough participants. Everyone else either follows
+  the circle's work or forms a community around the brand. The goal shifts to a large social
+  following, monetized later (for example an online shop). The "20 participants" target is dropped.
+- Q5 Goal priority changed: audience and the author's business first; the portfolio is a by-product.
+  Before new features, verify that everything already built works end to end.
+- Q6 Contest: never built (T27-T32 are planned only). It should run on all networks: Telegram keeps
+  its poll; Instagram, Facebook and Threads get one numbered carousel post and votes are comments with
+  the work number; the bot sums the votes, the author decides. No prizes. Built after the Meta
+  channels.
+- Facebook (Page) and Threads are planned together with Instagram through one Meta app, not one by
+  one later.
+- Q7 Show generation stays as it is (about 0.70 EUR per show is within budget).
+  instagram-agent-skill (MIT) generates text only and posts nothing; we reuse its rules: first ~125
+  caption characters carry the message, at most 5 hashtags, 1080x1350 carousels, comment-reply rules.
+- Q8 Funnel (Volodymyr follows the recommendation): networks -> site -> email sign-up with double
+  opt-in, lead magnet = a free embroidery pattern (PDF) from the author -> Telegram channel as the warm
+  step -> shop later, first for the email list. F27 approved in principle.
+- Q9 Legal: protection first, avoid anything that invites a lawsuit or Abmahnung. Impressum uses the
+  author's home address while there are no sales; texts come from a free generator by lawyers, not
+  from AI. At the first sale: switch to an address service and lawyer-maintained legal texts.
+  Impressum link in every social profile.
+- Q10 Social media replies: the bot drafts replies to comments (rules ported from `/ig-reply`), the
+  author approves them in Telegram. Volodymyr runs `/ig-plan` and `/ig-audit` himself once a week.
+- Order: T41 (legal pages and go-live) first, then the end-to-end check of what exists.
