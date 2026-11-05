@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T47e — implementation complete; awaiting independent review.
-- **Branch:** `feat/t47e-ux-fixes`.
-- **Last commit:** see `git log -1` — fix: clarify work setup and restore show selection.
-- **Next step:** Claude Code reviews the T47e PR, including both PR #86 follow-ups. After green CI and merge, deploy the bot from clean main per AGENTS.md and hand off T47f to Codex in a fresh session. Latest deployed Worker remains `236786fc-8c99-44cb-bad2-acfc28518bac`. D7 needs Worker logs from the next failing real show.
+- **Active agent:** codex
+- **Current task:** T47f — flaky show transport test (start in a fresh session).
+- **Branch:** `main` (create `feat/t47f-<slug>`).
+- **Last commit:** see `git log -1` — docs: close T47e, hand off T47f to Codex.
+- **Next step:** Codex implements T47f (docs/03-tasks.md) plus the two review notes from PR #87 listed there. T47e merged as PR #87 (`b198432`); bot deployed, Worker version `99aecbb3-66d9-403b-b7dd-d8613bd8d310`. D7 needs Worker logs from the next failing real show.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.

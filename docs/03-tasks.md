@@ -1245,9 +1245,10 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   (2) `WorkSessionOptions.logError` in `apps/bot/src/work-session.ts` is optional, so a missing
   logger silently drops work setup failures; make it required or fall back to a redacted log.
 
-- Implementation (2026-11-05): T47e and both PR #86 follow-ups are ready for independent
-  review. The publish callback carries optional `siteExcluded`; work setup requires the
-  composition logger. Regression tests cover restored selection and excluded publication notices.
+- Done 2026-11-05: PR #87 merged (`b198432`), bot deployed (Worker version
+  `99aecbb3-66d9-403b-b7dd-d8613bd8d310`). The publish callback carries optional `siteExcluded`;
+  work setup requires the composition logger. Regression tests cover restored selection and
+  excluded publication notices.
 
 ### T47f — Flaky show transport test (D1, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
@@ -1255,6 +1256,11 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   raw upload, checkpoint and separate marked storage" deterministic (or raise its timeout with a
   reason); it timed out at 5000 ms on CI run 41849567117.
 - Tests: the suite passes 10 consecutive local runs.
+- Review notes from PR #87 (T47e): (1) `apps/publisher/test/publish-callback.test.ts` covers
+  `siteExcluded` in the callback only for `kind: post`; add a work or show case so the
+  `publication.post` path is pinned. (2) `apps/bot/src/show-session.ts` wraps the selection block in
+  `if (!(selection?.awaitingWorkId && !pending && !work))`; name the condition
+  (`const awaitedDiscarded = ...`) for readability.
 
 ### T26a — Instagram adapter · revised in v5
 - Owner: codex · Reviewer: claude-code · Depends on: T25, T40, H8 · Sensitive: new secrets
