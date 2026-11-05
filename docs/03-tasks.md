@@ -392,6 +392,8 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 - Tests: actionlint; manual run documented in the PR.
 
 ### T40 — Canonical links in channel posts (F31, `core`, `publisher`, `channels`)
+- Done 2026-11-05: PR #89 merged (`6a33893`); bot deploy pending (Volodymyr runs it by hand).
+  Includes the PR #81 and PR #88 review notes.
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T39
 - Change: `canonicalUrl(post)` from the post id and tenant site base URL; the renderers append "Mehr
   auf der Website: <url>" (UA/DE per language) to Telegram posts; Instagram captions get the text
@@ -1276,6 +1278,11 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   label in the caption. A shared Meta token/refresh helper in `channels` is reused by T26b-T26c.
   Rules ported from instagram-agent-skill (MIT) keep its license notice in the ported file.
 - Acceptance and tests: as T26, plus caption window, hashtag limit and 4:5 framing tests.
+- Review notes from PR #89 (T40): (1) no `link_preview_options` is sent, so Telegram text messages
+  now preview the site page instead of the `t.me` join link; check the first live post and set the
+  options explicitly if the card is unwanted. (2) The bot preview shows the canonical footer for a
+  draft later published to the test channel, where the post has none. (3) `renderTelegramShow`
+  appends the show link even for a `siteExcluded` show copy, whose page is never built.
 
 ### T26b — Facebook Page adapter (F33, `channels`) · Sensitive: new secrets
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T26a
