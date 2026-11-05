@@ -392,7 +392,7 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 - Tests: actionlint; manual run documented in the PR.
 
 ### T40 — Canonical links in channel posts (F31, `core`, `publisher`, `channels`)
-- Depends on: T39
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T39
 - Change: `canonicalUrl(post)` from the post id and tenant site base URL; the renderers append "Mehr
   auf der Website: <url>" (UA/DE per language) to Telegram posts; Instagram captions get the text
   without a clickable link (bio link instead). Flag `featureFlags.canonicalLinks` so posts made before
@@ -1078,7 +1078,8 @@ winners are no longer on the site). The text below is kept for history.
 
 T41 (legal pages and go-live) → T41b (test posts off the site, indexing on) → T47 (end-to-end check) → T40 (canonical links) → T26a → T26b →
 T26c (Instagram, Facebook, Threads) → T48 (email and lead magnet) → T49 (comment inbox) → T27-T32
-(contest on all networks) → T33, T34. Owner codex, reviewer claude-code unless stated; each PR under
+(contest on all networks) → T33, T34. Owner kimi-code (from T40 on, set 2026-11-05; codex before),
+reviewer claude-code unless stated; each PR under
 ~400 changed non-test lines (ADR 009). Fixes found by T47 are inserted right after it.
 
 T47a-T47f added 2026-11-04 from the T47 check (docs/e2e-v7.md, defects D1-D8); they run after T47,
@@ -1268,7 +1269,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   (`const awaitedDiscarded = ...`) for readability.
 
 ### T26a — Instagram adapter · revised in v5
-- Owner: codex · Reviewer: claude-code · Depends on: T25, T40, H8 · Sensitive: new secrets
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T25, T40, H8 · Sensitive: new secrets
 - Change: T26 as written above, plus the v7 caption rules from F33: the first ~125 characters carry
   the message (the bot preview shows that window), at most 5 hashtags (hard limit), carousels in 4:5
   (1080x1350, crop or pad without cutting the work), shows as a carousel of their images plus the AI
@@ -1277,7 +1278,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance and tests: as T26, plus caption window, hashtag limit and 4:5 framing tests.
 
 ### T26b — Facebook Page adapter (F33, `channels`) · Sensitive: new secrets
-- Owner: codex · Reviewer: claude-code · Depends on: T26a
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a
 - Change: `FacebookPageChannel` via the Pages API: photo or multi-photo post with the German caption
   and the canonical link (clickable on Facebook); registered and enabled by tenant config.
 - Acceptance: one live post appears once; a re-run skips it via the ledger; a failure does not block
@@ -1285,13 +1286,13 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: mocked Graph API, single vs multi photo, errors.
 
 ### T26c — Threads adapter (F33, `channels`) · Sensitive: new secrets
-- Owner: codex · Reviewer: claude-code · Depends on: T26a
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a
 - Change: `ThreadsChannel` via the Threads API: text plus image or carousel, 500-character limit shown
   in the preview, canonical link in the text.
 - Acceptance and tests: as T26b.
 
 ### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data
-- Owner: codex · Reviewer: claude-code · Depends on: T41, H15
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T41, H15
 - Change: ADR 013 email part accepted with the chosen provider (EU hosting, DPA). Sign-up form on the
   site (German and Ukrainian) posting to the provider's double opt-in form; the provider sends the
   pattern PDF after confirmation. No addresses touch our storage or logs. Datenschutzerklärung gets
@@ -1302,7 +1303,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: form rendering, build check; the live opt-in is checked manually and recorded in the PR.
 
 ### T49 — Comment inbox with author-approved replies (F34, `bot`, `channels`, `ai`) · Sensitive: reader data
-- Owner: codex · Reviewer: claude-code · Depends on: T26a-T26c
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a-T26c
 - Change: `comments` capability on the Meta adapters (list new comments on our posts, reply). A cron
   collects new comments into D1 (tenant, network, comment id, handle, text, status), sends each to
   the author with a Ukrainian translation and a German draft reply (prompt with rules ported from

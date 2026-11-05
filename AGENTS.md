@@ -42,7 +42,7 @@ Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of
 | Area | Owner | Reviewer |
 |---|---|---|
 | Repo setup, docs, interview, spec, architecture, task planning | Claude Code | Volodymyr |
-| Implementing tasks from docs/03-tasks.md | Kimi Code or Codex, as the task's `Owner:` says (Kimi Code by default; Codex while Kimi Code is out of usage limits, set 2026-10-31) | Claude Code |
+| Implementing tasks from docs/03-tasks.md | Kimi Code or Codex, as the task's `Owner:` says (Kimi Code by default; Codex covered T42-T47f while Kimi Code was out of usage limits, 2026-10-31 to 2026-11-05; Kimi Code again from T40 on) | Claude Code |
 | Code review | the agent that did NOT write the code | n/a |
 | Commit and push of a session's work | the Active agent in docs/STATUS.md | n/a |
 | Merge of a task PR to `main` | the reviewer agent (never the author), see Git rules | Volodymyr (veto) |
@@ -72,16 +72,16 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
   `.github/workflows/`, secret handling, legal texts, or processing of personal data. Volodymyr may veto or
   revert any merge.
 - Handoff after merge (added 2026-11-03): in that same STATUS.md update, the reviewer who merged sets
-  Active agent to `codex` and Next step to the next task for Codex to start in a fresh session, then
-  ends its session.
+  Active agent to the next task's `Owner:` and Next step to that task, for the owner to start in a
+  fresh session, then ends its session.
 - Bot deploy after merge (added 2026-11-05): when a merged PR changes `apps/bot` or `packages/`,
   the reviewer who merged deploys the bot from a clean `main` with `pnpm -C apps/bot run deploy` and
   records the Worker version in STATUS.md. If the PR adds D1 migrations or changes
   `apps/bot/wrangler.toml` or secrets, it stops and asks Volodymyr first. The publisher needs no
   deploy: Actions run it from `main`.
 - Review notes (added 2026-11-03): the reviewer never fixes non-blocking findings itself. It lists
-  them in the PR review comment and adds them to the next Codex task in docs/03-tasks.md (a
-  `Review notes from PR #N` line) and to STATUS.md Next step, so Codex fixes them in that task's PR.
+  them in the PR review comment and adds them to the next implementer task in docs/03-tasks.md (a
+  `Review notes from PR #N` line) and to STATUS.md Next step, so its owner fixes them in that PR.
   Blocking findings still stop the merge and go back to the PR author.
 - Exception (approved 2026-10-21, ADR 003): the publish workflow in GitHub Actions may commit published posts and ledger entries directly to `main`, under `content/` only, as the bot identity. It never touches any other path. Agents never use this exception.
 - Never force-push, never rewrite history, never commit `.env` or any secret. Run `git status` and `git diff --staged` before each commit and check for secrets.
