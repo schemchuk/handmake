@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T47b — PR #84 review fixes implemented; awaiting re-review.
-- **Branch:** `feat/t47b-publish-result`.
-- **Last commit:** see `git log -1` — fix: address publication notice review findings.
-- **Next step:** Claude Code re-reviews PR #84 (show approval chat persistence, free-post links, Telegram rejection status), then merges after green CI and no blocking findings. After the merge hand off T47c to Codex in a fresh session.
+- **Active agent:** codex
+- **Current task:** T47c — diagnosable show failures and the checkpoint 409 (T47b closed, PR #84 merged).
+- **Branch:** `main` (Codex creates `feat/t47c-...`).
+- **Last commit:** see `git log -1` — docs: close T47b, hand off T47c to Codex.
+- **Next step:** Codex starts T47c in a fresh session, including the "Review notes from PR #84" line under T47c in docs/03-tasks.md. Then T47d-T47f and T40 (with PR #81 review notes).
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
