@@ -2,9 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v7 (2026-11-04).** Previous: approved v6 (2026-10-30).
+Status: **approved v7 (2026-11-04); draft v8 (2026-11-05, F35) awaits Volodymyr's approval.**
+Previous: approved v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v6 are listed in section 14.
+Changes from v7 (draft v8) are listed in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -58,7 +59,7 @@ the time goes into maintenance and the portfolio case.
 |---|---|---|
 | Author | the circle lead (Volodymyr's wife) | send posts, contest entries and new works to the bot, edit, approve, publish |
 | Operator | Volodymyr | configure tenants and channels, manage secrets, receive failure alerts, approve sensitive merges |
-| Participant | circle members | hand their works to the author for the contest (offline or privately); never use the system directly |
+| Participant | circle members | hand their works to the author for the contest (offline or privately); post photos of their own works in the channel's Telegram discussion group on their own responsibility (F35, draft v8); never use the bot or the system directly |
 | Reader | public | read Telegram, Instagram and the website, vote in channel polls |
 
 Only allow-listed Telegram user IDs may use the bot. Everyone else gets a polite refusal and nothing is
@@ -212,6 +213,30 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 - Weekly planning and post-mortems (`/ig-plan`, `/ig-audit`) are not built: Volodymyr runs those
   skills himself in Claude Code.
 
+### Community: participants' photos (F35, draft v8)
+- **F35** Participants post photos of their own works themselves, without the author.
+  - **Where.** A Telegram discussion group linked to the channel. Every channel post gets comments;
+    participants answer with photos and text, and can also post in the group itself. The channel
+    stays author-only: only her (and the bot's) posts appear in the channel feed.
+  - **Zero author effort.** No pre-moderation, no approval queue, no notifications for the author.
+    Spam is kept out by Telegram's own group settings (only members may comment, slow mode, no links
+    or forwards from non-admins, Telegram's built-in anti-spam). Volodymyr is the admin who handles
+    reports; the author is not an admin of the group unless she wants to be.
+  - **Responsibility.** Pinned group rules (German and Ukrainian, the author approves the wording):
+    post only your own works; no faces or names of other people without their consent; no ads; you
+    keep the rights to your photos and are responsible for what you post. Posting means accepting
+    the rules. *Flag, not legal advice: the rules move responsibility for content to the poster, but
+    the group operator still has to remove clearly unlawful content once notified (hosting
+    privilege, DSA art. 6) and needs a reachable contact; the Impressum covers that.*
+  - **Outside our system.** The bot is not a member of the group and never reads it. Nothing from
+    the group reaches D1, Git, the site, Instagram or the contest; the platform stores no new personal
+    data. Contest entries stay as in F19 (through the author).
+  - **Convenience for participants.** One link in the channel description, on `/kreis/` and in the
+    pinned channel post ("Zeig deine Arbeit"); comments open under every post.
+- Acceptance: a participant can comment with a photo under a channel post and in the group without
+  any action by the author; a non-member or a link spammer cannot; the Datenschutzerklärung names the
+  group.
+
 ### Funnel and audience (phase 3)
 - **F25** Weekly audience metrics per channel (follower and subscriber counts, per-post reach where the
   API provides it) are collected without any personal data and shown to the operator and author.
@@ -306,6 +331,10 @@ Non-goals in v5:
 - Participants' works are never sold, licensed or used outside the contest and its posts.
 - No participant-facing bot (the v4 phase 3 "sign-up and submissions bot" is dropped).
 
+Non-goals in draft v8:
+- The system never reads, stores, moderates or re-publishes posts from the discussion group (F35).
+- No pre-moderation by the author; participants' photos are not copied to the site or other networks.
+
 Deferred (the architecture must not block them):
 - **Web admin panel** as a second authoring interface next to the bot.
 - **Scheduled publishing** (`publishAt` exists; always "now" today).
@@ -335,6 +364,9 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
 - **Q12** Open (before phase 4): country and form of business registration.
+- **Q17** Open (legal, before F35 goes live): does running the linked Telegram group make the
+  operator a joint controller with Telegram (as for Facebook fan pages, CJEU C-210/16), and what must
+  the Datenschutzerklärung say about it? Goes to the lawyer list with the fal DPA and Art. 9 questions.
 - **Q13** Resolved (2026-10-28): a contest post may show the participant's first name or nickname
   (no surname), only with her consent; without it the entry is anonymous ("Work No 3"). Names stay out
   of Git (F19). *Flag: a first name with a photo is still personal data; consent and withdrawal must be
@@ -391,7 +423,14 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14. Changes from v6 (v7)
+## 14. Changes from v7 (v8, draft 2026-11-05)
+
+- New F35: participants post their own photos in a Telegram discussion group linked to the channel;
+  comments open; no author moderation; the system stays out of the group.
+- Participant role widened accordingly; new non-goals; Q17 (joint controllership) added.
+- No architecture change: no new port, adapter, storage or bot permission.
+
+## 14a. Changes from v6 (v7)
 
 - Vision v7 and goal order: audience and business first, portfolio as a by-product; participant
   target dropped; checkpoints after 4 shows and on 2027-01-21.
@@ -401,7 +440,7 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - Phases re-ordered: legal pages, then an end-to-end check, then the Meta channels, email, contest.
 - Q10 resolved again, Q16 added. Facebook and Threads removed from the deferred list.
 
-## 14a. Changes from v5 (v6)
+## 14b. Changes from v5 (v6)
 
 - Vision v6 (POSSE): own site first, channels as linked copies; brand «Faden und Stimmung»; AI shows.
 - F22 rewritten (German default, `/uk/`, shows, `/kreis/` page; contest winners removed from the site).
@@ -409,7 +448,7 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - Phases re-cut: site (2) before shows (2a) before Instagram and contest (1b remainder).
 - Q14 resolved, Q15 opened. Non-goals extended.
 
-## 14b. Changes from v4 (v5)
+## 14c. Changes from v4 (v5)
 
 - Vision rewritten (section 1): contest of participants' works, videos, author showcase site, funnel,
   monetization switch, resale to bloggers.
