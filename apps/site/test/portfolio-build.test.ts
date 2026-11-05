@@ -105,6 +105,7 @@ describe('portfolio fixture build', () => {
         },
         [],
       );
+      fixture.tenant.channels.telegram!.joinUrl = 'https://t.me/fixture_join';
       fixture.tenant.site!.circle = {
         joinUrl: 'https://t.me/fixture_join',
         texts: {

@@ -374,6 +374,35 @@ describe('T15 translation and edit guards', () => {
     expect(await store.findPendingEditForChat(tenantA, 'no-such-chat')).toBeUndefined();
   });
 
+  it.each(['work', 'show'] as const)(
+    'switching to %s disarms edits only in that tenant and chat',
+    async (kind) => {
+      const store = await makeStore();
+      const id = await makeCollecting(store);
+      await store.setPendingEdit(tenantA, id, 'de', t1);
+      await store.create(createDraft(tenantB, 'foreign', t0), 'chat-1');
+      await store.setPendingEdit(tenantB, 'foreign', 'uk', t1);
+      await store.create(createDraft(tenantA, 'other-chat', t0), 'chat-2');
+      await store.setPendingEdit(tenantA, 'other-chat', 'uk', t1);
+      await store.setChatSession(tenantA, 'chat-1', { kind, draftId: null }, t1);
+      expect((await store.get(tenantA, id))?.pendingEdit).toBeNull();
+      expect((await store.get(tenantB, 'foreign'))?.pendingEdit).toBe('uk');
+      expect((await store.get(tenantA, 'other-chat'))?.pendingEdit).toBe('uk');
+    },
+  );
+
+  it('leaving an editable state through translation or CAS disarms the edit', async () => {
+    const store = await makeStore();
+    const id = await makeCollecting(store);
+    await store.setPendingEdit(tenantA, id, 'de', t1);
+    expect((await store.claimTranslation(tenantA, id, ['collecting'], t1))?.pendingEdit).toBeNull();
+    await store.markTranslated(tenantA, id, 'Hallo', t1);
+    await store.setPendingEdit(tenantA, id, 'de', t1);
+    const stored = (await store.get(tenantA, id))!;
+    expect(await store.update({ ...stored.draft, state: 'publishing' }, stored.version)).toBe(true);
+    expect((await store.get(tenantA, id))?.pendingEdit).toBeNull();
+  });
+
   it('setPendingEdit refuses drafts that are not collecting or ready', async () => {
     const store = await makeStore();
     const draftId = await makeCollecting(store);

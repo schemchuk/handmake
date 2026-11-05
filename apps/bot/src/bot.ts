@@ -6,7 +6,7 @@ import type { TenantLookup } from './allow-list';
 import type { AppContext } from './context';
 import type { ChatSession, D1DraftStore, DraftEditTarget, StoredDraft } from './draft-store';
 import { publishingStaleMs, translationStaleMs } from './draft-store';
-import { buildPreview } from './preview';
+import { buildTenantPreview } from './preview';
 import type { AiCostLedger } from './ai-costs';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
@@ -19,6 +19,7 @@ export interface CreateBotOptions {
   token: string;
   work?: WorkSessionOptions;
   show?: ShowSessionOptions;
+  tenantConfigs?: TenantConfigSource;
   costs?: { ledger: AiCostLedger; tenantConfigs: TenantConfigSource };
   drafts: D1DraftStore;
   resolveTenant: TenantLookup;
@@ -374,16 +375,19 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         text,
         new Date(),
       );
-      if (!applied) {
+      if (applied) {
+        await ctx.reply(texts.editSavedText(target));
+        const fresh = await ctx.drafts.get(ctx.tenantId, pending.draft.draftId);
+        if (fresh?.draft.state === 'ready') await sendPreview(ctx, fresh);
+        return;
+      }
+      // Publish/discard may win after the pending-edit lookup. Route this
+      // message normally when its old target has stopped being editable.
+      const fresh = await ctx.drafts.get(ctx.tenantId, pending.draft.draftId);
+      if (fresh && ['collecting', 'ready'].includes(fresh.draft.state)) {
         await ctx.reply(texts.editConflictText);
         return;
       }
-      await ctx.reply(texts.editSavedText(target));
-      const fresh = await ctx.drafts.get(ctx.tenantId, pending.draft.draftId);
-      if (fresh?.draft.state === 'ready') {
-        await sendPreview(ctx, fresh);
-      }
-      return;
     }
 
     const session = await sessionOf(ctx);
@@ -456,7 +460,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       if (!fresh) {
         return;
       }
-      const preview = buildPreview(fresh.draft, texts);
+      const preview = await buildTenantPreview(fresh.draft, texts, options.tenantConfigs);
       await bot.api
         .sendMessage(
           targetChat,
@@ -490,7 +494,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
   /** Sends the author the rendered preview with its action keyboard. */
   async function sendPreview(ctx: AppContext, stored: StoredDraft): Promise<void> {
-    const preview = buildPreview(stored.draft, texts);
+    const preview = await buildTenantPreview(stored.draft, texts, options.tenantConfigs);
     await ctx.reply(preview.text, preview.keyboard ? { reply_markup: preview.keyboard } : {});
   }
 

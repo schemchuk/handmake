@@ -255,8 +255,9 @@ it('keeps post, work and show input separate, including armed post edits', async
   expect((await get(workId))!.draft.texts).toEqual({ uk: 'Work' });
   expect((await get(showId))!.draft.photoRefs).toEqual([]);
   await send('/new');
-  await send('Edited post');
-  expect((await get(postId))!.draft.texts).toEqual({ uk: 'Edited post' });
+  expect((await get(postId))!.pendingEdit).toBeNull();
+  await send('Post continued');
+  expect((await get(postId))!.draft.texts).toEqual({ uk: 'Post\n\nPost continued' });
   await send('/work');
   await send('Work continued');
   expect((await get(workId))!.draft.texts['uk']).toContain('Work continued');

@@ -58,7 +58,7 @@ const [lead, ...rest] = paragraphs(version.description);
       {collection && <p><a href={pagePath(lang, def, portfolioPage('collections', collection))}>{collection.versions[lang]!.title}</a></p>}
       <a class="back" href={pagePath(lang, def, section)}>{section === 'works' ? ui.worksHeading : ui.collectionsHeading}</a>
     </div>
-    <p><JoinChannel lang={lang} /></p>
+    <JoinChannel lang={lang} />
   </article>
   {work ? (
     <div class="wrap work-gallery">

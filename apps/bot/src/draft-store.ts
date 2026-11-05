@@ -308,10 +308,11 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     async update(draft, expectedVersion) {
       const result = await db
         .prepare(
-          `UPDATE drafts SET status = ?, texts = ?, photos = ?, updated_at = ?, version = version + 1
+          `UPDATE drafts SET status = ?, pending_edit = CASE WHEN ? IN ('collecting', 'ready') THEN pending_edit ELSE NULL END, texts = ?, photos = ?, updated_at = ?, version = version + 1
            WHERE tenant_id = ? AND id = ? AND version = ?`,
         )
         .bind(
+          draft.state,
           draft.state,
           JSON.stringify(draft.texts),
           JSON.stringify(draft.photoRefs),
@@ -332,11 +333,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         return false;
       const result = await db
         .prepare(
-          `UPDATE drafts SET status = ?, texts = ?, extras = ?, updated_at = ?, version = version + 1
+          `UPDATE drafts SET status = ?, pending_edit = CASE WHEN ? IN ('collecting', 'ready') THEN pending_edit ELSE NULL END, texts = ?, extras = ?, updated_at = ?, version = version + 1
          WHERE tenant_id = ? AND id = ? AND version = ? AND kind = 'work'
            AND status IN ('collecting', 'translating', 'failed', 'ready')`,
         )
         .bind(
+          draft.state,
           draft.state,
           JSON.stringify(draft.texts),
           JSON.stringify(draft.extras),
@@ -361,7 +363,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-        SET status = 'publishing', extras = ?, updated_at = ?, version = version + 1
+        SET pending_edit = NULL, status = 'publishing', extras = ?, updated_at = ?, version = version + 1
         WHERE tenant_id = ? AND id = ? AND version = ? AND kind = 'show'
         AND status = 'ready' AND json_extract(extras, '$.showCancelled') IS NULL
         AND json_extract(extras, '$.showApproved') IS NULL`,
@@ -385,13 +387,15 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         return false;
       const result = await db
         .prepare(
-          `UPDATE drafts SET status = ?, texts = ?, extras = ?, updated_at = ?, version = version + 1
+          `UPDATE drafts SET status = ?, pending_edit = CASE WHEN ? IN ('collecting', 'ready') AND json_extract(?, '$.showCancelled') IS NULL THEN pending_edit ELSE NULL END, texts = ?, extras = ?, updated_at = ?, version = version + 1
          WHERE tenant_id = ? AND id = ? AND version = ? AND kind = 'show'
            AND status IN ('collecting', 'translating', 'failed', 'ready')
            AND json_extract(extras, '$.showApproved') IS NULL`,
         )
         .bind(
           draft.state,
+          draft.state,
+          JSON.stringify(draft.extras),
           JSON.stringify(draft.texts),
           JSON.stringify(draft.extras),
           draft.updatedAt,
@@ -538,21 +542,32 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async setChatSession(tenantId, chatId, session, now) {
-      await db
-        .prepare(
-          `INSERT INTO chat_sessions (tenant_id, chat_id, kind, draft_id, updated_at)
+      // Switching flows abandons reply-based edits, including edits on older previews.
+      // Batch with the pointer update so concurrent messages never see half a hand-off.
+      await db.batch([
+        db
+          .prepare(
+            `UPDATE drafts SET pending_edit = NULL, version = version + 1
+           WHERE tenant_id = ? AND chat_id = ? AND pending_edit IS NOT NULL
+             AND (id != ? OR ? IS NULL)`,
+          )
+          .bind(tenantId, chatId, session.draftId, session.draftId),
+        db
+          .prepare(
+            `INSERT INTO chat_sessions (tenant_id, chat_id, kind, draft_id, updated_at)
            VALUES (?, ?, ?, ?, ?)
            ON CONFLICT (tenant_id, chat_id)
            DO UPDATE SET kind = excluded.kind, draft_id = excluded.draft_id, updated_at = excluded.updated_at`,
-        )
-        .bind(tenantId, chatId, session.kind, session.draftId, now.toISOString())
-        .run();
+          )
+          .bind(tenantId, chatId, session.kind, session.draftId, now.toISOString()),
+      ]);
     },
 
     async findPendingEditForChat(tenantId, chatId) {
       const row = await db
         .prepare(
-          `${selectDraft} AND chat_id = ? AND pending_edit IS NOT NULL ORDER BY updated_at DESC LIMIT 1`,
+          `${selectDraft} AND chat_id = ? AND pending_edit IS NOT NULL AND status IN ('collecting', 'ready')
+           AND json_extract(extras, '$.showCancelled') IS NULL ORDER BY updated_at DESC LIMIT 1`,
         )
         .bind(tenantId, chatId)
         .first<DraftRow>();
@@ -564,7 +579,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'translating', updated_at = ?, version = version + 1
+           SET pending_edit = NULL, status = 'translating', updated_at = ?, version = version + 1
            WHERE tenant_id = ? AND id = ?
              AND (status IN (${guards}) OR (status = 'translating' AND updated_at < ?))`,
         )
@@ -583,7 +598,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'publishing', updated_at = ?, version = version + 1
+           SET pending_edit = NULL, status = 'publishing', updated_at = ?, version = version + 1
            WHERE tenant_id = ? AND id = ?
              AND (status = 'ready' OR (status = 'publishing' AND updated_at < ?))`,
         )
@@ -608,7 +623,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'published', updated_at = ?, version = version + 1
+           SET pending_edit = NULL, status = 'published', updated_at = ?, version = version + 1
            WHERE tenant_id = ? AND id = ? AND status = 'publishing'`,
         )
         .bind(now.toISOString(), tenantId, draftId)
@@ -650,7 +665,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'failed', updated_at = ?, version = version + 1
+           SET pending_edit = NULL, status = 'failed', updated_at = ?, version = version + 1
            WHERE tenant_id = ? AND id = ? AND status = 'translating'`,
         )
         .bind(now.toISOString(), tenantId, draftId)

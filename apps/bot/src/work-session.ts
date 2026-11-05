@@ -5,7 +5,7 @@ import type { Bot } from 'grammy';
 import type { CreateBotOptions } from './bot';
 import type { AppContext } from './context';
 import type { StoredDraft } from './draft-store';
-import { buildPreview } from './preview';
+import { buildTenantPreview } from './preview';
 import type { TenantConfigSource } from './tenant-config-source';
 import { createWorkDraftFlow } from './work-draft-flow';
 
@@ -21,7 +21,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
   const { texts, drafts } = options;
   const settings = options.work;
   const replyPreview = async (ctx: AppContext, stored: StoredDraft) => {
-    const preview = buildPreview(stored.draft, texts);
+    const preview = await buildTenantPreview(stored.draft, texts, options.tenantConfigs);
     await ctx.reply(preview.text, { reply_markup: preview.keyboard! });
   };
   const flow =
@@ -237,7 +237,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
           }
           const fresh = await drafts.get(ctx.tenantId, stored.draft.draftId);
           if (fresh) {
-            const preview = buildPreview(fresh.draft, texts);
+            const preview = await buildTenantPreview(fresh.draft, texts, options.tenantConfigs);
             await bot.api.sendMessage(chat, preview.text, { reply_markup: preview.keyboard! });
           }
         } catch {

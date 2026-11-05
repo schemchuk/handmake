@@ -228,6 +228,17 @@ export const tenantConfigSchema = z
         message: `site.defaultLanguage "${site.defaultLanguage}" is not in languages [${config.languages.join(', ')}]`,
       });
     }
+    if (
+      site?.circle &&
+      config.channels.telegram?.joinUrl &&
+      site.circle.joinUrl !== config.channels.telegram.joinUrl
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['site', 'circle', 'joinUrl'],
+        message: 'site.circle.joinUrl must match channels.telegram.joinUrl',
+      });
+    }
     if (site?.circle) {
       const textLangs = Object.keys(site.circle.texts).sort();
       const tenantLangs = [...config.languages].sort();
