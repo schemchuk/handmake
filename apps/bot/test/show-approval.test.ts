@@ -314,10 +314,16 @@ it('never dispatches a backfill for invalid evidence or a stale private session'
 it.each([false, true])(
   'sends the show result to the approving chat after approve (retry: %s)',
   async (retry) => {
+    ctx = { ...ctx, chat: { id: 22, type: 'private' } } as AppContext;
+    await db
+      .prepare('UPDATE drafts SET chat_id = ? WHERE tenant_id = ? AND id = ?')
+      .bind('22', tenant, id)
+      .run();
+    await store.setChatSession(tenant, '22', { kind: 'show', draftId: id }, new Date());
     await present();
     const initial = await stored();
     expect(await approve()).toBeDefined();
-    expect((await stored()).draft.extras['approvalChatId']).toBe('11');
+    expect((await stored()).draft.extras['approvalChatId']).toBe('22');
     if (retry) {
       await store.revertPublishing(tenant, id, new Date());
       // Simulate a frozen legacy approval without the newly captured chat.
@@ -328,8 +334,14 @@ it.each([false, true])(
         .bind(tenant, id)
         .run();
       expect(await approval.approve(ctx, await stored(), String(initial.version))).toBeDefined();
-      expect((await stored()).draft.extras['approvalChatId']).toBe('11');
+      expect((await stored()).draft.extras['approvalChatId']).toBe('22');
     }
+    // Make the callback fallback differ from the immutable approval destination.
+    // Approval itself must still enforce the draft/session chat ownership guard.
+    await db
+      .prepare('UPDATE drafts SET chat_id = ? WHERE tenant_id = ? AND id = ?')
+      .bind('11', tenant, id)
+      .run();
     const secret = 'test-callback-secret';
     const body = JSON.stringify({
       kind: 'show',
@@ -363,7 +375,7 @@ it.each([false, true])(
     expect(
       JSON.parse(String((sent.mock.calls[0] as unknown as [string, RequestInit])[1].body)),
     ).toEqual({
-      chat_id: '11',
+      chat_id: '22',
       text: `Показ опубліковано. https://example.test/shows/${id.toLowerCase()}/`,
     });
   },

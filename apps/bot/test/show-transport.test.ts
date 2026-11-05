@@ -147,6 +147,17 @@ function receipt() {
   });
 }
 
+// Miniflare bindings are proxies whose methods cannot be replaced with spies.
+// Keep real R2 storage behind a plain forwarding boundary for fault injection.
+function transportBucket() {
+  return {
+    get: bucket.get.bind(bucket),
+    put: bucket.put.bind(bucket),
+    delete: bucket.delete.bind(bucket),
+    head: bucket.head.bind(bucket),
+  } as R2Bucket;
+}
+
 it('runs grants, private source reads, journal, raw upload, checkpoint and separate marked storage', async () => {
   const grant = await authorize();
   expect(JSON.stringify(grant)).not.toMatch(/https?:|bytes|secret/);
@@ -190,6 +201,139 @@ it('runs grants, private source reads, journal, raw upload, checkpoint and separ
   expect(generator.generateImage).not.toHaveBeenCalled();
   expect(generator.generateVideo).not.toHaveBeenCalled();
 });
+
+it.each(['acquire', 'release'])(
+  'checkpoints fresh raw media despite an R2 throttle during job %s',
+  async (phase) => {
+    await authorize();
+    await call('reserve', { body: JSON.stringify({ fingerprint: 'a'.repeat(64) }) });
+    await call('record', { body: JSON.stringify({ requestId: providerId }) });
+    expect((await call('raw-put', { body: media, receipt: receipt() })).status).toBe(200);
+    const sleep = vi.fn(async () => {});
+    const testBucket = transportBucket();
+    transport = createShowTransport({
+      bucket: testBucket,
+      secret,
+      drafts,
+      flow,
+      now: () => now,
+      sleep,
+    });
+    const accept = vi.spyOn(flow, 'accept');
+    const put = bucket.put.bind(bucket);
+    let writes = 0;
+    const fences: unknown[] = [];
+    const target = phase === 'acquire' ? 1 : 2;
+    const spy = vi.spyOn(testBucket, 'put').mockImplementation(async (key, value, options) => {
+      if (key === `show-job/v1/${tenant}/${show}`) {
+        writes++;
+        if (writes === target || writes === target + 1) fences.push(options?.onlyIf);
+        if (writes === target) throw new Error('put: Too Many Requests (10058)');
+      }
+      return put(key, value, options);
+    });
+    try {
+      expect((await call('checkpoint')).status).toBe(200);
+      expect(sleep).toHaveBeenCalledExactlyOnceWith(1100);
+      expect(fences[0]).toEqual(fences[1]);
+      expect(accept).toHaveBeenCalledTimes(1);
+      const stored = (await drafts.get(tenant, show))!;
+      const data = showDraftDataSchema.parse(stored.draft.extras['show']);
+      expect(data.pending).toBeUndefined();
+      expect(data.outputs['image-0']?.attemptId).toBe(attempt);
+      expect((await createAiCostLedger(db).summary(tenant, new Date(now))).total).toBe(0.1);
+      expect((await call('checkpoint')).status).toBe(200);
+      expect((await createAiCostLedger(db).summary(tenant, new Date(now))).total).toBe(0.1);
+      expect(generator.generateImage).not.toHaveBeenCalled();
+      expect(generator.generateVideo).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+      accept.mockRestore();
+    }
+  },
+);
+
+it('does not overwrite a replacement job after throttling its conditional claim', async () => {
+  await authorize();
+  const key = `show-job/v1/${tenant}/${show}`;
+  const put = bucket.put.bind(bucket);
+  const replacement = { id: crypto.randomUUID(), version, expires: now + 3_600_000 };
+  const sleep = vi.fn(async () => {
+    await put(key, JSON.stringify(replacement));
+  });
+  const testBucket = transportBucket();
+  transport = createShowTransport({
+    bucket: testBucket,
+    secret,
+    drafts,
+    flow,
+    now: () => now,
+    sleep,
+  });
+  let throttled = false;
+  const spy = vi.spyOn(testBucket, 'put').mockImplementation(async (objectKey, value, options) => {
+    if (objectKey === key && !throttled) {
+      throttled = true;
+      throw new Error('put: Too Many Requests (10058)');
+    }
+    return put(objectKey, value, options);
+  });
+  try {
+    expect((await call('stored')).status).toBe(409);
+    expect(await (await bucket.get(key))!.json()).toEqual(replacement);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  } finally {
+    spy.mockRestore();
+  }
+});
+
+it.each([true, false])(
+  'bounds job retries and redacts Worker errors (throttled=%s)',
+  async (throttled) => {
+    await authorize();
+    const sleep = vi.fn(async () => {});
+    const testBucket = transportBucket();
+    transport = createShowTransport({
+      bucket: testBucket,
+      secret,
+      drafts,
+      flow,
+      now: () => now,
+      sleep,
+    });
+    const put = bucket.put.bind(bucket);
+    let writes = 0;
+    const spy = vi.spyOn(testBucket, 'put').mockImplementation(async (key, value, options) => {
+      if (key === `show-job/v1/${tenant}/${show}`) {
+        writes++;
+        throw new Error(
+          throttled
+            ? 'put: Too Many Requests (10058)'
+            : 'https://private.test/?key=DO_NOT_LOG Key DO_NOT_LOG data:image/png;base64,PRIVATE',
+        );
+      }
+      return put(key, value, options);
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const response = await call('stored');
+      expect(response.status).toBe(409);
+      expect(writes).toBe(throttled ? 3 : 1);
+      expect(sleep).toHaveBeenCalledTimes(throttled ? 2 : 0);
+      expect(warn).toHaveBeenLastCalledWith('show transport operation rejected', {
+        operation: 'stored',
+        errorClass: 'Error',
+        message: 'Details redacted',
+        ...(throttled ? { storageCode: 10058 } : {}),
+      });
+      expect(JSON.stringify(warn.mock.calls)).not.toMatch(/DO_NOT_LOG|PRIVATE|private\.test/);
+      expect(await response.text()).not.toMatch(/DO_NOT_LOG|PRIVATE|private\.test/);
+    } finally {
+      spy.mockRestore();
+      warn.mockRestore();
+    }
+  },
+);
 
 it.each([
   { signingKey: 'wrong' },

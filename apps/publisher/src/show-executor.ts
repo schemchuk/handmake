@@ -7,7 +7,7 @@ import type {
   ShowResultStore,
   ShowSourceImage,
 } from '@handmake/core';
-import { describeShowVerification, showReceiptSchema } from '@handmake/core';
+import { describeShowVerification, showReceiptSchema, showErrorDiagnostic } from '@handmake/core';
 import { createShowMarkingGate } from './marking';
 
 type Grant =
@@ -64,6 +64,7 @@ export function createShowClient(options: {
       receipt,
       createHash('sha256').update(bytes).digest('hex'),
     ].join('\n');
+    let httpStatus: number | undefined;
     try {
       const response = await (options.fetch ?? fetch)(url, {
         method: 'POST',
@@ -77,6 +78,7 @@ export function createShowClient(options: {
           'x-show-signature': createHmac('sha256', options.secret).update(message).digest('hex'),
         },
       });
+      httpStatus = response.status;
       if (!response.ok && (operation !== 'finish' || response.status !== 409)) {
         await response.body?.cancel();
         throw new Error();
@@ -114,6 +116,34 @@ export function createShowClient(options: {
       version = parsed.version;
       return parsed;
     } catch (error) {
+      console.error('Show transport request rejected', {
+        // Operations originate in this module; never log the signed URL or body.
+        operation: [
+          'status',
+          'authorize',
+          'checkpoint',
+          'finish',
+          'reserve',
+          'record',
+          'stored',
+          'grant',
+          'recovery',
+          'verified-put',
+          'raw-put',
+          'raw-get',
+          'marked-put',
+          'marked-get',
+          'backfill-release',
+          'source-0',
+          'source-1',
+          'source-2',
+          'source-3',
+        ].includes(operation)
+          ? operation
+          : 'unknown',
+        ...showErrorDiagnostic(error),
+        ...(httpStatus ? { httpStatus } : {}),
+      });
       if (error instanceof ShowIncompleteCompletion)
         throw new ShowIncompleteCompletion('show transport rejected; resume from durable state');
       throw new Error('show transport rejected; resume from durable state');

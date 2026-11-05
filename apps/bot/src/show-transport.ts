@@ -1,4 +1,4 @@
-import { showDraftDataSchema, showReceiptSchema } from '@handmake/core';
+import { showDraftDataSchema, showReceiptSchema, showErrorDiagnostic } from '@handmake/core';
 import type { ShowFinishOutcome } from './show-finish';
 import type { StoredDraft, D1DraftStore } from './draft-store';
 import type { createShowDraftFlow, ShowCallGrant } from './show-draft-flow';
@@ -49,6 +49,7 @@ export function createShowTransport(deps: {
   flow: Flow;
   notify?: (stored: StoredDraft, outcome: ShowFinishOutcome, recovery: boolean) => Promise<void>;
   now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
 }) {
   const { bucket, secret, drafts, flow } = deps;
   const now = deps.now ?? Date.now;
@@ -56,6 +57,21 @@ export function createShowTransport(deps: {
   const marked = createR2MarkedShowStorage(bucket);
   const verified = createShowVerificationStore(bucket);
   const jobKey = (tenant: string, show: string) => `show-job/v1/${tenant}/${show}`;
+  // Lock acquisition and release write the same key in quick succession. Retry
+  // only R2's explicit rate-limit rejection, with the ORIGINAL conditional fence.
+  // Never repeat application checkpoints or assume an ambiguous write failed.
+  const putJob = async (key: string, value: string, options: R2PutOptions) => {
+    for (let retry = 0; ; retry++) {
+      try {
+        return await bucket.put(key, value, options);
+      } catch (error) {
+        if (!(error instanceof Error) || !/\(10058\)$/.test(error.message) || retry >= 2)
+          throw error;
+        console.warn('show job write throttled', { storageCode: 10058, retry: retry + 1 });
+        await (deps.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms))))(1100);
+      }
+    }
+  };
   const load = async (tenant: string, show: string) => {
     const object = await bucket.get(jobKey(tenant, show));
     if (!object || object.size > 1024) throw new Error('job unavailable');
@@ -123,7 +139,7 @@ export function createShowTransport(deps: {
           await bucket.put(`show-grant/v1/${job.id}/${attempt}`, await grant.arrayBuffer());
         }
       }
-      const saved = await bucket.put(key, JSON.stringify(job), {
+      const saved = await putJob(key, JSON.stringify(job), {
         onlyIf: previous ? { etagMatches: previous.etag } : { etagDoesNotMatch: '*' },
       });
       if (!saved) throw new Error('job changed');
@@ -139,6 +155,7 @@ export function createShowTransport(deps: {
       if (!secret) return reply(503, { error: 'shows disabled' });
       let unlock: (() => Promise<void>) | undefined;
       let recoveryClaim: string | undefined;
+      let operationName = 'unverified';
       try {
         const url = new URL(request.url);
         const parts = url.pathname.slice(showTransportPath.length).split('/');
@@ -166,6 +183,30 @@ export function createShowTransport(deps: {
         const signature = await showRequestSignature(secret, request, bytes);
         const supplied = request.headers.get('x-show-signature') ?? '';
         if (!equal(signature, supplied)) return reply(401, { error: 'unauthorized' });
+        operationName = [
+          'authorize',
+          'checkpoint',
+          'finish',
+          'reserve',
+          'record',
+          'stored',
+          'status',
+          'grant',
+          'recovery',
+          'journal',
+          'verified-put',
+          'raw-put',
+          'raw-get',
+          'marked-put',
+          'marked-get',
+          'backfill-release',
+          'source-0',
+          'source-1',
+          'source-2',
+          'source-3',
+        ].includes(operation!)
+          ? operation!
+          : 'unknown';
         const scope: Scope = { tenantId: tenantId!, showId: showId!, attemptId: attemptId! };
         const { job, etag } = await load(scope.tenantId, scope.showId);
         const draft = await drafts.get(scope.tenantId, scope.showId);
@@ -193,7 +234,7 @@ export function createShowTransport(deps: {
               (!job.recovery && Object.keys(data.outputs).length !== data.plan.imageCount + 1))
           )
             return reply(409, { error: 'unfinished job' });
-          const claimed = await bucket.put(
+          const claimed = await putJob(
             jobKey(scope.tenantId, scope.showId),
             JSON.stringify({ ...job, finished: true }),
             { onlyIf: { etagMatches: etag } },
@@ -235,7 +276,7 @@ export function createShowTransport(deps: {
           onlyIf: { etagDoesNotMatch: '*' },
         });
         if (!replay) return reply(409, { error: 'replay' });
-        const locked = await bucket.put(
+        const locked = await putJob(
           jobKey(scope.tenantId, scope.showId),
           JSON.stringify({ ...job, busy: now() }),
           { onlyIf: { etagMatches: etag } },
@@ -248,13 +289,9 @@ export function createShowTransport(deps: {
           delete job.busy;
           // Only application checkpoints may advance this job's version fence.
           if (operation === 'authorize' || operation === 'checkpoint') job.version = latest.version;
-          const saved = await bucket.put(
-            jobKey(scope.tenantId, scope.showId),
-            JSON.stringify(job),
-            {
-              onlyIf: { etagMatches: locked.etag },
-            },
-          );
+          const saved = await putJob(jobKey(scope.tenantId, scope.showId), JSON.stringify(job), {
+            onlyIf: { etagMatches: locked.etag },
+          });
           if (!saved) throw new Error('job changed');
         };
         let value: unknown;
@@ -387,9 +424,12 @@ export function createShowTransport(deps: {
         await unlock();
         unlock = undefined;
         return reply(200, { version: job.version, value: value ?? null });
-      } catch {
+      } catch (error) {
         if (recoveryClaim) await bucket.delete(recoveryClaim).catch(() => undefined);
-        console.warn('show transport operation rejected');
+        console.warn('show transport operation rejected', {
+          operation: operationName,
+          ...showErrorDiagnostic(error),
+        });
         return reply(409, { error: 'show operation rejected; inspect durable state before retry' });
       } finally {
         if (unlock) await unlock().catch(() => undefined);
