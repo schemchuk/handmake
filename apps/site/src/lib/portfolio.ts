@@ -23,16 +23,16 @@ export const portfolioCover = (item: PortfolioItem) =>
 
 /** Published content only, through the port. Broken references fail before any image processing. */
 export async function loadPortfolio(store: ContentStore, tenantId: string) {
-  const works = (await store.listWorks(tenantId)).filter((work) => work.tenant === tenantId);
-  const collections = (await store.listCollections(tenantId)).filter(
+  const allWorks = (await store.listWorks(tenantId)).filter((work) => work.tenant === tenantId);
+  const allCollections = (await store.listCollections(tenantId)).filter(
     (collection) => collection.tenant === tenantId,
   );
-  const byId = new Map(works.map((work) => [work.id, work]));
-  for (const work of works) {
-    if (!collections.some((collection) => collection.slug === work.collection))
+  const byId = new Map(allWorks.map((work) => [work.id, work]));
+  for (const work of allWorks) {
+    if (!allCollections.some((collection) => collection.slug === work.collection))
       throw new Error(`work ${work.id}: collection ${work.collection} is absent`);
   }
-  for (const collection of collections) {
+  for (const collection of allCollections) {
     const cover = byId.get(collection.cover.workId);
     if (
       !cover ||
@@ -41,6 +41,15 @@ export async function loadPortfolio(store: ContentStore, tenantId: string) {
     )
       throw new Error(`collection ${collection.slug}: dangling cover`);
   }
+  const works = allWorks.filter((work) => !work.siteExcluded);
+  // A hidden cover must not leak through collection pages or their media.
+  const collections = allCollections.flatMap((collection) => {
+    if (!byId.get(collection.cover.workId)?.siteExcluded) return [collection];
+    const replacement = works.find((work) => work.collection === collection.slug);
+    return replacement
+      ? [{ ...collection, cover: { workId: replacement.id, fileName: replacement.photos[0]! } }]
+      : [];
+  });
   const workImages = new Map<string, WorkImage>();
   for (const work of works) {
     for (const file of work.photos) {

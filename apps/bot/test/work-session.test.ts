@@ -43,7 +43,9 @@ const load = vi.fn(async (_id: string) => config);
 const uk = vi.fn<(_request: TextGenerationRequest) => Promise<GeneratedWorkText>>();
 const de = vi.fn<(text: string) => Promise<GeneratedWorkText>>();
 const factory = vi.fn();
+const logError = vi.fn();
 beforeEach(async () => {
+  logError.mockReset();
   drafts = createD1DraftStore(await makeD1());
   tasks = [];
   publish = new FakePublishRunner();
@@ -81,7 +83,12 @@ beforeEach(async () => {
     background: (task) => {
       tasks.push(task());
     },
-    work: { collections: { listCollections: list }, configs: { load }, textGeneratorFor: factory },
+    work: {
+      logError,
+      collections: { listCollections: list },
+      configs: { load },
+      textGeneratorFor: factory,
+    },
   });
   calls = mockTelegramApi(bot);
   await bot.init();
@@ -283,6 +290,19 @@ describe('/work author flow', () => {
     await press(choice.callback_data);
     expect(sentTexts(calls)).toContain(botTexts.workSetupErrorText);
     expect(factory).not.toHaveBeenCalled();
+  });
+
+  it('routes callback and text setup failures through the redacting composition logger', async () => {
+    await start();
+    const error = new Error('fixture failure');
+    load.mockRejectedValueOnce(error);
+    await press(buttons().find((b) => b.callback_data.includes(':pick:'))!.callback_data);
+    expect(logError).toHaveBeenLastCalledWith('work setup failed', error, tenant);
+    await press(buttons().find((b) => b.text === botTexts.workCreateButton)!.callback_data);
+    load.mockRejectedValueOnce(error);
+    await send('UA title\nUA text\nDE title\nDE text');
+    expect(logError).toHaveBeenCalledTimes(2);
+    expect(logError).toHaveBeenLastCalledWith('work setup failed', error, tenant);
   });
 
   it('rejects existing collections with incomplete tenant-language metadata', async () => {

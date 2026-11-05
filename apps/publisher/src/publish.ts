@@ -130,7 +130,9 @@ export async function runPublish(
 
   const store = new GitRepoContentStore({ rootDir: root });
   const workPublication =
-    payload.kind === 'work' ? await prepareWorkPublication(payload, tenant, store) : undefined;
+    payload.kind === 'work'
+      ? await prepareWorkPublication(payload, tenant, store, env.SITE_EXCLUDE_POST === 'true')
+      : undefined;
   const showPublication =
     payload.kind === 'show'
       ? await prepareShowPublication(
@@ -143,6 +145,7 @@ export async function runPublish(
                 ref,
               ),
           },
+          env.SITE_EXCLUDE_POST === 'true',
         )
       : undefined;
   const publication = workPublication ?? showPublication;

@@ -44,6 +44,7 @@ export const showSchema = z
     date: isoDateTime,
     workId: workIdSchema,
     template: showTemplateSchema,
+    siteExcluded: z.boolean().optional(),
     // Snapshot keeps past shows stable when the tenant's persona config changes.
     model: showModelSchema.optional(),
     provenance: z.literal('ai-assisted'),

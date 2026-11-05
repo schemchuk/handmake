@@ -238,7 +238,7 @@ describe('portfolio fixture build', () => {
   }, 60_000);
 });
 
-it('excludes flagged posts and their media from an indexable build and sitemap', async () => {
+it('excludes flagged posts, works, shows and their media from an indexable build and sitemap', async () => {
   const { root, dist, store } = await createPortfolioFixture();
   try {
     const post: Post = {
@@ -262,10 +262,50 @@ it('excludes flagged posts and their media from an indexable build and sitemap',
       texts: { de: 'Public fixture text', uk: 'Public fixture text' },
     };
     await store.savePost(publicPost, []);
+    for (const id of [ids.a, ids.b]) {
+      const work = (await store.readWork('fixture', id))!;
+      await store.saveWork({ ...work, siteExcluded: true }, []);
+    }
+    const hiddenShow = JSON.parse(
+      await readFile(
+        new URL('../../../packages/core/test/fixtures/show.json', import.meta.url),
+        'utf8',
+      ),
+    ) as Show;
+    hiddenShow.tenant = 'fixture';
+    hiddenShow.workId = ids.c;
+    hiddenShow.siteExcluded = true;
+    hiddenShow.originals = [{ fileName: 'a.jpg', provenance: 'human' }];
+    await store.saveShow(
+      hiddenShow,
+      [...hiddenShow.images, hiddenShow.video].map(({ fileName }) => ({
+        fileName,
+        data: Buffer.from('hidden media'),
+      })),
+    );
     await build(root, dist, true);
     const sitemap = await readFile(path.join(dist, 'sitemap.xml'), 'utf8');
     expect(sitemap).toContain(publicPost.id.toLowerCase());
     expect(sitemap).not.toContain(post.id.toLowerCase());
+    for (const id of [ids.a, ids.b, hiddenShow.id]) {
+      expect(sitemap).not.toContain(id.toLowerCase());
+      for (const prefix of ['', 'uk/']) {
+        for (const section of ['works', 'shows']) {
+          await expect(
+            access(path.join(dist, prefix, section, id.toLowerCase())),
+          ).rejects.toThrow();
+        }
+      }
+      for (const section of ['work-media', 'show-media']) {
+        await expect(access(path.join(dist, section, id.toLowerCase()))).rejects.toThrow();
+      }
+      for (const file of await readdir(dist, { recursive: true })) {
+        if (file.endsWith('.html'))
+          expect(await readFile(path.join(dist, file), 'utf8')).not.toContain(id.toLowerCase());
+      }
+    }
+    expect(sitemap).toContain(ids.c.toLowerCase());
+    expect(sitemap).not.toContain('/collections/second/');
     for (const prefix of ['', 'uk/']) {
       const home = await html(dist, prefix);
       expect(home).not.toContain('Hidden fixture text');

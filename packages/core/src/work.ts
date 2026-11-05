@@ -21,6 +21,7 @@ export const workSchema = z
     date: isoDateTime,
     collection: contentSlugSchema,
     kind: workKindSchema,
+    siteExcluded: z.boolean().optional(),
     photos: z
       .array(workPhotoSchema)
       .min(1)

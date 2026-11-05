@@ -76,3 +76,27 @@ export function showErrorDiagnostic(error: unknown) {
     ...(/\(10058\)$/.test(message) ? { storageCode: 10058 } : {}),
   };
 }
+
+/** Bounded operation names safe to include in transport diagnostics. */
+export const showTransportOperations: readonly string[] = [
+  'authorize',
+  'checkpoint',
+  'finish',
+  'reserve',
+  'record',
+  'stored',
+  'status',
+  'grant',
+  'recovery',
+  'journal',
+  'verified-put',
+  'raw-put',
+  'raw-get',
+  'marked-put',
+  'marked-get',
+  'backfill-release',
+  'source-0',
+  'source-1',
+  'source-2',
+  'source-3',
+];

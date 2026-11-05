@@ -116,6 +116,27 @@ it('publishes site-only content, preserves marking bytes, and safely retries on 
     channels: {},
   });
 });
+it('persists show exclusion and keeps it on retries without the environment flag', async () => {
+  const first = await run({ env: { SITE_EXCLUDE_POST: 'true' } });
+  expect(first.show?.siteExcluded).toBe(true);
+  expect(first.post.siteExcluded).toBe(true);
+  await run();
+  expect((await store.readShow(show.tenant, show.id))?.siteExcluded).toBe(true);
+  payload.show!.show.versions.de!.description = 'Changed identity';
+  payload.texts.de = 'Changed identity';
+  await expect(run()).rejects.toThrow('immutable');
+});
+it('can exclude an already published show without changing its approved identity', async () => {
+  await run();
+  await run({ env: { SITE_EXCLUDE_POST: 'true' } });
+  await run();
+  expect((await store.readShow(show.tenant, show.id))?.siteExcluded).toBe(true);
+});
+it('excludes a show linked to a test work even without the environment flag', async () => {
+  const work = (await store.readWork(show.tenant, show.workId))!;
+  await store.saveWork({ ...work, siteExcluded: true }, []);
+  expect((await run()).show?.siteExcluded).toBe(true);
+});
 it('creates no second git commit on an identical retry with a real git committer', async () => {
   const exec = promisify(execFile);
   await exec('git', ['init', '-q'], { cwd: root });

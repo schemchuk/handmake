@@ -82,6 +82,30 @@ describe('portfolio content and image preparation', () => {
     );
     expect(await store.readWorkPhoto('tenant', work.id, 'a.jpg')).toEqual(original);
   });
+  it('omits test works and empty collections before reading media', async () => {
+    const store = await fixture();
+    await store.saveWork({ ...work, siteExcluded: true }, []);
+    const read = vi.spyOn(store, 'readWorkPhoto');
+    const data = await loadPortfolio(store, 'tenant');
+    expect(data.works).toEqual([]);
+    expect(data.collections).toEqual([]);
+    expect(data.workImages.size).toBe(0);
+    expect(read).not.toHaveBeenCalled();
+  });
+  it('replaces a hidden collection cover with a visible work', async () => {
+    const bytes = await sharp({
+      create: { width: 20, height: 20, channels: 3, background: '#777' },
+    })
+      .png()
+      .toBuffer();
+    const store = await fixture();
+    await store.saveWork({ ...work, siteExcluded: true }, []);
+    const visible = { ...work, id: '01JBCA1B2C3D4E5F6G7H8J9K0N' };
+    await store.saveWork(visible, [{ fileName: 'a.jpg', data: bytes }]);
+    const data = await loadPortfolio(store, 'tenant');
+    expect(data.works).toEqual([visible]);
+    expect(data.collections[0]?.cover.workId).toBe(visible.id);
+  });
   it('does not upscale a small source', async () => {
     const data = await loadPortfolio(
       await fixture(
