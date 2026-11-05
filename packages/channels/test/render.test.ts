@@ -272,3 +272,121 @@ describe('subscription footer', () => {
     expect(renderTelegram(makePost(), {})).toEqual(renderTelegram(makePost()));
   });
 });
+
+const canonicalSettings = {
+  canonical: {
+    links: true,
+    baseUrl: 'https://fadenundstimmung.de',
+    defaultLanguage: 'de',
+    section: 'posts',
+  },
+};
+const deCanonicalLine =
+  'Mehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/';
+const ukCanonicalLine =
+  'Більше на сайті: https://fadenundstimmung.de/uk/posts/01jbca1b2c3d4e5f6g7h8j9k0m/';
+
+describe('canonical footer (T40, F31)', () => {
+  it('appends the per-language line to a free post, linking to its site page', () => {
+    const ops = renderTelegram(makePost(), canonicalSettings);
+    expect(ops[0]).toMatchObject({ caption: `Привіт!\n\n${ukCanonicalLine}` });
+    expect(ops[1]).toMatchObject({ text: `Hallo!\n\n${deCanonicalLine}` });
+    expect(renderTelegram(makePost(), canonicalSettings)).toEqual(ops);
+  });
+
+  it('puts the canonical line first in the shared footer, then the join line', () => {
+    const settings = { joinUrl: 'https://t.me/fixture_channel', ...canonicalSettings };
+    const ops = renderTelegram(makePost({ photos: [] }), settings);
+    expect(ops[1]).toMatchObject({
+      text: `Hallo!\n\n${deCanonicalLine}\nKanal abonnieren: https://t.me/fixture_channel`,
+    });
+  });
+
+  it('links a work announcement to the work page', () => {
+    const settings = {
+      canonical: { ...canonicalSettings.canonical, section: 'works' as const },
+    };
+    const ops = renderTelegram(makePost({ photos: [] }), settings);
+    expect(ops[0]).toMatchObject({
+      text: 'Привіт!\n\nБільше на сайті: https://fadenundstimmung.de/uk/works/01jbca1b2c3d4e5f6g7h8j9k0m/',
+    });
+    expect(ops[1]).toMatchObject({
+      text: 'Hallo!\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0m/',
+    });
+  });
+
+  it.each(['announcement', 'reminder', 'wotw-poll', 'wotw-result'] as const)(
+    'omits the line for %s posts (no site page exists)',
+    (type) => {
+      const post = makePost({
+        type,
+        photos: [],
+        texts: { uk: 'Привіт!', de: 'Hallo!' },
+        ...(type === 'wotw-poll' ? { poll: { question: 'q', options: ['a', 'b'] } } : {}),
+      });
+      const ops = renderTelegram(post, canonicalSettings);
+      for (const op of ops) {
+        if (op.kind === 'mediaGroup') expect(op.caption ?? '').not.toContain('fadenundstimmung.de');
+        if (op.kind === 'message') expect(op.text).not.toContain('fadenundstimmung.de');
+      }
+    },
+  );
+
+  it('omits the line for site-excluded posts (the page never exists)', () => {
+    const ops = renderTelegram(makePost({ siteExcluded: true, photos: [] }), canonicalSettings);
+    expect(ops[0]).toMatchObject({ text: 'Привіт!' });
+    expect(ops[1]).toMatchObject({ text: 'Hallo!' });
+  });
+
+  it('leaves operations unchanged when the flag is off or canonical is absent', () => {
+    const post = makePost();
+    const plain = renderTelegram(post);
+    expect(
+      renderTelegram(post, { canonical: { ...canonicalSettings.canonical, links: false } }),
+    ).toEqual(plain);
+    expect(renderTelegram(post, {})).toEqual(plain);
+  });
+
+  it('rejects an unsupported footer language', () => {
+    const post = makePost({
+      texts: { fr: 'Bonjour !' },
+      versions: { fr: { provenance: 'human' } },
+    });
+    expect(() => renderTelegram(post, canonicalSettings)).toThrow(
+      /unsupported canonical footer language/,
+    );
+  });
+
+  it.each(['http://insecure.example', 'https://fadenundstimmung.de/sub', 'not-a-url'])(
+    'rejects a non-origin baseUrl (%s)',
+    (baseUrl) => {
+      expect(() =>
+        renderTelegram(makePost(), { canonical: { ...canonicalSettings.canonical, baseUrl } }),
+      ).toThrow(/https origin/);
+    },
+  );
+
+  it('counts the footer before selecting a caption or rejecting a message', () => {
+    const fits = captionLimit - ukCanonicalLine.length;
+    const ops = renderTelegram(
+      makePost({ texts: { uk: 'x'.repeat(fits), de: 'de' } }),
+      canonicalSettings,
+    );
+    expect(ops[0]).not.toHaveProperty('caption');
+    expect(ops[1]).toMatchObject({ text: `${'x'.repeat(fits)}\n\n${ukCanonicalLine}` });
+
+    const maxBody = messageLimit - deCanonicalLine.length - 2;
+    expect(
+      renderTelegram(
+        makePost({ photos: [], texts: { uk: 'Привіт!', de: 'x'.repeat(maxBody) } }),
+        canonicalSettings,
+      )[1],
+    ).toMatchObject({ text: `${'x'.repeat(maxBody)}\n\n${deCanonicalLine}` });
+    expect(() =>
+      renderTelegram(
+        makePost({ photos: [], texts: { uk: 'Привіт!', de: 'x'.repeat(maxBody + 1) } }),
+        canonicalSettings,
+      ),
+    ).toThrow(/message limit/);
+  });
+});
