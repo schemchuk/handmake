@@ -74,6 +74,11 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
 - Handoff after merge (added 2026-11-03): in that same STATUS.md update, the reviewer who merged sets
   Active agent to `codex` and Next step to the next task for Codex to start in a fresh session, then
   ends its session.
+- Bot deploy after merge (added 2026-11-05): when a merged PR changes `apps/bot` or `packages/`,
+  the reviewer who merged deploys the bot from a clean `main` with `pnpm -C apps/bot run deploy` and
+  records the Worker version in STATUS.md. If the PR adds D1 migrations or changes
+  `apps/bot/wrangler.toml` or secrets, it stops and asks Volodymyr first. The publisher needs no
+  deploy: Actions run it from `main`.
 - Review notes (added 2026-11-03): the reviewer never fixes non-blocking findings itself. It lists
   them in the PR review comment and adds them to the next Codex task in docs/03-tasks.md (a
   `Review notes from PR #N` line) and to STATUS.md Next step, so Codex fixes them in that task's PR.
