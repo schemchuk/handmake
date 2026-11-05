@@ -1172,6 +1172,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   joinUrl test in `packages/core/test/tenant.test.ts` inside `describe('parseTenantConfig')`.
 
 ### T47b — Publish result reaches the chat that approved (D2, `publisher`, `bot`)
+- Status: implemented 2026-11-05; awaiting independent review.
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: after the signed published callback the bot sends a short Ukrainian result to the chat
   that pressed Publish/approve (post, work, show), with the site link when there is one. The

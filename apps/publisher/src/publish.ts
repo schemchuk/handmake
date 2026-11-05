@@ -249,8 +249,8 @@ export async function runPublish(
   await notify(
     'author',
     publication && !post.channels.length
-      ? `published ${payload.kind} ${post.id}`
-      : `published ${post.id} to ${Object.keys(delivered).join(', ')}`,
+      ? `${payload.kind === 'work' ? 'Роботу' : 'Показ'} опубліковано.`
+      : `Опубліковано. Канали: ${Object.keys(delivered).join(', ')}.`,
   );
 
   // T19: report the delivery to the bot so it moves the draft out of

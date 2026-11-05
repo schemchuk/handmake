@@ -89,26 +89,42 @@ export async function buildTenantPreview(
   texts: BotTexts,
   configs?: TenantConfigSource,
 ): Promise<PreviewMessage> {
-  const config = await configs?.load(draft.tenantId);
+  let config: TenantConfig | undefined;
+  try {
+    config = await configs?.load(draft.tenantId);
+  } catch {
+    console.warn('Preview tenant config unavailable; using default settings');
+  }
   if (config && config.id !== draft.tenantId) throw new Error('tenant config mismatch');
-  return buildPreview(draft, texts, new Date(), config?.channels.telegram);
+  return buildPreview(
+    draft,
+    texts,
+    new Date(),
+    config?.channels.telegram
+      ? { ...config.channels.telegram, languages: config.languages }
+      : undefined,
+  );
 }
 
 export function buildPreview(
   draft: Draft,
   texts: BotTexts,
   now = new Date(),
-  telegram?: TenantConfig['channels']['telegram'],
+  telegram?: TenantConfig['channels']['telegram'] & { languages?: string[] },
 ): PreviewMessage {
   const post = draftAsPost(draft, now);
   const uk = draft.texts['uk'];
   const de = draft.texts['de'];
+  const primaryLanguage =
+    telegram?.languages?.find((lang) => post.texts[lang] !== undefined) ??
+    Object.keys(post.texts)[0];
+  const primaryText = primaryLanguage ? post.texts[primaryLanguage] : undefined;
 
   let blockedError: string | undefined;
   try {
     if (draft.kind === 'work') buildApprovedWorkJob(draft);
     if (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length)
-      renderTelegram(post, telegram ? { ...telegram, languages: ['uk', 'de'] } : undefined);
+      renderTelegram(post, telegram);
   } catch (error) {
     if (draft.kind === 'work') blockedError = texts.workSetupText;
     else if (!(error instanceof TelegramRenderError)) {
@@ -140,8 +156,8 @@ export function buildPreview(
   if (
     blockedError === undefined &&
     draft.photoRefs.length > 0 &&
-    uk !== undefined &&
-    uk.length > telegramCapabilities.captionLimit &&
+    primaryText !== undefined &&
+    primaryText.length > telegramCapabilities.captionLimit &&
     (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length > 0)
   ) {
     lines.push('');

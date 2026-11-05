@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T47b — publish result reaches the chat that approved (D2), plus PR #83 review notes.
-- **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: close T47a, hand off T47b to Codex.
-- **Next step:** Codex T47b in a fresh session, including the two "Review notes from PR #83" in docs/03-tasks.md (preview fallback when tenant config fails to load, preview language order). Then T47c-T47f and T40 (including PR #81 review notes). Reviewer of each: claude-code.
+- **Active agent:** claude-code
+- **Current task:** T47b — implemented; awaiting independent review.
+- **Branch:** `feat/t47b-publish-result`.
+- **Last commit:** see `git log -1` — feat: notify the approving chat after publication.
+- **Next step:** Claude Code reviews the T47b PR and merges after green CI with no blocking findings. Then hand off T47c to Codex in a fresh session (followed by T47d-T47f and T40, including PR #81 review notes).
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
@@ -50,6 +50,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T47b validation: 124 targeted bot tests covered across runs (final callback/preview 21/21), publisher 180/180 plus final publish 7/7; workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial sandbox bot invocation selected the full suite and was stopped after local-service initialization stalls; targeted D1 suites passed outside the sandbox. Publication result uses the approving chat captured atomically with the publishing claim; shows use their session-bound stored chat. Callback notices are at most once: failure or interruption after the state transition is not retried. Config failure falls back to a result without a link and a preview without settings. No deployment, production publishing, workflows, migrations, paid calls or secret changes.
 - T47a validation: 147 targeted bot tests covered across runs (final bot handler rerun 52/52); work-session also passed in the earlier targeted run. Core 215/215 and site 46/46 pass; workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Earlier in-flight bot runs loaded the pre-fix handler/old hand-off assertion; the final handler rerun verifies publication winning after edit lookup. Sandboxed Miniflare stalled and Astro child diagnostics were unavailable; integration tests ran outside the sandbox. Site fixture URLs now satisfy the new equality guard. No deployment, production publishing, migrations, workflows, paid calls or secret changes.
 - T47g validation: channels 68/68, core 214/214, site 46/46 and publisher 180/180 pass. Workspace typecheck/build, lint and changed-file formatting checked. The sandboxed site malformed-document test lost child-process diagnostics; unrestricted full rerun passed. Site fixture checks every generated HTML page and localized post/work/show detail links; Telegram tests cover optional settings, caption/message limits and persisted show-copy footer. No deployment or production publishing.
 - T41b validation: site 46/46, publisher 180/180, core 213/213; workspace typecheck/build, lint, formatting and actionlint pass. Sandboxed site malformed-document test lost child-process diagnostics; unrestricted full rerun passed. Initial concurrent tests hit five-second timeouts; publisher passed with one worker and 30-second limit. Existing publisher test File type mismatch fixed by inferred narrowing. No deploy, publishing or paid calls. PR #80 commit 89640da code review recorded in review-notes.md.

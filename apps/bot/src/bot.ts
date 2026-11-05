@@ -286,6 +286,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         draftId,
         now,
         publishingStaleCutoff(now),
+        chatId(ctx),
       );
       if (!claimed) {
         // The callback may have landed between the read above and the claim:
