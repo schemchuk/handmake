@@ -1208,6 +1208,9 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Review notes from PR #84 (T47b): the show approval test in `apps/bot/test/show-approval.test.ts`
   approves from chat `11`, which is also the draft's chat, so it would pass even if the callback
   ignored `approvalChatId` and fell back to `chatIdOf`; approve from a different chat.
+- Done 2026-11-05: PR #85 merged (`ddd8713`), bot deployed (Worker version
+  `82dafe71-1183-460a-b4f8-baccdd7276df`) with persistent Worker logs. D7 root cause still open:
+  confirm or reject the R2 10058 hypothesis from Worker logs on the next failing show run.
 
 ### T47d — Test-run shows and works stay off the site (D8, `publisher`, `site`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
@@ -1216,6 +1219,12 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance: a test-channel show or work run commits content with `siteExcluded: true` and has no
   site page.
 - Tests: publisher marks shows/works; site filters them.
+- Review notes from PR #85 (T47c): (1) the show transport operation allow-list is duplicated in
+  `apps/bot/src/show-transport.ts` and `apps/publisher/src/show-executor.ts` and already differs
+  (`journal`); export one list from `@handmake/core`. (2) Worker logs are now persisted, but
+  `apps/bot/src/work-session.ts` (two `console.error('work setup failed', error)` calls) logs the raw
+  error object, which may carry the author's text or chat id; route it through the redacting
+  `safeErrorMessage` path used in `composition.ts`.
 
 ### T47e — Smaller UX fixes (D3, D5, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47a

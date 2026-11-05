@@ -1,13 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T47c — diagnostics and conditional R2 throttling mitigation implemented; awaiting review. Historical D7 root cause remains unconfirmed.
-- **Branch:** `feat/t47c-show-diagnostics`.
-- **Last commit:** see `git log -1` — fix: diagnose show failures and retry throttled job writes.
-- **Next step:** Claude Code reviews the T47c PR, including the PR #84 test fix and the explicitly unconfirmed D7 hypothesis (docs/show-recovery.md). Do not close the historical investigation without evidence. After green CI and review, follow the merge protocol; wrangler.toml changed, so ask Volodymyr before deploying. Then hand off the next task to Codex in a fresh session.
+- **Active agent:** codex
+- **Current task:** T47d — test-run shows and works stay off the site (D8).
+- **Branch:** `main` (Codex creates `feat/t47d-<slug>`).
+- **Last commit:** see `git log -1` — docs: close T47c, hand off T47d to Codex.
+- **Next step:** Codex starts T47d in a fresh session, including the "Review notes from PR #85" in docs/03-tasks.md (shared operation allow-list in core; redact `work setup failed` logs in work-session.ts). T47c merged (PR #85, `ddd8713`); bot deployed, Worker version `82dafe71-1183-460a-b4f8-baccdd7276df`, Worker logs now persisted. D7 root cause still unconfirmed: check Worker logs on the next failing show run.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
-- T47c validation: transport/approval 70/70 with local D1/R2, publisher 181/181, core 222/222 and AI 121/121 pass; workspace typecheck/build, lint, changed-file formatting and Wrangler dry-run pass. Initial Miniflare run stalled in the sandbox; an early combined run was stopped, and the final unrestricted combined run passed. Initial fault injection used spies on an R2 proxy and was corrected to a forwarding test adapter. No production deploy, publishing, paid calls, migrations or secret changes. D7 attribution remains open.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.
