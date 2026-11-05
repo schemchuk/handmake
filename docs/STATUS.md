@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T47a — pending edit survives publish and discard. T47 done 2026-11-04 (docs/e2e-v7.md).
+- **Current task:** T47g (priority, added 2026-11-05) — link to join the Telegram channel on the site and in every post. T47 done 2026-11-04 (docs/e2e-v7.md).
 - **Branch:** `main`.
 - **Last commit:** see `git log -1` — docs: close T47, plan fixes T47a-T47f.
-- **Next step:** Codex T47a in a fresh session, then T47b-T47f (fixes from T47, defects D1-D8 in docs/e2e-v7.md), then T40 including the PR #81 review notes. Reviewer of each: claude-code.
+- **Next step:** Codex T47g in a fresh session, then T47a-T47f (fixes from T47, defects D1-D8 in docs/e2e-v7.md), then T40 including the PR #81 review notes. Reviewer of each: claude-code.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.

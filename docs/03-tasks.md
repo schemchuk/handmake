@@ -1081,6 +1081,8 @@ T26c (Instagram, Facebook, Threads) → T48 (email and lead magnet) → T49 (com
 T47a-T47f added 2026-11-04 from the T47 check (docs/e2e-v7.md, defects D1-D8); they run after T47,
 before T40.
 
+T47g added 2026-11-05 by Volodymyr as a priority: it runs first, before T47a.
+
 T41 changes in v5: depends on H11 and H14 only (not on T40); scope as below.
 
 T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
@@ -1134,6 +1136,23 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Review notes from PR #81: check whether a show published from a test run can reach the site
   (shows do not carry `siteExcluded`).
 - Tests: n/a (manual check).
+
+### T47g — Join the Telegram channel from the site and from every post (`site`, `channels`) · Priority
+- Owner: codex · Reviewer: claude-code · Depends on: T47
+- Why: the channel `https://t.me/Faden_und_Stimmung` (public, `site.circle.joinUrl`) is linked
+  only on `/kreis/`; a visitor of a post, work or show page, or a reader of a forwarded post, has
+  no direct way to subscribe. Telegram's own "Join" button shows only to non-members, so admins
+  never see it.
+- Change: (1) site: a "join the channel" link (DE/UK texts in `apps/site/src/lib/i18n.ts`) in the
+  header or footer of every page and below each post, work and show, from the tenant config, not
+  hard-coded; (2) Telegram: a short last line with the channel link in the German reply of every
+  post, work announcement and show copy ("Kanal abonnieren: <link>"), from a tenant config
+  field; it counts towards the 1024/4096 limits and
+  shares one footer with the T40 canonical link so T40 extends it instead of adding a second one.
+- Acceptance: every built page links to the channel; the next published post has the line; posts
+  already sent stay unchanged.
+- Tests: site layout and detail pages render the link from config; renderer appends the line once,
+  respects caption/message limits, absent field → unchanged ops.
 
 ### T47a — Pending edit survives publish and discard (D4, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
