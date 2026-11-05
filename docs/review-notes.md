@@ -41,7 +41,6 @@ task touches (ADR 009). Delete an entry in the PR that resolves it.
 ## Site workflow (T39, PR #35)
 - A failure of the `site` job in `publish.yml` raises no Telegram alert (the alert covers only the `publish` job). The post is already published; re-run the failed job. Consider an operator alert in a later task.
 - T41b resolves test posts reaching the site: test-channel runs persist `siteExcluded: true`; site lists, pages, media and sitemap all use the filtered post set. T47d extends this to works/shows, including shows linked to hidden works. Collections with hidden covers use a visible replacement or are omitted; stored collection metadata stays unchanged.
-- Deploy runs after channel delivery, so a "Mehr auf der Website" link (T40) can briefly point to a page that does not exist yet. T40 must account for this.
 - First deploy must be started by hand (Actions → Site → Run workflow on `main`) to confirm locked Wrangler 4.152.0 does not need `--force` for the existing Pages project.
 
 ## Works and collections (T36a, PR #36)

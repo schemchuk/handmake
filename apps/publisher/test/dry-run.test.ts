@@ -93,10 +93,21 @@ describe('runDryRun', () => {
       channelId: 'TELEGRAM_CHANNEL_ID',
       joinUrl: 'https://t.me/Faden_und_Stimmung',
       languages: ['uk', 'de'],
+      canonical: {
+        links: true,
+        baseUrl: 'https://fadenundstimmung.de',
+        defaultLanguage: 'de',
+        section: 'posts',
+      },
     });
 
     expect(result.post).toEqual(expectedPost);
     expect(result.ops).toEqual(expectedOps);
+    expect(result.ops[0]).toMatchObject({
+      caption:
+        'Тестовий допис (T09).\n\n' +
+        'Більше на сайті: https://fadenundstimmung.de/uk/posts/01jdryrnt000000000000000bc/',
+    });
     expect(result.photoCount).toBe(2);
     expect(result.postDir).toBe(
       path.join(tempDir, 'content', 'posts', `2026-10-24-${postId.toLowerCase()}`),
@@ -162,6 +173,12 @@ describe('runDryRun', () => {
           channelId: 'TELEGRAM_CHANNEL_ID',
           joinUrl: 'https://t.me/Faden_und_Stimmung',
           languages: ['uk', 'de'],
+          canonical: {
+            links: true,
+            baseUrl: 'https://fadenundstimmung.de',
+            defaultLanguage: 'de',
+            section: 'posts',
+          },
         },
       ),
     );

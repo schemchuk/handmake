@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { createTelegramAdapter } from '@handmake/channels';
 import {
+  canonicalLinkSettings,
   ChannelRegistry,
   idempotencyBase,
   initLedger,
@@ -209,7 +210,13 @@ export async function runPublish(
     }
     const adapter = registry.get(channel);
     const settings = (tenant.channels as Record<string, unknown>)[channel];
-    const ops = adapter.render(post, settings);
+    // T40: the canonical footer rides the render settings; delivery keeps the
+    // raw tenant section (adapters read channelId only).
+    const canonical = canonicalLinkSettings(tenant, payload.kind === 'work' ? 'works' : 'posts');
+    const ops = adapter.render(
+      post,
+      canonical ? { ...(settings as Record<string, unknown>), canonical } : settings,
+    );
     const startAt = nextOpIndex(ledger, channel);
     log(`channel ${channel}: ${ops.length} op(s), resuming at op ${startAt}`);
     try {

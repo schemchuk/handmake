@@ -1,6 +1,6 @@
 import { renderTelegram, TelegramRenderError, telegramCapabilities } from '@handmake/channels';
-import { buildApprovedWorkJob, readWorkDraftData } from '@handmake/core';
-import type { Draft, Post, TenantConfig } from '@handmake/core';
+import { buildApprovedWorkJob, canonicalLinkSettings, readWorkDraftData } from '@handmake/core';
+import type { CanonicalLinkSettings, Draft, Post, TenantConfig } from '@handmake/core';
 
 import type { BotTexts } from './texts';
 import type { TenantConfigSource } from './tenant-config-source';
@@ -96,12 +96,22 @@ export async function buildTenantPreview(
     console.warn('Preview tenant config unavailable; using default settings');
   }
   if (config && config.id !== draft.tenantId) throw new Error('tenant config mismatch');
+  // T40: the preview must render exactly what the publisher will deliver,
+  // including the canonical footer (absent when the flag is off or there is
+  // no site; work drafts link to the work page).
+  const canonical = config
+    ? canonicalLinkSettings(config, draft.kind === 'work' ? 'works' : 'posts')
+    : undefined;
   return buildPreview(
     draft,
     texts,
     new Date(),
     config?.channels.telegram
-      ? { ...config.channels.telegram, languages: config.languages }
+      ? {
+          ...config.channels.telegram,
+          languages: config.languages,
+          ...(canonical ? { canonical } : {}),
+        }
       : undefined,
   );
 }
@@ -110,7 +120,10 @@ export function buildPreview(
   draft: Draft,
   texts: BotTexts,
   now = new Date(),
-  telegram?: TenantConfig['channels']['telegram'] & { languages?: string[] },
+  telegram?: TenantConfig['channels']['telegram'] & {
+    languages?: string[];
+    canonical?: CanonicalLinkSettings;
+  },
 ): PreviewMessage {
   const post = draftAsPost(draft, now);
   const uk = draft.texts['uk'];

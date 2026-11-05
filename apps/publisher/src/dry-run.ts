@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { renderTelegram } from '@handmake/channels';
-import { parsePost } from '@handmake/core';
+import { canonicalLinkSettings, parsePost } from '@handmake/core';
 import type { MediaSource, Post, SendOperation, Work } from '@handmake/core';
 import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
@@ -71,6 +71,7 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
   // Acceptance check: the written folder must validate with parsePost.
   if (!publication) parsePost(await readFile(path.join(postDir, 'index.md'), 'utf8'));
 
+  const canonical = canonicalLinkSettings(tenant, publication ? 'works' : 'posts');
   const ops =
     publication && !post.channels.includes('telegram')
       ? []
@@ -78,6 +79,7 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
           ...tenant.channels.telegram,
           channelId: tenant.channels.telegram?.channelId ?? '',
           languages: tenant.languages,
+          ...(canonical ? { canonical } : {}),
         });
 
   log(`post id: ${post.id}`);

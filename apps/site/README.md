@@ -139,5 +139,12 @@ Technical sources for the additions:
 [Telegram privacy](https://telegram.org/privacy).
 
 Posts with frontmatter `siteExcluded: true` have no site pages, list entries, media
-routes or sitemap entries. Test-channel publish runs set it automatically; retries
-preserve the flag. Existing posts without the field remain visible.
+routes or sitemap entries. Test-channel publish runs set it automatically (works and
+shows too); the flag is sticky per content id — a draft first published to the test
+channel stays `siteExcluded` on a later live re-dispatch with the same draft id, and
+retries preserve it. Existing posts without the field remain visible.
+
+Channel copies carry a canonical link to their site page from the moment they are
+delivered (T40), but this workflow deploys only after the publish job, so the link can
+briefly point to a page that does not exist yet. Recovery is a manual Site run (above);
+the publish run itself never needs a re-run for this.

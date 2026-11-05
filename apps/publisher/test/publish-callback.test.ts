@@ -345,4 +345,8 @@ describe('runPublish published callback', () => {
 
     expect(calls).toHaveLength(0);
   });
-});
+  // The git-backed cases init a real repository per case (git init/config/
+  // commit), which exceeds the 5 s default under concurrent local runs
+  // (PR #88 review note); show-transport carries the same allowance for its
+  // sequential storage operations.
+}, 30_000);
