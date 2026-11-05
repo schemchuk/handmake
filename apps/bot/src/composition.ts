@@ -136,6 +136,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        tenantConfigs,
         costs: { ledger: costs, tenantConfigs },
         translatorFor: aiRuntime().translatorFor,
         show: {

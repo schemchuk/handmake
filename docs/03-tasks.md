@@ -1156,6 +1156,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   respects caption/message limits, absent field → unchanged ops.
 
 ### T47a — Pending edit survives publish and discard (D4, `bot`)
+- Status: implemented; awaiting independent review by claude-code.
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: clear `pending_edit` whenever a draft leaves `collecting`/`ready` (publishing claim,
   discard, show/work hand-offs) and ignore a pending edit whose draft is no longer editable, so a

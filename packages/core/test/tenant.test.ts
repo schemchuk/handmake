@@ -53,6 +53,25 @@ offerings: []
 `;
 
 describe('parseTenantConfig', () => {
+  it('allows an absent subscription URL and rejects non-HTTPS URLs', () => {
+    expect(channelsSchema.parse({ telegram: { channelId: 'CHAT' } }).telegram).toEqual({
+      channelId: 'CHAT',
+    });
+    for (const joinUrl of ['invalid', 'http://example.invalid', 'javascript:alert(1)']) {
+      expect(channelsSchema.safeParse({ telegram: { channelId: 'CHAT', joinUrl } }).success).toBe(
+        false,
+      );
+    }
+  });
+
+  it('rejects differing site and channel subscription URLs', () => {
+    const yaml = realConfig().replace(
+      'joinUrl: https://t.me/Faden_und_Stimmung',
+      'joinUrl: https://t.me/different',
+    );
+    expect(() => parseTenantConfig(yaml)).toThrowError(/must match/);
+  });
+
   it('validates the real tenant config file', () => {
     const config = parseTenantConfig(realConfig());
     expect(config.id).toBe('faden-und-stimmung');
@@ -245,15 +264,4 @@ ai:
   ])('rejects malformed or unknown ai fields', (section) => {
     expect(() => parseTenantConfig(secondTenant + section)).toThrow(TenantConfigError);
   });
-});
-
-it('allows an absent subscription URL and rejects non-HTTPS URLs', () => {
-  expect(channelsSchema.parse({ telegram: { channelId: 'CHAT' } }).telegram).toEqual({
-    channelId: 'CHAT',
-  });
-  for (const joinUrl of ['invalid', 'http://example.invalid', 'javascript:alert(1)']) {
-    expect(channelsSchema.safeParse({ telegram: { channelId: 'CHAT', joinUrl } }).success).toBe(
-      false,
-    );
-  }
 });

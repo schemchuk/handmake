@@ -47,6 +47,6 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
       </figure>
     </div>
     <a class="back" href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a>
-    <p><JoinChannel lang={lang} /></p>
+    <JoinChannel lang={lang} />
   </article>
 </Base>

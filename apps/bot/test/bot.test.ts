@@ -1,5 +1,6 @@
 import type { Bot } from 'grammy';
-import { createDraft, isUlid, newUlid, transitionDraft } from '@handmake/core';
+import { readFileSync } from 'node:fs';
+import { createDraft, isUlid, newUlid, parseTenantConfig, transitionDraft } from '@handmake/core';
 import type { PublishJob, TranslationRequest, TranslationResult, Translator } from '@handmake/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -65,6 +66,15 @@ beforeEach(async () => {
   };
   bot = createBot({
     token: 'TEST_TOKEN',
+    tenantConfigs: {
+      load: async () =>
+        parseTenantConfig(
+          readFileSync(
+            new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
+            'utf8',
+          ),
+        ),
+    },
     drafts,
     resolveTenant: (userId) => (userId === allowed.userId ? allowed.tenantId : undefined),
     texts: botTexts,
@@ -346,6 +356,57 @@ describe('preview buttons', () => {
     const ready = await drafts.listByState(allowed.tenantId, 'ready');
     return ready[0]!.draft.draftId;
   }
+
+  it.each(['publish', 'discard', 'legacy-published'])(
+    'an armed edit cannot capture later text after %s',
+    async (action) => {
+      const draftId = await makeReadyDraft();
+      await bot.handleUpdate(
+        callbackQueryUpdate(allowed.userId, allowed.userId, `draft:${draftId}:edit:de`),
+      );
+      if (action === 'publish') {
+        await bot.handleUpdate(
+          callbackQueryUpdate(allowed.userId, allowed.userId, `draft:${draftId}:publish:confirm`),
+        );
+        await flushBackground();
+        expect((await drafts.get(allowed.tenantId, draftId))?.pendingEdit).toBeNull();
+        await drafts.markPublished(allowed.tenantId, draftId, new Date());
+      } else if (action === 'discard') {
+        await bot.handleUpdate(textUpdate(allowed.userId, '/discard'));
+        expect(await drafts.get(allowed.tenantId, draftId)).toBeUndefined();
+      } else {
+        // Reproduce the production row left by the old implementation.
+        await db.prepare("UPDATE drafts SET status = 'published' WHERE id = ?").bind(draftId).run();
+      }
+      await bot.handleUpdate(textUpdate(allowed.userId, 'Наступний допис'));
+      expect(sentTexts(calls).at(-1)).toBe(botTexts.textSavedText(0));
+      expect(
+        (await drafts.findCollectingForChat(allowed.tenantId, String(allowed.userId), 'post'))
+          ?.draft.texts['uk'],
+      ).toBe('Наступний допис');
+    },
+  );
+
+  it('routes text normally when publication wins after the pending-edit lookup', async () => {
+    const draftId = await makeReadyDraft();
+    await drafts.setPendingEdit(allowed.tenantId, draftId, 'de', new Date());
+    const replace = drafts.replaceText.bind(drafts);
+    drafts.replaceText = async (...args) => {
+      await drafts.claimPublishing(allowed.tenantId, draftId, new Date());
+      return replace(...args);
+    };
+    await bot.handleUpdate(textUpdate(allowed.userId, 'Наступний допис'));
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.textSavedText(0));
+    expect((await drafts.get(allowed.tenantId, draftId))?.draft.texts['de']).toBe('DE:Привіт!');
+  });
+
+  it('uses tenant footer settings in the translated preview', async () => {
+    translateImpl = async () => ({ text: 'x'.repeat(4096) });
+    await makeReadyDraft();
+    const preview = lastSendMessage(calls)!;
+    expect(preview['text']).toContain('4096');
+    expect(JSON.stringify(preview['reply_markup'])).not.toContain(':publish');
+  });
 
   it('Edit DE arms the edit; the next text message replaces the German version', async () => {
     const draftId = await makeReadyDraft();

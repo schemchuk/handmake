@@ -143,7 +143,7 @@ async function createDraftAndPreview(
   if (!stored) {
     return;
   }
-  const preview = buildPreview(stored.draft, options.texts);
+  const preview = buildPreview(stored.draft, options.texts, now, config.channels.telegram);
   for (const authorId of authorIds) {
     await options.bot.api
       .sendMessage(

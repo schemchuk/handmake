@@ -53,6 +53,6 @@ const [lead, ...rest] = paragraphs(text);
       {aiNote && <p class="meta">{aiNote}</p>}
       <a class="back" href={pagePath(lang, def)}>{ui.back}</a>
     </div>
-    <p><JoinChannel lang={lang} /></p>
+    <JoinChannel lang={lang} />
   </article>
 </Base>

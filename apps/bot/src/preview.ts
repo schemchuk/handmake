@@ -1,8 +1,9 @@
 import { renderTelegram, TelegramRenderError, telegramCapabilities } from '@handmake/channels';
 import { buildApprovedWorkJob, readWorkDraftData } from '@handmake/core';
-import type { Draft, Post } from '@handmake/core';
+import type { Draft, Post, TenantConfig } from '@handmake/core';
 
 import type { BotTexts } from './texts';
+import type { TenantConfigSource } from './tenant-config-source';
 
 /**
  * The author preview (T15): renders the draft through the very same
@@ -82,7 +83,23 @@ function keyboard(draftId: string, texts: BotTexts, blocked: boolean): PreviewKe
   return rows;
 }
 
-export function buildPreview(draft: Draft, texts: BotTexts, now = new Date()): PreviewMessage {
+/** Resolve the same tenant settings used by publication, including its footer. */
+export async function buildTenantPreview(
+  draft: Draft,
+  texts: BotTexts,
+  configs?: TenantConfigSource,
+): Promise<PreviewMessage> {
+  const config = await configs?.load(draft.tenantId);
+  if (config && config.id !== draft.tenantId) throw new Error('tenant config mismatch');
+  return buildPreview(draft, texts, new Date(), config?.channels.telegram);
+}
+
+export function buildPreview(
+  draft: Draft,
+  texts: BotTexts,
+  now = new Date(),
+  telegram?: TenantConfig['channels']['telegram'],
+): PreviewMessage {
   const post = draftAsPost(draft, now);
   const uk = draft.texts['uk'];
   const de = draft.texts['de'];
@@ -91,7 +108,7 @@ export function buildPreview(draft: Draft, texts: BotTexts, now = new Date()): P
   try {
     if (draft.kind === 'work') buildApprovedWorkJob(draft);
     if (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length)
-      renderTelegram(post);
+      renderTelegram(post, telegram ? { ...telegram, languages: ['uk', 'de'] } : undefined);
   } catch (error) {
     if (draft.kind === 'work') blockedError = texts.workSetupText;
     else if (!(error instanceof TelegramRenderError)) {
