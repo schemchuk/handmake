@@ -15,6 +15,7 @@ export interface UiStrings {
   when: string;
   where: string;
   join: string;
+  joinChannel: string;
   every: (weekday: string) => string;
   oClock: (time: string) => string;
   aiAssisted: string;
@@ -39,6 +40,7 @@ const strings: Record<string, UiStrings> = {
     when: 'Wann',
     where: 'Wo',
     join: 'Zum Telegram-Kanal',
+    joinChannel: 'Telegram-Kanal abonnieren',
     every: (weekday) => `Jeden ${weekday}`,
     oClock: (time) => `${time} Uhr`,
     aiAssisted: 'Mit KI-Unterstützung erstellt',
@@ -61,6 +63,7 @@ const strings: Record<string, UiStrings> = {
     when: 'Коли',
     where: 'Де',
     join: 'До Telegram-каналу',
+    joinChannel: 'Підписатися на Telegram-канал',
     every: (weekday) => `Щотижня, ${weekday}`,
     oClock: (time) => `о ${time}`,
     aiAssisted: 'Створено за допомогою ШІ',

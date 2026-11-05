@@ -1,4 +1,5 @@
 ---
+import JoinChannel from '../components/JoinChannel.astro';
 import '../styles/global.css';
 import Stitch from '../components/Stitch.astro';
 import { fontFaceCss, fontStack } from '../lib/fonts';
@@ -94,6 +95,7 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <footer class="wrap site-footer">
       <Stitch />
       <span>{tenant.name}</span>
+      <JoinChannel lang={lang} />
       <a href={pagePath(lang, def, 'impressum')}>Impressum</a>
       <a href={pagePath(lang, def, 'datenschutz')}>Datenschutzerklärung</a>
     </footer>

@@ -1,0 +1,7 @@
+---
+import { uiStrings } from '../lib/i18n';
+import { loadSiteData } from '../lib/site-data';
+const { lang } = Astro.props;
+const { site } = await loadSiteData();
+---
+{site.circle?.joinUrl && <a class="join-channel" href={site.circle.joinUrl}>{uiStrings(lang).joinChannel}</a>}

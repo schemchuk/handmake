@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T47g (priority, added 2026-11-05) — link to join the Telegram channel on the site and in every post. T47 done 2026-11-04 (docs/e2e-v7.md).
-- **Branch:** `main`.
-- **Last commit:** see `git log -1` — docs: close T47, plan fixes T47a-T47f.
-- **Next step:** Codex T47g in a fresh session, then T47a-T47f (fixes from T47, defects D1-D8 in docs/e2e-v7.md), then T40 including the PR #81 review notes. Reviewer of each: claude-code.
+- **Active agent:** claude-code
+- **Current task:** Review T47g — channel subscription links on the site and in Telegram posts, work announcements and show copies.
+- **Branch:** `feat/t47g-channel-join`.
+- **Last commit:** see `git log -1` — feat: add Telegram channel subscription links.
+- **Next step:** Claude Code reviews T47g and merges after green CI. Then hand off to Codex for T47a in a fresh session; T47b-T47f and T40 (including PR #81 review notes) follow.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
@@ -50,6 +50,7 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T47g validation: channels 68/68, core 214/214, site 46/46 and publisher 180/180 pass. Workspace typecheck/build, lint and changed-file formatting checked. The sandboxed site malformed-document test lost child-process diagnostics; unrestricted full rerun passed. Site fixture checks every generated HTML page and localized post/work/show detail links; Telegram tests cover optional settings, caption/message limits and persisted show-copy footer. No deployment or production publishing.
 - T41b validation: site 46/46, publisher 180/180, core 213/213; workspace typecheck/build, lint, formatting and actionlint pass. Sandboxed site malformed-document test lost child-process diagnostics; unrestricted full rerun passed. Initial concurrent tests hit five-second timeouts; publisher passed with one worker and 30-second limit. Existing publisher test File type mismatch fixed by inferred narrowing. No deploy, publishing or paid calls. PR #80 commit 89640da code review recorded in review-notes.md.
 - T44e11 review-fix validation: full bot 505/505 and publisher 180/180 tests pass; workspace typecheck/build, lint and changed-file formatting pass. Sandbox transport run could not bind Miniflare (EPERM); full bot suite passed outside the sandbox. Only the explicit bounded finish response `unfinished job` gets a typed rejection; other Worker 409 errors retain the generic message and ambiguous delivery keeps successful execution green. Two real D1/R2 Worker regressions cover both paths. No deployment, workflows, paid calls, migrations, Worker runtime or secrets changed.
 - PR #78 review fix: failed finish callbacks now use `retry`, collecting uses `start`, other states omit resume. Two D1-backed session tests route the actual finish notification button for paid-gate and failed outcomes through the bot. Session 48/48, notification 8/8 and publisher finish 4/4 tests pass; bot/publisher typecheck and changed-file lint/format pass. Ready-notification failures leave successful generation/recovery green; finish nonce idempotence is documented inline. No deploy, production dispatch, paid calls, workflows or secrets changed in this fix.

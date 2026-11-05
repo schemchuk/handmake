@@ -239,3 +239,36 @@ describe('renderTelegram: wotw-poll (T21, ADR 008)', () => {
     expect(() => renderTelegram(pollPost({ poll: long }))).toThrowError(/option limit/);
   });
 });
+
+const joinSettings = { joinUrl: 'https://t.me/fixture_channel' };
+const joinLine = `Kanal abonnieren: ${joinSettings.joinUrl}`;
+describe('subscription footer', () => {
+  it('appends once to German only, for posts and work announcements, without mutating input', () => {
+    for (const count of [0, 2]) {
+      const post = makePost({ photos: photos(count) });
+      const before = structuredClone(post);
+      const ops = renderTelegram(post, joinSettings);
+      expect(ops[0]).toMatchObject(count ? { caption: 'Привіт!' } : { text: 'Привіт!' });
+      expect(ops[1]).toMatchObject({ text: `Hallo!\n\n${joinLine}` });
+      expect(renderTelegram(post, joinSettings)).toEqual(ops);
+      expect(post).toEqual(before);
+    }
+  });
+  it('counts the footer before selecting a caption or rejecting a message', () => {
+    const post = makePost({ texts: { de: 'x'.repeat(captionLimit) } });
+    expect(renderTelegram(post, joinSettings)[0]).not.toHaveProperty('caption');
+    expect(renderTelegram(post, joinSettings)[1]).toMatchObject({
+      text: `${post.texts.de}\n\n${joinLine}`,
+    });
+    const maxBody = messageLimit - joinLine.length - 2;
+    expect(
+      renderTelegram(makePost({ photos: [], texts: { de: 'x'.repeat(maxBody) } }), joinSettings)[0],
+    ).toMatchObject({ text: `${'x'.repeat(maxBody)}\n\n${joinLine}` });
+    expect(() =>
+      renderTelegram(makePost({ texts: { de: 'x'.repeat(maxBody + 1) } }), joinSettings),
+    ).toThrow(/message limit/);
+  });
+  it('leaves operations unchanged without the optional setting', () => {
+    expect(renderTelegram(makePost(), {})).toEqual(renderTelegram(makePost()));
+  });
+});

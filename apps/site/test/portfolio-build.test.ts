@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { access, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -91,7 +91,43 @@ describe('portfolio fixture build', () => {
         ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
         { fileName: show.video.fileName, data: video },
       ]);
+      await fixture.store.savePost(
+        {
+          id: '01JBCA1B2C3D4E5F6G7H8J9K0M',
+          tenant: 'fixture',
+          date: '2026-11-04T10:00:00Z',
+          publishAt: 'now',
+          type: 'free',
+          photos: [],
+          channels: ['telegram'],
+          versions: { de: { provenance: 'human' }, uk: { provenance: 'human' } },
+          texts: { de: 'Fixture post', uk: 'Тестовий допис' },
+        },
+        [],
+      );
+      fixture.tenant.site!.circle = {
+        joinUrl: 'https://t.me/fixture_join',
+        texts: {
+          de: { title: 'Kreis', what: 'Handarbeit', where: 'Landshut' },
+          uk: { title: 'Гурток', what: 'Рукоділля', where: 'Ландсгут' },
+        },
+      };
+      await writeFile(
+        path.join(root, 'config/tenants/fixture.yaml'),
+        JSON.stringify(fixture.tenant),
+      );
       const result = await build(root, dist);
+      for (const file of await readdir(dist, { recursive: true })) {
+        if (!file.endsWith('.html')) continue;
+        const page = await readFile(path.join(dist, file), 'utf8');
+        expect(page).toContain('href="https://t.me/fixture_join"');
+        if (/^(uk\/)?(posts|works|shows)\/[^/]+\/index.html$/.test(file)) {
+          expect(page.match(/class="join-channel"/g)).toHaveLength(2);
+          expect(page).toContain(
+            file.startsWith('uk/') ? 'Підписатися на Telegram-канал' : 'Telegram-Kanal abonnieren',
+          );
+        }
+      }
       for (const value of [
         'Legal Fixture Name',
         'Legal Fixture Street',

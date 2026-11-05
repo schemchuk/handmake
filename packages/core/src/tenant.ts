@@ -53,6 +53,7 @@ export const channelsSchema = z
       .object({
         // Name of the secret holding the channel's Telegram chat id.
         channelId: z.string(),
+        joinUrl: z.url({ protocol: /^https$/ }).optional(),
       })
       .strict()
       .optional(),

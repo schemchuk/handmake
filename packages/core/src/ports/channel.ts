@@ -88,6 +88,7 @@ export interface DeliverProgress {
 }
 
 export interface ShowRenderContext {
+  settings?: unknown;
   site: { baseUrl: string; defaultLanguage: string };
   languages: string[];
 }

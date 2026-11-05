@@ -91,6 +91,7 @@ describe('runDryRun', () => {
     };
     const expectedOps = renderTelegram(expectedPost, {
       channelId: 'TELEGRAM_CHANNEL_ID',
+      joinUrl: 'https://t.me/Faden_und_Stimmung',
       languages: ['uk', 'de'],
     });
 
@@ -157,7 +158,11 @@ describe('runDryRun', () => {
           versions: { uk: { provenance: 'human' }, de: { provenance: 'human' } },
           texts: basePayload.texts,
         },
-        { channelId: 'TELEGRAM_CHANNEL_ID', languages: ['uk', 'de'] },
+        {
+          channelId: 'TELEGRAM_CHANNEL_ID',
+          joinUrl: 'https://t.me/Faden_und_Stimmung',
+          languages: ['uk', 'de'],
+        },
       ),
     );
     expect(lines.join('\n')).toContain('photos: 0');

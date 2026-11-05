@@ -29,6 +29,7 @@ import type {
 export interface TelegramChannelSettings {
   /** Secret NAME resolving to the target chat id; never a raw value. */
   channelId: string;
+  joinUrl?: string;
   /** Tenant language order; the first language present in the post is primary. */
   languages?: string[];
 }
@@ -75,6 +76,15 @@ function orderLanguages(post: Post, settings?: unknown): string[] {
   return [...ordered, ...rest];
 }
 
+/** Shared footer for subscription and future canonical post links. */
+function appendFooter(text: string, lang: string, settings: unknown): string {
+  if (lang !== 'de' || typeof settings !== 'object' || settings === null) return text;
+  const joinUrl = (settings as { joinUrl?: unknown }).joinUrl;
+  if (typeof joinUrl !== 'string' || !joinUrl) return text;
+  const line = `Kanal abonnieren: ${joinUrl}`;
+  return `${text}\n\n${line}`;
+}
+
 export function renderTelegram(post: Post, settings?: unknown): SendOperation[] {
   const {
     maxPhotos,
@@ -94,7 +104,7 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
   }
 
   const ops: SendOperation[] = [];
-  const primaryText = post.texts[primaryLang]!;
+  const primaryText = appendFooter(post.texts[primaryLang]!, primaryLang, settings);
 
   const checkLimit = (lang: string, text: string) => {
     if (text.length > messageLimit) {
@@ -153,7 +163,7 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
   // Further languages reply to the album (op 0), even if the primary text
   // overflowed into a separate message.
   for (const lang of otherLangs) {
-    const text = post.texts[lang]!;
+    const text = appendFooter(post.texts[lang]!, lang, settings);
     checkLimit(lang, text);
     ops.push({ kind: 'message', text, lang, replyToOp: 0 });
   }
@@ -190,7 +200,11 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
     const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
     const disclosure = disclosures[lang];
     if (!disclosure) throw new TelegramRenderError(`unsupported show disclosure language: ${lang}`);
-    const text = `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`;
+    const text = appendFooter(
+      `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`,
+      lang,
+      context.settings,
+    );
     if (text.length > telegramCapabilities.messageLimit) {
       throw new TelegramRenderError(`show description for "${lang}" exceeds message limit`);
     }

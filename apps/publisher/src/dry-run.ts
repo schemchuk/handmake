@@ -75,6 +75,7 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
     publication && !post.channels.includes('telegram')
       ? []
       : renderTelegram(post, {
+          ...tenant.channels.telegram,
           channelId: tenant.channels.telegram?.channelId ?? '',
           languages: tenant.languages,
         });
