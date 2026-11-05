@@ -471,4 +471,123 @@ describe('runPublish', () => {
       }),
     ).rejects.toThrow(PublishError);
   });
+
+  it('renders the canonical footer only when featureFlags.canonicalLinks is on (T40)', async () => {
+    // Render through the real renderer with the settings runPublish passes,
+    // so the test pins what actually reaches the channel.
+    const renderWithPassedSettings = (post: Post, settings: unknown): SendOperation[] =>
+      renderTelegram(post, settings);
+    const publish = async (
+      repoDir: string,
+      payloadPath: string,
+      adapter: FakeChannelAdapter,
+    ): Promise<void> => {
+      await runPublish(payloadPath, {
+        cwd: repoDir,
+        root: repoDir,
+        env: {},
+        now,
+        mediaSource: await mediaSourceWithFixture(),
+        registry: makeRegistry(adapter),
+        notifier: new FakeNotifier(),
+        logger: () => {},
+      });
+    };
+
+    // Flag on (the committed tenant config): both language copies link to the post page.
+    const onRepo = await makeRepo();
+    const onAdapter = new FakeChannelAdapter({
+      key: 'telegram',
+      renderImpl: renderWithPassedSettings,
+    });
+    await publish(onRepo.repoDir, onRepo.payloadPath, onAdapter);
+    const lowerId = draftId.toLowerCase();
+    expect(onAdapter.deliveries[0]!.ops[0]).toMatchObject({
+      caption:
+        'Тестовий допис (T10).\n\n' +
+        `Більше на сайті: https://fadenundstimmung.de/uk/posts/${lowerId}/`,
+    });
+    expect(onAdapter.deliveries[0]!.ops[1]).toMatchObject({
+      text:
+        `Testbeitrag (T10).\n\nMehr auf der Website: https://fadenundstimmung.de/posts/${lowerId}/\n` +
+        'Kanal abonnieren: https://t.me/Faden_und_Stimmung',
+    });
+
+    // Flag off: the channel copy stays unchanged.
+    const offRepo = await makeRepo();
+    const configPath = path.join(offRepo.repoDir, 'config', 'tenants', 'faden-und-stimmung.yaml');
+    await writeFile(
+      configPath,
+      (await readFile(configPath, 'utf8')).replace('canonicalLinks: true', 'canonicalLinks: false'),
+    );
+    const offAdapter = new FakeChannelAdapter({
+      key: 'telegram',
+      renderImpl: renderWithPassedSettings,
+    });
+    await publish(offRepo.repoDir, offRepo.payloadPath, offAdapter);
+    expect(offAdapter.deliveries[0]!.ops[0]).toMatchObject({ caption: 'Тестовий допис (T10).' });
+    expect(offAdapter.deliveries[0]!.ops[1]).toMatchObject({
+      text: 'Testbeitrag (T10).\n\nKanal abonnieren: https://t.me/Faden_und_Stimmung',
+    });
+  });
+
+  it('links a work announcement to the work page, never to a post page (T40)', async () => {
+    const { repoDir, payloadPath } = await makeRepo();
+    const versions = Object.fromEntries(
+      Object.entries(basePayload.texts).map(([lang, description]) => [
+        lang,
+        { description, provenance: 'human' as const },
+      ]),
+    );
+    await writeFile(
+      payloadPath,
+      JSON.stringify({
+        ...basePayload,
+        kind: 'work',
+        work: {
+          kind: 'interior',
+          date: now.toISOString(),
+          collection: 'canonical-fixture',
+          channels: ['telegram'],
+          versions,
+          newCollection: {
+            order: 1,
+            versions: Object.fromEntries(
+              Object.entries(versions).map(([lang, version]) => [
+                lang,
+                { ...version, title: 'Canonical fixture' },
+              ]),
+            ),
+          },
+        },
+      }),
+    );
+    const adapter = new FakeChannelAdapter({
+      key: 'telegram',
+      renderImpl: (post, settings) => renderTelegram(post, settings),
+    });
+    await runPublish(payloadPath, {
+      cwd: repoDir,
+      root: repoDir,
+      env: {},
+      now,
+      mediaSource: await mediaSourceWithFixture(),
+      registry: makeRegistry(adapter),
+      notifier: new FakeNotifier(),
+      logger: () => {},
+    });
+
+    const lowerId = draftId.toLowerCase();
+    const ops = adapter.deliveries[0]!.ops;
+    expect(ops[0]).toMatchObject({
+      caption:
+        'Тестовий допис (T10).\n\n' +
+        `Більше на сайті: https://fadenundstimmung.de/uk/works/${lowerId}/`,
+    });
+    expect(ops[1]).toMatchObject({
+      text:
+        `Testbeitrag (T10).\n\nMehr auf der Website: https://fadenundstimmung.de/works/${lowerId}/\n` +
+        'Kanal abonnieren: https://t.me/Faden_und_Stimmung',
+    });
+  });
 });

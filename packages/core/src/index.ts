@@ -1,5 +1,6 @@
 export const packageName = '@handmake/core';
 
+export * from './canonical-url';
 export * from './channel-registry';
 export * from './draft';
 export * from './error-message';

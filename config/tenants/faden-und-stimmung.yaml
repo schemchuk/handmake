@@ -123,6 +123,8 @@ shows:
 featureFlags:
   translation: true
   wotwPoll: false
+  # F31/T40: channel copies link to the canonical site page of the item.
+  canonicalLinks: true
 
 # Commercialization stub: must stay empty (spec section 8).
 offerings: []

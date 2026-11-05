@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T40 — canonical links in channel posts (start in a fresh session).
-- **Branch:** `main` (create `feat/t40-<slug>`).
-- **Last commit:** see `git log -1` — docs: hand off T40 and later tasks to Kimi Code.
-- **Next step:** Kimi Code implements T40 (docs/03-tasks.md) plus the review notes from PR #81 and PR #88 listed there; the show-transport timeout note from PR #81 is already done by T47f. From T40 on, implementer tasks are owned by kimi-code (Volodymyr, 2026-11-05). Bot deployed from `8658ac6`, Worker version `1e9a25aa-3098-451e-8964-6c2c4f633763`. D7 needs Worker logs from the next failing real show.
+- **Active agent:** claude-code
+- **Current task:** T40 — canonical links in channel posts (PR #89, review).
+- **Branch:** `feat/t40-canonical-links`
+- **Last commit:** `f91285f` — feat(publisher,bot): wire canonical links; tenant flag on; carried notes
+- **Next step:** claude-code reviews the T40 PR; it touches `apps/bot` and `packages/`, so after the merge claude-code deploys the bot from a clean `main` (`pnpm -C apps/bot run deploy`) and records the Worker version — no D1 migrations, no wrangler.toml/secret changes. T26a (Instagram) is next for kimi-code after the merge.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+- **T40 validation:** core (incl. canonical-url), channels 82/82, publisher 191/191, bot 538/538 (final preview rerun 5/5); workspace typecheck/build, lint and changed-file formatting pass. Canonical footer renders per language from `featureFlags.canonicalLinks` (now on for faden-und-stimmung), links work announcements to `/works/<id>/`, skips announcements/reminders/polls and `siteExcluded` posts; dry-run and the bot preview derive the same settings. Carried notes resolved: publish-callback git-backed suite got an explicit 30 s timeout (PR #88); site README states `siteExcluded` is sticky across a later live re-dispatch with the same draft id (PR #81; the show-transport timeout was already done by T47f). Known transient: the channel post links to its page before the Site workflow deploys it; recovery is a manual Site run (documented in apps/site/README.md, review-notes entry removed). No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
 - **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**

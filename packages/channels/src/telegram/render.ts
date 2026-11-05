@@ -1,4 +1,6 @@
+import { canonicalUrl } from '@handmake/core';
 import type {
+  CanonicalLinkSettings,
   ChannelCapabilities,
   Post,
   Show,
@@ -32,6 +34,8 @@ export interface TelegramChannelSettings {
   joinUrl?: string;
   /** Tenant language order; the first language present in the post is primary. */
   languages?: string[];
+  /** F31/T40 canonical site link footer; absent keeps posts without a link. */
+  canonical?: CanonicalLinkSettings;
 }
 
 export const telegramCapabilities: ChannelCapabilities = {
@@ -76,13 +80,59 @@ function orderLanguages(post: Post, settings?: unknown): string[] {
   return [...ordered, ...rest];
 }
 
-/** Shared footer for subscription and future canonical post links. */
-function appendFooter(text: string, lang: string, settings: unknown): string {
-  if (lang !== 'de' || typeof settings !== 'object' || settings === null) return text;
-  const joinUrl = (settings as { joinUrl?: unknown }).joinUrl;
-  if (typeof joinUrl !== 'string' || !joinUrl) return text;
-  const line = `Kanal abonnieren: ${joinUrl}`;
-  return `${text}\n\n${line}`;
+/** Canonical footer intro per language (F31, T40); the URL follows on the same line. */
+const canonicalIntros: Record<string, string> = {
+  de: 'Mehr auf der Website:',
+  uk: 'Більше на сайті:',
+};
+
+function canonicalLine(lang: string, canonical: CanonicalLinkSettings, id: string): string {
+  let origin: URL | undefined;
+  try {
+    origin = new URL(canonical.baseUrl);
+  } catch {
+    // reported below
+  }
+  if (!origin || origin.protocol !== 'https:' || origin.origin !== canonical.baseUrl) {
+    throw new TelegramRenderError(
+      'canonical baseUrl must be an https origin without path or trailing slash',
+    );
+  }
+  const intro = canonicalIntros[lang];
+  if (!intro) {
+    throw new TelegramRenderError(`unsupported canonical footer language: "${lang}"`);
+  }
+  return `${intro} ${canonicalUrl(canonical, canonical.section, id, lang)}`;
+}
+
+/**
+ * Site-worthy posts get the canonical footer: `free` posts have a site page,
+ * announcements, reminders and polls do not (`siteVisibleTypes`), and an
+ * excluded (test) post's page never exists. Show copies already carry their
+ * canonical URL inside the description text, so they pass no item.
+ */
+function footerItem(post: Post): { id: string; siteExcluded?: boolean } | undefined {
+  return post.type === 'free' ? { id: post.id, siteExcluded: post.siteExcluded } : undefined;
+}
+
+/** Shared footer: the canonical site link (T40) and the channel join line (T47g). */
+function appendFooter(
+  text: string,
+  lang: string,
+  settings: unknown,
+  item?: { id: string; siteExcluded?: boolean },
+): string {
+  if (typeof settings !== 'object' || settings === null) return text;
+  const lines: string[] = [];
+  const canonical = (settings as { canonical?: CanonicalLinkSettings }).canonical;
+  if (item && !item.siteExcluded && canonical?.links) {
+    lines.push(canonicalLine(lang, canonical, item.id));
+  }
+  if (lang === 'de') {
+    const joinUrl = (settings as { joinUrl?: unknown }).joinUrl;
+    if (typeof joinUrl === 'string' && joinUrl) lines.push(`Kanal abonnieren: ${joinUrl}`);
+  }
+  return lines.length ? `${text}\n\n${lines.join('\n')}` : text;
 }
 
 export function renderTelegram(post: Post, settings?: unknown): SendOperation[] {
@@ -104,7 +154,8 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
   }
 
   const ops: SendOperation[] = [];
-  const primaryText = appendFooter(post.texts[primaryLang]!, primaryLang, settings);
+  const item = footerItem(post);
+  const primaryText = appendFooter(post.texts[primaryLang]!, primaryLang, settings, item);
 
   const checkLimit = (lang: string, text: string) => {
     if (text.length > messageLimit) {
@@ -163,7 +214,7 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
   // Further languages reply to the album (op 0), even if the primary text
   // overflowed into a separate message.
   for (const lang of otherLangs) {
-    const text = appendFooter(post.texts[lang]!, lang, settings);
+    const text = appendFooter(post.texts[lang]!, lang, settings, item);
     checkLimit(lang, text);
     ops.push({ kind: 'message', text, lang, replyToOp: 0 });
   }

@@ -27,6 +27,51 @@ describe('Telegram preview subscription footer', () => {
   });
 });
 
+describe('Telegram preview canonical footer (T40)', () => {
+  const draft = {
+    ...createDraft('tenant', 'draft', now),
+    state: 'ready' as const,
+    texts: { uk: 'Привіт', de: 'x'.repeat(4096) },
+    photoRefs: ['photo'],
+  };
+  const actions = (preview: {
+    keyboard?: { inline_keyboard: { callback_data: string }[][] };
+  }): string[] => preview.keyboard?.inline_keyboard.flat().map((b) => b.callback_data) ?? [];
+
+  it('blocks publication when only the canonical footer exceeds the message limit', () => {
+    const without = buildPreview(draft, botTexts, now);
+    const withCanonical = buildPreview(draft, botTexts, now, {
+      channelId: 'CHANNEL',
+      canonical: {
+        links: true,
+        baseUrl: 'https://fadenundstimmung.de',
+        defaultLanguage: 'de',
+        section: 'posts',
+      },
+    });
+    expect(actions(without)).toContain('draft:draft:publish');
+    expect(actions(withCanonical)).not.toContain('draft:draft:publish');
+    expect(withCanonical.text).toContain('4096');
+  });
+
+  it('derives the footer from the tenant config flag', async () => {
+    const config = (canonicalLinks: boolean) =>
+      ({
+        id: 'tenant',
+        languages: ['uk', 'de'],
+        channels: { telegram: { channelId: 'CHANNEL' } },
+        featureFlags: { canonicalLinks },
+        site: { baseUrl: 'https://fadenundstimmung.de', defaultLanguage: 'de' },
+      }) as never;
+
+    const on = await buildTenantPreview(draft, botTexts, { load: async () => config(true) });
+    expect(actions(on)).not.toContain('draft:draft:publish');
+
+    const off = await buildTenantPreview(draft, botTexts, { load: async () => config(false) });
+    expect(actions(off)).toContain('draft:draft:publish');
+  });
+});
+
 describe('tenant preview settings', () => {
   const draft = {
     ...createDraft('tenant', 'draft', now),
@@ -64,6 +109,7 @@ describe('tenant preview settings', () => {
             id: 'tenant',
             languages: ['de', 'uk'],
             channels: { telegram: { channelId: 'CHANNEL', joinUrl: 'https://t.me/channel' } },
+            featureFlags: {},
           }) as never,
       },
     );
