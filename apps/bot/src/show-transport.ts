@@ -1,3 +1,4 @@
+import { showTransportOperations } from '@handmake/core';
 import { showDraftDataSchema, showReceiptSchema, showErrorDiagnostic } from '@handmake/core';
 import type { ShowFinishOutcome } from './show-finish';
 import type { StoredDraft, D1DraftStore } from './draft-store';
@@ -183,30 +184,7 @@ export function createShowTransport(deps: {
         const signature = await showRequestSignature(secret, request, bytes);
         const supplied = request.headers.get('x-show-signature') ?? '';
         if (!equal(signature, supplied)) return reply(401, { error: 'unauthorized' });
-        operationName = [
-          'authorize',
-          'checkpoint',
-          'finish',
-          'reserve',
-          'record',
-          'stored',
-          'status',
-          'grant',
-          'recovery',
-          'journal',
-          'verified-put',
-          'raw-put',
-          'raw-get',
-          'marked-put',
-          'marked-get',
-          'backfill-release',
-          'source-0',
-          'source-1',
-          'source-2',
-          'source-3',
-        ].includes(operation!)
-          ? operation!
-          : 'unknown';
+        operationName = showTransportOperations.includes(operation!) ? operation! : 'unknown';
         const scope: Scope = { tenantId: tenantId!, showId: showId!, attemptId: attemptId! };
         const { job, etag } = await load(scope.tenantId, scope.showId);
         const draft = await drafts.get(scope.tenantId, scope.showId);

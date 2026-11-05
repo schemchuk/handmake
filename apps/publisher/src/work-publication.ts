@@ -12,6 +12,7 @@ export async function prepareWorkPublication(
   payload: DispatchPayload,
   tenant: TenantConfig,
   store: ContentStore,
+  siteExcluded = false,
 ) {
   const details = workPublicationSchema.parse(payload.work);
   const checkLanguages = (versions: Record<string, unknown>) => {
@@ -54,7 +55,14 @@ export async function prepareWorkPublication(
     }
   }
   const existing = await store.readWork(tenant.id, work.id);
-  if (existing && !isDeepStrictEqual(existing, work))
+  if (siteExcluded || existing?.siteExcluded || work.siteExcluded) work.siteExcluded = true;
+  if (
+    existing &&
+    !isDeepStrictEqual(
+      { ...existing, siteExcluded: work.siteExcluded },
+      { ...work, siteExcluded: work.siteExcluded },
+    )
+  )
     throw new Error('work publish identity is immutable');
   if (await store.readPost(tenant.id, work.id))
     throw new Error('work id already belongs to a post');
@@ -72,6 +80,7 @@ export async function prepareWorkPublication(
     publishAt: 'now',
     type: 'free',
     channels: details.channels,
+    ...(work.siteExcluded ? { siteExcluded: true } : {}),
     photos: work.photos,
     texts: Object.fromEntries(
       tenant.languages.map((lang) => [lang, work.versions[lang]!.description]),

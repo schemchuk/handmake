@@ -60,6 +60,18 @@ it('implements the show store capability, serializes and retries without duplica
   expect(await capability.readShowMedia(show.tenant, show.id, 'index.md')).toBeUndefined();
   expect(await capability.readShowMedia(show.tenant, show.id, 'undeclared.png')).toBeUndefined();
 });
+it('allows exclusion to narrow visibility without changing content or bytes and never reopens it', async () => {
+  await store.saveShow(show, files(show));
+  const hidden = { ...show, siteExcluded: true };
+  await store.saveShow(hidden, files(hidden));
+  expect(await store.readShow(show.tenant, show.id)).toEqual(hidden);
+  await store.saveShow(hidden, files(hidden));
+  await expect(store.saveShow(show, files(show))).rejects.toThrow('immutable');
+  await expect(
+    store.saveShow({ ...hidden, date: '2026-12-01T10:00:00Z' }, files(hidden)),
+  ).rejects.toThrow('immutable');
+  expect(await store.readShowMedia(show.tenant, show.id, show.video.fileName)).toEqual(data);
+});
 it('keeps flat identities isolated across tenants on read/list/write', async () => {
   await store.saveShow(show, files(show));
   expect(await store.readShow('other', show.id)).toBeUndefined();

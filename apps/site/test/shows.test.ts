@@ -34,6 +34,24 @@ describe('published shows', () => {
     expect(data.shows.map(({ id }) => id)).toEqual(['new', 'old']);
     expect(showsIn(data, 'uk')).toEqual([]);
   });
+  it('filters test shows before reference reads and shows of test works', async () => {
+    const excluded = { ...show('hidden'), siteExcluded: true };
+    const hiddenStore = store([excluded]);
+    expect((await loadShows(hiddenStore, 'fixture')).shows).toEqual([]);
+    expect(hiddenStore.readWork).not.toHaveBeenCalled();
+    expect(
+      (
+        await loadShows(
+          store([show('linked')], {
+            tenant: 'fixture',
+            photos: ['a.png'],
+            siteExcluded: true,
+          }),
+          'fixture',
+        )
+      ).shows,
+    ).toEqual([]);
+  });
   it('fails on missing or foreign linked works and undeclared originals', async () => {
     for (const work of [
       null,

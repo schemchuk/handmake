@@ -130,6 +130,18 @@ describe('approved work publishing', () => {
     });
   });
 
+  it('persists test exclusion and keeps it on retry without the environment flag', async () => {
+    const first = await run({ env: { ...deps().env, SITE_EXCLUDE_POST: 'true' } });
+    expect(first.work?.siteExcluded).toBe(true);
+    expect(first.post.siteExcluded).toBe(true);
+    expect((await store.readWork(tenantId, id))?.siteExcluded).toBe(true);
+    await run();
+    expect((await store.readWork(tenantId, id))?.siteExcluded).toBe(true);
+    current.work!.versions.de!.description = 'Changed identity';
+    current.texts.de = 'Changed identity';
+    await expect(run()).rejects.toThrow('immutable');
+  });
+
   it('commits a new collection and its first work together in a real Git commit', async () => {
     await exec('git', ['init', '-q'], { cwd: root });
     await run({ git: undefined });

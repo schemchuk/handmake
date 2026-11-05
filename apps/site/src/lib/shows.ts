@@ -9,15 +9,18 @@ export const showsIn = (data: { shows: Show[] }, lang: string) =>
 /** Keep approved marked bytes intact: resizing/re-encoding would remove embedded evidence. */
 export async function loadShows(store: ContentStore & ShowContentStore, tenant: string) {
   const shows = (await store.listShows(tenant))
-    .filter((show) => show.tenant === tenant)
+    .filter((show) => show.tenant === tenant && !show.siteExcluded)
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const visible = [];
   for (const show of shows) {
     const work = await store.readWork(tenant, show.workId);
     if (!work || work.tenant !== tenant) throw new Error(`show ${show.id}: linked work is absent`);
+    if (work.siteExcluded) continue;
+    visible.push(show);
     for (const original of show.originals) {
       if (!work.photos.includes(original.fileName))
         throw new Error(`show ${show.id}: undeclared original`);
     }
   }
-  return { shows };
+  return { shows: visible };
 }

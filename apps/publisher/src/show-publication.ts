@@ -11,10 +11,21 @@ export async function prepareShowPublication(
   tenant: TenantConfig,
   store: GitRepoContentStore,
   source: ShowMediaSource,
+  siteExcluded = false,
 ) {
   const { show, media: refs } = showPublicationSchema.parse(payload.show);
+  const work = await store.readWork(tenant.id, show.workId);
+  if (work?.siteExcluded) siteExcluded = true;
   const existing = await store.readShow(tenant.id, show.id);
-  if (existing && !isDeepStrictEqual(existing, show)) throw new Error('show identity is immutable');
+  if (siteExcluded || existing?.siteExcluded || show.siteExcluded) show.siteExcluded = true;
+  if (
+    existing &&
+    !isDeepStrictEqual(
+      { ...existing, siteExcluded: show.siteExcluded },
+      { ...show, siteExcluded: show.siteExcluded },
+    )
+  )
+    throw new Error('show identity is immutable');
   const ledger = await store.readLedger(tenant.id, show.id);
   if (!existing && ledger && Object.keys(ledger.channels).length)
     throw new Error('show progress exists without published content');
@@ -24,7 +35,6 @@ export async function prepareShowPublication(
       tenant.languages.some((lang) => !Object.hasOwn(show.versions, lang)))
   )
     throw new Error('show languages must match tenant languages');
-  const work = await store.readWork(tenant.id, show.workId);
   if (!work) throw new Error('show work is unavailable for tenant');
   for (const original of show.originals) {
     if (!(await store.readWorkPhoto(tenant.id, work.id, original.fileName))?.length)
@@ -59,6 +69,7 @@ export async function prepareShowPublication(
     publishAt: 'now',
     type: 'free',
     channels: [],
+    ...(show.siteExcluded ? { siteExcluded: true } : {}),
     photos: show.images.map((image) => image.fileName),
     texts: payload.texts,
     versions: Object.fromEntries(

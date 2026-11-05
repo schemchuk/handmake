@@ -17,27 +17,30 @@ it('classifies only the typed paid gate refusal as uncharged', () => {
     expect(showFailureOutcome(error)).toBe('failed');
 });
 
-it('logs the failing transport operation and status without its URL, body or credentials', async () => {
-  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
-  const client = createShowClient({
-    origin: 'https://private-worker.test',
-    secret: 'DO_NOT_LOG',
-    job: { tenantId: 'tenant', showId: 'show', jobId: 'job', version: 0 },
-    fetch: async () => new Response('DO_NOT_LOG data:image/png;base64,PRIVATE', { status: 409 }),
-  });
-  try {
-    await expect(client.call('checkpoint')).rejects.toThrow('show transport rejected');
-    expect(log).toHaveBeenCalledWith('Show transport request rejected', {
-      operation: 'checkpoint',
-      errorClass: 'Error',
-      message: 'Details redacted',
-      httpStatus: 409,
+it.each(['checkpoint', 'journal'])(
+  'logs the failing %s operation and status without its URL, body or credentials',
+  async (operation) => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = createShowClient({
+      origin: 'https://private-worker.test',
+      secret: 'DO_NOT_LOG',
+      job: { tenantId: 'tenant', showId: 'show', jobId: 'job', version: 0 },
+      fetch: async () => new Response('DO_NOT_LOG data:image/png;base64,PRIVATE', { status: 409 }),
     });
-    expect(JSON.stringify(log.mock.calls)).not.toMatch(/DO_NOT_LOG|PRIVATE|private-worker/);
-  } finally {
-    log.mockRestore();
-  }
-});
+    try {
+      await expect(client.call(operation)).rejects.toThrow('show transport rejected');
+      expect(log).toHaveBeenCalledWith('Show transport request rejected', {
+        operation,
+        errorClass: 'Error',
+        message: 'Details redacted',
+        httpStatus: 409,
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toMatch(/DO_NOT_LOG|PRIVATE|private-worker/);
+    } finally {
+      log.mockRestore();
+    }
+  },
+);
 it('reports setup failures without dependencies or any provider secret', async () => {
   const workflow = parse(
     await readFile(new URL('../../../.github/workflows/show.yml', import.meta.url), 'utf8'),

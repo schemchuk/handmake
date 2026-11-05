@@ -1226,6 +1226,12 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   error object, which may carry the author's text or chat id; route it through the redacting
   `safeErrorMessage` path used in `composition.ts`.
 
+- Implemented 2026-11-05; pending Claude Code review: exclusion persists across retries for
+  works/shows and follows a hidden linked work. Site lists, pages, media and sitemap exclude them;
+  collections use a visible replacement cover or are omitted when their cover has no visible
+  replacement. Existing show visibility can narrow without changing approved metadata or bytes.
+  PR #85 follow-ups use the shared core operation list and composition's redacting work logger.
+
 ### T47e — Smaller UX fixes (D3, D5, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47a
 - Change: (1) the `/work` new-collection form text says the four lines describe the collection,

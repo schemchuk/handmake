@@ -152,6 +152,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
           preview: shows?.preview,
         },
         work: {
+          logError,
           collections: createGitHubCollectionReader({
             repo: env.GITHUB_REPO,
             ref: 'main',
