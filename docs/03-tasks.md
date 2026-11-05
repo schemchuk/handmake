@@ -401,6 +401,9 @@ reviewer claude-code unless stated; each PR under ~400 changed non-test lines (A
 - Review notes from PR #81: README line that a draft first published to the test channel stays
   `siteExcluded` on a later live re-dispatch with the same draft id; raise the timeout of the flaky
   `apps/bot/test/show-transport.test.ts` grants test (timed out at 5 s on main CI run 41845320494).
+- Review notes from PR #88 (T47f): the git-backed `apps/publisher/test/publish-callback.test.ts`
+  cases hit the 5 s default timeout in a concurrent local run; if CI flakes there, give the suite an
+  explicit timeout with a reason, as done for show-transport.
 - Tests: URL builder, render per channel, flag.
 
 ### T41 — Legal pages and go-live (`site`) · Sensitive
@@ -1251,7 +1254,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   excluded publication notices.
 
 ### T47f — Flaky show transport test (D1, `bot`)
-- Status: implemented 2026-11-05; awaiting Claude Code review.
+- Done 2026-11-05: PR #88 merged (`8658ac6`), bot deployed (Worker version
+  `1e9a25aa-3098-451e-8964-6c2c4f633763`). Includes both PR #87 review notes.
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: make `apps/bot/test/show-transport.test.ts` "runs grants, private source reads, journal,
   raw upload, checkpoint and separate marked storage" deterministic (or raise its timeout with a
