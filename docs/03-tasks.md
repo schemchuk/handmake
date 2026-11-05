@@ -1078,7 +1078,7 @@ winners are no longer on the site). The text below is kept for history.
 
 T41 (legal pages and go-live) → T41b (test posts off the site, indexing on) → T47 (end-to-end check) → T40 (canonical links) → T26a → T26b →
 T26c (Instagram, Facebook, Threads) → T48 (email and lead magnet) → T49 (comment inbox) → T27-T32
-(contest on all networks) → T33, T34. Owner kimi-code (from T40 on, set 2026-11-05; codex before),
+(contest on all networks) → T33, T34. Owner kimi-code (codex stood in until 2026-11-05),
 reviewer claude-code unless stated; each PR under
 ~400 changed non-test lines (ADR 009). Fixes found by T47 are inserted right after it.
 

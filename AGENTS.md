@@ -42,7 +42,7 @@ Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of
 | Area | Owner | Reviewer |
 |---|---|---|
 | Repo setup, docs, interview, spec, architecture, task planning | Claude Code | Volodymyr |
-| Implementing tasks from docs/03-tasks.md | Kimi Code or Codex, as the task's `Owner:` says (Kimi Code by default; Codex covered T42-T47f while Kimi Code was out of usage limits, 2026-10-31 to 2026-11-05; Kimi Code again from T40 on) | Claude Code |
+| Implementing tasks from docs/03-tasks.md | Kimi Code (Codex stood in from 2026-10-31 to 2026-11-05 while Kimi Code was out of usage limits) | Claude Code |
 | Code review | the agent that did NOT write the code | n/a |
 | Commit and push of a session's work | the Active agent in docs/STATUS.md | n/a |
 | Merge of a task PR to `main` | the reviewer agent (never the author), see Git rules | Volodymyr (veto) |
