@@ -389,3 +389,10 @@ it('does not generate from old configuration while a replacement template/collec
   await flush();
   expect(factory).not.toHaveBeenCalled();
 });
+
+it('explains that collection fields and the photo caption describe different things', () => {
+  const text = botTexts.workFormText(['uk', 'de']);
+  expect(text).toContain('Ці поля описують колекцію');
+  expect(text).toContain('Текст роботи береться з підпису до фото');
+  expect(text.split('\n').slice(1)).toEqual(['Назва (uk)', 'Опис (uk)', 'Назва (de)', 'Опис (de)']);
+});

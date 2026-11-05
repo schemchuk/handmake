@@ -17,6 +17,7 @@ export const publishedCallbackBodySchema = z
     tenantId: z.string().min(1),
     /** Absent on legacy post callbacks. Works/shows must never enter the regular post index. */
     kind: z.enum(['post', 'work', 'show']).optional(),
+    siteExcluded: z.boolean().optional(),
     /** The draft id the pipeline published; becomes the D1 draft lookup key. */
     postId: z.string().min(1),
     /** Publication date (ISO); stored as published_at in the index. */

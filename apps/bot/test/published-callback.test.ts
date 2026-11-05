@@ -266,9 +266,13 @@ it('does not complete a work when a channel reports failure', async () => {
 });
 
 describe('published notice', () => {
-  it.each(['post', 'work', 'show'] as const)(
-    'notifies the stored non-author chat for %s once',
-    async (kind) => {
+  it.each(
+    (['post', 'work', 'show'] as const).flatMap((kind) =>
+      [false, true].map((siteExcluded) => ({ kind, siteExcluded })),
+    ),
+  )(
+    'notifies the stored non-author chat once for $kind, excluded=$siteExcluded',
+    async ({ kind, siteExcluded }) => {
       const db = await makeD1();
       const postId = '01J8ZEXAMPLE00000000000009';
       await makePublishingDraft(db, postId, kind, '22');
@@ -280,7 +284,7 @@ describe('published notice', () => {
       const tenantConfigs = {
         load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
       };
-      const body = callbackBody(postId, { kind });
+      const body = callbackBody(postId, { kind, siteExcluded });
       const call = async () =>
         handlePublishedCallback(makeEnv(db), await signedRequest(body), {
           texts: botTexts,
@@ -295,9 +299,11 @@ describe('published notice', () => {
       expect(sent[0]!.url).toBe('https://api.telegram.org/botTEST_TOKEN/sendMessage');
       expect(sent[0]!.body.chat_id).toBe('22');
       const section = kind === 'post' ? 'posts' : kind === 'work' ? 'works' : 'shows';
-      expect(sent[0]!.body.text).toContain(
-        `https://example.test/${section}/${postId.toLowerCase()}/`,
-      );
+      if (siteExcluded) expect(sent[0]!.body.text).not.toContain('https://');
+      else
+        expect(sent[0]!.body.text).toContain(
+          `https://example.test/${section}/${postId.toLowerCase()}/`,
+        );
       expect(sent[0]!.body.text).toContain('опубліковано');
     },
   );
