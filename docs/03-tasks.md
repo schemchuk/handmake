@@ -1226,7 +1226,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   error object, which may carry the author's text or chat id; route it through the redacting
   `safeErrorMessage` path used in `composition.ts`.
 
-- Implemented 2026-11-05; pending Claude Code review: exclusion persists across retries for
+- Done 2026-11-05: PR #86 merged (`f548588`), bot deployed (Worker version
+  `236786fc-8c99-44cb-bad2-acfc28518bac`). Exclusion persists across retries for
   works/shows and follows a hidden linked work. Site lists, pages, media and sitemap exclude them;
   collections use a visible replacement cover or are omitted when their cover has no visible
   replacement. Existing show visibility can narrow without changing approved metadata or bytes.
@@ -1238,6 +1239,11 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   and the work text comes from the photo caption; (2) a show waiting for a new work whose draft was
   discarded offers the work list again instead of `showMissingWorkText`.
 - Acceptance and tests: form text test; discarded awaited work → selection menu.
+- Review notes from PR #86 (T47d): (1) `apps/bot/src/published-callback.ts` still builds a site
+  URL in the "published" notice for site-excluded works, shows and test posts, so a test run sends a
+  link that returns 404; pass `siteExcluded` in the publish callback and omit the link when set.
+  (2) `WorkSessionOptions.logError` in `apps/bot/src/work-session.ts` is optional, so a missing
+  logger silently drops work setup failures; make it required or fall back to a redacted log.
 
 ### T47f — Flaky show transport test (D1, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47

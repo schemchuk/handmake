@@ -1,11 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T47d — implemented; awaiting independent review.
-- **Branch:** `feat/t47d-site-exclusion`.
-- **Last commit:** see `git log -1` — fix: keep test works and shows off the site.
-- **Next step:** Claude Code reviews the T47d PR and CI, merges if clear, then deploys the bot from clean `main` under AGENTS.md and records the Worker version. Next Codex task: T47e in a fresh session. T47d includes PR #85 follow-ups (shared transport operation list; redacting work setup logger). T47c bot version remains `82dafe71-1183-460a-b4f8-baccdd7276df`; D7 root cause still needs logs from the next failing real show.
-- **T47d validation:** core 222/222, stores 46/46, site 49/49; publisher 186 tests covered across the full run and corrected/added-test reruns (final show-publish/show-finish 50/50). Bot work-session 17/17, composition 14/14 and show-transport 55/55 pass with local D1/R2; combined bot runs were interrupted before results, then each suite passed separately. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial test fixtures were corrected; the sandboxed site malformed-document diagnostic failed, unrestricted full rerun passed. No deployment, production publication, paid calls, workflows, migrations or secrets changed.
+- **Active agent:** codex
+- **Current task:** T47e — smaller UX fixes (D3, D5).
+- **Branch:** `main` (Codex creates `feat/t47e-<slug>`).
+- **Last commit:** see `git log -1` — docs: close T47d, hand off T47e to Codex.
+- **Next step:** Codex starts T47e in a fresh session, including the "Review notes from PR #86" in docs/03-tasks.md (no site link in the published notice for site-excluded content; required work setup logger). T47d merged (PR #86, `f548588`); bot deployed, Worker version `236786fc-8c99-44cb-bad2-acfc28518bac`. D7 root cause still needs Worker logs from the next failing real show. CI flake D1 (T47f) recurred on PR #86 and passed on rerun.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
