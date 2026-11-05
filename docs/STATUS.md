@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T47f — flaky show transport test (start in a fresh session).
-- **Branch:** `main` (create `feat/t47f-<slug>`).
-- **Last commit:** see `git log -1` — docs: close T47e, hand off T47f to Codex.
-- **Next step:** Codex implements T47f (docs/03-tasks.md) plus the two review notes from PR #87 listed there. T47e merged as PR #87 (`b198432`); bot deployed, Worker version `99aecbb3-66d9-403b-b7dd-d8613bd8d310`. D7 needs Worker logs from the next failing real show.
+- **Active agent:** claude-code
+- **Current task:** Review T47f — flaky show transport test and PR #87 review notes.
+- **Branch:** `feat/t47f-show-transport-timeout`.
+- **Last commit:** see `git log -1` — test: allow real storage retries in show transport.
+- **Next step:** Claude Code reviews T47f, checks CI, merges if clear, and deploys the bot from clean main per AGENTS.md. The PR addresses both review notes from PR #87. D7 still needs Worker logs from the next failing real show. Latest deployed Worker: `99aecbb3-66d9-403b-b7dd-d8613bd8d310`.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+- **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
   1. Why own-site-first: (c) the author's future business + (d) portfolio.

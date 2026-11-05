@@ -158,6 +158,8 @@ function transportBucket() {
   } as R2Bucket;
 }
 
+// This real D1/R2 round trip performs repeated conditional job writes. R2 may
+// throttle them, adding bounded 1100 ms retries; five seconds is too short on CI.
 it('runs grants, private source reads, journal, raw upload, checkpoint and separate marked storage', async () => {
   const grant = await authorize();
   expect(JSON.stringify(grant)).not.toMatch(/https?:|bytes|secret/);
@@ -200,7 +202,7 @@ it('runs grants, private source reads, journal, raw upload, checkpoint and separ
   ).toEqual(media);
   expect(generator.generateImage).not.toHaveBeenCalled();
   expect(generator.generateVideo).not.toHaveBeenCalled();
-});
+}, 30_000);
 
 it.each(['acquire', 'release'])(
   'checkpoints fresh raw media despite an R2 throttle during job %s',
