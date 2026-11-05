@@ -62,7 +62,10 @@ describe('parseTenantConfig', () => {
       time: '14:00',
       timezone: 'Europe/Berlin',
     });
-    expect(config.channels.telegram).toEqual({ channelId: 'TELEGRAM_CHANNEL_ID' });
+    expect(config.channels.telegram).toEqual({
+      channelId: 'TELEGRAM_CHANNEL_ID',
+      joinUrl: 'https://t.me/Faden_und_Stimmung',
+    });
     expect(config.offerings).toEqual([]);
   });
 
@@ -115,7 +118,7 @@ describe('parseTenantConfig', () => {
   it('rejects instagram.language outside the tenant languages', () => {
     const withBadLanguage = realConfig().replace(
       '  telegram:\n    channelId: TELEGRAM_CHANNEL_ID',
-      '  telegram:\n    channelId: TELEGRAM_CHANNEL_ID\n  instagram:\n    language: fr',
+      '  instagram:\n    language: fr\n  telegram:\n    channelId: TELEGRAM_CHANNEL_ID',
     );
     expect(() => parseTenantConfig(withBadLanguage)).toThrowError(/instagram\.language/);
   });
@@ -242,4 +245,15 @@ ai:
   ])('rejects malformed or unknown ai fields', (section) => {
     expect(() => parseTenantConfig(secondTenant + section)).toThrow(TenantConfigError);
   });
+});
+
+it('allows an absent subscription URL and rejects non-HTTPS URLs', () => {
+  expect(channelsSchema.parse({ telegram: { channelId: 'CHAT' } }).telegram).toEqual({
+    channelId: 'CHAT',
+  });
+  for (const joinUrl of ['invalid', 'http://example.invalid', 'javascript:alert(1)']) {
+    expect(channelsSchema.safeParse({ telegram: { channelId: 'CHAT', joinUrl } }).success).toBe(
+      false,
+    );
+  }
 });

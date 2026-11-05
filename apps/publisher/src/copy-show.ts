@@ -75,6 +75,7 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
         {
           operations: renderChannelShow(registry.get(key), show, {
             site: tenant.site!,
+            settings,
             languages: tenant.languages,
           }),
           settings,

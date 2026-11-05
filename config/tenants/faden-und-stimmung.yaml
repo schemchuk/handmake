@@ -7,6 +7,7 @@ languages: [uk, de]
 channels:
   telegram:
     channelId: TELEGRAM_CHANNEL_ID
+    joinUrl: https://t.me/Faden_und_Stimmung
 
 contentStore:
   type: git-repo

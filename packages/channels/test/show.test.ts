@@ -46,6 +46,24 @@ describe('show rendering', () => {
       captionLang: 'uk',
     });
   });
+  it('shares the German footer with the canonical show link and counts its length', () => {
+    const show = fixture();
+    const settings = { joinUrl: 'https://t.me/fixture_channel' };
+    const configured = { ...context, settings };
+    const line = `Kanal abonnieren: ${settings.joinUrl}`;
+    const ops = renderTelegramShow(show, configured);
+    expect(ops[0]).toMatchObject({ caption: expect.stringContaining(`\n\n${line}`) });
+    expect(ops[2]).toEqual(renderTelegramShow(show, context)[2]);
+    show.versions.de!.description = 'x'.repeat(1024);
+    expect(renderTelegramShow(show, configured)[0]).not.toHaveProperty('caption');
+    const suffixLength =
+      (renderTelegramShow(fixture(), configured)[0] as { caption: string }).caption.length -
+      fixture().versions.de!.description.length;
+    show.versions.de!.description = 'x'.repeat(4096 - suffixLength);
+    expect(renderTelegramShow(show, configured)[2]).toMatchObject({ text: expect.any(String) });
+    show.versions.de!.description += 'x';
+    expect(() => renderTelegramShow(show, configured)).toThrow(/message limit/);
+  });
   it('renders only tenant languages and requires a localized disclosure', () => {
     const show = fixture();
     expect(renderTelegramShow(show, { ...context, languages: ['uk'] })).toHaveLength(2);

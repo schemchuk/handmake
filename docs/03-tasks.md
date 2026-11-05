@@ -1138,6 +1138,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: n/a (manual check).
 
 ### T47g — Join the Telegram channel from the site and from every post (`site`, `channels`) · Priority
+- Status: implemented 2026-11-05 on `feat/t47g-channel-join`; awaiting claude-code review.
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Why: the channel `https://t.me/Faden_und_Stimmung` (public, `site.circle.joinUrl`) is linked
   only on `/kreis/`; a visitor of a post, work or show page, or a reader of a forwarded post, has

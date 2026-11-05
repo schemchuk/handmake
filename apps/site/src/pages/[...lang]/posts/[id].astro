@@ -1,4 +1,5 @@
 ---
+import JoinChannel from '../../../components/JoinChannel.astro';
 import Base from '../../../layouts/Base.astro';
 import { uiStrings } from '../../../lib/i18n';
 import { langParam, mediaPath, pagePath, postPage } from '../../../lib/paths';
@@ -52,5 +53,6 @@ const [lead, ...rest] = paragraphs(text);
       {aiNote && <p class="meta">{aiNote}</p>}
       <a class="back" href={pagePath(lang, def)}>{ui.back}</a>
     </div>
+    <p><JoinChannel lang={lang} /></p>
   </article>
 </Base>

@@ -344,6 +344,17 @@ it('copies stored bytes, commits progress, resumes the saved plan and skips comp
   const partial = await store.readLedger(show.tenant, show.id);
   expect(partial!.channels.telegram).toMatchObject({ status: 'failed', remoteIds: [101] });
   expect(partial!.showCopyPlan).toBeDefined();
+  const german = partial!.showCopyPlan!.channels.telegram!.operations.find((op) =>
+    op.kind === 'mediaGroup' ? op.captionLang === 'de' : op.kind === 'message' && op.lang === 'de',
+  );
+  expect(german).toBeDefined();
+  const germanText =
+    german!.kind === 'mediaGroup'
+      ? german!.caption
+      : german!.kind === 'message'
+        ? german!.text
+        : '';
+  expect(germanText).toContain('Kanal abonnieren: https://t.me/Faden_und_Stimmung');
   expect(c.notifier.notify).toHaveBeenCalledWith(
     'operator',
     expect.stringContaining('copy failed'),
