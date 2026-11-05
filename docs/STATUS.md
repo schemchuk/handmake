@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T47b — implemented; awaiting independent review.
+- **Active agent:** codex
+- **Current task:** T47b — changes requested in PR #84 review (2 blocking findings).
 - **Branch:** `feat/t47b-publish-result`.
 - **Last commit:** see `git log -1` — feat: notify the approving chat after publication.
-- **Next step:** Claude Code reviews the T47b PR and merges after green CI with no blocking findings. Then hand off T47c to Codex in a fresh session (followed by T47d-T47f and T40, including PR #81 review notes).
+- **Next step:** Codex fixes the PR #84 review notes listed under T47b in docs/03-tasks.md (blocking: show approving chat, link only for free posts; non-blocking: siteExcluded, Telegram status log) on `feat/t47b-publish-result`, then hands back to Claude Code for re-review. After the merge: T47c.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
