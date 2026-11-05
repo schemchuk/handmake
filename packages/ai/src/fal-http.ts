@@ -7,6 +7,7 @@ export class FalShowError extends Error {
     readonly code:
       'invalid-input' | 'disabled' | 'reconcile' | 'provider' | 'timeout' | 'invalid-media',
     readonly requestId?: string,
+    readonly httpStatus?: number,
   ) {
     // Deliberately exclude upstream errors, URLs, credentials, payloads and causes.
     super(`fal show: ${code}`);

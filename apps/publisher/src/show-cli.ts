@@ -1,6 +1,6 @@
 import { showFailureOutcome } from './show-outcome';
 import { readFile } from 'node:fs/promises';
-import { parseTenantConfig } from '@handmake/core';
+import { parseTenantConfig, showErrorDiagnostic } from '@handmake/core';
 import { FalShowGenerator } from '@handmake/ai';
 import { createShowClient, executeShow } from './show-executor';
 
@@ -34,6 +34,9 @@ try {
       new TextEncoder().encode(JSON.stringify({ outcome: showFailureOutcome(error) })),
     )
     .catch(() => undefined);
-  console.error('Show execution stopped; inspect durable state before resuming.');
+  console.error(
+    'Show execution stopped; inspect durable state before resuming.',
+    showErrorDiagnostic(error),
+  );
   process.exitCode = 1;
 }

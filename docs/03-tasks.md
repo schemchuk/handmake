@@ -1202,6 +1202,9 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance: a failed run names its cause in the Actions or Worker log; a test reproduces the D7
   path and passes after the fix.
 - Tests: error logging redaction; the reproduced checkpoint case.
+- Implementation note (2026-11-05): sanitized diagnostics and bounded conditional R2 job-write
+  retries cover injected error 10058 during checkpoint claim/release. The historical D7 cause
+  remains unconfirmed because its exception was discarded; see docs/show-recovery.md.
 - Review notes from PR #84 (T47b): the show approval test in `apps/bot/test/show-approval.test.ts`
   approves from chat `11`, which is also the draft's chat, so it would pass even if the callback
   ignored `approvalChatId` and fell back to `chatIdOf`; approve from a different chat.

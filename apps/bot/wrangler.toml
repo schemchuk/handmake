@@ -2,6 +2,11 @@ name = "handmake-bot"
 main = "src/index.ts"
 compatibility_date = "2026-10-26"
 
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = false
+
 # Create the database once:
 #   pnpm --filter @handmake/bot exec wrangler d1 create handmake-bot
 # then paste the printed database_id below and apply migrations:

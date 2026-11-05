@@ -16,3 +16,4 @@ export * from './show';
 export * from './show-config';
 export * from './show-draft';
 export * from './show-verification';
+export * from './show-diagnostic';

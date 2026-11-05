@@ -175,7 +175,7 @@ export class FalShowGenerator implements ShowGenerator {
       });
     } catch (error) {
       if (error instanceof FalShowError)
-        throw new FalShowError(error.code, requestId ?? error.requestId);
+        throw new FalShowError(error.code, requestId ?? error.requestId, error.httpStatus);
       throw new FalShowError('reconcile', requestId);
     }
   }
@@ -227,8 +227,12 @@ export class FalShowGenerator implements ShowGenerator {
             });
             ({ bytes, mimeType } = downloaded);
             if (!hasMediaHeader(bytes, mimeType)) throw new Error('invalid media');
-          } catch {
-            throw new FalShowError('invalid-media', requestId);
+          } catch (error) {
+            throw new FalShowError(
+              'invalid-media',
+              requestId,
+              error instanceof FalShowError ? error.httpStatus : undefined,
+            );
           }
           return {
             callId: `fal:${requestId}`,
@@ -280,7 +284,7 @@ export class FalShowGenerator implements ShowGenerator {
       });
       if (!response.ok) {
         await response.body?.cancel();
-        throw new FalShowError('provider');
+        throw new FalShowError('provider', undefined, response.status);
       }
       return await consume(response);
     } finally {

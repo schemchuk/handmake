@@ -243,6 +243,29 @@ describe('FalShowGenerator', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['submit', 'poll', 'result', 'media'])(
+    'preserves only the HTTP status after a rejected %s',
+    async (phase) => {
+      const prefix = [
+        json({ request_id: id }),
+        json({ status: 'COMPLETED' }),
+        json({ images: [{ url: 'https://v3.fal.media/output.png' }] }),
+      ];
+      const index = ['submit', 'poll', 'result', 'media'].indexOf(phase);
+      const { generator } = setup({}, [
+        ...prefix.slice(0, index),
+        json({ detail: 'test-fal-secret' }, 429),
+      ]);
+      const error = await generator.generateImage(request).catch((error: unknown) => error);
+      expect(error).toBeInstanceOf(FalShowError);
+      expect(error).toMatchObject({
+        httpStatus: 429,
+        code: phase === 'media' ? 'invalid-media' : 'provider',
+      });
+      expect(JSON.stringify(error)).not.toContain('test-fal-secret');
+    },
+  );
+
   it('bounds polls and preserves request identity on timeout', async () => {
     const { generator, fetch, options } = setup({}, [
       json({ request_id: id }),

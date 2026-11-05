@@ -114,3 +114,27 @@ durable results. Ready is accepted only when no attempt remains pending; generat
 require all output slots. Cancelled, expired and replaced jobs reject finish. Runner cancellation
 or a platform outage may prevent the workflow failure step from running.
 The gate-closed message refers only to the refused call: earlier saved results may have costs.
+
+## Failure diagnostics (T47c)
+
+Actions logs identify the rejected transport operation and HTTP status. The CLI and Worker log
+an allow-listed error class/message; unknown messages are redacted rather than logging upstream
+payloads, SQL, media, request IDs, signed URLs, credentials, stacks or causes. fal errors retain
+their numeric HTTP status through submission, polling, result and media-download wrappers.
+Worker console-log persistence is enabled in `wrangler.toml`; automatic invocation logs are
+disabled to avoid retaining request URLs. This configuration needs deployment after review.
+
+The transport writes the job key when claiming and releasing each operation. R2 limits writes
+to the same key to [one per second](https://developers.cloudflare.com/r2/platform/limits/).
+An explicit Workers API [rate-limit error 10058](https://developers.cloudflare.com/r2/api/error-codes/)
+now retries only that job write, at most twice with a 1.1-second delay. The original conditional
+ETag stays unchanged: a replacement or competing job still wins its fence. Application work,
+checkpoints, cost booking and provider submissions are never repeated by this helper. Unknown
+or ambiguous storage failures fail closed and use the existing durable-state recovery path.
+
+Local D1/R2 regressions inject 10058 during both checkpoint claim and release after a fresh raw
+upload, assert one acceptance/cost entry without generation, and cover a replacement job,
+exhausted retries and unclassified errors. This reproduces a concrete source of checkpoint 409s,
+but does **not** establish the cause of the historical D7 failures on 2026-11-04: those logs
+discarded the exception. Confirm or reject the throttling hypothesis from the new Worker logs
+if it recurs; do not mark the historical root-cause investigation resolved on local evidence alone.
