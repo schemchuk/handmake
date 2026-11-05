@@ -90,7 +90,8 @@ export function registerShowSession(
       const pending = selection?.awaitingWorkId
         ? await drafts.get(ctx.tenantId, linked)
         : undefined;
-      if (!(selection?.awaitingWorkId && !pending && !work)) {
+      const awaitedDiscarded = selection?.awaitingWorkId && !pending && !work;
+      if (!awaitedDiscarded) {
         if (selection?.awaitingWorkId && pending && pending.draft.state !== 'published')
           return ctx.reply(texts.showAwaitingWorkText);
         if (!work || work.tenant !== ctx.tenantId || work.id !== linked)

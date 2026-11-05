@@ -1251,6 +1251,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   excluded publication notices.
 
 ### T47f — Flaky show transport test (D1, `bot`)
+- Status: implemented 2026-11-05; awaiting Claude Code review.
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: make `apps/bot/test/show-transport.test.ts` "runs grants, private source reads, journal,
   raw upload, checkpoint and separate marked storage" deterministic (or raise its timeout with a

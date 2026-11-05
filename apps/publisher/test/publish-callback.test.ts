@@ -187,10 +187,44 @@ describe('runPublish published callback', () => {
     PUBLISH_CALLBACK_SECRET: callbackSecret,
   };
 
-  it.each([false, true])(
-    'POSTs the signed callback with site exclusion %s',
-    async (siteExcluded) => {
+  it.each([
+    { kind: 'post' as const, siteExcluded: false },
+    { kind: 'post' as const, siteExcluded: true },
+    { kind: 'work' as const, siteExcluded: false },
+    { kind: 'work' as const, siteExcluded: true },
+  ])(
+    'POSTs the signed $kind callback with site exclusion $siteExcluded',
+    async ({ kind, siteExcluded }) => {
       const { repoDir, payloadPath } = await makeRepo();
+      if (kind === 'work') {
+        const versions = Object.fromEntries(
+          Object.entries(basePayload.texts).map(([lang, description]) => [
+            lang,
+            { description, provenance: 'human' as const },
+          ]),
+        );
+        const payload: DispatchPayload = {
+          ...basePayload,
+          kind,
+          work: {
+            kind: 'interior',
+            date: now.toISOString(),
+            collection: 'callback-fixture',
+            channels: ['telegram'],
+            versions,
+            newCollection: {
+              order: 1,
+              versions: Object.fromEntries(
+                Object.entries(versions).map(([lang, version]) => [
+                  lang,
+                  { ...version, title: 'Callback fixture' },
+                ]),
+              ),
+            },
+          },
+        };
+        await writeFile(payloadPath, JSON.stringify(payload));
+      }
       const { fetchImpl, calls } = capturingFetch();
       const notifier = new FakeNotifier();
 
@@ -206,10 +240,12 @@ describe('runPublish published callback', () => {
         logger: () => {},
       });
 
+      if (kind === 'work') expect(result.work?.siteExcluded).toBe(siteExcluded || undefined);
       expect(calls).toHaveLength(1);
       const sent = JSON.parse(calls[0]!.body) as Record<string, unknown>;
       expect(sent).toEqual({
         tenantId,
+        ...(kind === 'work' ? { kind } : {}),
         ...(siteExcluded ? { siteExcluded: true } : {}),
         postId: draftId,
         date: result.post.date,
