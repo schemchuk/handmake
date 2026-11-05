@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T47g — channel subscription links on the site and in Telegram posts, work announcements and show copies.
-- **Branch:** `feat/t47g-channel-join`.
-- **Last commit:** see `git log -1` — feat: add Telegram channel subscription links.
-- **Next step:** Claude Code reviews T47g and merges after green CI. Then hand off to Codex for T47a in a fresh session; T47b-T47f and T40 (including PR #81 review notes) follow.
+- **Active agent:** codex
+- **Current task:** T47a — pending edit survives publish and discard (D4), plus PR #82 review notes.
+- **Branch:** `main`.
+- **Last commit:** see `git log -1` — docs: close T47g, hand off T47a to Codex.
+- **Next step:** Codex T47a in a fresh session, including the four "Review notes from PR #82" in docs/03-tasks.md (bot preview counts the footer, one channel URL source, empty `<p>`, test placement). Then T47b-T47f and T40 (including PR #81 review notes). Reviewer of each: claude-code.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.

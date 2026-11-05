@@ -1138,7 +1138,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: n/a (manual check).
 
 ### T47g — Join the Telegram channel from the site and from every post (`site`, `channels`) · Priority
-- Status: implemented 2026-11-05 on `feat/t47g-channel-join`; awaiting claude-code review.
+- Status: done 2026-11-05, PR #82 merged (`f18593e`).
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Why: the channel `https://t.me/Faden_und_Stimmung` (public, `site.circle.joinUrl`) is linked
   only on `/kreis/`; a visitor of a post, work or show page, or a reader of a forwarded post, has
@@ -1163,6 +1163,12 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance: press Edit DE, then Publish without sending text: the next text in that chat reaches
   `/work` or a new draft, not `editConflictText`.
 - Tests: publish with an armed edit; discard with an armed edit; stale flag on a published draft.
+- Review notes from PR #82 (T47g): (1) `apps/bot/src/preview.ts` renders without channel settings,
+  so the preview limit check ignores the subscription footer; pass the tenant `channels.telegram`
+  settings (keep uk-first order); (2) the channel URL lives in `site.circle.joinUrl` and
+  `channels.telegram.joinUrl`; derive one or add a schema check that they match; (3) move the `<p>`
+  wrapper into `JoinChannel.astro` so no empty `<p>` remains without a URL; (4) move the new
+  joinUrl test in `packages/core/test/tenant.test.ts` inside `describe('parseTenantConfig')`.
 
 ### T47b — Publish result reaches the chat that approved (D2, `publisher`, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
