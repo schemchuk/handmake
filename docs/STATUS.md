@@ -1,7 +1,7 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T40 — canonical links in channel posts (PR open, review).
+- **Current task:** T40 — canonical links in channel posts (PR #89, review).
 - **Branch:** `feat/t40-canonical-links`
 - **Last commit:** `f91285f` — feat(publisher,bot): wire canonical links; tenant flag on; carried notes
 - **Next step:** claude-code reviews the T40 PR; it touches `apps/bot` and `packages/`, so after the merge claude-code deploys the bot from a clean `main` (`pnpm -C apps/bot run deploy`) and records the Worker version — no D1 migrations, no wrangler.toml/secret changes. T26a (Instagram) is next for kimi-code after the merge.
