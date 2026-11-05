@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T47a — pending edit cleanup (D4) and PR #82 review notes.
-- **Branch:** `feat/t47a-pending-edit`.
-- **Last commit:** see `git log -1` — fix: clear pending edits when drafts leave authoring.
-- **Next step:** Claude Code reviews the T47a PR and merges after green CI and no blockers; then hand off T47b to Codex in a fresh session. T47b-T47f and T40 (including PR #81 review notes) follow.
+- **Active agent:** codex
+- **Current task:** T47b — publish result reaches the chat that approved (D2), plus PR #83 review notes.
+- **Branch:** `main`.
+- **Last commit:** see `git log -1` — docs: close T47a, hand off T47b to Codex.
+- **Next step:** Codex T47b in a fresh session, including the two "Review notes from PR #83" in docs/03-tasks.md (preview fallback when tenant config fails to load, preview language order). Then T47c-T47f and T40 (including PR #81 review notes). Reviewer of each: claude-code.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.

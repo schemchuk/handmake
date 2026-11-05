@@ -1156,7 +1156,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   respects caption/message limits, absent field → unchanged ops.
 
 ### T47a — Pending edit survives publish and discard (D4, `bot`)
-- Status: implemented; awaiting independent review by claude-code.
+- Status: done 2026-11-05, PR #83 merged (`d3b2801`).
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: clear `pending_edit` whenever a draft leaves `collecting`/`ready` (publishing claim,
   discard, show/work hand-offs) and ignore a pending edit whose draft is no longer editable, so a
@@ -1178,6 +1178,11 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   publisher's `author` notice stays for `AUTHOR_CHAT_ID` but becomes Ukrainian and readable.
 - Acceptance: publishing from a non-author allow-listed chat gives that chat the result message.
 - Tests: callback → message to the stored chat id; duplicate callback sends once.
+- Review notes from PR #83 (T47a): (1) `buildTenantPreview` in `apps/bot/src/preview.ts` throws
+  when the tenant-config fetch fails on a cold isolate, so the author gets no preview; catch it and
+  fall back to `buildPreview` without settings, with a warning; (2) the preview hard-codes
+  `languages: ['uk', 'de']`; derive the order from the loaded tenant config or document why the
+  draft key order must stay fixed.
 
 ### T47c — Diagnosable show failures and the checkpoint 409 (D6, D7, `publisher`, `ai`, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
