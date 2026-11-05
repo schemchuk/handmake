@@ -187,36 +187,40 @@ describe('runPublish published callback', () => {
     PUBLISH_CALLBACK_SECRET: callbackSecret,
   };
 
-  it('POSTs the signed callback after a fully delivered run', async () => {
-    const { repoDir, payloadPath } = await makeRepo();
-    const { fetchImpl, calls } = capturingFetch();
-    const notifier = new FakeNotifier();
+  it.each([false, true])(
+    'POSTs the signed callback with site exclusion %s',
+    async (siteExcluded) => {
+      const { repoDir, payloadPath } = await makeRepo();
+      const { fetchImpl, calls } = capturingFetch();
+      const notifier = new FakeNotifier();
 
-    const result = await runPublish(payloadPath, {
-      cwd: repoDir,
-      root: repoDir,
-      env: callbackEnv,
-      now,
-      mediaSource: await mediaSourceWithFixture(),
-      registry: makeRegistry(fakeAdapter()),
-      notifier,
-      fetchImpl,
-      logger: () => {},
-    });
+      const result = await runPublish(payloadPath, {
+        cwd: repoDir,
+        root: repoDir,
+        env: { ...callbackEnv, ...(siteExcluded ? { SITE_EXCLUDE_POST: 'true' } : {}) },
+        now,
+        mediaSource: await mediaSourceWithFixture(),
+        registry: makeRegistry(fakeAdapter()),
+        notifier,
+        fetchImpl,
+        logger: () => {},
+      });
 
-    expect(calls).toHaveLength(1);
-    const sent = JSON.parse(calls[0]!.body) as Record<string, unknown>;
-    expect(sent).toEqual({
-      tenantId,
-      postId: draftId,
-      date: result.post.date,
-      photos: result.post.photos,
-      channels: { telegram: 'done' },
-    });
-    expect(
-      await verifyCallbackSignature(callbackSecret, calls[0]!.body, calls[0]!.signature!),
-    ).toBe(true);
-  });
+      expect(calls).toHaveLength(1);
+      const sent = JSON.parse(calls[0]!.body) as Record<string, unknown>;
+      expect(sent).toEqual({
+        tenantId,
+        ...(siteExcluded ? { siteExcluded: true } : {}),
+        postId: draftId,
+        date: result.post.date,
+        photos: result.post.photos,
+        channels: { telegram: 'done' },
+      });
+      expect(
+        await verifyCallbackSignature(callbackSecret, calls[0]!.body, calls[0]!.signature!),
+      ).toBe(true);
+    },
+  );
 
   it('re-fires the callback on a re-run (the bot’s endpoint is idempotent)', async () => {
     const { repoDir, payloadPath } = await makeRepo();

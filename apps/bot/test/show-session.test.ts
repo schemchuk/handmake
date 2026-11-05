@@ -90,6 +90,7 @@ function build(enabled = true, execution = true) {
         }
       : undefined,
     work: {
+      logError: vi.fn(),
       configs: { load },
       collections: {
         listCollections: async () => [
@@ -806,3 +807,19 @@ it.each(['paid-calls-disabled', 'failed'] as const)(
     expect(sentTexts(calls)).not.toContain(botTexts.showSelectionErrorText);
   },
 );
+
+it('offers work selection again after discarding the awaited work', async () => {
+  await send('/show');
+  const showId = (await session())!.draftId!;
+  await press(button('new'));
+  const workId = (await session())!.draftId!;
+  await send('/discard');
+  expect(await get(workId)).toBeUndefined();
+  readWork.mockResolvedValueOnce(undefined);
+  await send('/show');
+  expect((await session())!.draftId).toBe(showId);
+  expect(sentTexts(calls).at(-1)).toBe(botTexts.showSelectText);
+  expect((await get(showId))!.draft.extras['showSelection']).not.toHaveProperty('awaitingWorkId');
+  await press(button('pick'));
+  expect((await get(showId))!.draft.extras['showSelection']).toMatchObject({ workId: work.id });
+});

@@ -1245,6 +1245,10 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   (2) `WorkSessionOptions.logError` in `apps/bot/src/work-session.ts` is optional, so a missing
   logger silently drops work setup failures; make it required or fall back to a redacted log.
 
+- Implementation (2026-11-05): T47e and both PR #86 follow-ups are ready for independent
+  review. The publish callback carries optional `siteExcluded`; work setup requires the
+  composition logger. Regression tests cover restored selection and excluded publication notices.
+
 ### T47f — Flaky show transport test (D1, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: make `apps/bot/test/show-transport.test.ts` "runs grants, private source reads, journal,

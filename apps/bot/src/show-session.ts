@@ -90,19 +90,19 @@ export function registerShowSession(
       const pending = selection?.awaitingWorkId
         ? await drafts.get(ctx.tenantId, linked)
         : undefined;
-      if (selection?.awaitingWorkId && !pending && !work)
-        return ctx.reply(texts.showMissingWorkText);
-      if (selection?.awaitingWorkId && pending && pending.draft.state !== 'published')
-        return ctx.reply(texts.showAwaitingWorkText);
-      if (!work || work.tenant !== ctx.tenantId || work.id !== linked)
-        return ctx.reply(texts.showMissingWorkText);
-      if (
-        selection?.awaitingWorkId &&
-        !(await save(stored, { ...selection, workId: linked, awaitingWorkId: undefined }))
-      )
-        throw new Error('show selection changed');
-      const updated = await drafts.get(ctx.tenantId, stored.draft.draftId);
-      return input.present(ctx, updated!);
+      if (!(selection?.awaitingWorkId && !pending && !work)) {
+        if (selection?.awaitingWorkId && pending && pending.draft.state !== 'published')
+          return ctx.reply(texts.showAwaitingWorkText);
+        if (!work || work.tenant !== ctx.tenantId || work.id !== linked)
+          return ctx.reply(texts.showMissingWorkText);
+        if (
+          selection?.awaitingWorkId &&
+          !(await save(stored, { ...selection, workId: linked, awaitingWorkId: undefined }))
+        )
+          throw new Error('show selection changed');
+        const updated = await drafts.get(ctx.tenantId, stored.draft.draftId);
+        return input.present(ctx, updated!);
+      }
     }
     const works = (await show!.works.listWorks(ctx.tenantId)).filter(
       (work) => work.tenant === ctx.tenantId,

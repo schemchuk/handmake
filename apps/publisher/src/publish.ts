@@ -290,6 +290,7 @@ export async function runPublish(
         postId: post.id,
         date: post.date,
         photos: post.photos,
+        ...(post.siteExcluded ? { siteExcluded: true } : {}),
         channels,
       });
       log(`published callback sent for ${post.id}`);

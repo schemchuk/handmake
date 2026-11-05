@@ -87,7 +87,7 @@ export async function handlePublishedCallback(
         }
         const section = kind === 'work' ? 'works' : kind === 'show' ? 'shows' : 'posts';
         const url =
-          baseUrl && (kind !== 'post' || draft?.draft.type === 'free')
+          baseUrl && !parsed.data.siteExcluded && (kind !== 'post' || draft?.draft.type === 'free')
             ? `${baseUrl.replace(/\/$/, '')}/${section}/${postId.toLowerCase()}/`
             : undefined;
         const response = await (options.fetchImpl ?? fetch)(

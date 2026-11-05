@@ -11,7 +11,7 @@ import { createWorkDraftFlow } from './work-draft-flow';
 
 export interface WorkSessionOptions {
   collections: CollectionReader;
-  logError?: (operation: string, error: unknown, tenantId: string) => void;
+  logError: (operation: string, error: unknown, tenantId: string) => void;
   configs: TenantConfigSource;
   textGeneratorFor: (tenantId: string, workId: string) => Promise<TextGenerator>;
 }
@@ -167,7 +167,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
       );
       await ctx.reply(texts.workConfiguredText);
     } catch (error) {
-      settings.logError?.('work setup failed', error, ctx.tenantId);
+      settings.logError('work setup failed', error, ctx.tenantId);
       await ctx.reply(texts.workSetupErrorText);
     }
   });
@@ -209,7 +209,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
       );
       await ctx.reply(texts.workConfiguredText);
     } catch (error) {
-      settings.logError?.('work setup failed', error, ctx.tenantId);
+      settings.logError('work setup failed', error, ctx.tenantId);
       await ctx.reply(texts.workSetupErrorText);
     }
   });

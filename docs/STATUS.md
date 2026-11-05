@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T47e — smaller UX fixes (D3, D5).
-- **Branch:** `main` (Codex creates `feat/t47e-<slug>`).
-- **Last commit:** see `git log -1` — docs: close T47d, hand off T47e to Codex.
-- **Next step:** Codex starts T47e in a fresh session, including the "Review notes from PR #86" in docs/03-tasks.md (no site link in the published notice for site-excluded content; required work setup logger). T47d merged (PR #86, `f548588`); bot deployed, Worker version `236786fc-8c99-44cb-bad2-acfc28518bac`. D7 root cause still needs Worker logs from the next failing real show. CI flake D1 (T47f) recurred on PR #86 and passed on rerun.
+- **Active agent:** claude-code
+- **Current task:** T47e — implementation complete; awaiting independent review.
+- **Branch:** `feat/t47e-ux-fixes`.
+- **Last commit:** see `git log -1` — fix: clarify work setup and restore show selection.
+- **Next step:** Claude Code reviews the T47e PR, including both PR #86 follow-ups. After green CI and merge, deploy the bot from clean main per AGENTS.md and hand off T47f to Codex in a fresh session. Latest deployed Worker remains `236786fc-8c99-44cb-bad2-acfc28518bac`. D7 needs Worker logs from the next failing real show.
 - **Blocked on:** T26a-c wait on H8; T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
@@ -81,6 +81,8 @@
 - Bot deploy: `cd apps/bot && pnpm run deploy` (`pnpm deploy` is a built-in pnpm command). Apply D1
   migrations first: `pnpm run db:migrate`.
 - pnpm is not in /usr/bin on this machine; Kimi Code uses `~/.local/bin/pnpm` (12.14.0). Node is v22.23.2 (`.nvmrc` = 22).
+
+- T47e validation: 89 targeted bot tests covered across runs (initial run 88/89; corrected discarded-work reader fixture passed its final targeted rerun); publisher callback 8/8 and core 222/222 pass. Workspace typecheck/build, lint and changed-file formatting pass. Initial sandbox D1 run stalled and was interrupted; unrestricted targeted suites completed. No deployment or production publishing. Optional callback field requires the updated bot before excluded production publishing; reviewer deploys after merge.
 
 ## Review notes carried forward
 Moved to docs/review-notes.md (ADR 009). Read it only when your task touches an area it names.
