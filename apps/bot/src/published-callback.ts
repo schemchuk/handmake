@@ -87,10 +87,10 @@ export async function handlePublishedCallback(
         }
         const section = kind === 'work' ? 'works' : kind === 'show' ? 'shows' : 'posts';
         const url =
-          baseUrl && !draft?.draft.extras['siteExcluded']
+          baseUrl && (kind !== 'post' || draft?.draft.type === 'free')
             ? `${baseUrl.replace(/\/$/, '')}/${section}/${postId.toLowerCase()}/`
             : undefined;
-        await (options.fetchImpl ?? fetch)(
+        const response = await (options.fetchImpl ?? fetch)(
           `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
           {
             method: 'POST',
@@ -101,6 +101,7 @@ export async function handlePublishedCallback(
             }),
           },
         );
+        if (!response.ok) console.error('Published notice rejected by Telegram', response.status);
       }
     } catch {
       console.error('Published notice failed');

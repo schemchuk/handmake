@@ -179,6 +179,7 @@ export function createShowApproval(deps: {
           stored.draft.draftId,
           new Date(),
           new Date(Date.now() - publishingStaleMs),
+          String(ctx.chat!.id),
         );
         return claimed ? approved : undefined;
       }
@@ -199,7 +200,7 @@ export function createShowApproval(deps: {
       showPublicationSchema.parse(proposal.show);
       await resolveVerifiedShowSnapshot(deps, stored, async () => {});
       // One statement freezes payload and state against cancellation and regeneration.
-      if (!(await drafts.freezeShowApproval(stored, proposal))) return;
+      if (!(await drafts.freezeShowApproval(stored, proposal, String(ctx.chat!.id)))) return;
       return proposal;
     },
   };

@@ -90,7 +90,11 @@ export interface D1DraftStore {
   update(draft: Draft, expectedVersion: number): Promise<boolean>;
   /** Work checkpoints/configuration: CAS protects texts and extras together without a migration. */
   updateWork(draft: Draft, expectedVersion: number): Promise<boolean>;
-  freezeShowApproval(stored: StoredDraft, job: PublishJob): Promise<boolean>;
+  freezeShowApproval(
+    stored: StoredDraft,
+    job: PublishJob,
+    approvalChatId: string,
+  ): Promise<boolean>;
   updateShow(draft: Draft, expectedVersion: number): Promise<boolean>;
   findShowForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
   getSessionShow(
@@ -352,7 +356,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes === 1;
     },
 
-    async freezeShowApproval(stored, job) {
+    async freezeShowApproval(stored, job, approvalChatId) {
       const { draft, version } = stored;
       if (
         draft.kind !== 'show' ||
@@ -370,7 +374,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         AND json_extract(extras, '$.showApproved') IS NULL`,
         )
         .bind(
-          JSON.stringify({ ...draft.extras, showApproved: job, showApprovalVersion: version }),
+          JSON.stringify({
+            ...draft.extras,
+            showApproved: job,
+            showApprovalVersion: version,
+            approvalChatId,
+          }),
           new Date().toISOString(),
           draft.tenantId,
           draft.draftId,

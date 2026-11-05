@@ -1,5 +1,5 @@
 import { createDraft, signCallbackBody } from '@handmake/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../src/composition';
 import { handlePublishedCallback } from '../src/published-callback';
@@ -340,4 +340,58 @@ it('still sends a short result when tenant config is unavailable', async () => {
   );
   expect(response.status).toBe(200);
   expect(sent).toEqual([{ chat_id: '22', text: 'Допис опубліковано.' }]);
+});
+
+it.each(['announcement', 'reminder', 'wotw-poll'] as const)(
+  'omits the site link for %s posts',
+  async (type) => {
+    const db = await makeD1();
+    const id = '01J8ZEXAMPLE00000000000011';
+    const store = createD1DraftStore(db);
+    await store.create({ ...createDraft(tenant, id, new Date(), { type }), state: 'ready' }, '22');
+    await store.claimPublishing(tenant, id, new Date());
+    const sent: unknown[] = [];
+    const response = await handlePublishedCallback(
+      makeEnv(db),
+      await signedRequest(callbackBody(id)),
+      {
+        texts: botTexts,
+        tenantConfigs: {
+          load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
+        },
+        fetchImpl: (async (_url: string, init: RequestInit) => {
+          sent.push(JSON.parse(String(init.body)));
+          return new Response('{}');
+        }) as typeof fetch,
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(sent).toEqual([{ chat_id: '22', text: 'Допис опубліковано.' }]);
+  },
+);
+
+it('logs only the rejected Telegram status and never retries the notice', async () => {
+  const db = await makeD1();
+  const id = '01J8ZEXAMPLE00000000000012';
+  await makePublishingDraft(db, id);
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const send = vi.fn(async () => new Response('sensitive response', { status: 403 }));
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await handlePublishedCallback(
+        makeEnv(db),
+        await signedRequest(callbackBody(id)),
+        {
+          texts: botTexts,
+          tenantConfigs: { load: async () => ({}) as never },
+          fetchImpl: send,
+        },
+      );
+      expect(response.status).toBe(200);
+    }
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls).toEqual([['Published notice rejected by Telegram', 403]]);
+  } finally {
+    log.mockRestore();
+  }
 });
