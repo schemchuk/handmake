@@ -1,5 +1,5 @@
 import { createDraft, signCallbackBody } from '@handmake/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../src/composition';
 import { handlePublishedCallback } from '../src/published-callback';
@@ -67,6 +67,7 @@ async function makePublishingDraft(
   db: D1Database,
   postId: string,
   kind: 'post' | 'work' | 'show' = 'post',
+  chatId = '11',
 ): Promise<void> {
   const store = createD1DraftStore(db);
   await store.create(
@@ -75,7 +76,7 @@ async function makePublishingDraft(
   );
   await store.claimTranslation(tenant, postId, ['collecting'], new Date());
   await store.markTranslated(tenant, postId, 'Hallo!', new Date());
-  const claimed = await store.claimPublishing(tenant, postId, new Date());
+  const claimed = await store.claimPublishing(tenant, postId, new Date(), undefined, chatId);
   if (!claimed) {
     throw new Error('test helper failed to claim the draft');
   }
@@ -264,35 +265,42 @@ it('does not complete a work when a channel reports failure', async () => {
   expect(await indexCount(db, id)).toBe(0);
 });
 
-describe('work published notice', () => {
-  it('tells the author in the chat when a work is published, once', async () => {
-    const db = await makeD1();
-    const postId = '01J8ZEXAMPLE00000000000009';
-    await makePublishingDraft(db, postId, 'work');
-    const sent: { url: string; body: { chat_id: string; text: string } }[] = [];
-    const fetchImpl = (async (url: string, init: RequestInit) => {
-      sent.push({ url, body: JSON.parse(String(init.body)) });
-      return new Response('{}');
-    }) as unknown as typeof fetch;
-    const tenantConfigs = {
-      load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
-    };
-    const body = callbackBody(postId, { kind: 'work' });
-    const call = async () =>
-      handlePublishedCallback(makeEnv(db), await signedRequest(body), {
-        texts: botTexts,
-        tenantConfigs,
-        fetchImpl,
-      });
+describe('published notice', () => {
+  it.each(['post', 'work', 'show'] as const)(
+    'notifies the stored non-author chat for %s once',
+    async (kind) => {
+      const db = await makeD1();
+      const postId = '01J8ZEXAMPLE00000000000009';
+      await makePublishingDraft(db, postId, kind, '22');
+      const sent: { url: string; body: { chat_id: string; text: string } }[] = [];
+      const fetchImpl = (async (url: string, init: RequestInit) => {
+        sent.push({ url, body: JSON.parse(String(init.body)) });
+        return new Response('{}');
+      }) as unknown as typeof fetch;
+      const tenantConfigs = {
+        load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
+      };
+      const body = callbackBody(postId, { kind });
+      const call = async () =>
+        handlePublishedCallback(makeEnv(db), await signedRequest(body), {
+          texts: botTexts,
+          tenantConfigs,
+          fetchImpl,
+        });
 
-    expect((await call()).status).toBe(200);
-    expect((await call()).status).toBe(200);
+      expect((await call()).status).toBe(200);
+      expect((await call()).status).toBe(200);
 
-    expect(sent).toHaveLength(1);
-    expect(sent[0]!.url).toBe('https://api.telegram.org/botTEST_TOKEN/sendMessage');
-    expect(sent[0]!.body.chat_id).toBe('11');
-    expect(sent[0]!.body.text).toContain(`https://example.test/works/${postId.toLowerCase()}/`);
-  });
+      expect(sent).toHaveLength(1);
+      expect(sent[0]!.url).toBe('https://api.telegram.org/botTEST_TOKEN/sendMessage');
+      expect(sent[0]!.body.chat_id).toBe('22');
+      const section = kind === 'post' ? 'posts' : kind === 'work' ? 'works' : 'shows';
+      expect(sent[0]!.body.text).toContain(
+        `https://example.test/${section}/${postId.toLowerCase()}/`,
+      );
+      expect(sent[0]!.body.text).toContain('опубліковано');
+    },
+  );
 });
 
 it('completes a site-only show callback idempotently without indexing a regular post', async () => {
@@ -306,4 +314,84 @@ it('completes a site-only show callback idempotently without indexing a regular 
   }
   expect((await createD1DraftStore(db).get(tenant, postId))?.draft.state).toBe('published');
   expect(await indexCount(db, postId)).toBe(0);
+});
+
+it('still sends a short result when tenant config is unavailable', async () => {
+  const db = await makeD1();
+  const id = '01J8ZEXAMPLE00000000000010';
+  await makePublishingDraft(db, id, 'post', '22');
+  const sent: unknown[] = [];
+  const fetchImpl = (async (_url: string, init: RequestInit) => {
+    sent.push(JSON.parse(String(init.body)));
+    return new Response('{}');
+  }) as unknown as typeof fetch;
+  const response = await handlePublishedCallback(
+    makeEnv(db),
+    await signedRequest(callbackBody(id)),
+    {
+      texts: botTexts,
+      tenantConfigs: {
+        load: async () => {
+          throw new Error('unavailable');
+        },
+      },
+      fetchImpl,
+    },
+  );
+  expect(response.status).toBe(200);
+  expect(sent).toEqual([{ chat_id: '22', text: 'Допис опубліковано.' }]);
+});
+
+it.each(['announcement', 'reminder', 'wotw-poll'] as const)(
+  'omits the site link for %s posts',
+  async (type) => {
+    const db = await makeD1();
+    const id = '01J8ZEXAMPLE00000000000011';
+    const store = createD1DraftStore(db);
+    await store.create({ ...createDraft(tenant, id, new Date(), { type }), state: 'ready' }, '22');
+    await store.claimPublishing(tenant, id, new Date());
+    const sent: unknown[] = [];
+    const response = await handlePublishedCallback(
+      makeEnv(db),
+      await signedRequest(callbackBody(id)),
+      {
+        texts: botTexts,
+        tenantConfigs: {
+          load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
+        },
+        fetchImpl: (async (_url: string, init: RequestInit) => {
+          sent.push(JSON.parse(String(init.body)));
+          return new Response('{}');
+        }) as typeof fetch,
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(sent).toEqual([{ chat_id: '22', text: 'Допис опубліковано.' }]);
+  },
+);
+
+it('logs only the rejected Telegram status and never retries the notice', async () => {
+  const db = await makeD1();
+  const id = '01J8ZEXAMPLE00000000000012';
+  await makePublishingDraft(db, id);
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const send = vi.fn(async () => new Response('sensitive response', { status: 403 }));
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await handlePublishedCallback(
+        makeEnv(db),
+        await signedRequest(callbackBody(id)),
+        {
+          texts: botTexts,
+          tenantConfigs: { load: async () => ({}) as never },
+          fetchImpl: send,
+        },
+      );
+      expect(response.status).toBe(200);
+    }
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls).toEqual([['Published notice rejected by Telegram', 403]]);
+  } finally {
+    log.mockRestore();
+  }
 });

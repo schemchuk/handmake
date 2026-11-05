@@ -202,7 +202,9 @@ describe('runPublish', () => {
     expect(log).toContain(`content: update ledger ${draftId}`);
 
     // Author was notified; the log records the commit without message bodies.
-    expect(notifier.messages.some((m) => m.target === 'author')).toBe(true);
+    expect(notifier.messages.find((m) => m.target === 'author')?.message).toBe(
+      'Опубліковано. Канали: telegram.',
+    );
     expect(lines.join('\n')).toContain(
       `committed content/posts/2026-10-24-${draftId.toLowerCase()}`,
     );

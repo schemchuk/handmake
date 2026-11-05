@@ -90,7 +90,11 @@ export interface D1DraftStore {
   update(draft: Draft, expectedVersion: number): Promise<boolean>;
   /** Work checkpoints/configuration: CAS protects texts and extras together without a migration. */
   updateWork(draft: Draft, expectedVersion: number): Promise<boolean>;
-  freezeShowApproval(stored: StoredDraft, job: PublishJob): Promise<boolean>;
+  freezeShowApproval(
+    stored: StoredDraft,
+    job: PublishJob,
+    approvalChatId: string,
+  ): Promise<boolean>;
   updateShow(draft: Draft, expectedVersion: number): Promise<boolean>;
   findShowForChat(tenantId: string, chatId: string): Promise<StoredDraft | undefined>;
   getSessionShow(
@@ -173,6 +177,7 @@ export interface D1DraftStore {
     draftId: string,
     now: Date,
     staleBefore?: Date,
+    approvalChatId?: string,
   ): Promise<StoredDraft | undefined>;
   /** Moves 'publishing' → 'ready' when the dispatch itself failed. */
   revertPublishing(tenantId: string, draftId: string, now: Date): Promise<boolean>;
@@ -351,7 +356,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes === 1;
     },
 
-    async freezeShowApproval(stored, job) {
+    async freezeShowApproval(stored, job, approvalChatId) {
       const { draft, version } = stored;
       if (
         draft.kind !== 'show' ||
@@ -369,7 +374,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         AND json_extract(extras, '$.showApproved') IS NULL`,
         )
         .bind(
-          JSON.stringify({ ...draft.extras, showApproved: job, showApprovalVersion: version }),
+          JSON.stringify({
+            ...draft.extras,
+            showApproved: job,
+            showApprovalVersion: version,
+            approvalChatId,
+          }),
           new Date().toISOString(),
           draft.tenantId,
           draft.draftId,
@@ -594,15 +604,24 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
     },
 
-    async claimPublishing(tenantId, draftId, now, staleBefore) {
+    async claimPublishing(tenantId, draftId, now, staleBefore, approvalChatId) {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET pending_edit = NULL, status = 'publishing', updated_at = ?, version = version + 1
+           SET pending_edit = NULL, status = 'publishing', updated_at = ?, version = version + 1,
+               extras = CASE WHEN ? IS NULL THEN extras
+                 ELSE json_set(extras, '$.approvalChatId', ?) END
            WHERE tenant_id = ? AND id = ?
              AND (status = 'ready' OR (status = 'publishing' AND updated_at < ?))`,
         )
-        .bind(now.toISOString(), tenantId, draftId, (staleBefore ?? staleEpoch).toISOString())
+        .bind(
+          now.toISOString(),
+          approvalChatId ?? null,
+          approvalChatId ?? null,
+          tenantId,
+          draftId,
+          (staleBefore ?? staleEpoch).toISOString(),
+        )
         .run();
       return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
     },

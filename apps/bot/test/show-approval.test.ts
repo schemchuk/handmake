@@ -1,8 +1,10 @@
-import { createDraft, showDraftDataSchema } from '@handmake/core';
+import { createDraft, showDraftDataSchema, signCallbackBody } from '@handmake/core';
 import type { Work, PublishJob } from '@handmake/core';
 import type { InputFile } from 'grammy';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { MissingShowVerification } from '../src/show-verification';
+import { handlePublishedCallback } from '../src/published-callback';
+import type { Env } from '../src/env';
 import { createShowApproval } from '../src/show-approval';
 import { createD1DraftStore } from '../src/draft-store';
 import type { AppContext } from '../src/context';
@@ -13,6 +15,7 @@ import { FakeTranslator } from '@handmake/core/testing';
 
 const tenant = 'fixture';
 const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+let db: D1Database;
 let store: ReturnType<typeof createD1DraftStore>;
 let approval: ReturnType<typeof createShowApproval>;
 let ctx: AppContext;
@@ -66,7 +69,8 @@ const data = showDraftDataSchema.parse({
 });
 beforeEach(async () => {
   vi.clearAllMocks();
-  store = createD1DraftStore(await makeD1());
+  db = await makeD1();
+  store = createD1DraftStore(db);
   await store.create(
     {
       ...createDraft(tenant, id, new Date(), { kind: 'show' }),
@@ -306,3 +310,61 @@ it('never dispatches a backfill for invalid evidence or a stale private session'
   ).rejects.toThrow('stale');
   expect(backfill).not.toHaveBeenCalled();
 });
+
+it.each([false, true])(
+  'sends the show result to the approving chat after approve (retry: %s)',
+  async (retry) => {
+    await present();
+    const initial = await stored();
+    expect(await approve()).toBeDefined();
+    expect((await stored()).draft.extras['approvalChatId']).toBe('11');
+    if (retry) {
+      await store.revertPublishing(tenant, id, new Date());
+      // Simulate a frozen legacy approval without the newly captured chat.
+      await db
+        .prepare(
+          "UPDATE drafts SET extras = json_remove(extras, '$.approvalChatId') WHERE tenant_id = ? AND id = ?",
+        )
+        .bind(tenant, id)
+        .run();
+      expect(await approval.approve(ctx, await stored(), String(initial.version))).toBeDefined();
+      expect((await stored()).draft.extras['approvalChatId']).toBe('11');
+    }
+    const secret = 'test-callback-secret';
+    const body = JSON.stringify({
+      kind: 'show',
+      tenantId: tenant,
+      postId: id,
+      date: '2026-11-05',
+      photos: [],
+      channels: {},
+    });
+    const sent = vi.fn(async () => new Response('{}'));
+    const signature = await signCallbackBody(secret, body);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await handlePublishedCallback(
+        { DB: db, PUBLISH_CALLBACK_SECRET: secret, TELEGRAM_BOT_TOKEN: 'TEST_TOKEN' } as Env,
+        new Request('https://example.test/callbacks/published', {
+          method: 'POST',
+          headers: { 'x-handmake-signature': signature },
+          body,
+        }),
+        {
+          texts: botTexts,
+          tenantConfigs: {
+            load: async () => ({ site: { baseUrl: 'https://example.test' } }) as never,
+          },
+          fetchImpl: sent as unknown as typeof fetch,
+        },
+      );
+      expect(response.status).toBe(200);
+    }
+    expect(sent).toHaveBeenCalledTimes(1);
+    expect(
+      JSON.parse(String((sent.mock.calls[0] as unknown as [string, RequestInit])[1].body)),
+    ).toEqual({
+      chat_id: '11',
+      text: `Показ опубліковано. https://example.test/shows/${id.toLowerCase()}/`,
+    });
+  },
+);

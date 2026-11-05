@@ -1172,6 +1172,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   joinUrl test in `packages/core/test/tenant.test.ts` inside `describe('parseTenantConfig')`.
 
 ### T47b — Publish result reaches the chat that approved (D2, `publisher`, `bot`)
+- Status: review fixes implemented 2026-11-05 (PR #84); awaiting independent re-review.
 - Owner: codex · Reviewer: claude-code · Depends on: T47
 - Change: after the signed published callback the bot sends a short Ukrainian result to the chat
   that pressed Publish/approve (post, work, show), with the site link when there is one. The
@@ -1183,6 +1184,13 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   fall back to `buildPreview` without settings, with a warning; (2) the preview hard-codes
   `languages: ['uk', 'de']`; derive the order from the loaded tenant config or document why the
   draft key order must stay fixed.
+- Review notes from PR #84 (blocking): (1) show approval never stores the approving chat:
+  `freezeShowApproval` (`draft-store.ts`) and the re-claim in `show-approval.ts` must write
+  `approvalChatId`; add a test through `approve()`, not the `claimPublishing` test helper; (2) build
+  the `/posts/<id>/` link only for `draft.type === 'free'`, since announcements, reminders and polls are
+  not on the site. Non-blocking: (3) `extras.siteExcluded` is never written; send it in the callback
+  body or drop the check (T47d); (4) log the Telegram `sendMessage` status when it is not ok, with no
+  body or token.
 
 ### T47c — Diagnosable show failures and the checkpoint 409 (D6, D7, `publisher`, `ai`, `bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T47
