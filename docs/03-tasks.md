@@ -1322,7 +1322,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: mocked APIs, idempotent collect and reply, retention, cost booking.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
-- Owner: kimi-code · Reviewer: claude-code · Depends on: H16, Q17 answer (spec v8 approved 2026-11-06)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: H16 (spec v8 approved and Q17 working answer recorded 2026-11-06)
 - Change: draft group rules (DE and UK) in `docs/community-rules.md` for the author to approve
   (never her final text without her OK); the group link on `/kreis/` from an optional tenant
   setting `site.groupUrl` (no change to channel posts); a Datenschutzerklärung paragraph for the group, marked for Volodymyr's and the author's review.

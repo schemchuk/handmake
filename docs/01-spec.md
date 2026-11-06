@@ -227,8 +227,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     post only your own works; no faces or names of other people without their consent; no ads; you
     keep the rights to your photos and are responsible for what you post. Posting means accepting
     the rules. *Flag, not legal advice: the rules move responsibility for content to the poster, but
-    the group operator still has to remove clearly unlawful content once notified (hosting
-    privilege, DSA art. 6) and needs a reachable contact; the Impressum covers that.*
+    the group operator still has to remove clearly unlawful content once notified (notice-and-action duty
+    under the DSA/DDG) and needs a reachable contact; the Impressum covers that.*
   - **Outside our system.** The bot is not a member of the group and never reads it. Nothing from
     the group reaches D1, Git, the site, Instagram or the contest; the platform stores no new personal
     data. Contest entries stay as in F19 (through the author).
@@ -365,9 +365,23 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
 - **Q12** Open (before phase 4): country and form of business registration.
-- **Q17** Open (legal, before F35 goes live): does running the linked Telegram group make the
-  operator a joint controller with Telegram (as for Facebook fan pages, CJEU C-210/16), and what must
-  the Datenschutzerklärung say about it? Goes to the lawyer list with the fal DPA and Art. 9 questions.
+- **Q17** Working answer (2026-11-06), *not legal advice*; a lawyer confirms with the fal DPA and
+  Art. 9 questions. Question: does running the linked Telegram group make the operator a joint
+  controller with Telegram (as for Facebook fan pages, CJEU C-210/16)?
+  - Assessment: joint controllership is possible but less likely than for a fan page. The operator
+    sets up the group and its rules, but gets no analytics of visitors and does not decide Telegram's
+    purposes. The operator is still the controller for what it does itself (sees member names and
+    profiles, removes content, keeps the rules); the household exemption does not apply to a group
+    open to the public.
+  - Decision for go-live: act as if the operator is at least responsible for its own part. The
+    Datenschutzerklärung names the group, says Telegram processes members' data under its own
+    responsibility (Telegram FZ-LLC, possible transfer to third countries), states that the operator
+    sees only what members show in the group, stores nothing from it (F35) and removes content on
+    notice, and links Telegram's privacy policy and the Impressum contact. The paragraph is written
+    in T50 and marked for Volodymyr's and the author's review.
+  - The same reasoning already applies to the existing channel.
+  - Go-live of the group does not wait for the lawyer; the lawyer's confirmation is requested before
+    the group is promoted widely.
 - **Q13** Resolved (2026-10-28): a contest post may show the participant's first name or nickname
   (no surname), only with her consent; without it the entry is anonymous ("Work No 3"). Names stay out
   of Git (F19). *Flag: a first name with a photo is still personal data; consent and withdrawal must be
