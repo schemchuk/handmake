@@ -1323,7 +1323,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on
-  `/kreis/` and `/uk/kreis/`); Q17 agreed. Bot deploy pending (Volodymyr runs it by hand).
+  `/kreis/` and `/uk/kreis/`); Q17 agreed. Bot deployed by Volodymyr; group privacy paragraph reviewed and accepted.
 - Owner: kimi-code · Reviewer: claude-code · Depends on: H16 (spec v8 approved and Q17 working answer recorded 2026-11-06)
 - Change: draft group rules (DE and UK) in `docs/community-rules.md` for the author to approve
   (never her final text without her OK); the group link on `/kreis/` from an optional tenant
