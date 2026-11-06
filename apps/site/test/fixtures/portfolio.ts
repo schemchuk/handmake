@@ -22,6 +22,7 @@ export async function createPortfolioFixture() {
   tenant.id = 'fixture';
   tenant.site!.baseUrl = 'https://example.invalid';
   delete tenant.site!.circle;
+  delete tenant.site!.groupUrl;
   await mkdir(path.join(root, 'config/tenants'), { recursive: true });
   await writeFile(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
   await cp(
