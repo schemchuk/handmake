@@ -365,8 +365,8 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
 - **Q12** Open (before phase 4): country and form of business registration.
-- **Q17** Working answer (2026-11-06), *not legal advice*; a lawyer confirms with the fal DPA and
-  Art. 9 questions. Question: does running the linked Telegram group make the operator a joint
+- **Q17** Agreed (Volodymyr, 2026-11-06); working answer, *not legal advice*. The lawyer
+  questions on the fal DPA and Art. 9 stay open separately. Question: does running the linked Telegram group make the operator a joint
   controller with Telegram (as for Facebook fan pages, CJEU C-210/16)?
   - Assessment: joint controllership is possible but less likely than for a fan page. The operator
     sets up the group and its rules, but gets no analytics of visitors and does not decide Telegram's
