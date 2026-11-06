@@ -1,9 +1,8 @@
 # Community rules — «Faden und Stimmung · Austausch»
 
-**Status: DRAFT (T50, 2026-11-06), written by kimi-code for the author's approval.**
-The author approves or rewords the rules; only then does Volodymyr pin them in the
-group (H16) and add the group link to the channel description. Never treat this text
-as her final wording without her explicit OK. Not legal advice; the legal background
+**Status: APPROVED by the author (2026-11-06; drafted in T50 by kimi-code).**
+Volodymyr pins them in the group (H16) and adds the group link to the channel
+description. Any change to the wording needs the author's OK again. Not legal advice; the legal background
 is spec v8, F35 and Q17 (docs/01-spec.md).
 
 The group is the Telegram discussion group linked to the channel (F35): channel posts
