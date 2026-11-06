@@ -227,16 +227,10 @@ describe('parseTenantConfig', () => {
     });
 
     it('accepts an optional discussion group link and rejects non-https values', () => {
-      expect(parseTenantConfig(realConfig()).site?.groupUrl).toBeUndefined();
-      const withGroup = realConfig().replace(
-        '  baseUrl: https://fadenundstimmung.de',
-        '  groupUrl: https://t.me/fixture_group\n  baseUrl: https://fadenundstimmung.de',
-      );
-      expect(parseTenantConfig(withGroup).site?.groupUrl).toBe('https://t.me/fixture_group');
-      const bad = withGroup.replace(
-        'groupUrl: https://t.me/fixture_group',
-        'groupUrl: http://t.me/fixture_group',
-      );
+      expect(parseTenantConfig(realConfig()).site?.groupUrl).toBe('https://t.me/+Q7txJldGFzh0Wy');
+      const withoutGroup = realConfig().replace(/\n  groupUrl: https:\/\/\S+/, '');
+      expect(parseTenantConfig(withoutGroup).site?.groupUrl).toBeUndefined();
+      const bad = realConfig().replace('groupUrl: https://', 'groupUrl: http://');
       expect(() => parseTenantConfig(bad)).toThrowError(/groupUrl/);
     });
 
