@@ -16,6 +16,9 @@ export interface UiStrings {
   where: string;
   join: string;
   joinChannel: string;
+  groupHeading: string;
+  groupText: string;
+  joinGroup: string;
   every: (weekday: string) => string;
   oClock: (time: string) => string;
   aiAssisted: string;
@@ -41,6 +44,10 @@ const strings: Record<string, UiStrings> = {
     where: 'Wo',
     join: 'Zum Telegram-Kanal',
     joinChannel: 'Telegram-Kanal abonnieren',
+    groupHeading: 'Austauschgruppe',
+    groupText:
+      'Unserem Kanal ist eine Gruppe angehängt: Dort zeigst du deine eigenen Handarbeiten — als Foto mit einem kurzen Text — und dort erscheinen die Kommentare unter den Beiträgen des Kanals. Beim Posten gelten die Regeln der Gruppe.',
+    joinGroup: 'Zur Austauschgruppe',
     every: (weekday) => `Jeden ${weekday}`,
     oClock: (time) => `${time} Uhr`,
     aiAssisted: 'Mit KI-Unterstützung erstellt',
@@ -64,6 +71,10 @@ const strings: Record<string, UiStrings> = {
     where: 'Де',
     join: 'До Telegram-каналу',
     joinChannel: 'Підписатися на Telegram-канал',
+    groupHeading: 'Група для обміну',
+    groupText:
+      "До нашого каналу приєднано групу: там ти показуєш власні роботи — фото з коротким текстом — і там з'являються коментарі під дописами каналу. Публікуючи, ти дотримуєшся правил групи.",
+    joinGroup: 'До групи',
     every: (weekday) => `Щотижня, ${weekday}`,
     oClock: (time) => `о ${time}`,
     aiAssisted: 'Створено за допомогою ШІ',

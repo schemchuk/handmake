@@ -143,6 +143,10 @@ export const siteSchema = z
       })
       .strict()
       .optional(),
+    // F35: public link to the participants' discussion group, e.g. the
+    // channel's linked Telegram group. Optional: without it the circle page
+    // shows no group link. Channel posts never carry it.
+    groupUrl: httpsUrlSchema.optional(),
   })
   .strict();
 

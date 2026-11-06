@@ -142,6 +142,13 @@ describe('portfolio fixture build', () => {
       }
       expect(await readFile(path.join(dist, '404.html'), 'utf8')).toContain('Seite nicht gefunden');
       expect(await html(dist, 'uk/404')).toContain('Сторінку не знайдено');
+      for (const route of ['kreis', 'uk/kreis'] as const) {
+        const page = await html(dist, route);
+        expect(page).toContain('href="https://t.me/fixture_join"');
+        expect(page).not.toContain('class="group"');
+        expect(page).not.toContain('Austauschgruppe');
+        expect(page).not.toContain('Група для обміну');
+      }
       await expect(access(path.join(dist, 'sitemap.xml'))).rejects.toThrow();
       expect(await readFile(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /');
       const showUrl = `shows/${show.id.toLowerCase()}`;
@@ -232,6 +239,42 @@ describe('portfolio fixture build', () => {
     try {
       await writeFile(path.join(root, 'content/works', ids.a, 'index.md'), 'broken work');
       await expect(build(root, dist)).rejects.toThrow(`content/works/${ids.a}/index.md`);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('links the discussion group on the circle page when site.groupUrl is set', async () => {
+    const fixture = await createPortfolioFixture();
+    const { root, dist } = fixture;
+    try {
+      fixture.tenant.channels.telegram!.joinUrl = 'https://t.me/fixture_join';
+      fixture.tenant.site!.circle = {
+        joinUrl: 'https://t.me/fixture_join',
+        texts: {
+          de: { title: 'Kreis', what: 'Handarbeit', where: 'Landshut' },
+          uk: { title: 'Гурток', what: 'Рукоділля', where: 'Ландсгут' },
+        },
+      };
+      fixture.tenant.site!.groupUrl = 'https://t.me/fixture_group';
+      await writeFile(
+        path.join(root, 'config/tenants/fixture.yaml'),
+        JSON.stringify(fixture.tenant),
+      );
+      await build(root, dist);
+      const de = await html(dist, 'kreis');
+      const uk = await html(dist, 'uk/kreis');
+      for (const [page, button] of [
+        [de, 'Zur Austauschgruppe'],
+        [uk, 'До групи'],
+      ] as const) {
+        expect(page).toContain('href="https://t.me/fixture_group"');
+        expect(page).toContain(`>${button}</a>`);
+      }
+      expect(de).toContain('Austauschgruppe');
+      expect(uk).toContain('Група для обміну');
+      expect(de).not.toContain('Група для обміну');
+      expect(uk).not.toContain('Austauschgruppe');
     } finally {
       await rm(root, { recursive: true, force: true });
     }
