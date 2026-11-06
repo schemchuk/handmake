@@ -22,7 +22,7 @@ eigenen Handarbeiten und kommentierst die Beiträge des Kanals.
 2. Keine Gesichter und keine Namen anderer Personen auf deinen Fotos ohne deren
    Einverständnis.
 3. Keine Werbung, kein Verkauf, keine Einladungen zu anderen Gruppen oder Kanälen.
-4. Fotos und Text only — Links entfernen die Admins.
+4. Nur Fotos und Text — Links entfernen die Admins.
 5. Bleib freundlich. Kritik an Arbeiten ist willkommen — an Personen nicht.
 6. Deine Fotos bleiben dein Eigentum. Du bist für das verantwortlich, was du postest.
 7. Mit dem Posten akzeptierst du diese Regeln.
