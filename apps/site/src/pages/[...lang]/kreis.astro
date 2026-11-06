@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Stitch from '../../components/Stitch.astro';
 import { uiStrings } from '../../lib/i18n';
 import { langParam, pagePath } from '../../lib/paths';
 import { formatMeeting } from '../../lib/schedule';
@@ -21,6 +22,7 @@ const def = data.site.defaultLanguage;
 const ui = uiStrings(lang);
 const circle = data.site.circle!;
 const texts = circle.texts[lang]!;
+const groupUrl = data.site.groupUrl;
 const alternates = Object.fromEntries(
   data.tenant.languages.map((code) => [code, pagePath(code, def, 'kreis')]),
 );
@@ -38,6 +40,14 @@ const alternates = Object.fromEntries(
         <dd>{texts.where}</dd>
       </dl>
       <a class="button" href={circle.joinUrl} rel="noopener">{ui.join}</a>
+      {groupUrl && (
+        <section class="group" aria-labelledby="group-heading">
+          <Stitch />
+          <h2 id="group-heading">{ui.groupHeading}</h2>
+          <p>{ui.groupText}</p>
+          <a class="button" href={groupUrl} rel="noopener">{ui.joinGroup}</a>
+        </section>
+      )}
     </div>
   </div>
 </Base>

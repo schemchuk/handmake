@@ -80,6 +80,9 @@ site:
           Відкритий гурток рукоділля: вишиваємо, в'яжемо і шиємо разом, ділимося ідеями та
           п'ємо чай. Принось свій проєкт або почни новий.
         where: Niedermayerstr. 85, Landshut
+  # F35 (T50): public invite to the participants' discussion group (H16). With
+  # it, /kreis/ links the group in both languages; without it no group block.
+  groupUrl: https://t.me/+Q7txJldGFzh0Wy
 
 # F32: EUR estimates supplied by the operator; T43 verifies service prices.
 ai:

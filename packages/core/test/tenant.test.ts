@@ -226,6 +226,14 @@ describe('parseTenantConfig', () => {
       expect(() => parseTenantConfig(bad)).toThrowError(/joinUrl/);
     });
 
+    it('accepts an optional discussion group link and rejects non-https values', () => {
+      expect(parseTenantConfig(realConfig()).site?.groupUrl).toBe('https://t.me/+Q7txJldGFzh0Wy');
+      const withoutGroup = realConfig().replace(/\n  groupUrl: https:\/\/\S+/, '');
+      expect(parseTenantConfig(withoutGroup).site?.groupUrl).toBeUndefined();
+      const bad = realConfig().replace('groupUrl: https://', 'groupUrl: http://');
+      expect(() => parseTenantConfig(bad)).toThrowError(/groupUrl/);
+    });
+
     it('still refuses a secret-looking value inside the site section', () => {
       const bad = realConfig().replace(
         '  defaultLanguage: de',

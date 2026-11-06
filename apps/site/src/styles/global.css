@@ -282,6 +282,21 @@ a {
   background: var(--rule);
 }
 
+.group {
+  margin-top: 2.5rem;
+}
+.group .stitch {
+  margin-bottom: 2rem;
+}
+.group h2 {
+  margin: 0 0 1.1rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
 .site-footer {
   padding-block: 2rem 2.5rem;
   color: var(--muted);
