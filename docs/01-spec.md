@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v7 (2026-11-04); draft v8 (2026-11-05, F35) awaits Volodymyr's approval.**
-Previous: approved v6 (2026-10-30).
+Status: **approved v8 (2026-11-06).**
+Previous: approved v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v7 (draft v8) are listed in section 14, from v6 in 14a.
+Changes from v7 (v8) are listed in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -59,7 +59,7 @@ the time goes into maintenance and the portfolio case.
 |---|---|---|
 | Author | the circle lead (Volodymyr's wife) | send posts, contest entries and new works to the bot, edit, approve, publish |
 | Operator | Volodymyr | configure tenants and channels, manage secrets, receive failure alerts, approve sensitive merges |
-| Participant | circle members | hand their works to the author for the contest (offline or privately); post photos of their own works in the channel's Telegram discussion group on their own responsibility (F35, draft v8); never use the bot or the system directly |
+| Participant | circle members | hand their works to the author for the contest (offline or privately); post photos of their own works in the channel's Telegram discussion group on their own responsibility (F35); never use the bot or the system directly |
 | Reader | public | read Telegram, Instagram and the website, vote in channel polls |
 
 Only allow-listed Telegram user IDs may use the bot. Everyone else gets a polite refusal and nothing is
@@ -213,15 +213,16 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 - Weekly planning and post-mortems (`/ig-plan`, `/ig-audit`) are not built: Volodymyr runs those
   skills himself in Claude Code.
 
-### Community: participants' photos (F35, draft v8)
+### Community: participants' photos (F35)
 - **F35** Participants post photos of their own works themselves, without the author.
   - **Where.** A Telegram discussion group linked to the channel. Every channel post gets comments;
     participants answer with photos and text, and can also post in the group itself. The channel
     stays author-only: only her (and the bot's) posts appear in the channel feed.
   - **Zero author effort.** No pre-moderation, no approval queue, no notifications for the author.
-    Spam is kept out by Telegram's own group settings (only members may comment, slow mode, no links
-    or forwards from non-admins, Telegram's built-in anti-spam). Volodymyr is the admin who handles
-    reports; the author is not an admin of the group unless she wants to be.
+    Spam is kept out by Telegram's own group settings (only members may comment, photos and text
+    only, link previews off, slow mode, Telegram's built-in anti-spam) and by the pinned rules.
+    Telegram cannot block plain-text links or forwards by setting, so the no-links rule rests on
+    anti-spam, Volodymyr's moderation and the rules. Volodymyr is the admin who handles reports; the author is not an admin of the group unless she wants to be.
   - **Responsibility.** Pinned group rules (German and Ukrainian, the author approves the wording):
     post only your own works; no faces or names of other people without their consent; no ads; you
     keep the rights to your photos and are responsible for what you post. Posting means accepting
@@ -234,7 +235,7 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   - **Convenience for participants.** One link in the channel description, on `/kreis/` and in the
     pinned channel post ("Zeig deine Arbeit"); comments open under every post.
 - Acceptance: a participant can comment with a photo under a channel post and in the group without
-  any action by the author; a non-member or a link spammer cannot; the Datenschutzerklärung names the
+  any action by the author; a non-member cannot, and link spam is limited by anti-spam, slow mode and moderation; the Datenschutzerklärung names the
   group.
 
 ### Funnel and audience (phase 3)
@@ -331,7 +332,7 @@ Non-goals in v5:
 - Participants' works are never sold, licensed or used outside the contest and its posts.
 - No participant-facing bot (the v4 phase 3 "sign-up and submissions bot" is dropped).
 
-Non-goals in draft v8:
+Non-goals in v8:
 - The system never reads, stores, moderates or re-publishes posts from the discussion group (F35).
 - No pre-moderation by the author; participants' photos are not copied to the site or other networks.
 
@@ -423,7 +424,7 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14. Changes from v7 (v8, draft 2026-11-05)
+## 14. Changes from v7 (v8, approved 2026-11-06)
 
 - New F35: participants post their own photos in a Telegram discussion group linked to the channel;
   comments open; no author moderation; the system stays out of the group.
