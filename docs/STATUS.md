@@ -1,15 +1,29 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T26a3 — Instagram publishing wiring (T26a2 merged as PR #94, 2026-11-08)
-- **Branch:** `main` (T26a3 starts its own `feat/` branch)
-- **Last commit:** `b8c5285` — feat(channels): T26a2 Instagram delivery and Meta token helper (#94)
-- **Next step:** bot deployed from `b8c5285` (Worker version `d86b616d-3dec-455d-a12c-ac7da185294c`,
-  2026-11-08 16:34 UTC, run by Volodymyr). kimi-code starts T26a3 in a fresh
-  session (docs/03-tasks.md; Sensitive: publish.yml, needs Volodymyr's OK before merge). Fix the
-  PR #94 review notes (1)-(4) listed under T26a3.
-- **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
-- **Open questions for Volodymyr:** T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge; author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+- **Active agent:** claude-code
+- **Current task:** T26a3 review — PR #95 (Instagram publishing wiring)
+- **Branch:** `feat/t26a3-instagram-wiring` (feat commit `9430964`; docs handoff in the next commit)
+- **Last commit:** `9430964` — feat(publisher): T26a3 Instagram publishing wiring
+- **Next step:** claude-code reviews PR #95. Sensitive — it changes `publish.yml` and enables
+  Instagram in the tenant yaml, so Volodymyr's explicit OK is wanted before the merge. On merge:
+  deploy the bot only if `apps/bot`/`packages/` changed in a way that needs it (preview change is
+  live-facing), and record the Worker version; the publisher needs no deploy.
+- **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15;
+  T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted
+  before that merge.
+- **Open questions for Volodymyr:** T26a3 (PR #95) enables Instagram in the tenant yaml and changes
+  publish.yml — OK to merge? First live Instagram post should follow the checklist in
+  docs/instagram-runbook.md (token rotation calendar, children-format check); author should reread
+  the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open;
+  idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+- **T26a3 validation:** channels 136/136 (new: call-level 429 retry keeps earlier carousel children,
+  link_preview_options on text messages, site-excluded show renders without the show link), publisher
+  213/213 (new: URL builder, real-sharp 1080x1350 framing, runPublish/runCopyShow wiring with mocked
+  adapters, push gating and push-failure isolation), core 232/232, bot 553/553 (full suite green only
+  with `--maxWorkers 1` — default workers hit random 5s timeouts from contention; each failing file
+  passes in isolation), site 50/50, ai 121/121. Workspace typecheck/build, eslint, actionlint,
+  changed-file prettier and staged gitleaks pass. Mocked Graph API only — no live Meta calls, no
+  deploy, no secret changes.
 - **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
 - **Viability check (2026-11-04):** goal order changed to audience and business first, portfolio as by-product; checkpoints after 4 shows (~mid-December) and 2027-01-21; legal safety first. Record: docs/00-interview.md round 6, spec v7 section 14.
 - **POSSE discussion, round 1 answered (2026-10-30):**
