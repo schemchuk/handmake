@@ -68,6 +68,13 @@ export interface DeliverContext {
    * MediaSource; the adapter never downloads anything itself.
    */
   photos: Uint8Array[];
+  /**
+   * Public HTTPS URLs of the same photos, aligned with `photos` (index i is
+   * the URL of `photos[i]`, referenced by `SendOperation.photoIndexes`).
+   * Required by networks that pull media by URL (e.g. Instagram) and unused
+   * by upload-based ones; core stays network-agnostic, the publisher fills it.
+   */
+  photoUrls?: string[];
   /** Approved marked video bytes; adapters must upload without re-encoding. */
   video?: Uint8Array;
 }

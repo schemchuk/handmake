@@ -1317,8 +1317,17 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   `\p{L}\p{N}_` with the `u` flag (our captions are DE/UK; 6 Cyrillic tags currently pass the
   5-tag cap); (2) make `showDisclosures` explicitly read-only (`as const`), it is shared by two
   renderers (and drop the pointless alias in `renderTelegramShow`).
-- Tests: mocked Graph API — container vs carousel, status polling, resume via progress, missing/
-  non-https photoUrls, token refresh once, error mapping.
+
+- Done 2026-11-08: PR #94. `InstagramAdapter` (container → status polling → `media_publish`,
+  carousel children for 2-10 photos, single container for 1, `mediaGroup` only; ledger resume
+  is the idempotency mechanism). `DeliverContext` gained optional `photoUrls` (public https,
+  aligned with `photoIndexes`). Secrets by fixed name (`INSTAGRAM_USER_ID`,
+  `INSTAGRAM_ACCESS_TOKEN`); expired-token 190 exchanges via shared
+  `channels/src/meta/token.ts` `exchangeLongLivedToken` (`META_APP_ID`/`META_APP_SECRET`) at
+  most once per deliver; 429 retried per op; tokens never logged. Note: PR #93 note (2) was
+  already fixed in the merged #93 (`as const`, no alias) — verified, only the Unicode
+  `countHashtags` fix landed here. Tests: mocked Graph API (26 new), no live calls, no
+  secrets, no deploy.
 
 #### T26a3 — Instagram publishing wiring (`publisher`, `stores`, workflow, tenant) · Sensitive: publish.yml
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T26a2, H8; third PR. Closes T26a acceptance.
