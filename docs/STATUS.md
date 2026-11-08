@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T26a1 — Instagram caption rules and author preview, PR #93 open (T26a split into T26a1-T26a3 on 2026-11-08, ADR 009; see docs/03-tasks.md)
+- **Current task:** T26a1 — Instagram caption rules and author preview, PR #93 open; review fixes for the 4 blocking findings pushed, awaiting claude-code re-review (T26a split into T26a1-T26a3 on 2026-11-08, ADR 009; see docs/03-tasks.md)
 - **Branch:** `feat/t26a1-instagram-caption-rules`
-- **Last commit:** `86c0751` — feat(channels): T26a1 Instagram caption rules and author preview
+- **Last commit:** `d6d9cbd` — fix(bot): address the PR #93 review blocking findings
 - **Next step:** claude-code re-reviews PR #93 (review fixes pushed: the preview applies Instagram rules only to items that copy to Instagram, projects test publishes via PUBLISH_LIVE, names the failing rule for works); non-blocking PR #93 notes are carried into T26a2/T26a3 in docs/03-tasks.md; then T26a2 (owner kimi-code, fresh session).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
 - **Open questions for Volodymyr:** T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge; author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
