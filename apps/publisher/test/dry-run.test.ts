@@ -1,4 +1,4 @@
-import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,10 +11,8 @@ import sharp from 'sharp';
 
 import { runDryRun } from '../src/dry-run';
 import type { DispatchPayload } from '../src/payload';
+import { writeTelegramOnlyTenantConfig } from './helpers/tenant-config';
 
-const realTenantConfig = fileURLToPath(
-  new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
-);
 const jpegFixturePath = fileURLToPath(new URL('./fixtures/with-gps-exif.jpg', import.meta.url));
 
 const now = new Date('2026-10-24T10:00:00.000Z');
@@ -37,14 +35,10 @@ async function freshDir(prefix: string): Promise<string> {
   return dir;
 }
 
-/** A throwaway repo: only config/tenants copied from the real repo. */
+/** A throwaway repo: only config/tenants copied from the real repo (telegram only). */
 async function makeRepoDir(): Promise<string> {
   const repoDir = await freshDir('handmake-dry-run-repo-');
-  await mkdir(path.join(repoDir, 'config', 'tenants'), { recursive: true });
-  await copyFile(
-    realTenantConfig,
-    path.join(repoDir, 'config', 'tenants', path.basename(realTenantConfig)),
-  );
+  await writeTelegramOnlyTenantConfig(path.join(repoDir, 'config', 'tenants'));
   return repoDir;
 }
 

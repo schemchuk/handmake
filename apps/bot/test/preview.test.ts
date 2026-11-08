@@ -154,6 +154,16 @@ describe('Instagram preview section (T26a1, F33)', () => {
     expect(windowLine).toBe(`видно без «ще»: «${longDe.slice(0, 125)}»`);
   });
 
+  it('slices the window by code points, never splitting an emoji (PR #93)', () => {
+    // 124 BMP chars + an astral emoji at the window edge + a tail.
+    const de = `${'x'.repeat(124)}🧶 tail`;
+    const preview = buildPreview(draft({ texts: { uk: 'x', de } }), botTexts, now, undefined, {
+      language: 'de',
+    });
+    const windowLine = preview.text.split('\n').find((line) => line.startsWith('видно без'));
+    expect(windowLine).toBe(`видно без «ще»: «${'x'.repeat(124)}🧶»`);
+  });
+
   it('blocks publishing when the caption exceeds 2200 characters', () => {
     const preview = buildPreview(
       draft({ texts: { uk: 'x', de: 'x'.repeat(2201) } }),

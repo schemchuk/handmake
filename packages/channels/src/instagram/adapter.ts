@@ -24,7 +24,7 @@ export interface InstagramAdapterOptions {
   apiBase?: string;
   /** Injectable for tests; defaults to a real `setTimeout` sleep. */
   sleep?: (ms: number) => Promise<void>;
-  /** Per-op 429 attempts; default 3 (the Graph API gives no retry_after). */
+  /** Per-call 429 attempts; default 3 (the Graph API gives no retry_after). */
   maxAttempts?: number;
   /** Sleep after a 429 before the next attempt; default 60_000 ms. */
   rateLimitBackoffMs?: number;
@@ -57,7 +57,7 @@ export class InstagramAdapterError extends Error {
   }
 }
 
-/** Internal: a 429, to be retried by the per-op loop. */
+/** Internal: a 429, to be retried per call. */
 class InstagramRateLimitError extends Error {
   constructor(
     message: string,
@@ -91,6 +91,9 @@ interface AuthState {
   token: string;
 }
 
+/** Retries one Graph API call: per-attempt on 429, the first 190 once per deliver. */
+type CallRetry = <T>(send: () => Promise<T>) => Promise<T>;
+
 type MediaGroupOp = Extract<SendOperation, { kind: 'mediaGroup' }>;
 
 /**
@@ -112,12 +115,17 @@ type MediaGroupOp = Extract<SendOperation, { kind: 'mediaGroup' }>;
  * fixed names INSTAGRAM_USER_ID / INSTAGRAM_ACCESS_TOKEN; on an
  * expired-token error (code 190) the adapter exchanges the token via the
  * shared `exchangeLongLivedToken` (META_APP_ID / META_APP_SECRET) at most
- * once per deliver and retries the failed call — the new token is never
- * persisted back into the secrets store, so the operator still rotates
- * the stored secret. A 429 burns one attempt per retry, like Telegram;
- * nothing else is retried in-process (the ledger re-run covers it).
- * Tokens never appear in logs or error messages: the request URL carries
- * the access_token, so errors name the endpoint only.
+ * once per deliver and retries the failed call. That in-flight refresh is
+ * only a last resort: Meta's fb_exchange_token refuses an already-expired
+ * token, so the reliable rotation is external — exchange the still-valid
+ * stored token before its ~60-day expiry and update the
+ * INSTAGRAM_ACCESS_TOKEN secret (operator runbook:
+ * docs/instagram-runbook.md). The refreshed token is never persisted back
+ * into the secrets store. A 429 burns one attempt per retry, at the level
+ * of the individual call, like Telegram; nothing else is retried
+ * in-process (the ledger re-run covers it). Tokens never appear in logs
+ * or error messages: the request URL carries the access_token, so errors
+ * name the endpoint only.
  */
 export class InstagramAdapter implements ChannelAdapter {
   readonly key = 'instagram';
@@ -186,25 +194,24 @@ export class InstagramAdapter implements ChannelAdapter {
       );
     }
 
-    // Check every remaining op AND its photo URLs before creating any
-    // container, so a bad op fails the deliver without orphan containers.
+    // Check every remaining op AND build its photo URLs before creating any
+    // container, so a bad op fails the deliver without orphan containers;
+    // the validated pairs are reused for sending (each op is checked once).
+    const pending: Array<{ op: MediaGroupOp; urls: string[] }> = [];
     for (let index = start; index < ops.length; index++) {
       const op = ops[index]!;
       this.#assertOp(op);
-      this.#photoUrls(op, ctx);
+      pending.push({ op, urls: this.#photoUrls(op, ctx) });
     }
 
     const ids: RemoteId[] = [...known];
     const tokenRefresh = { used: false };
-    for (let i = start; i < ops.length; i++) {
-      const op = ops[i]!;
-      this.#assertOp(op);
-      const urls = this.#photoUrls(op, ctx);
+    for (const [i, { op, urls }] of pending.entries()) {
       const remoteId = await this.#sendWithRetry(op, urls, auth, ctx, tokenRefresh);
       ids.push(remoteId);
       // Awaited BEFORE the next send, so the caller persists the ledger
       // between ops and the at-least-once window is a single op.
-      await progress?.onDelivered(i, remoteId);
+      await progress?.onDelivered(start + i, remoteId);
     }
     return ids;
   }
@@ -245,10 +252,13 @@ export class InstagramAdapter implements ChannelAdapter {
   }
 
   /**
-   * One op, with 429 retries and the once-per-deliver expired-token
-   * refresh. Deliberately ONLY 429 and the first 190 are retried: a
-   * network error after Meta accepted a container is NOT retried (the
-   * ledger-driven re-run covers it; orphan containers expire unused).
+   * One op, with every Graph API call retried AT THE CALL LEVEL: a 429 (or
+   * the first expired-token 190) on one call re-sends only that call, so a
+   * carousel hit late keeps the child containers it already created instead
+   * of recreating the whole op (PR #94 review note). Deliberately ONLY 429
+   * and the first 190 are retried: a network error after Meta accepted a
+   * container is NOT retried (the ledger-driven re-run covers it; orphan
+   * containers expire unused).
    */
   async #sendWithRetry(
     op: MediaGroupOp,
@@ -257,50 +267,61 @@ export class InstagramAdapter implements ChannelAdapter {
     ctx: DeliverContext,
     tokenRefresh: { used: boolean },
   ): Promise<RemoteId> {
-    let attempts = 0;
-    for (;;) {
-      try {
-        return await this.#sendOnce(op, urls, auth);
-      } catch (error) {
-        if (error instanceof InstagramTokenExpiredError && !tokenRefresh.used) {
-          tokenRefresh.used = true;
-          auth.token = await this.#refreshToken(auth, ctx);
-          continue;
+    const call: CallRetry = async (send) => {
+      let attempts = 0;
+      for (;;) {
+        try {
+          return await send();
+        } catch (error) {
+          if (error instanceof InstagramTokenExpiredError && !tokenRefresh.used) {
+            tokenRefresh.used = true;
+            auth.token = await this.#refreshToken(auth, ctx);
+            continue;
+          }
+          attempts += 1;
+          if (error instanceof InstagramRateLimitError && attempts < this.#maxAttempts) {
+            await this.#sleep(error.retryAfterMs);
+            continue;
+          }
+          throw error;
         }
-        attempts += 1;
-        if (error instanceof InstagramRateLimitError && attempts < this.#maxAttempts) {
-          await this.#sleep(error.retryAfterMs);
-          continue;
-        }
-        throw error;
       }
-    }
-  }
+    };
 
-  /** Media container(s) → status FINISHED → media_publish. */
-  async #sendOnce(op: MediaGroupOp, urls: string[], auth: AuthState): Promise<RemoteId> {
     let containerId: string;
     if (urls.length === 1) {
-      containerId = await this.#createContainer(auth, {
-        image_url: urls[0]!,
-        ...(op.caption !== undefined && { caption: op.caption }),
-      });
+      containerId = await call(() =>
+        this.#createContainer(auth, {
+          image_url: urls[0]!,
+          ...(op.caption !== undefined && { caption: op.caption }),
+        }),
+      );
     } else {
       const children: string[] = [];
       for (const imageUrl of urls) {
         children.push(
-          await this.#createContainer(auth, { image_url: imageUrl, is_carousel_item: true }),
+          await call(() =>
+            this.#createContainer(auth, { image_url: imageUrl, is_carousel_item: true }),
+          ),
         );
       }
-      containerId = await this.#createContainer(auth, {
-        children,
-        ...(op.caption !== undefined && { caption: op.caption }),
-      });
+      containerId = await call(() =>
+        this.#createContainer(auth, {
+          // Meta's docs describe a comma-separated string; the JSON array is
+          // what the pre-live mocks exercise. Verify on the first live
+          // carousel and switch to `children.join(',')` if Meta rejects it
+          // (PR #94 review note; docs/instagram-runbook.md).
+          children,
+          ...(op.caption !== undefined && { caption: op.caption }),
+        }),
+      );
     }
-    await this.#awaitContainer(auth, containerId);
-    const published = (await this.#call(auth, 'POST', `/${auth.userId}/media_publish`, {
-      creation_id: containerId,
-    })) as { id?: unknown };
+    await this.#awaitContainer(auth, containerId, call);
+    const published = (await call(() =>
+      this.#call(auth, 'POST', `/${auth.userId}/media_publish`, {
+        creation_id: containerId,
+      }),
+    )) as { id?: unknown };
     if (typeof published.id !== 'string' || !published.id) {
       throw new InstagramAdapterError('Instagram media_publish returned a malformed result');
     }
@@ -322,13 +343,13 @@ export class InstagramAdapter implements ChannelAdapter {
   /**
    * Instagram processes a container asynchronously; media_publish requires
    * status FINISHED. EXPIRED/ERROR fail the op; anything else polls until
-   * `statusPollMaxAttempts`.
+   * `statusPollMaxAttempts`. Each status poll is retried like any call.
    */
-  async #awaitContainer(auth: AuthState, containerId: string): Promise<void> {
+  async #awaitContainer(auth: AuthState, containerId: string, call: CallRetry): Promise<void> {
     for (let poll = 0; ; poll++) {
-      const result = (await this.#call(auth, 'GET', `/${containerId}?fields=status_code`)) as {
-        status_code?: unknown;
-      };
+      const result = (await call(() =>
+        this.#call(auth, 'GET', `/${containerId}?fields=status_code`),
+      )) as { status_code?: unknown };
       const status = result.status_code;
       if (status === 'FINISHED') return;
       if (status === 'EXPIRED' || status === 'ERROR') {
@@ -343,6 +364,11 @@ export class InstagramAdapter implements ChannelAdapter {
     }
   }
 
+  /**
+   * One token exchange attempt. fb_exchange_token refuses an already-expired
+   * token, so this is a mid-deliver last resort, not the rotation path — the
+   * operator refreshes the stored secret before expiry (docs/instagram-runbook.md).
+   */
   async #refreshToken(auth: AuthState, ctx: DeliverContext): Promise<string> {
     const appId = await ctx.secrets.resolve(metaAppIdSecret);
     const appSecret = await ctx.secrets.resolve(metaAppSecretSecret);

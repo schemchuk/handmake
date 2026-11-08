@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,12 +26,9 @@ import sharp from 'sharp';
 
 import { runPublish, PublishError } from '../src/publish';
 import type { DispatchPayload } from '../src/payload';
+import { writeTelegramOnlyTenantConfig } from './helpers/tenant-config';
 
 const execFileAsync = promisify(execFile);
-
-const realTenantConfig = fileURLToPath(
-  new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
-);
 const jpegFixturePath = fileURLToPath(new URL('./fixtures/with-gps-exif.jpg', import.meta.url));
 
 const now = new Date('2026-10-24T10:00:00.000Z');
@@ -67,11 +64,7 @@ async function makeRepo(): Promise<{ repoDir: string; payloadPath: string }> {
   await git(repoDir, ['init', '-q']);
   await git(repoDir, ['config', 'user.name', 'Test']);
   await git(repoDir, ['config', 'user.email', 'test@example.com']);
-  await mkdir(path.join(repoDir, 'config', 'tenants'), { recursive: true });
-  await copyFile(
-    realTenantConfig,
-    path.join(repoDir, 'config', 'tenants', path.basename(realTenantConfig)),
-  );
+  await writeTelegramOnlyTenantConfig(path.join(repoDir, 'config', 'tenants'));
   await git(repoDir, ['add', 'config']);
   await git(repoDir, ['commit', '-q', '-m', 'test: tenant config']);
   const payloadPath = path.join(repoDir, 'payload.json');

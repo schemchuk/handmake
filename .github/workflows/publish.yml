@@ -114,6 +114,17 @@ jobs:
           # publish — the publisher alerts the operator instead.
           PUBLISH_CALLBACK_URL: ${{ vars.PUBLISH_CALLBACK_URL }}
           PUBLISH_CALLBACK_SECRET: ${{ secrets.PUBLISH_CALLBACK_SECRET }}
+          # Instagram (T26a3): Meta Graph API secrets, resolved by fixed name
+          # at delivery. A missing secret fails the Instagram channel only —
+          # Telegram stays first and unaffected.
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          # The publisher pushes the content commit before delivery so Meta
+          # can fetch fresh raw-GitHub photo URLs (framed carousel copies
+          # included).
+          CONTENT_PUSH_BEFORE_DELIVERY: 'true'
           PUBLISHER_GIT_NAME: github-actions[bot]
           PUBLISHER_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
@@ -212,6 +223,14 @@ jobs:
               && secrets.TELEGRAM_CHANNEL_ID) || secrets.TELEGRAM_TEST_CHANNEL_ID }}
           AUTHOR_CHAT_ID: ${{ secrets.AUTHOR_CHAT_ID }}
           OPERATOR_CHAT_ID: ${{ secrets.OPERATOR_CHAT_ID }}
+          # Instagram (T26a3): Meta Graph API secrets for the show-copy
+          # carousel delivery, and the pre-delivery content push (Meta
+          # fetches the framed copies by raw-GitHub URL).
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          CONTENT_PUSH_BEFORE_DELIVERY: 'true'
           PUBLISHER_GIT_NAME: github-actions[bot]
           PUBLISHER_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |

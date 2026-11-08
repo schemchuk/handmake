@@ -136,8 +136,8 @@ describe('parseTenantConfig', () => {
 
   it('rejects instagram.language outside the tenant languages', () => {
     const withBadLanguage = realConfig().replace(
-      '  telegram:\n    channelId: TELEGRAM_CHANNEL_ID',
-      '  instagram:\n    language: fr\n  telegram:\n    channelId: TELEGRAM_CHANNEL_ID',
+      '  instagram:\n    language: de',
+      '  instagram:\n    language: fr',
     );
     expect(() => parseTenantConfig(withBadLanguage)).toThrowError(/instagram\.language/);
   });

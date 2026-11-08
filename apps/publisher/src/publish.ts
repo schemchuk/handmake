@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { createTelegramAdapter } from '@handmake/channels';
+import { createInstagramAdapter, createTelegramAdapter } from '@handmake/channels';
 import {
   canonicalLinkSettings,
   ChannelRegistry,
@@ -30,6 +30,7 @@ import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 import { buildPostFromPayload } from './build-post';
 import { createGitCommitter } from './git';
 import type { GitCommitter } from './git';
+import { prepareInstagramDelivery } from './instagram-delivery';
 import { fetchAndProcessPhotos } from './photos';
 import { createPublishCallbackSender } from './publish-callback';
 import type { PublishCallbackSender } from './publish-callback';
@@ -90,6 +91,11 @@ export function defaultRegistry(
       // A missing token surfaces as a delivery failure, so the ledger
       // records the failed channel instead of the run dying early.
       registry.register(createTelegramAdapter({ token: env['TELEGRAM_BOT_TOKEN'] ?? '' }));
+    } else if (key === 'instagram') {
+      // Secrets resolve per delivery through the context by fixed name;
+      // Meta pulls the photos from the public URLs the publisher prepares
+      // (T26a3) — nothing to wire here.
+      registry.register(createInstagramAdapter());
     } else {
       throw new PublishError(
         `tenant "${tenant.id}" enables channel "${key}" but no adapter is registered for it`,
@@ -201,6 +207,15 @@ export async function runPublish(
   // Persist even an empty ledger: site-only work completion is also retryable.
   if (publication && !previousLedger) await persistLedger();
 
+  const photoBytes = photos.map((photo) => photo.data);
+  // T26a3: repo-relative photo directory behind post.photos (works store
+  // photos in a photos/ subdir), used for the public raw-GitHub URLs
+  // Instagram pulls carousel copies from. Show publications carry no
+  // channels — the copy runner prepares their URLs per show.
+  const photoRepoDir = workPublication
+    ? path.join('content', 'works', workPublication.work.id, 'photos')
+    : path.join('content', 'posts', postFolderName(post));
+
   for (const channel of post.channels) {
     const entry = ledger.channels[channel];
     if (entry?.status === 'done') {
@@ -220,6 +235,26 @@ export async function runPublish(
     const startAt = nextOpIndex(ledger, channel);
     log(`channel ${channel}: ${ops.length} op(s), resuming at op ${startAt}`);
     try {
+      let photoUrls: string[] | undefined;
+      if (channel === 'instagram') {
+        // Frame the 4:5 carousel copies, commit them and (when the workflow
+        // opted in) push, all before Meta fetches the URLs; a failure here
+        // lands in the catch below and never blocks earlier channels.
+        photoUrls = (
+          await prepareInstagramDelivery({
+            root,
+            env,
+            git,
+            repoDir: photoRepoDir,
+            fileNames: post.photos,
+            photoBytes,
+            ops,
+            startAt,
+            itemId: post.id,
+            logger: log,
+          })
+        ).photoUrls;
+      }
       await adapter.deliver(
         ops,
         {
@@ -227,7 +262,8 @@ export async function runPublish(
           idempotencyBase: idempotencyBase(post.tenant, post.id, channel),
           settings,
           // DeliverContext wants the processed bytes, aligned with post.photos.
-          photos: photos.map((photo) => photo.data),
+          photos: photoBytes,
+          ...(photoUrls !== undefined && { photoUrls }),
         },
         {
           startAt,

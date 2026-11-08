@@ -238,7 +238,12 @@ export function buildPreview(
         texts.previewInstagramHeader(instagramCaption.lang, instagramCaption.caption.length),
       );
       lines.push(
-        texts.previewInstagramWindow(instagramCaption.caption.slice(0, instagramCaptionWindow)),
+        // Slice by code points, not UTF-16 units: an emoji astral of the
+        // window edge would otherwise split into a lone surrogate (PR #93
+        // review note). Array.from iterates code points.
+        texts.previewInstagramWindow(
+          Array.from(instagramCaption.caption).slice(0, instagramCaptionWindow).join(''),
+        ),
       );
     } else if (instagramSkip !== undefined) {
       lines.push('');

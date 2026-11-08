@@ -80,6 +80,8 @@ describe('TelegramAdapter', () => {
     expect(requests).toHaveLength(2);
     expect(requests[0]!.url).toBe(`https://api.telegram.org/bot${TOKEN}/sendMessage`);
     expect(requests[0]!.json).toMatchObject({ chat_id: 'chat-1', text: 'Привіт!' });
+    // No web-page card: the join/canonical links stay plain links (PR #89).
+    expect(requests[0]!.json?.link_preview_options).toEqual({ is_disabled: true });
     expect(requests[1]!.json).toMatchObject({ chat_id: 'chat-1', text: 'Hallo!' });
     expect(requests[1]!.json?.reply_parameters).toEqual({ message_id: 1 });
   });

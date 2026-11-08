@@ -143,7 +143,8 @@ describe('/work author flow', () => {
     expect(job.kind).toBe('work');
     expect(job.work).toMatchObject({
       kind: 'interior',
-      channels: ['telegram'],
+      // "yes" announces on every enabled tenant channel (telegram first).
+      channels: ['telegram', 'instagram'],
       collection: `collection-${id.toLowerCase()}`,
       newCollection: {
         versions: {

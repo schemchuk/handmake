@@ -248,8 +248,12 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
     const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
     const disclosure = showDisclosures[lang as keyof typeof showDisclosures];
     if (!disclosure) throw new TelegramRenderError(`unsupported show disclosure language: ${lang}`);
+    // A site-excluded (test) show's page is never built, so the copy must
+    // not link to it (PR #89 review).
     const text = appendFooter(
-      `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`,
+      show.siteExcluded
+        ? `${show.versions[lang]!.description}\n\n${disclosure}`
+        : `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`,
       lang,
       context.settings,
     );

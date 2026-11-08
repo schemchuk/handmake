@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runPublish } from '../src/publish';
 import { runDryRun } from '../src/dry-run';
 import type { DispatchPayload } from '../src/payload';
+import { writeTelegramOnlyTenantConfig } from './helpers/tenant-config';
 
 const tenantId = 'faden-und-stimmung';
 const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
@@ -60,7 +61,10 @@ let payloadPath: string;
 let current: DispatchPayload;
 let store: GitRepoContentStore;
 const source = { fetchPhoto: vi.fn<() => Promise<Uint8Array>>() };
-const git = { commit: vi.fn(async (_paths: string[], _message: string) => true) };
+const git = {
+  commit: vi.fn(async (_paths: string[], _message: string) => true),
+  push: vi.fn(async (_ref: string) => {}),
+};
 const callback = { send: vi.fn(async (_body: PublishedCallbackBody) => {}) };
 const deps = () => ({
   root,
@@ -81,11 +85,7 @@ const run = async (overrides = {}) => {
 beforeEach(async () => {
   root = await mkdtemp(path.join(tmpdir(), 'handmake-work-publish-'));
   payloadPath = path.join(root, 'payload.json');
-  await mkdir(path.join(root, 'config/tenants'), { recursive: true });
-  await copyFile(
-    new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
-    path.join(root, 'config/tenants/faden-und-stimmung.yaml'),
-  );
+  await writeTelegramOnlyTenantConfig(path.join(root, 'config/tenants'));
   store = new GitRepoContentStore({ rootDir: root });
   current = structuredClone(payload);
   source.fetchPhoto
