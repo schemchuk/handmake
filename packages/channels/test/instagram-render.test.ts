@@ -135,13 +135,18 @@ describe('renderInstagram: caption rules (F33, ported ig-caption lint)', () => {
     expect(() => renderInstagram(makePost({ texts: { uk: 'x', de: six } }), settings)).toThrowError(
       /at most 5 hashtags/,
     );
+    // Cyrillic tags count too (PR #93 review note): 6 of them must fail the cap.
+    const sixCyrillic = 'Nachricht\n#один #два #три #чотири #пять #шість';
+    expect(() =>
+      renderInstagram(makePost({ texts: { uk: 'x', de: sixCyrillic } }), settings),
+    ).toThrowError(/at most 5 hashtags/);
   });
 
-  it('counts tags the way the ported linter does', () => {
-    // ASCII tag after start or whitespace counts; non-ASCII and mid-word do not.
+  it('counts tags in any alphabet; only start-of-string or whitespace opens a tag', () => {
     expect(countHashtags('#handmade #stickerei')).toBe(2);
     expect(countHashtags('вишивка #handmade')).toBe(1);
-    expect(countHashtags('#вишивка не рахується')).toBe(0);
+    expect(countHashtags('#вишивка рахується')).toBe(1);
+    expect(countHashtags('#вишивка #handmade #stickerei #diy #своїмируками #шестий')).toBe(6);
     expect(countHashtags('abc#midword не рахується')).toBe(0);
   });
 

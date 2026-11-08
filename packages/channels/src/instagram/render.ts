@@ -113,12 +113,13 @@ export function parseInstagramChannelSettings(settings: unknown): InstagramChann
 }
 
 /**
- * Counts `#tag` occurrences the way the ported linter does: an ASCII tag
- * preceded by start-of-string or whitespace. A caption may carry at most
+ * Counts `#tag` occurrences: a tag of Unicode letters/numbers/underscore
+ * preceded by start-of-string or whitespace (our captions are DE/UK, so
+ * Cyrillic tags count — PR #93 review note). A caption may carry at most
  * `instagramHashtagLimit`.
  */
 export function countHashtags(text: string): number {
-  return (text.match(/(?:^|\s)(#[A-Za-z0-9_]+)/g) ?? []).length;
+  return (text.match(/(?:^|\s)(#[\p{L}\p{N}_]+)/gu) ?? []).length;
 }
 
 /** The ported lint: a caption must not open on a hashtag or a mention. */
