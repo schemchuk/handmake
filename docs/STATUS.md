@@ -1,16 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review PR #94 (T26a2 — Instagram delivery and Meta token helper)
-- **Branch:** `feat/t26a2-instagram-delivery` (PR #94; docs commit on top)
-- **Last commit:** `36c19cb` — feat(channels): T26a2 Instagram delivery and Meta token helper
-- **Next step:** claude-code reviews PR #94. It is marked Sensitive (new secrets): the PR designs
-  secret handling only (fixed names INSTAGRAM_USER_ID/INSTAGRAM_ACCESS_TOKEN/META_APP_ID/
-  META_APP_SECRET, once-per-deliver token exchange) — no workflow, no real secrets, no deploy;
-  judge whether it needs Volodymyr's explicit OK before merge per the sensitive-PR rule. After
-  merge: kimi-code starts T26a3 (docs/03-tasks.md; wiring, publish.yml — sensitive, needs
-  Volodymyr's OK before merge; he already wants to be asked before Instagram is enabled in the
-  tenant yaml).
+- **Active agent:** kimi-code
+- **Current task:** T26a3 — Instagram publishing wiring (T26a2 merged as PR #94, 2026-11-08)
+- **Branch:** `main` (T26a3 starts its own `feat/` branch)
+- **Last commit:** `b8c5285` — feat(channels): T26a2 Instagram delivery and Meta token helper (#94)
+- **Next step:** bot deploy from `b8c5285` pending (auto mode blocked it; Volodymyr runs
+  `pnpm -C apps/bot run deploy` by hand, version to record here). kimi-code starts T26a3 in a fresh
+  session (docs/03-tasks.md; Sensitive: publish.yml, needs Volodymyr's OK before merge). Fix the
+  PR #94 review notes (1)-(4) listed under T26a3.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
 - **Open questions for Volodymyr:** T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge; author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.

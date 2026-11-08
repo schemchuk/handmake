@@ -1339,6 +1339,14 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   4:5 copies (1080x1350 pad, no cutting, sharp) committed beside the item; `publish.yml` passes the
   Meta secrets to the publish and copy-show jobs; the tenant yaml enables `instagram: {language: de}`
   after `telegram` (telegram stays first, so an Instagram failure never blocks Telegram).
+- Review notes from PR #94 (T26a2), fixed here: (1) Meta's `fb_exchange_token` does not accept an
+  already-expired token, so the reactive 190 retry rarely helps; document the real rotation path
+  (refresh the stored `INSTAGRAM_ACCESS_TOKEN` before its ~60-day expiry: operator runbook or a
+  scheduled job); (2) a 429/190 at any step restarts the whole op and recreates every carousel
+  child container; retry at the call level instead; (3) `children` is sent as a JSON array, Meta
+  documents a comma-separated string; verify on the first live carousel and switch to
+  `children.join(',')` if rejected; (4) `deliver` validates each op and builds its URLs twice;
+  reuse the pre-check result.
 - Acceptance: a live post appears on Instagram once; a re-run skips it via the ledger; a failed
   Instagram delivery does not block Telegram and alerts the operator.
 - Review notes from PR #89 (T40), fixed here: (1) send `link_preview_options` on Telegram text
