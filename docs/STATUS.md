@@ -1,10 +1,16 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T26a2 — Instagram delivery and Meta token helper (T26a1 merged as PR #93, 2026-11-08)
-- **Branch:** `main` (T26a2 starts its own `feat/` branch)
-- **Last commit:** `3b5ba6e` — feat(channels): T26a1 Instagram caption rules and author preview (#93)
-- **Next step:** bot deployed from `3b5ba6e` (Worker version `7d5c24f6-3953-4cdf-a918-829c06f89e94`, 2026-11-08 15:50 UTC); kimi-code starts T26a2 in a fresh session (docs/03-tasks.md; Sensitive: new secrets). Carry PR #93 notes #5/#6 (Unicode hashtag count, UTF-16-safe caption window) and, in T26a3, check Telegram limits only for works announcing on `telegram`.
+- **Active agent:** claude-code
+- **Current task:** review PR #94 (T26a2 — Instagram delivery and Meta token helper)
+- **Branch:** `feat/t26a2-instagram-delivery` (PR #94; docs commit on top)
+- **Last commit:** `36c19cb` — feat(channels): T26a2 Instagram delivery and Meta token helper
+- **Next step:** claude-code reviews PR #94. It is marked Sensitive (new secrets): the PR designs
+  secret handling only (fixed names INSTAGRAM_USER_ID/INSTAGRAM_ACCESS_TOKEN/META_APP_ID/
+  META_APP_SECRET, once-per-deliver token exchange) — no workflow, no real secrets, no deploy;
+  judge whether it needs Volodymyr's explicit OK before merge per the sensitive-PR rule. After
+  merge: kimi-code starts T26a3 (docs/03-tasks.md; wiring, publish.yml — sensitive, needs
+  Volodymyr's OK before merge; he already wants to be asked before Instagram is enabled in the
+  tenant yaml).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
 - **Open questions for Volodymyr:** T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge; author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
@@ -51,6 +57,9 @@
   with dig). Zone confirmed Active (Free, full DNS). Spec v6 + tasks v4 drafted: docs/01-spec.md, docs/03-tasks.md (order: T35, T39-T42, T36, T43-T46, then Instagram and contest). Human tasks now: H13 (photos of 3 works), H10 (Pages project).
 
 ## Reminders
+- T26a2 (PR #94): channels 133/133 (26 new: instagram-adapter 20, meta-token 6), core 232/232,
+  publisher 191/191; workspace typecheck/build, lint, changed-file formatting and staged gitleaks
+  pass. Mocked Graph API only — no live calls, no real secrets, no deploy, no workflow changes.
 - T50: core 232/232, site 50/50 (incl. new group-link build test), workspace typecheck/build, lint and changed-file formatting pass; staged gitleaks clean. Site builds with and without `site.groupUrl`; the real config sets the group invite `https://t.me/+Q7txJldGFzh0Wy` (valid per its t.me page, read from Volodymyr's screenshot — he double-checks the characters). The site fixture tenant drops the real link like it drops the circle. One CI run failed on exactly that leak; fixed in `92a9265`, CI green on PR #90. No bot, D1, publisher, workflow, deploy or secret change. Rules (DE/UK) and the Datenschutzerklärung group paragraph are drafts for the author / Volodymyr.
 - T47b PR #84 fixes: show approval, published callback and draft-store suites 74/74; bot typecheck/build, workspace lint and changed-file formatting pass. Both initial approve and frozen dispatch retry persist approvalChatId; non-free posts omit site links; failed Telegram notices log only HTTP status. The unwritten extras.siteExcluded check was removed; site exclusion propagation remains T47d. No deployment, production publication, migrations, workflows, paid calls or secret changes.
 - T47b validation: 124 targeted bot tests covered across runs (final callback/preview 21/21), publisher 180/180 plus final publish 7/7; workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial sandbox bot invocation selected the full suite and was stopped after local-service initialization stalls; targeted D1 suites passed outside the sandbox. Publication result uses the approving chat captured atomically with the publishing claim; shows now capture approvalChatId on both initial consent and retry. Callback notices are at most once: failure or interruption after the state transition is not retried. Config failure falls back to a result without a link and a preview without settings. No deployment, production publishing, workflows, migrations, paid calls or secret changes.
