@@ -1294,6 +1294,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: mocked Graph API, single vs multi photo, errors.
 
 ### T26c — Threads adapter (F33, `channels`) · Sensitive: new secrets
+- Deferred 2026-11-08 (Volodymyr): skipped until the Threads token (`THREADS_USER_ID`,
+  `THREADS_ACCESS_TOKEN`) exists; T26a, T26b and T49 go ahead without Threads.
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T26a
 - Change: `ThreadsChannel` via the Threads API: text plus image or carousel, 500-character limit shown
   in the preview, canonical link in the text.
@@ -1311,7 +1313,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Tests: form rendering, build check; the live opt-in is checked manually and recorded in the PR.
 
 ### T49 — Comment inbox with author-approved replies (F34, `bot`, `channels`, `ai`) · Sensitive: reader data
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a-T26c
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a-T26b (Threads comments join when T26c
+  is done)
 - Change: `comments` capability on the Meta adapters (list new comments on our posts, reply). A cron
   collects new comments into D1 (tenant, network, comment id, handle, text, status), sends each to
   the author with a Ukrainian translation and a German draft reply (prompt with rules ported from
