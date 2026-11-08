@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T26a1 — Instagram caption rules and author preview, PR #93 open; review fixes for the 4 blocking findings pushed, awaiting claude-code re-review (T26a split into T26a1-T26a3 on 2026-11-08, ADR 009; see docs/03-tasks.md)
-- **Branch:** `feat/t26a1-instagram-caption-rules`
-- **Last commit:** `d6d9cbd` — fix(bot): address the PR #93 review blocking findings
-- **Next step:** claude-code re-reviews PR #93 (review fixes pushed: the preview applies Instagram rules only to items that copy to Instagram, projects test publishes via PUBLISH_LIVE, names the failing rule for works); non-blocking PR #93 notes are carried into T26a2/T26a3 in docs/03-tasks.md; then T26a2 (owner kimi-code, fresh session).
+- **Current task:** T26a2 — Instagram delivery and Meta token helper (T26a1 merged as PR #93, 2026-11-08)
+- **Branch:** `main` (T26a2 starts its own `feat/` branch)
+- **Last commit:** `3b5ba6e` — feat(channels): T26a1 Instagram caption rules and author preview (#93)
+- **Next step:** bot deploy of `3b5ba6e` pending (Volodymyr runs `pnpm -C apps/bot run deploy`); then kimi-code starts T26a2 in a fresh session (docs/03-tasks.md; Sensitive: new secrets). Carry PR #93 notes #5/#6 (Unicode hashtag count, UTF-16-safe caption window) and, in T26a3, check Telegram limits only for works announcing on `telegram`.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
 - **Open questions for Volodymyr:** T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge; author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
