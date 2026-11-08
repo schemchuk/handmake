@@ -12,6 +12,7 @@ import {
 } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import { createGitCommitter } from './git';
+import { prepareInstagramDelivery } from './instagram-delivery';
 import { defaultRegistry } from './publish';
 import type { PublishDeps } from './publish';
 import { requiredEnv } from './required-env';
@@ -115,6 +116,7 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
   const skipped: string[] = [];
   // Also commits progress left on disk by a previous interrupted commit before resuming.
   await persist();
+  const copyPhotoBytes = media.slice(0, -1);
   for (const [channel, snapshot] of Object.entries(plan.channels)) {
     const entry = ledger.channels[channel]!;
     if (entry.status === 'done') {
@@ -122,14 +124,34 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
       continue;
     }
     try {
+      let photoUrls: string[] | undefined;
+      if (channel === 'instagram') {
+        // T26a3: frame the 4:5 carousel copies beside the show, commit and
+        // (opted-in) push before Meta fetches the URLs.
+        photoUrls = (
+          await prepareInstagramDelivery({
+            root,
+            env,
+            git,
+            repoDir: `content/shows/${show.id}`,
+            fileNames: show.images.map((image) => image.fileName),
+            photoBytes: copyPhotoBytes,
+            ops: snapshot.operations,
+            startAt: entry.remoteIds.length,
+            itemId: show.id,
+            logger: deps.logger ?? console.log,
+          })
+        ).photoUrls;
+      }
       await registry.get(channel).deliver(
         snapshot.operations,
         {
           secrets: deps.secrets ?? { resolve: async (name) => requiredEnv(name, env) },
           settings: snapshot.settings,
           idempotencyBase: idempotencyBase(tenantId, showId, channel),
-          photos: media.slice(0, -1),
+          photos: copyPhotoBytes,
           video: media.at(-1),
+          ...(photoUrls !== undefined && { photoUrls }),
         },
         {
           startAt: entry.remoteIds.length,

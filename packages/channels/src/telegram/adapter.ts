@@ -303,6 +303,10 @@ export class TelegramAdapter implements ChannelAdapter {
     const result = (await this.#call('sendMessage', {
       chat_id: chatId,
       text: op.text,
+      // Never render a web-page card: it would replace the join link's
+      // preview with the canonical site page (PR #89 review). Links stay
+      // plain links.
+      link_preview_options: { is_disabled: true },
       ...(replyParameters && { reply_parameters: replyParameters }),
     })) as { message_id?: unknown };
     if (typeof result.message_id !== 'number') {

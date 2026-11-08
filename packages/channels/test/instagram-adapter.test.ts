@@ -334,6 +334,84 @@ describe('InstagramAdapter', () => {
     expect(mediaAttempts).toBe(3);
   });
 
+  it('retries a 429 on the carousel container without recreating the children', async () => {
+    const { sleeps, sleep } = sleepRecorder();
+    let carouselAttempts = 0;
+    const handler = graphHandler({
+      fail: (req) => {
+        // The carousel container is the only non-child /media POST.
+        if (new URL(req.url).pathname.endsWith('/media') && req.json?.is_carousel_item !== true) {
+          carouselAttempts += 1;
+          if (carouselAttempts === 1) {
+            return jsonResponse({ error: { message: 'Too Many Requests' } }, 429);
+          }
+        }
+        return undefined;
+      },
+    });
+    const { fetchImpl, requests } = fakeFetch(handler);
+    const adapter = new InstagramAdapter({ fetchImpl, sleep, rateLimitBackoffMs: 500 });
+    const op = onePhotoOp({ photoIndexes: [0, 1, 2] });
+
+    const ids = await adapter.deliver([op], makeCtx({ photoUrls: PHOTO_URLS }));
+
+    expect(ids).toEqual(['media-1']);
+    // 3 children + 2 carousel attempts; the children created before the 429
+    // are reused, not recreated (call-level retry).
+    expect(requests.map((r) => new URL(r.url).pathname)).toEqual([
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      '/v21.0/container-4',
+      `/v21.0/${USER_ID}/media_publish`,
+    ]);
+    expect(requests[3]!.json).toEqual({
+      children: ['container-1', 'container-2', 'container-3'],
+      caption: 'Hallo!',
+    });
+    expect(sleeps).toEqual([500]);
+  });
+
+  it('retries a 429 on one carousel child without recreating the earlier children', async () => {
+    const { sleeps, sleep } = sleepRecorder();
+    let secondChildAttempts = 0;
+    const handler = graphHandler({
+      fail: (req) => {
+        if (new URL(req.url).pathname.endsWith('/media') && req.json?.is_carousel_item === true) {
+          secondChildAttempts += 1;
+          if (secondChildAttempts === 2) {
+            return jsonResponse({ error: { message: 'Too Many Requests' } }, 429);
+          }
+        }
+        return undefined;
+      },
+    });
+    const { fetchImpl, requests } = fakeFetch(handler);
+    const adapter = new InstagramAdapter({ fetchImpl, sleep, rateLimitBackoffMs: 700 });
+    const op = onePhotoOp({ photoIndexes: [0, 1] });
+
+    const ids = await adapter.deliver([op], makeCtx({ photoUrls: PHOTO_URLS }));
+
+    expect(ids).toEqual(['media-1']);
+    // child 1, child 2 (429), child 2 retried, carousel, poll, publish:
+    // exactly two child creations, never three.
+    expect(requests.map((r) => new URL(r.url).pathname)).toEqual([
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      `/v21.0/${USER_ID}/media`,
+      '/v21.0/container-3',
+      `/v21.0/${USER_ID}/media_publish`,
+    ]);
+    expect(requests[3]!.json).toEqual({
+      children: ['container-1', 'container-2'],
+      caption: 'Hallo!',
+    });
+    expect(sleeps).toEqual([700]);
+  });
+
   it('exchanges an expired token once per deliver and retries with the new token', async () => {
     const { fetchImpl, requests } = fakeFetch(
       graphHandler({

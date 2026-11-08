@@ -8,6 +8,10 @@ channels:
   telegram:
     channelId: TELEGRAM_CHANNEL_ID
     joinUrl: https://t.me/Faden_und_Stimmung
+  # After telegram on purpose: an Instagram failure must never block the
+  # Telegram delivery (T26a3).
+  instagram:
+    language: de
 
 contentStore:
   type: git-repo

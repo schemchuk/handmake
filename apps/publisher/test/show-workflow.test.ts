@@ -52,6 +52,24 @@ it('gates copies on successful publication/push and site deployment, leaving sit
   expect(Object.keys(publish.outputs!)).toEqual(['is_show', 'tenant_id', 'show_id']);
 });
 
+it('passes the Meta secrets and the pre-delivery push opt-in to both delivery jobs (T26a3)', () => {
+  const metaSecrets = [
+    'INSTAGRAM_USER_ID',
+    'INSTAGRAM_ACCESS_TOKEN',
+    'META_APP_ID',
+    'META_APP_SECRET',
+  ];
+  for (const job of [publish, copy]) {
+    const env = step(job, job === publish ? 'Publish to channels' : 'Copy published show').env!;
+    for (const name of metaSecrets) {
+      expect(env[name], `${name} in ${job === publish ? 'publish' : 'copy-show'}`).toBe(
+        `\${{ secrets.${name} }}`,
+      );
+    }
+    expect(env['CONTENT_PUSH_BEFORE_DELIVERY']).toBe('true');
+  }
+});
+
 it.each([
   ['workflow_dispatch', false, undefined, 'test'],
   ['workflow_dispatch', true, undefined, 'live'],

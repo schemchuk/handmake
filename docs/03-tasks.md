@@ -1366,6 +1366,26 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   options explicitly if the card is unwanted. (2) The bot preview shows the canonical footer for a
   draft later published to the test channel, where the post has none. (3) `renderTelegramShow`
   appends the show link even for a `siteExcluded` show copy, whose page is never built.
+- Done 2026-11-08: PR #95. `InstagramAdapter` registered for the `instagram` key; public raw-GitHub
+  photo URLs for posts, works and show copies (`CONTENT_RAW_BASE_URL` local override);
+  `GitCommitter.push` (pull-rebase retry) fires before delivery with the workflow opt-in
+  (`CONTENT_PUSH_BEFORE_DELIVERY` in the publish and copy-show jobs) so Meta can fetch fresh URLs;
+  every photo (single and carousel — Instagram rejects feed aspects outside 4:5..1.91:1) framed
+  4:5 (sharp, 1080x1350 white pad) with `*.ig.jpg` copies committed beside the item; `publish.yml`
+  passes INSTAGRAM_USER_ID / INSTAGRAM_ACCESS_TOKEN / META_APP_ID /
+  META_APP_SECRET; the tenant yaml enables `instagram: {language: de}` after telegram.
+  PR #94 review notes: (1) docs/instagram-runbook.md documents the real rotation path (exchange the
+  still-valid token before ~60-day expiry; fb_exchange_token refuses expired tokens); (2) 429/190
+  retries happen at the call level — a late carousel failure no longer recreates earlier child
+  containers; (3) `children` stays a JSON array with a live-check note to switch to
+  `children.join(',')` on Meta rejection; (4) `deliver` reuses the pre-check op/URL pairs.
+  PR #89 review notes: (1) Telegram text messages send `link_preview_options {is_disabled: true}`;
+  (2) was already resolved in T26a1; (3) `renderTelegramShow` omits the show link for a
+  site-excluded copy. PR #93 review note: the bot preview slices the Instagram caption window by
+  code points. Tests: channels 136/136, publisher 213/213, core 232/232, bot 553/553, site 50/50,
+  ai 121/121; workspace typecheck/build, lint, actionlint, prettier, staged gitleaks. Mocked Graph
+  API only — no live Meta calls, no deploy, no secret changes. Sensitive (publish.yml + tenant
+  enables Instagram): Volodymyr's OK wanted before merge.
 
 ### T26b — Facebook Page adapter (F33, `channels`) · Sensitive: new secrets
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T26a

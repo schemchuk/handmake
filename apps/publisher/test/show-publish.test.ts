@@ -12,6 +12,7 @@ import { parseDispatchPayload } from '../src/payload';
 import type { DispatchPayload } from '../src/payload';
 import { runPublish } from '../src/publish';
 import { runCopyShow } from '../src/copy-show';
+import { writeTelegramOnlyTenantConfig } from './helpers/tenant-config';
 import { TelegramAdapter } from '@handmake/channels';
 import { parse } from 'yaml';
 
@@ -23,7 +24,10 @@ let root: string,
 let image: Uint8Array;
 let video: Uint8Array;
 const source = { fetchMedia: vi.fn<(ref: string) => Promise<Uint8Array>>() };
-const git = { commit: vi.fn(async (_paths: string[], _message: string) => true) };
+const git = {
+  commit: vi.fn(async (_paths: string[], _message: string) => true),
+  push: vi.fn(async (_ref: string) => {}),
+};
 const callback = { send: vi.fn(async (_body: PublishedCallbackBody) => {}) };
 const run = async (overrides = {}) => {
   await writeFile(payloadPath, JSON.stringify(payload));
@@ -43,11 +47,7 @@ const run = async (overrides = {}) => {
 beforeEach(async () => {
   root = await mkdtemp(path.join(tmpdir(), 'handmake-show-publish-'));
   payloadPath = path.join(root, 'payload.json');
-  await mkdir(path.join(root, 'config/tenants'), { recursive: true });
-  await copyFile(
-    new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url),
-    path.join(root, 'config/tenants/faden-und-stimmung.yaml'),
-  );
+  await writeTelegramOnlyTenantConfig(path.join(root, 'config/tenants'));
   show = showSchema.parse(
     JSON.parse(
       await readFile(

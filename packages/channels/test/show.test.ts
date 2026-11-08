@@ -103,6 +103,20 @@ describe('show rendering', () => {
       op.kind === 'mediaGroup' ? op.caption!.length : op.kind === 'message' ? op.text.length : 0,
     ).toBe(limit);
   });
+  it('never links a site-excluded show copy to its (unbuilt) page (PR #89)', () => {
+    const show = { ...fixture(), siteExcluded: true };
+    const ops = renderTelegramShow(show, context);
+    const showUrl = `https://craft.example/shows/${show.id.toLowerCase()}/`;
+    expect(ops[0]).toMatchObject({
+      kind: 'mediaGroup',
+      caption: `Fixture DE\n\nKI-generiertes Model`,
+    });
+    expect(ops[2]).toMatchObject({
+      kind: 'message',
+      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)`,
+    });
+    expect(JSON.stringify(ops)).not.toContain(showUrl);
+  });
   it('rejects missing video, invalid origin and unsupported adapters', () => {
     const show = fixture();
     expect(() =>
