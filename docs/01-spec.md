@@ -204,7 +204,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   site-worthy item with the canonical link where the network allows it (otherwise "link in bio").
   Caption rules (ported from instagram-agent-skill, MIT, with attribution): the first ~125 characters
   carry the message, at most 5 hashtags, no stock phrases. Shows and multi-photo posts go out as
-  carousels in 4:5 (1080x1350). Every profile links to the Impressum.
+  carousels; every Instagram image, single or carousel, is framed 4:5 (1080x1350, padded, never
+  cut), since Instagram rejects feed images outside 4:5..1.91:1. Every profile links to the Impressum.
 - **F34** Comment inbox: the bot collects new comments on our own posts from Instagram, Facebook and
   Threads and sends them to the author in Telegram with a Ukrainian translation and a drafted German
   reply (reply rules ported from `/ig-reply`). She sends, edits or skips; nothing is posted without

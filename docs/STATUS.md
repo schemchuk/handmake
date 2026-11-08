@@ -1,21 +1,20 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T26a3 review — PR #95 (Instagram publishing wiring)
-- **Branch:** `feat/t26a3-instagram-wiring` (feat commit `9430964`; docs handoff in the next commit)
-- **Last commit:** `9430964` — feat(publisher): T26a3 Instagram publishing wiring
-- **Next step:** claude-code reviews PR #95. Sensitive — it changes `publish.yml` and enables
-  Instagram in the tenant yaml, so Volodymyr's explicit OK is wanted before the merge. On merge:
-  deploy the bot only if `apps/bot`/`packages/` changed in a way that needs it (preview change is
-  live-facing), and record the Worker version; the publisher needs no deploy.
+- **Active agent:** kimi-code
+- **Current task:** T26b — Facebook Page adapter (T26a3 merged as PR #95, 2026-11-08; T26a closed)
+- **Branch:** `main` (T26b starts its own `feat/` branch)
+- **Last commit:** `e1a9b6a` — feat(publisher): T26a3 Instagram publishing wiring (#95)
+- **Next step:** bot deploy from `e1a9b6a` pending (auto mode blocks it; Volodymyr runs
+  `pnpm -C apps/bot run deploy` by hand, version to record here). Instagram is live in the tenant
+  yaml: the first live post with photos is the first live check (docs/instagram-runbook.md:
+  `children` format, raw-GitHub URL acceptance, ledger re-run). kimi-code starts T26b in a fresh
+  session (docs/03-tasks.md; Sensitive: new secrets, needs Volodymyr's OK before merge).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15;
-  T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted
-  before that merge.
-- **Open questions for Volodymyr:** T26a3 (PR #95) enables Instagram in the tenant yaml and changes
-  publish.yml — OK to merge? First live Instagram post should follow the checklist in
-  docs/instagram-runbook.md (token rotation calendar, children-format check); author should reread
-  the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open;
-  idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+  T49 waits on T26b.
+- **Open questions for Volodymyr:** set a reminder to rotate `INSTAGRAM_ACCESS_TOKEN` before its
+  ~60-day expiry (docs/instagram-runbook.md); author should reread the changed analytics paragraph
+  in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without
+  AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **T26a3 validation:** channels 136/136 (new: call-level 429 retry keeps earlier carousel children,
   link_preview_options on text messages, site-excluded show renders without the show link), publisher
   213/213 (new: URL builder, real-sharp 1080x1350 framing, runPublish/runCopyShow wiring with mocked
