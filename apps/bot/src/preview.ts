@@ -1,4 +1,12 @@
-import { renderTelegram, TelegramRenderError, telegramCapabilities } from '@handmake/channels';
+import {
+  instagramCaptionWindow,
+  InstagramRenderError,
+  instagramSkipReason,
+  renderInstagram,
+  renderTelegram,
+  TelegramRenderError,
+  telegramCapabilities,
+} from '@handmake/channels';
 import { buildApprovedWorkJob, canonicalLinkSettings, readWorkDraftData } from '@handmake/core';
 import type { CanonicalLinkSettings, Draft, Post, TenantConfig } from '@handmake/core';
 
@@ -39,9 +47,11 @@ function truncate(text: string, texts: BotTexts): string {
  * of `texts` is uk-then-de: without channel settings, renderTelegram takes the
  * language order from the record, and Ukrainian must stay the primary
  * (album-caption) language. The draft id doubles as the post id — only the
- * render result matters for the preview.
+ * render result matters for the preview. `siteExcluded` projects a test
+ * publish (the bot's PUBLISH_LIVE off): the publisher sets it on the real
+ * Post, so the preview must render the same flag.
  */
-function draftAsPost(draft: Draft, now: Date): Post {
+function draftAsPost(draft: Draft, now: Date, siteExcluded = false): Post {
   const texts: Record<string, string> = {};
   if (draft.texts['uk'] !== undefined) texts['uk'] = draft.texts['uk'];
   if (draft.texts['de'] !== undefined) texts['de'] = draft.texts['de'];
@@ -53,6 +63,7 @@ function draftAsPost(draft: Draft, now: Date): Post {
     type: draft.type,
     photos: draft.photoRefs,
     channels: ['telegram'],
+    ...(siteExcluded ? { siteExcluded: true } : {}),
     versions: {
       uk: { provenance: 'human' },
       ...(texts['de'] !== undefined ? { de: { provenance: 'ai-assisted' as const } } : {}),
@@ -88,6 +99,10 @@ export async function buildTenantPreview(
   draft: Draft,
   texts: BotTexts,
   configs?: TenantConfigSource,
+  /** False while publishes still go to the test channel (bot PUBLISH_LIVE):
+   * the projected post is site-excluded, so no canonical footer and no
+   * Instagram copy — exactly what the publisher will do. Defaults to live. */
+  publishesLive = true,
 ): Promise<PreviewMessage> {
   let config: TenantConfig | undefined;
   try {
@@ -98,9 +113,12 @@ export async function buildTenantPreview(
   if (config && config.id !== draft.tenantId) throw new Error('tenant config mismatch');
   // T40: the preview must render exactly what the publisher will deliver,
   // including the canonical footer (absent when the flag is off or there is
-  // no site; work drafts link to the work page).
-  const canonical = config
-    ? canonicalLinkSettings(config, draft.kind === 'work' ? 'works' : 'posts')
+  // no site; work drafts link to the work page; test publishes get no
+  // footer because the excluded post has none).
+  const canonical = publishesLive
+    ? config
+      ? canonicalLinkSettings(config, draft.kind === 'work' ? 'works' : 'posts')
+      : undefined
     : undefined;
   return buildPreview(
     draft,
@@ -113,6 +131,10 @@ export async function buildTenantPreview(
           ...(canonical ? { canonical } : {}),
         }
       : undefined,
+    // Instagram captions carry no link (ported rule: captions are not
+    // clickable), so no canonical settings are passed.
+    config?.channels.instagram,
+    !publishesLive,
   );
 }
 
@@ -124,8 +146,11 @@ export function buildPreview(
     languages?: string[];
     canonical?: CanonicalLinkSettings;
   },
+  instagram?: TenantConfig['channels']['instagram'],
+  /** Projects a site-excluded (test) publish. */
+  siteExcluded = false,
 ): PreviewMessage {
-  const post = draftAsPost(draft, now);
+  const post = draftAsPost(draft, now, siteExcluded);
   const uk = draft.texts['uk'];
   const de = draft.texts['de'];
   const primaryLanguage =
@@ -134,16 +159,41 @@ export function buildPreview(
   const primaryText = primaryLanguage ? post.texts[primaryLanguage] : undefined;
 
   let blockedError: string | undefined;
+  let instagramCaption: { lang: string; caption: string } | undefined;
+  let instagramSkip: ReturnType<typeof instagramSkipReason> | undefined;
+  let instagramApplies = false;
   try {
     if (draft.kind === 'work') buildApprovedWorkJob(draft);
-    if (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length)
-      renderTelegram(post, telegram);
+    const workChannels =
+      draft.kind === 'work' ? readWorkDraftData(draft).config.channels : undefined;
+    if (draft.kind !== 'work' || (workChannels?.length ?? 0) > 0) renderTelegram(post, telegram);
+    // Instagram copies only items that announce on it (a work announcing on
+    // other channels alone must never be judged by Instagram rules); a
+    // site-excluded/test post never renders.
+    instagramApplies = instagram !== undefined && (workChannels?.includes('instagram') ?? true);
+    if (instagramApplies && post.texts[instagram!.language] !== undefined) {
+      const ops = renderInstagram(post, instagram);
+      if (ops.length === 0) {
+        instagramSkip = instagramSkipReason(post);
+      } else {
+        const op = ops[0] as { caption?: string; captionLang?: string };
+        instagramCaption = {
+          lang: op.captionLang ?? instagram!.language,
+          caption: op.caption ?? '',
+        };
+      }
+    }
   } catch (error) {
-    if (draft.kind === 'work') blockedError = texts.workSetupText;
-    else if (!(error instanceof TelegramRenderError)) {
+    if (error instanceof TelegramRenderError || error instanceof InstagramRenderError) {
+      // Render limits are author-actionable: name the exact rule (render
+      // errors read as-is inside the channel-agnostic blocked text).
+      blockedError = error.message;
+    } else if (draft.kind === 'work') {
+      // Only a broken work setup hides behind the generic text.
+      blockedError = texts.workSetupText;
+    } else {
       throw error;
     }
-    if (error instanceof TelegramRenderError) blockedError = error.message;
   }
 
   const lines: string[] = [texts.previewHeader(draft.photoRefs.length), ''];
@@ -175,6 +225,25 @@ export function buildPreview(
   ) {
     lines.push('');
     lines.push(texts.previewCaptionSplitNote);
+  }
+
+  // Instagram (F33, T26a1): the caption window Instagram shows before "more",
+  // the caption length against the 2200 limit, or the reason this post will
+  // not copy to Instagram. A caption breaking an Instagram limit is a blocked
+  // state (handled above) exactly like a Telegram limit.
+  if (instagramApplies && blockedError === undefined) {
+    if (instagramCaption !== undefined) {
+      lines.push('');
+      lines.push(
+        texts.previewInstagramHeader(instagramCaption.lang, instagramCaption.caption.length),
+      );
+      lines.push(
+        texts.previewInstagramWindow(instagramCaption.caption.slice(0, instagramCaptionWindow)),
+      );
+    } else if (instagramSkip !== undefined) {
+      lines.push('');
+      lines.push(texts.previewInstagramSkip(instagramSkip));
+    }
   }
 
   const rows = keyboard(draft.draftId, texts, blockedError !== undefined);

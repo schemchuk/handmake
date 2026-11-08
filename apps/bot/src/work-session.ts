@@ -22,7 +22,12 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
   const { texts, drafts } = options;
   const settings = options.work;
   const replyPreview = async (ctx: AppContext, stored: StoredDraft) => {
-    const preview = await buildTenantPreview(stored.draft, texts, options.tenantConfigs);
+    const preview = await buildTenantPreview(
+      stored.draft,
+      texts,
+      options.tenantConfigs,
+      options.publishesLive,
+    );
     await ctx.reply(preview.text, { reply_markup: preview.keyboard! });
   };
   const flow =
@@ -238,7 +243,12 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
           }
           const fresh = await drafts.get(ctx.tenantId, stored.draft.draftId);
           if (fresh) {
-            const preview = await buildTenantPreview(fresh.draft, texts, options.tenantConfigs);
+            const preview = await buildTenantPreview(
+              fresh.draft,
+              texts,
+              options.tenantConfigs,
+              options.publishesLive,
+            );
             await bot.api.sendMessage(chat, preview.text, { reply_markup: preview.keyboard! });
           }
         } catch {

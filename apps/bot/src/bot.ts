@@ -30,6 +30,12 @@ export interface CreateBotOptions {
   /** Dispatches an approved draft to the publish pipeline (T16). */
   publishRunner: PublishRunner;
   /**
+   * Whether publishes go to the live channels (bot PUBLISH_LIVE var). False
+   * means the test channel: the preview renders a site-excluded post (no
+   * canonical footer, no Instagram copy), matching the publisher.
+   */
+  publishesLive?: boolean;
+  /**
    * Defers work past the webhook response (Cloudflare ExecutionContext
    * waitUntil in production; a collecting runner in tests). The AI call must
    * never run inside the handler: grammY's webhook timeout is 10 s while a
@@ -461,7 +467,12 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       if (!fresh) {
         return;
       }
-      const preview = await buildTenantPreview(fresh.draft, texts, options.tenantConfigs);
+      const preview = await buildTenantPreview(
+        fresh.draft,
+        texts,
+        options.tenantConfigs,
+        options.publishesLive,
+      );
       await bot.api
         .sendMessage(
           targetChat,
@@ -495,7 +506,12 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
   /** Sends the author the rendered preview with its action keyboard. */
   async function sendPreview(ctx: AppContext, stored: StoredDraft): Promise<void> {
-    const preview = await buildTenantPreview(stored.draft, texts, options.tenantConfigs);
+    const preview = await buildTenantPreview(
+      stored.draft,
+      texts,
+      options.tenantConfigs,
+      options.publishesLive,
+    );
     await ctx.reply(preview.text, preview.keyboard ? { reply_markup: preview.keyboard } : {});
   }
 
