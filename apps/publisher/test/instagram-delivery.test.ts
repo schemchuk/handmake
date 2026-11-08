@@ -71,7 +71,9 @@ describe('instagramFramedFileName', () => {
 
 describe('frameInstagramPhoto', () => {
   it('pads a landscape photo onto the exact 4:5 canvas without cutting', async () => {
-    const input = await sharp({ create: { width: 900, height: 600, channels: 3, background: '#336699' } })
+    const input = await sharp({
+      create: { width: 900, height: 600, channels: 3, background: '#336699' },
+    })
       .jpeg()
       .toBuffer();
     const framed = await frameInstagramPhoto(new Uint8Array(input));
@@ -81,7 +83,9 @@ describe('frameInstagramPhoto', () => {
   });
 
   it('upscales a tiny photo onto the full canvas', async () => {
-    const input = await sharp({ create: { width: 40, height: 20, channels: 3, background: '#222222' } })
+    const input = await sharp({
+      create: { width: 40, height: 20, channels: 3, background: '#222222' },
+    })
       .jpeg()
       .toBuffer();
     const framed = await frameInstagramPhoto(new Uint8Array(input));
@@ -164,9 +168,14 @@ describe('prepareInstagramDelivery', () => {
     expect(g.push).not.toHaveBeenCalled();
   });
 
-  it('keeps original URLs for a single photo and never frames or commits', async () => {
+  it('frames a single photo onto the 4:5 canvas — Instagram rejects other feed aspects', async () => {
     const root = await freshDir('handmake-ig-prep-');
     const g = git();
+    const portrait = new Uint8Array(
+      await sharp({ create: { width: 600, height: 800, channels: 3, background: '#777777' } })
+        .jpeg()
+        .toBuffer(),
+    );
     const singleOp: SendOperation = { kind: 'mediaGroup', photoIndexes: [1], caption: 'Hallo!' };
 
     const result = await prepareInstagramDelivery({
@@ -175,7 +184,7 @@ describe('prepareInstagramDelivery', () => {
       git: g,
       repoDir: 'content/works/01JBCA1B2C3D4E5F6G7H8J9K0M/photos',
       fileNames: ['photo-1.jpg', 'photo-2.jpg'],
-      photoBytes: photos,
+      photoBytes: [new Uint8Array([1]), portrait],
       ops: [singleOp],
       startAt: 0,
       itemId: 'item',
@@ -183,9 +192,22 @@ describe('prepareInstagramDelivery', () => {
 
     expect(result.photoUrls).toEqual([
       'https://raw.example/base/content/works/01JBCA1B2C3D4E5F6G7H8J9K0M/photos/photo-1.jpg',
-      'https://raw.example/base/content/works/01JBCA1B2C3D4E5F6G7H8J9K0M/photos/photo-2.jpg',
+      'https://raw.example/base/content/works/01JBCA1B2C3D4E5F6G7H8J9K0M/photos/photo-2.ig.jpg',
     ]);
-    expect(g.commit).not.toHaveBeenCalled();
+    const framed = await sharp(
+      await readFile(
+        path.join(
+          root,
+          'content',
+          'works',
+          '01JBCA1B2C3D4E5F6G7H8J9K0M',
+          'photos',
+          'photo-2.ig.jpg',
+        ),
+      ),
+    ).metadata();
+    expect(framed).toMatchObject({ format: 'jpeg', width: 1080, height: 1350 });
+    expect(g.commit).toHaveBeenCalledTimes(1);
   });
 
   it('frames only the remaining ops on a ledger resume', async () => {
@@ -222,6 +244,13 @@ describe('prepareInstagramDelivery', () => {
   it('pushes the content commit only with the workflow opt-in', async () => {
     const root = await freshDir('handmake-ig-prep-');
     const g = git();
+    const tinyJpeg = async () =>
+      new Uint8Array(
+        await sharp({ create: { width: 60, height: 40, channels: 3, background: '#555555' } })
+          .jpeg()
+          .toBuffer(),
+      );
+    const photo = await tinyJpeg();
 
     await prepareInstagramDelivery({
       root,
@@ -229,7 +258,7 @@ describe('prepareInstagramDelivery', () => {
       git: g,
       repoDir: 'content/posts/f',
       fileNames: ['photo-1.jpg'],
-      photoBytes: [photos[0]!],
+      photoBytes: [photo],
       ops: [{ kind: 'mediaGroup', photoIndexes: [0] }],
       startAt: 0,
       itemId: 'item',
@@ -247,7 +276,7 @@ describe('prepareInstagramDelivery', () => {
       git: g2,
       repoDir: 'content/posts/f',
       fileNames: ['photo-1.jpg'],
-      photoBytes: [photos[0]!],
+      photoBytes: [await tinyJpeg()],
       ops: [{ kind: 'mediaGroup', photoIndexes: [0] }],
       startAt: 0,
       itemId: 'item',

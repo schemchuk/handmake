@@ -9,11 +9,13 @@ import type { GitCommitter } from './git';
 import { requiredEnv } from './required-env';
 
 /**
- * Instagram publishing wiring (T26a3): Meta pulls carousel photos from
- * public raw-GitHub URLs, so the publisher frames every 4:5 copy with sharp
- * and commits it beside the item BEFORE delivery, and (when the workflow
- * opts in via CONTENT_PUSH_BEFORE_DELIVERY) pushes the content commit so the
- * URLs resolve when Meta fetches them.
+ * Instagram publishing wiring (T26a3): Meta pulls photos from public
+ * raw-GitHub URLs, so the publisher frames every image to the 4:5 feed
+ * canvas with sharp and commits the copy beside the item BEFORE delivery,
+ * and (when the workflow opts in via CONTENT_PUSH_BEFORE_DELIVERY) pushes
+ * the content commit so the URLs resolve when Meta fetches them. Every
+ * photo is framed — Instagram rejects feed images outside 4:5..1.91:1, so
+ * an unframed phone portrait would fail container creation.
  */
 
 /**
@@ -108,9 +110,7 @@ export async function prepareInstagramDelivery(
 
   const framedRepoPaths: string[] = [];
   for (const op of remaining) {
-    // A carousel is a mediaGroup with 2+ photos; single photos keep the
-    // original (already processed) bytes and URL.
-    if (op.kind !== 'mediaGroup' || op.photoIndexes.length < 2) continue;
+    if (op.kind !== 'mediaGroup') continue;
     for (const index of op.photoIndexes) {
       const fileName = deps.fileNames[index];
       const bytes = deps.photoBytes[index];

@@ -48,7 +48,13 @@ reason.
   mocks pre-land can't settle this — publish the first real multi-photo post
   and, if Meta rejects the container with a malformed-children error, switch
   `packages/channels/src/instagram/adapter.ts` to `children.join(',')`.
-- **Single-photo post** goes out as one image container (no framing).
+- **Raw-URL acceptance.** Confirm Meta fetches `raw.githubusercontent.com`
+  photo URLs (served as `image/jpeg`) on the first live post; if the CDN is
+  rejected, serve the framed copies from another public https origin and
+  point `CONTENT_RAW_BASE_URL` at it.
+- **Single-photo post** goes out as one image container, framed to 4:5 like
+  everything else — Instagram rejects feed images outside 4:5..1.91:1, so an
+  unframed phone portrait would fail container creation.
 - **Multi-photo post / show copy**: the publisher frames 4:5 (1080x1350,
   white padding, never cutting) copies `*.ig.jpg` beside the item, commits
   them and pushes before delivery so Meta can fetch the raw-GitHub URLs.

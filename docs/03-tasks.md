@@ -1370,8 +1370,9 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   photo URLs for posts, works and show copies (`CONTENT_RAW_BASE_URL` local override);
   `GitCommitter.push` (pull-rebase retry) fires before delivery with the workflow opt-in
   (`CONTENT_PUSH_BEFORE_DELIVERY` in the publish and copy-show jobs) so Meta can fetch fresh URLs;
-  every Instagram carousel framed 4:5 (sharp, 1080x1350 white pad) with `*.ig.jpg` copies committed
-  beside the item; `publish.yml` passes INSTAGRAM_USER_ID / INSTAGRAM_ACCESS_TOKEN / META_APP_ID /
+  every photo (single and carousel — Instagram rejects feed aspects outside 4:5..1.91:1) framed
+  4:5 (sharp, 1080x1350 white pad) with `*.ig.jpg` copies committed beside the item; `publish.yml`
+  passes INSTAGRAM_USER_ID / INSTAGRAM_ACCESS_TOKEN / META_APP_ID /
   META_APP_SECRET; the tenant yaml enables `instagram: {language: de}` after telegram.
   PR #94 review notes: (1) docs/instagram-runbook.md documents the real rotation path (exchange the
   still-valid token before ~60-day expiry; fb_exchange_token refuses expired tokens); (2) 429/190

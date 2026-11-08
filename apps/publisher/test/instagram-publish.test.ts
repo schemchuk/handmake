@@ -25,7 +25,10 @@ import { runCopyShow } from '../src/copy-show';
 import type { DispatchPayload } from '../src/payload';
 import { markingFixtures } from './fixtures/show-marking';
 
-const realTenantConfig = new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url);
+const realTenantConfig = new URL(
+  '../../../config/tenants/faden-und-stimmung.yaml',
+  import.meta.url,
+);
 
 const now = new Date('2026-10-24T10:00:00.000Z');
 const draftId = '01JBCA1B2C3D4E5F6G7H8J9K0M';
@@ -91,14 +94,18 @@ const telegramAdapter = () =>
   );
 
 const instagramAdapter = () =>
-  new RecordingAdapter('instagram', (post, settings) => renderInstagram(post, settings), (show) => [
-    {
-      kind: 'mediaGroup',
-      photoIndexes: show.images.map((_, index) => index),
-      caption: 'Show copy',
-      captionLang: 'de',
-    },
-  ]);
+  new RecordingAdapter(
+    'instagram',
+    (post, settings) => renderInstagram(post, settings),
+    (show) => [
+      {
+        kind: 'mediaGroup',
+        photoIndexes: show.images.map((_, index) => index),
+        caption: 'Show copy',
+        captionLang: 'de',
+      },
+    ],
+  );
 
 const gitMock = () => ({
   commit: vi.fn(async (_paths: string[], _message: string) => true),
@@ -219,15 +226,18 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
     expect(git.push).not.toHaveBeenCalled();
   });
 
-  it('passes a single photo unframed and skips a push without the opt-in', async () => {
-    const result = await runPost({ ...basePayload, fileIds: ['file-1'] });
+  it('frames a single 3:4 photo for the feed aspect and skips a push without the opt-in', async () => {
+    const result = await runPost({ ...basePayload, fileIds: ['file-2'] }); // 600x900 portrait
 
     expect(result.delivered['instagram']).toEqual(['instagram-remote-0']);
     const folder = postFolderName(result.post);
     expect(instagram.contexts[0]!.photoUrls).toEqual([
-      `https://raw.example/base/content/posts/${folder}/photo-1.jpg`,
+      `https://raw.example/base/content/posts/${folder}/photo-1.ig.jpg`,
     ]);
-    await expect(readFile(path.join(root, 'content', 'posts', folder, 'photo-1.ig.jpg'))).rejects.toThrow();
+    const framed = await sharp(
+      await readFile(path.join(root, 'content', 'posts', folder, 'photo-1.ig.jpg')),
+    ).metadata();
+    expect(framed).toMatchObject({ format: 'jpeg', width: 1080, height: 1350 });
     expect(git.push).not.toHaveBeenCalled();
   });
 
@@ -244,7 +254,12 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
 
   it('announces on Instagram with zero ops and never frames or pushes', async () => {
     const result = await runPost(
-      { ...basePayload, fileIds: [], type: 'announcement', texts: { uk: 'Оголошення.', de: 'Ankündigung.' } },
+      {
+        ...basePayload,
+        fileIds: [],
+        type: 'announcement',
+        texts: { uk: 'Оголошення.', de: 'Ankündigung.' },
+      },
       {
         CONTENT_RAW_BASE_URL: 'https://raw.example/base',
         CONTENT_PUSH_BEFORE_DELIVERY: 'true',
@@ -272,7 +287,10 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
       }),
     ).rejects.toThrow(PublishError);
 
-    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
+    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(
+      tenantId,
+      draftId,
+    ))!;
     expect(ledger.channels['telegram']!.status).toBe('done');
     expect(ledger.channels['instagram']!.status).toBe('failed');
     expect(notifier.messages.some((m) => m.target === 'operator')).toBe(true);
@@ -283,7 +301,10 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
 
     expect(telegram.contexts).toHaveLength(1);
     expect(instagram.contexts).toHaveLength(0);
-    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
+    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(
+      tenantId,
+      draftId,
+    ))!;
     expect(ledger.channels['telegram']!.status).toBe('done');
     expect(ledger.channels['instagram']!.status).toBe('failed');
     expect(ledger.channels['instagram']!.error).toMatch(/public photo URLs/);
@@ -377,7 +398,8 @@ describe('runCopyShow with Instagram enabled (T26a3)', () => {
     expect(result.skipped).toEqual([]);
     expect(instagram.contexts).toHaveLength(1);
     const framedUrls = show.images.map(
-      (image) => `https://raw.example/base/content/shows/${show.id}/${image.fileName.replace(/\.[^.]+$/, '')}.ig.jpg`,
+      (image) =>
+        `https://raw.example/base/content/shows/${show.id}/${image.fileName.replace(/\.[^.]+$/, '')}.ig.jpg`,
     );
     expect(instagram.contexts[0]!.photoUrls).toEqual(framedUrls);
     // Telegram still gets the marked image bytes themselves.
