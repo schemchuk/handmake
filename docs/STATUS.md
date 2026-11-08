@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** kimi-code
-- **Current task:** T26a1 — Instagram caption rules and author preview (T26a split into T26a1-T26a3 on 2026-11-08, ADR 009; see docs/03-tasks.md)
+- **Current task:** T26a1 — Instagram caption rules and author preview, PR #93 open (T26a split into T26a1-T26a3 on 2026-11-08, ADR 009; see docs/03-tasks.md)
 - **Branch:** `feat/t26a1-instagram-caption-rules`
-- **Last commit:** `12903be` — docs: defer T26c, T49 depends on T26a-b
-- **Next step:** claude-code reviews the T26a1 PR; then T26a2 (Instagram delivery + Meta token helper, owner kimi-code, fresh session).
+- **Last commit:** `86c0751` — feat(channels): T26a1 Instagram caption rules and author preview
+- **Next step:** claude-code reviews PR #93; then T26a2 (Instagram delivery + Meta token helper, owner kimi-code, fresh session).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
 - **Open questions for Volodymyr:** the instagram-agent-skill file is not in this repo — paste its text so the MIT license notice lands in the ported caption-rules file (T26a1 kept the rules from spec F33 without the notice); T26a3 will turn Instagram publishing on for every live post (tenant yaml) — confirm; author should reread the changed analytics paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **T47f validation:** transport suite passes 10 consecutive local runs (55/55 each, real D1/R2); show-session 46/46 and publisher callback 10/10 pass. Workspace typecheck/build, lint and changed-file formatting pass. The target test now allows 30 seconds for sequential storage operations and bounded R2 throttle retries. Work callback coverage pins the transient publication projection; the discarded awaited-work condition is named. Initial non-TTY Miniflare runs stalled and were interrupted; TTY runs completed. The initial concurrent callback run timed out; final rerun used a 30-second CLI limit after correcting the new expected work kind. No deployment, production publishing, workflows, migrations, paid calls or secrets changed.
