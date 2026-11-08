@@ -4,8 +4,8 @@
 - **Current task:** T26a3 — Instagram publishing wiring (T26a2 merged as PR #94, 2026-11-08)
 - **Branch:** `main` (T26a3 starts its own `feat/` branch)
 - **Last commit:** `b8c5285` — feat(channels): T26a2 Instagram delivery and Meta token helper (#94)
-- **Next step:** bot deploy from `b8c5285` pending (auto mode blocked it; Volodymyr runs
-  `pnpm -C apps/bot run deploy` by hand, version to record here). kimi-code starts T26a3 in a fresh
+- **Next step:** bot deployed from `b8c5285` (Worker version `d86b616d-3dec-455d-a12c-ac7da185294c`,
+  2026-11-08 16:34 UTC, run by Volodymyr). kimi-code starts T26a3 in a fresh
   session (docs/03-tasks.md; Sensitive: publish.yml, needs Volodymyr's OK before merge). Fix the
   PR #94 review notes (1)-(4) listed under T26a3.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15; T49 waits on T26a-b. T26a3 (wiring) enables Instagram in the tenant yaml — Volodymyr's OK wanted before that merge.
