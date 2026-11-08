@@ -13,6 +13,11 @@ Operator procedures for the Instagram channel. Secrets live in GitHub Secrets
 
 ## Rotating `INSTAGRAM_ACCESS_TOKEN` (before ~60-day expiry)
 
+Current setup (checked 2026-11-08 with `debug_token`): the stored token is a **System User** token
+with `expires_at = 0` and `data_access_expires_at = 0`, so it does not expire and needs no
+scheduled rotation. Rotate it only if it is revoked, the system user loses the asset, or you
+replace it with a regular user token. The procedure below applies to long-lived **user** tokens.
+
 Meta's long-lived tokens expire after about 60 days, and **`fb_exchange_token`
 refuses an already-expired token** — so the adapter's in-flight refresh on a
 190 error is only a last resort (it helps when the token dies mid-deliver or

@@ -4,15 +4,14 @@
 - **Current task:** T26b — Facebook Page adapter (T26a3 merged as PR #95, 2026-11-08; T26a closed)
 - **Branch:** `main` (T26b starts its own `feat/` branch)
 - **Last commit:** `e1a9b6a` — feat(publisher): T26a3 Instagram publishing wiring (#95)
-- **Next step:** bot deploy from `e1a9b6a` pending (auto mode blocks it; Volodymyr runs
-  `pnpm -C apps/bot run deploy` by hand, version to record here). Instagram is live in the tenant
+- **Next step:** bot deployed from `e1a9b6a` (Worker version `647608a4-8fe6-4934-8447-6bf940362dc5`,
+  2026-11-08 18:44 UTC, run by Volodymyr). Instagram is live in the tenant
   yaml: the first live post with photos is the first live check (docs/instagram-runbook.md:
   `children` format, raw-GitHub URL acceptance, ledger re-run). kimi-code starts T26b in a fresh
   session (docs/03-tasks.md; Sensitive: new secrets, needs Volodymyr's OK before merge).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15;
   T49 waits on T26b.
-- **Open questions for Volodymyr:** set a reminder to rotate `INSTAGRAM_ACCESS_TOKEN` before its
-  ~60-day expiry (docs/instagram-runbook.md); author should reread the changed analytics paragraph
+- **Open questions for Volodymyr:** author should reread the changed analytics paragraph
   in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without
   AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
 - **T26a3 validation:** channels 136/136 (new: call-level 429 retry keeps earlier carousel children,
