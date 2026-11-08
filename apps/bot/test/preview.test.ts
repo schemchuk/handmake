@@ -168,7 +168,7 @@ describe('Instagram preview section (T26a1, F33)', () => {
 
   it('blocks publishing on more than 5 hashtags', () => {
     const preview = buildPreview(
-      draft({ texts: { uk: 'x', de: '#a #b #c #d #e #f' } }),
+      draft({ texts: { uk: 'x', de: 'Nachricht\n#a #b #c #d #e #f' } }),
       botTexts,
       now,
       undefined,
@@ -194,7 +194,7 @@ describe('Instagram preview section (T26a1, F33)', () => {
     expect(preview.text).toContain('лише дописи для сайту');
   });
 
-  it('renders the canonical link into the caption from the tenant config', async () => {
+  it('renders the Instagram section from the tenant config without a link', async () => {
     const preview = await buildTenantPreview(draft(), botTexts, {
       load: async () =>
         ({
@@ -206,8 +206,11 @@ describe('Instagram preview section (T26a1, F33)', () => {
         }) as never,
     });
     expect(preview.text).toContain('📸 Instagram (DE,');
-    // The link rides after the message; the window stays the message start.
-    expect(preview.text).toContain('видно без');
+    // Instagram captions carry no link (ported rule); the window is the
+    // caption start, and the canonical flag must not smuggle a URL in.
+    const windowLine = preview.text.split('\n').find((line) => line.startsWith('видно без'));
+    expect(windowLine).not.toContain('http');
+    expect(windowLine).toContain('«Neue bestickte Tasche aus der Werkstatt»');
   });
 
   it('keeps the preview unchanged without Instagram settings', () => {

@@ -121,9 +121,9 @@ export async function buildTenantPreview(
           ...(canonical ? { canonical } : {}),
         }
       : undefined,
-    config?.channels.instagram
-      ? { ...config.channels.instagram, ...(canonical ? { canonical } : {}) }
-      : undefined,
+    // Instagram captions carry no link (ported rule: captions are not
+    // clickable), so no canonical settings are passed.
+    config?.channels.instagram,
   );
 }
 
@@ -135,9 +135,7 @@ export function buildPreview(
     languages?: string[];
     canonical?: CanonicalLinkSettings;
   },
-  instagram?: TenantConfig['channels']['instagram'] & {
-    canonical?: CanonicalLinkSettings;
-  },
+  instagram?: TenantConfig['channels']['instagram'],
 ): PreviewMessage {
   const post = draftAsPost(draft, now);
   const uk = draft.texts['uk'];

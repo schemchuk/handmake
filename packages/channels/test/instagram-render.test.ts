@@ -110,7 +110,7 @@ describe('renderInstagram: carousel vs single photo', () => {
   });
 });
 
-describe('renderInstagram: caption rules (F33)', () => {
+describe('renderInstagram: caption rules (F33, ported ig-caption lint)', () => {
   it(`accepts a caption at exactly ${instagramCaptionLimit} chars`, () => {
     const ops = renderInstagram(
       makePost({ texts: { uk: 'Привіт!', de: 'x'.repeat(instagramCaptionLimit) } }),
@@ -127,48 +127,39 @@ describe('renderInstagram: caption rules (F33)', () => {
   });
 
   it('accepts at most 5 hashtags (hard limit)', () => {
-    const five = '#one #two #three #four #five';
+    const five = 'Nachricht\n#one #two #three #four #five';
     expect(renderInstagram(makePost({ texts: { uk: 'x', de: five } }), settings)[0]).toMatchObject({
       caption: five,
     });
-    const six = '#one #two #three #four #five #six';
+    const six = 'Nachricht\n#one #two #three #four #five #six';
     expect(() => renderInstagram(makePost({ texts: { uk: 'x', de: six } }), settings)).toThrowError(
       /at most 5 hashtags/,
     );
   });
 
-  it('counts non-Latin hashtags too', () => {
-    expect(countHashtags('#вишивка #handmade текст без хештегів #3')).toBe(3);
-    expect(countHashtags('no hashtags here')).toBe(0);
+  it('counts tags the way the ported linter does', () => {
+    // ASCII tag after start or whitespace counts; non-ASCII and mid-word do not.
+    expect(countHashtags('#handmade #stickerei')).toBe(2);
+    expect(countHashtags('вишивка #handmade')).toBe(1);
+    expect(countHashtags('#вишивка не рахується')).toBe(0);
+    expect(countHashtags('abc#midword не рахується')).toBe(0);
   });
 
-  it('appends the canonical site URL as plain text', () => {
-    const canonical = {
-      links: true as const,
-      baseUrl: 'https://fadenundstimmung.de',
-      defaultLanguage: 'de',
-      section: 'posts' as const,
-    };
-    const ops = renderInstagram(makePost(), { language: 'de', canonical });
-    expect(ops[0]).toMatchObject({
-      caption: `Hallo!\n\nhttps://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/`,
-    });
+  it('rejects a caption that opens on a hashtag, a mention or a blank line', () => {
+    expect(() =>
+      renderInstagram(makePost({ texts: { uk: 'x', de: '#handmade перше' } }), settings),
+    ).toThrowError(/opens on a hashtag or a mention/);
+    expect(() =>
+      renderInstagram(makePost({ texts: { uk: 'x', de: '@fadenundstimmung перше' } }), settings),
+    ).toThrowError(/opens on a hashtag or a mention/);
+    expect(() =>
+      renderInstagram(makePost({ texts: { uk: 'x', de: '\nПерше речення' } }), settings),
+    ).toThrowError(/blank line/);
   });
 
-  it('rejects an invalid canonical baseUrl', () => {
-    const canonical = {
-      links: true as const,
-      baseUrl: 'http://insecure.example',
-      defaultLanguage: 'de',
-      section: 'posts' as const,
-    };
-    expect(() => renderInstagram(makePost(), { language: 'de', canonical })).toThrowError(
-      /https origin/,
-    );
-  });
-
-  it('keeps the caption without a link when canonical settings are absent', () => {
-    expect(buildInstagramCaption('Hallo!', makePost(), { language: 'de' })).toBe('Hallo!');
+  it('carries no link: the caption is the message only (ported rule)', () => {
+    expect(renderInstagram(makePost(), settings)[0]).toMatchObject({ caption: 'Hallo!' });
+    expect(buildInstagramCaption('Hallo!')).toBe('Hallo!');
   });
 });
 
@@ -186,7 +177,7 @@ const showContext = {
 };
 
 describe('renderInstagramShow', () => {
-  it('renders one image carousel with the AI label and the canonical show link', () => {
+  it('renders one image carousel with the AI label and no link (ported rule)', () => {
     const show = fixture();
     const ops = renderInstagramShow(show, showContext);
     expect(ops).toEqual([
@@ -194,7 +185,7 @@ describe('renderInstagramShow', () => {
         kind: 'mediaGroup',
         photoIndexes: [0, 1, 2],
         captionLang: 'de',
-        caption: `Fixture DE\n\nKI-generiertes Model\nhttps://craft.example/shows/${show.id.toLowerCase()}/`,
+        caption: 'Fixture DE\n\nKI-generiertes Model',
       },
     ]);
   });
@@ -204,7 +195,7 @@ describe('renderInstagramShow', () => {
     const ops = renderInstagramShow(show, { ...showContext, settings: { language: 'uk' } });
     expect(ops[0]).toMatchObject({
       captionLang: 'uk',
-      caption: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nhttps://craft.example/uk/shows/${show.id.toLowerCase()}/`,
+      caption: 'Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)',
     });
   });
 
