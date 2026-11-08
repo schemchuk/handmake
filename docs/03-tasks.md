@@ -1279,6 +1279,55 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   label in the caption. A shared Meta token/refresh helper in `channels` is reused by T26b-T26c.
   Rules ported from instagram-agent-skill (MIT) keep its license notice in the ported file.
 - Acceptance and tests: as T26, plus caption window, hashtag limit and 4:5 framing tests.
+- Split 2026-11-08 into T26a1-T26a3 (one PR each, ADR 009); the acceptance below is complete with
+  T26a3. Open: the instagram-agent-skill file is not in this repo — its MIT notice is added when
+  Volodymyr pastes the skill text (recorded in STATUS.md open questions).
+
+#### T26a1 — Instagram caption rules and author preview (`channels`, `bot`)
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T25, T40; first PR.
+- Change: `renderInstagram` + `renderInstagramShow` + `instagramCapabilities` in
+  `packages/channels/src/instagram/render.ts` (settings `{language, canonical?}`; 10 photos, 2200
+  caption, no polls). v7 rules: first ~125 chars carry the message (`instagramCaptionWindow`), ≤5
+  hashtags (hard limit), only site-worthy `free` posts are rendered (announcements/reminders and
+  text-only posts are skipped — `[]` ops, the preview says why), shows = one image-carousel op with
+  the AI label and the canonical show URL in the caption. `instagramCarouselFrame` (1080x1350) is
+  exported for the publisher's framing. Bot preview: when the tenant enables Instagram, show the
+  caption window, the caption length vs 2200 and the skip reason; a caption breaking an Instagram
+  limit blocks publishing exactly like a Telegram limit error.
+- Tests: render (single vs carousel, skip reasons, limits, hashtags, window, show caption), preview
+  lines with and without Instagram.
+
+#### T26a2 — Instagram delivery and Meta token helper (`channels`, `core`) · Sensitive: new secrets
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a1; second PR.
+- Change: `InstagramAdapter` (Graph API content publishing: media container → status polling →
+  publish; carousel children for 2-10 photos, single image container for 1; only `mediaGroup` ops —
+  video/Reels stays a later task). `DeliverContext` gains optional `photoUrls` (public https URLs
+  aligned with `photoIndexes`; core stays network-agnostic, the publisher fills it). Secrets via the
+  resolver by fixed name: `INSTAGRAM_USER_ID`, `INSTAGRAM_ACCESS_TOKEN`; `META_APP_ID`/
+  `META_APP_SECRET` feed the shared `channels/src/meta/token.ts` `exchangeLongLivedToken`
+  (`fb_exchange_token`), used at most once per deliver to retry an expired-token error. 429 retried
+  like Telegram; tokens never logged.
+- Tests: mocked Graph API — container vs carousel, status polling, resume via progress, missing/
+  non-https photoUrls, token refresh once, error mapping.
+
+#### T26a3 — Instagram publishing wiring (`publisher`, `stores`, workflow, tenant) · Sensitive: publish.yml
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a2, H8; third PR. Closes T26a acceptance.
+- Change: register the adapter for the `instagram` channel key; build public raw-GitHub photo URLs
+  (`https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_REF_NAME/...`, local override
+  `CONTENT_RAW_BASE_URL`) for posts, works and show copies; the publisher pushes the content commit
+  before delivery when the workflow opts in (GitCommitter `push` with the same pull-rebase retry
+  loop) so Meta can fetch fresh photo URLs; when Instagram receives a carousel the publisher frames
+  4:5 copies (1080x1350 pad, no cutting, sharp) committed beside the item; `publish.yml` passes the
+  Meta secrets to the publish and copy-show jobs; the tenant yaml enables `instagram: {language: de}`
+  after `telegram` (telegram stays first, so an Instagram failure never blocks Telegram).
+- Acceptance: a live post appears on Instagram once; a re-run skips it via the ledger; a failed
+  Instagram delivery does not block Telegram and alerts the operator.
+- Review notes from PR #89 (T40), fixed here: (1) send `link_preview_options` on Telegram text
+  messages (no site-page card instead of the join link); (2) the bot preview must not show the
+  canonical footer while publishes still go to the test channel (bot `PUBLISH_LIVE` var); (3)
+  `renderTelegramShow` must not append the show link for a `siteExcluded` show copy.
+- Tests: mocked registry/adapter delivery through runPublish and copy-show, URL builder, framed
+  copies with real sharp, push gating and failure.
 - Review notes from PR #89 (T40): (1) no `link_preview_options` is sent, so Telegram text messages
   now preview the site page instead of the `t.me` join link; check the first live post and set the
   options explicitly if the card is unwanted. (2) The bot preview shows the canonical footer for a

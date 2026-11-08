@@ -1,4 +1,12 @@
-import { renderTelegram, TelegramRenderError, telegramCapabilities } from '@handmake/channels';
+import {
+  instagramCaptionWindow,
+  InstagramRenderError,
+  instagramSkipReason,
+  renderInstagram,
+  renderTelegram,
+  TelegramRenderError,
+  telegramCapabilities,
+} from '@handmake/channels';
 import { buildApprovedWorkJob, canonicalLinkSettings, readWorkDraftData } from '@handmake/core';
 import type { CanonicalLinkSettings, Draft, Post, TenantConfig } from '@handmake/core';
 
@@ -113,6 +121,9 @@ export async function buildTenantPreview(
           ...(canonical ? { canonical } : {}),
         }
       : undefined,
+    config?.channels.instagram
+      ? { ...config.channels.instagram, ...(canonical ? { canonical } : {}) }
+      : undefined,
   );
 }
 
@@ -122,6 +133,9 @@ export function buildPreview(
   now = new Date(),
   telegram?: TenantConfig['channels']['telegram'] & {
     languages?: string[];
+    canonical?: CanonicalLinkSettings;
+  },
+  instagram?: TenantConfig['channels']['instagram'] & {
     canonical?: CanonicalLinkSettings;
   },
 ): PreviewMessage {
@@ -134,16 +148,37 @@ export function buildPreview(
   const primaryText = primaryLanguage ? post.texts[primaryLanguage] : undefined;
 
   let blockedError: string | undefined;
+  let instagramCaption: { lang: string; caption: string } | undefined;
+  let instagramSkip: ReturnType<typeof instagramSkipReason> | undefined;
+  // Instagram copies only items that announce on channels (works opt out via
+  // their announcement switch); a site-excluded/test post never renders.
+  const instagramApplies =
+    instagram !== undefined &&
+    (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length > 0);
   try {
     if (draft.kind === 'work') buildApprovedWorkJob(draft);
     if (draft.kind !== 'work' || readWorkDraftData(draft).config.channels.length)
       renderTelegram(post, telegram);
+    if (instagramApplies) {
+      const ops = renderInstagram(post, instagram);
+      if (ops.length === 0) {
+        instagramSkip = instagramSkipReason(post);
+      } else {
+        const op = ops[0] as { caption?: string; captionLang?: string };
+        instagramCaption = {
+          lang: op.captionLang ?? instagram.language,
+          caption: op.caption ?? '',
+        };
+      }
+    }
   } catch (error) {
     if (draft.kind === 'work') blockedError = texts.workSetupText;
-    else if (!(error instanceof TelegramRenderError)) {
+    else if (!(error instanceof TelegramRenderError) && !(error instanceof InstagramRenderError)) {
       throw error;
     }
-    if (error instanceof TelegramRenderError) blockedError = error.message;
+    if (error instanceof TelegramRenderError || error instanceof InstagramRenderError) {
+      blockedError = error.message;
+    }
   }
 
   const lines: string[] = [texts.previewHeader(draft.photoRefs.length), ''];
@@ -175,6 +210,25 @@ export function buildPreview(
   ) {
     lines.push('');
     lines.push(texts.previewCaptionSplitNote);
+  }
+
+  // Instagram (F33, T26a1): the caption window Instagram shows before "more",
+  // the caption length against the 2200 limit, or the reason this post will
+  // not copy to Instagram. A caption breaking an Instagram limit is a blocked
+  // state (handled above) exactly like a Telegram limit.
+  if (instagramApplies && blockedError === undefined) {
+    if (instagramCaption !== undefined) {
+      lines.push('');
+      lines.push(
+        texts.previewInstagramHeader(instagramCaption.lang, instagramCaption.caption.length),
+      );
+      lines.push(
+        texts.previewInstagramWindow(instagramCaption.caption.slice(0, instagramCaptionWindow)),
+      );
+    } else if (instagramSkip !== undefined) {
+      lines.push('');
+      lines.push(texts.previewInstagramSkip(instagramSkip));
+    }
   }
 
   const rows = keyboard(draft.draftId, texts, blockedError !== undefined);

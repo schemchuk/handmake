@@ -1,3 +1,6 @@
+import { instagramCaptionLimit } from '@handmake/channels';
+import type { InstagramSkip } from '@handmake/channels';
+
 import type { AiBudget, AiCostLedger } from './ai-costs';
 
 /**
@@ -177,8 +180,17 @@ export const botTexts = {
   previewTruncatedNote: '\n… (текст скорочено для перегляду)',
   previewCaptionSplitNote:
     'ℹ️ Український текст довший за 1024 символи — фото піде без підпису, а текст окремим повідомленням.',
+  previewInstagramHeader: (lang: string, chars: number) =>
+    `📸 Instagram (${lang.toUpperCase()}, ${chars}/${instagramCaptionLimit}):`,
+  previewInstagramWindow: (text: string) => `видно без «ще»: «${text}»`,
+  previewInstagramSkip: (reason: InstagramSkip) =>
+    ({
+      'no-photos': '📸 Instagram: без фото дописи не приймає — цей туди не піде.',
+      'not-site-worthy': '📸 Instagram: туди йдуть лише дописи для сайту — цей пропустимо.',
+      'site-excluded': '📸 Instagram: тестовий допис у Instagram не піде.',
+    })[reason],
   previewBlockedText: (error: string) =>
-    `❌ Допис не проходить ліміти Telegram:\n${error}\n\nВиправ текст кнопками ✏️ нижче.`,
+    `❌ Допис не проходить ліміти каналів:\n${error}\n\nВиправ текст кнопками ✏️ нижче.`,
   editUkButton: '✏️ UA',
   editDeButton: '✏️ DE',
   regenDeButton: '🔁 DE',

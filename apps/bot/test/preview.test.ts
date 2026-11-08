@@ -120,3 +120,98 @@ describe('tenant preview settings', () => {
     ).toBe(true);
   });
 });
+
+describe('Instagram preview section (T26a1, F33)', () => {
+  const now = new Date('2026-11-05T10:00:00Z');
+  const draft = (overrides: Record<string, unknown> = {}) => ({
+    ...createDraft('tenant', 'draft', now),
+    state: 'ready' as const,
+    texts: { uk: 'Привіт!', de: 'Neue bestickte Tasche aus der Werkstatt' },
+    photoRefs: ['photo'],
+    ...overrides,
+  });
+  const actions = (preview: { keyboard?: { inline_keyboard: { callback_data: string }[][] } }) =>
+    preview.keyboard?.inline_keyboard.flat().map((b) => b.callback_data) ?? [];
+
+  it('shows the caption window and the length against the 2200 limit', () => {
+    const preview = buildPreview(draft(), botTexts, now, undefined, { language: 'de' });
+    expect(preview.text).toContain('📸 Instagram (DE,');
+    expect(preview.text).toContain('39/2200');
+    expect(preview.text).toContain('«Neue bestickte Tasche aus der Werkstatt»');
+    expect(actions(preview)).toContain('draft:draft:publish');
+  });
+
+  it('truncates the shown window at ~125 characters', () => {
+    const longDe = 'Wort '.repeat(40); // 200 chars
+    const preview = buildPreview(
+      draft({ texts: { uk: 'x', de: longDe } }),
+      botTexts,
+      now,
+      undefined,
+      { language: 'de' },
+    );
+    const windowLine = preview.text.split('\n').find((line) => line.startsWith('видно без'));
+    expect(windowLine).toBe(`видно без «ще»: «${longDe.slice(0, 125)}»`);
+  });
+
+  it('blocks publishing when the caption exceeds 2200 characters', () => {
+    const preview = buildPreview(
+      draft({ texts: { uk: 'x', de: 'x'.repeat(2201) } }),
+      botTexts,
+      now,
+      undefined,
+      { language: 'de' },
+    );
+    expect(actions(preview)).not.toContain('draft:draft:publish');
+    expect(preview.text).toContain('2200');
+  });
+
+  it('blocks publishing on more than 5 hashtags', () => {
+    const preview = buildPreview(
+      draft({ texts: { uk: 'x', de: '#a #b #c #d #e #f' } }),
+      botTexts,
+      now,
+      undefined,
+      { language: 'de' },
+    );
+    expect(actions(preview)).not.toContain('draft:draft:publish');
+    expect(preview.text).toContain('hashtags');
+  });
+
+  it('notes that a text-only post is skipped for Instagram', () => {
+    const preview = buildPreview(draft({ photoRefs: [] }), botTexts, now, undefined, {
+      language: 'de',
+    });
+    expect(preview.text).toContain('без фото');
+    expect(preview.text).not.toContain('📸 Instagram (DE');
+    expect(actions(preview)).toContain('draft:draft:publish');
+  });
+
+  it('notes that a non-site post is skipped for Instagram', () => {
+    const preview = buildPreview(draft({ type: 'announcement' }), botTexts, now, undefined, {
+      language: 'de',
+    });
+    expect(preview.text).toContain('лише дописи для сайту');
+  });
+
+  it('renders the canonical link into the caption from the tenant config', async () => {
+    const preview = await buildTenantPreview(draft(), botTexts, {
+      load: async () =>
+        ({
+          id: 'tenant',
+          languages: ['uk', 'de'],
+          channels: { telegram: { channelId: 'CHANNEL' }, instagram: { language: 'de' } },
+          featureFlags: { canonicalLinks: true },
+          site: { baseUrl: 'https://fadenundstimmung.de', defaultLanguage: 'de' },
+        }) as never,
+    });
+    expect(preview.text).toContain('📸 Instagram (DE,');
+    // The link rides after the message; the window stays the message start.
+    expect(preview.text).toContain('видно без');
+  });
+
+  it('keeps the preview unchanged without Instagram settings', () => {
+    const preview = buildPreview(draft(), botTexts, now);
+    expect(preview.text).not.toContain('📸 Instagram');
+  });
+});

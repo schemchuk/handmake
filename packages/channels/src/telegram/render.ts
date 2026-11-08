@@ -8,6 +8,8 @@ import type {
   SendOperation,
 } from '@handmake/core';
 
+import { showDisclosures } from '../show-disclosures';
+
 /**
  * Pure part of the Telegram ChannelAdapter (T05): turns a post into the
  * ordered list of send operations. The bot preview and the publisher both
@@ -233,11 +235,7 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
     throw new TelegramRenderError('show requires 3-5 images and a video');
   }
   const languages = [...new Set(context.languages.filter((lang) => show.versions[lang]))];
-  const disclosures: Record<string, string> = {
-    de: 'KI-generiertes Model',
-    uk: 'Модель згенерована ШІ (KI-generiertes Model)',
-    en: 'AI-generated model',
-  };
+  const disclosures = showDisclosures;
   if (!languages.length) throw new TelegramRenderError('show requires descriptions');
   const ops: SendOperation[] = [
     {
