@@ -235,7 +235,6 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
     throw new TelegramRenderError('show requires 3-5 images and a video');
   }
   const languages = [...new Set(context.languages.filter((lang) => show.versions[lang]))];
-  const disclosures = showDisclosures;
   if (!languages.length) throw new TelegramRenderError('show requires descriptions');
   const ops: SendOperation[] = [
     {
@@ -247,7 +246,7 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
   for (const [index, lang] of languages.entries()) {
     if (!/^[a-z]{2}$/.test(lang)) throw new TelegramRenderError('invalid show language');
     const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
-    const disclosure = disclosures[lang];
+    const disclosure = showDisclosures[lang as keyof typeof showDisclosures];
     if (!disclosure) throw new TelegramRenderError(`unsupported show disclosure language: ${lang}`);
     const text = appendFooter(
       `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`,

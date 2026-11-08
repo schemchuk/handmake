@@ -137,6 +137,9 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
         tenantConfigs,
+        // Previews must show what the publisher will deliver: while
+        // PUBLISH_LIVE is off, publishes are site-excluded test runs.
+        publishesLive: env.PUBLISH_LIVE === 'true',
         costs: { ledger: costs, tenantConfigs },
         translatorFor: aiRuntime().translatorFor,
         show: {

@@ -4,8 +4,8 @@
  * every channel. German always leads (the DACH audience); the Ukrainian
  * line carries the German phrase so mixed-language readers see it too.
  */
-export const showDisclosures: Record<string, string> = {
+export const showDisclosures = {
   de: 'KI-generiertes Model',
   uk: 'Модель згенерована ШІ (KI-generiertes Model)',
   en: 'AI-generated model',
-};
+} as const;

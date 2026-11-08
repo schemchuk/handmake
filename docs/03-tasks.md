@@ -1280,8 +1280,14 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   Rules ported from instagram-agent-skill (MIT) keep its license notice in the ported file.
 - Acceptance and tests: as T26, plus caption window, hashtag limit and 4:5 framing tests.
 - Split 2026-11-08 into T26a1-T26a3 (one PR each, ADR 009); the acceptance below is complete with
-  T26a3. Open: the instagram-agent-skill file is not in this repo — its MIT notice is added when
-  Volodymyr pastes the skill text (recorded in STATUS.md open questions).
+  T26a3. The caption rules are ported from instagram-agent-skill
+  (github.com/Jakeschincariol/instagram-agent-skill, MIT); the license notice is kept in the ported
+  file. Review of PR #93 (blocking, fixed in the PR): the preview applies Instagram rules only to
+  items that actually copy to Instagram (works: `config.channels` includes `instagram`; a test
+  publish is projected site-excluded via the bot PUBLISH_LIVE flag — no Instagram copy, no
+  canonical footer); work drafts show the exact failing rule (only broken work setup hides behind
+  the generic text); a missing caption language skips the section quietly (the "DE missing" state
+  stays).
 
 #### T26a1 — Instagram caption rules and author preview (`channels`, `bot`)
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T25, T40; first PR.
@@ -1307,6 +1313,10 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   `META_APP_SECRET` feed the shared `channels/src/meta/token.ts` `exchangeLongLivedToken`
   (`fb_exchange_token`), used at most once per deliver to retry an expired-token error. 429 retried
   like Telegram; tokens never logged.
+- Review notes from PR #93: (1) `countHashtags` counts only ASCII tags — switch to
+  `\p{L}\p{N}_` with the `u` flag (our captions are DE/UK; 6 Cyrillic tags currently pass the
+  5-tag cap); (2) make `showDisclosures` explicitly read-only (`as const`), it is shared by two
+  renderers (and drop the pointless alias in `renderTelegramShow`).
 - Tests: mocked Graph API — container vs carousel, status polling, resume via progress, missing/
   non-https photoUrls, token refresh once, error mapping.
 
@@ -1324,8 +1334,14 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   Instagram delivery does not block Telegram and alerts the operator.
 - Review notes from PR #89 (T40), fixed here: (1) send `link_preview_options` on Telegram text
   messages (no site-page card instead of the join link); (2) the bot preview must not show the
-  canonical footer while publishes still go to the test channel (bot `PUBLISH_LIVE` var); (3)
-  `renderTelegramShow` must not append the show link for a `siteExcluded` show copy.
+  canonical footer while publishes still go to the test channel (bot `PUBLISH_LIVE` var);
+  (3) `renderTelegramShow` must not append the show link for a `siteExcluded` show copy.
+  Note: (2) is already resolved in T26a1 (the preview projects site-excluded publishes via
+  `publishesLive`).
+- Review notes from PR #93: (1) the Instagram caption window (`slice(0, 125)`) and `.length` work
+  in UTF-16 code units — an emoji at position 124–125 splits into a lone surrogate; slice by code
+  points (`Array.from` / `Intl.Segmenter`) when touching the preview again; (2) the MIT warranty
+  disclaimer paragraph was added to the notice in T26a1.
 - Tests: mocked registry/adapter delivery through runPublish and copy-show, URL builder, framed
   copies with real sharp, push gating and failure.
 - Review notes from PR #89 (T40): (1) no `link_preview_options` is sent, so Telegram text messages

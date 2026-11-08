@@ -217,4 +217,125 @@ describe('Instagram preview section (T26a1, F33)', () => {
     const preview = buildPreview(draft(), botTexts, now);
     expect(preview.text).not.toContain('📸 Instagram');
   });
+
+  it('never judges a work that does not announce on Instagram (B1)', () => {
+    const workDraft = {
+      ...createDraft('tenant', '01JBCA1B2C3D4E5F6G7H8J9K0M', now, { kind: 'work' }),
+      state: 'ready' as const,
+      texts: { uk: 'Опис', de: 'Nachricht\n#a #b #c #d #e #f' },
+      photoRefs: ['photo'],
+      extras: {
+        work: {
+          config: { kind: 'worn', collection: 'fixture', channels: ['telegram'] },
+          generated: {
+            uk: { description: 'Опис', provenance: 'ai-assisted', model: 'm', prompt: 'p@1' },
+            de: {
+              description: 'Nachricht\n#a #b #c #d #e #f',
+              provenance: 'ai-assisted',
+              model: 'm',
+              prompt: 'p@1',
+            },
+          },
+        },
+      },
+    };
+    const preview = buildPreview(workDraft, botTexts, now, undefined, { language: 'de' });
+    // Telegram-only work: the Instagram rules must not block publishing.
+    expect(actions(preview)).toContain('draft:01JBCA1B2C3D4E5F6G7H8J9K0M:publish');
+    expect(preview.text).not.toContain('📸 Instagram');
+  });
+
+  it('names the exact Instagram rule for a work that announces on it (B2)', () => {
+    const workDraft = {
+      ...createDraft('tenant', '01JBCA1B2C3D4E5F6G7H8J9K0M', now, { kind: 'work' }),
+      state: 'ready' as const,
+      texts: { uk: 'Опис', de: 'Nachricht\n#a #b #c #d #e #f' },
+      photoRefs: ['photo'],
+      extras: {
+        work: {
+          config: { kind: 'worn', collection: 'fixture', channels: ['telegram', 'instagram'] },
+          generated: {
+            uk: { description: 'Опис', provenance: 'ai-assisted', model: 'm', prompt: 'p@1' },
+            de: {
+              description: 'Nachricht\n#a #b #c #d #e #f',
+              provenance: 'ai-assisted',
+              model: 'm',
+              prompt: 'p@1',
+            },
+          },
+        },
+      },
+    };
+    const preview = buildPreview(workDraft, botTexts, now, undefined, { language: 'de' });
+    expect(actions(preview)).not.toContain('draft:01JBCA1B2C3D4E5F6G7H8J9K0M:publish');
+    expect(preview.text).toContain('at most 5 hashtags');
+    expect(preview.text).not.toContain(botTexts.workSetupText);
+  });
+
+  it('skips the Instagram section quietly when the caption language has no text (B4)', () => {
+    const preview = buildPreview(draft({ texts: { uk: 'Привіт!' } }), botTexts, now, undefined, {
+      language: 'de',
+    });
+    expect(actions(preview)).toContain('draft:draft:publish');
+    expect(preview.text).toContain(botTexts.previewDeMissing);
+    expect(preview.text).not.toContain('has no text');
+    expect(preview.text).not.toContain('📸 Instagram');
+  });
+});
+
+describe('preview projects a test publish (B3, PR #89 note 2)', () => {
+  const now = new Date('2026-11-05T10:00:00Z');
+  const config = {
+    load: async () =>
+      ({
+        id: 'tenant',
+        languages: ['uk', 'de'],
+        channels: { telegram: { channelId: 'CHANNEL' }, instagram: { language: 'de' } },
+        featureFlags: { canonicalLinks: true },
+        site: { baseUrl: 'https://fadenundstimmung.de', defaultLanguage: 'de' },
+      }) as never,
+  };
+  const actions = (preview: { keyboard?: { inline_keyboard: { callback_data: string }[][] } }) =>
+    preview.keyboard?.inline_keyboard.flat().map((b) => b.callback_data) ?? [];
+
+  it('live: shows the Instagram caption window', async () => {
+    const draft = {
+      ...createDraft('tenant', 'draft', now),
+      state: 'ready' as const,
+      texts: { uk: 'Привіт!', de: 'Neue bestickte Tasche aus der Werkstatt' },
+      photoRefs: ['photo'],
+    };
+    const preview = await buildTenantPreview(draft, botTexts, config, true);
+    expect(preview.text).toContain('📸 Instagram (DE,');
+  });
+
+  it('test (PUBLISH_LIVE off): the Instagram copy is announced as skipped', async () => {
+    const draft = {
+      ...createDraft('tenant', 'draft', now),
+      state: 'ready' as const,
+      texts: { uk: 'Привіт!', de: 'Neue bestickte Tasche aus der Werkstatt' },
+      photoRefs: ['photo'],
+    };
+    const preview = await buildTenantPreview(draft, botTexts, config, false);
+    expect(preview.text).toContain('тестовий допис');
+    expect(preview.text).not.toContain('📸 Instagram (DE');
+  });
+
+  it('a DE text that only the live canonical footer overflows blocks live, not test', async () => {
+    // 4033 + the 64-char canonical footer = 4097 (over the Telegram limit);
+    // without the footer (test publish) it fits.
+    const draft = {
+      ...createDraft('tenant', 'draft', now),
+      state: 'ready' as const,
+      texts: { uk: 'Привіт!', de: 'x'.repeat(4033) },
+      photoRefs: ['photo'],
+    };
+    const live = await buildTenantPreview(draft, botTexts, config, true);
+    expect(actions(live)).not.toContain('draft:draft:publish');
+    expect(live.text).toContain('4096');
+
+    const test = await buildTenantPreview(draft, botTexts, config, false);
+    expect(actions(test)).toContain('draft:draft:publish');
+    expect(test.text).not.toContain('❌');
+  });
 });
