@@ -1,17 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T49b re-review/merge — PR #98 (`feat/t49b-meta-comments`)
-- **Branch:** `feat/t49b-meta-comments` (PR #98, review fixes in `b027ed0`)
-- **Last commit:** `b027ed0` — fix(channels): follow paging.next safely in the comments capability
-- **Next step:** claude-code re-reviews PR #98. Both blocking findings fixed: new
-  `MetaGraphClient.nextPath` strips the apiBase version prefix from real `paging.next` URLs and
-  rejects foreign origins; the followed query drops `access_token` and malformed-page errors name
-  the path only. New tests cover the exact page-2 pathname, the token-leak guard and the origin
-  guard. Review note 3 (inclusive watermark doc) fixed in the same commit; notes 4-6 are recorded
-  under T49c in docs/03-tasks.md (recorded by the reviewer in `cd50f34`; a duplicate block added
-  by kimi-code was removed). After the merge: hand T49c to kimi-code; bot deploy per AGENTS.md
-  (no D1 migration in T49b).
+- **Active agent:** kimi-code
+- **Current task:** T49c — bot comment inbox (sensitive: reader data)
+- **Branch:** none yet (`feat/t49c-<slug>` from `main`)
+- **Last commit:** `75ec2d7` — feat(channels,core): T49b Meta comment reader/reply capability (#98)
+- **Next step:** kimi-code starts T49c in a fresh session; include the `Review notes from PR #98`
+  line under T49c in docs/03-tasks.md (notes 4-6; note 3 already fixed). Split before coding if it
+  exceeds the ADR 009 budget. Bot deploy after PR #98 is pending: auto mode blocked it, Volodymyr
+  runs `pnpm -C apps/bot run deploy` from clean `main` and the Worker version goes here.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
