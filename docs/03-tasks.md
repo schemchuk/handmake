@@ -1447,6 +1447,11 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance: a comment is answered at most once; skipped and sent comments disappear after 30 days;
   only allow-listed users see the inbox.
 - Tests: mocked APIs, idempotent collect and reply, retention, cost booking.
+- Review notes from PR #96: (1) `renderFacebookShow` must reject 0 or more than
+  `facebookMaxPhotos` show images at render time, like `renderFacebook`; (2) docs/facebook-runbook.md
+  should say plainly that a 190 on the non-expiring System User token means re-issuing the token
+  (the `fb_exchange_token` refresh cannot help there); (3) add a Facebook block to the bot author
+  preview; (4) optional: push once before the Meta channels instead of once per preparation.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on
