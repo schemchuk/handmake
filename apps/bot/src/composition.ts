@@ -1,5 +1,7 @@
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
+import { FacebookAdapter, InstagramAdapter } from '@handmake/channels';
 import { draftRetentionDays, safeErrorMessage } from '@handmake/core';
+import type { ChannelCommentsCapability, ChannelCommentsContext } from '@handmake/core';
 import { webhookCallback } from 'grammy';
 import type { Bot } from 'grammy';
 
@@ -10,6 +12,9 @@ import { createTenantLookup, parseAllowList } from './allow-list';
 import type { TenantLookup } from './allow-list';
 import { createBot } from './bot';
 import type { AppContext } from './context';
+import { runCommentCollect } from './comment-collect';
+import { commentRetentionDays, createCommentStore } from './comment-store';
+import type { CommentNetwork } from './comment-store';
 import { createD1DraftStore } from './draft-store';
 import type { Env } from './env';
 import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './processed-updates';
@@ -30,8 +35,9 @@ export const cleanupCron = '29 3 * * *';
 
 export interface App {
   handle(request: Request): Promise<Response>;
-  /** Scheduled work: F18 announcement/reminder check on every tick, daily
-   * retention cleanup on the cleanup cron; returns drafts deleted. */
+  /** Scheduled work: F18 announcement/reminder check and the F34 comment
+   * collect on every tick, daily retention cleanup on the cleanup cron;
+   * returns the number of rows the cleanup deleted (drafts + comments). */
   scheduled(event: ScheduledEvent): Promise<number>;
   /** Exposed for tests; production uses only `handle`. */
   bot: Bot<AppContext>;
@@ -102,6 +108,12 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         env.GITHUB_DISPATCH_TOKEN,
         env.PUBLISH_CALLBACK_SECRET,
         env.SHOW_TRANSPORT_SECRET ?? '',
+        env.INSTAGRAM_USER_ID,
+        env.INSTAGRAM_ACCESS_TOKEN,
+        env.FACEBOOK_PAGE_ID,
+        env.FACEBOOK_PAGE_ACCESS_TOKEN,
+        env.META_APP_ID,
+        env.META_APP_SECRET,
       ]),
     });
   }
@@ -130,6 +142,28 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         return bot!.api.sendMessage(String(id), text);
       },
     );
+  }
+  // Missing optional secret pairs disable their network.
+  const metaSecrets: Record<string, string | undefined> = {
+    INSTAGRAM_USER_ID: env.INSTAGRAM_USER_ID,
+    INSTAGRAM_ACCESS_TOKEN: env.INSTAGRAM_ACCESS_TOKEN,
+    FACEBOOK_PAGE_ID: env.FACEBOOK_PAGE_ID,
+    FACEBOOK_PAGE_ACCESS_TOKEN: env.FACEBOOK_PAGE_ACCESS_TOKEN,
+    META_APP_ID: env.META_APP_ID,
+    META_APP_SECRET: env.META_APP_SECRET,
+  };
+  const commentsContext: ChannelCommentsContext = {
+    secrets: { resolve: async (name) => metaSecrets[name] ?? '' },
+  };
+  function commentCapabilities(): Partial<Record<CommentNetwork, ChannelCommentsCapability>> {
+    const capabilities: Partial<Record<CommentNetwork, ChannelCommentsCapability>> = {};
+    if (env.INSTAGRAM_USER_ID && env.INSTAGRAM_ACCESS_TOKEN) {
+      capabilities.instagram = new InstagramAdapter().comments;
+    }
+    if (env.FACEBOOK_PAGE_ID && env.FACEBOOK_PAGE_ACCESS_TOKEN) {
+      capabilities.facebook = new FacebookAdapter().comments;
+    }
+    return capabilities;
   }
   function build(): (request: Request) => Promise<Response> {
     if (!handleUpdate) {
@@ -245,7 +279,11 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         const updateRetentionMs = processedUpdateRetentionDays * 24 * 60 * 60 * 1000;
         const cutoff = new Date(event.scheduledTime - retentionMs);
         await updates.deleteOlderThan(new Date(event.scheduledTime - updateRetentionMs));
-        return drafts.deleteOlderThan(cutoff);
+        const comments = createCommentStore(env.DB);
+        const commentsDeleted = await comments.deleteOlderThan(
+          new Date(event.scheduledTime - commentRetentionDays * 24 * 60 * 60 * 1000),
+        );
+        return (await drafts.deleteOlderThan(cutoff)) + commentsDeleted;
       }
       // F18: on every other tick, check whether an announcement/reminder
       // moment just fired for some tenant. Failures stay inside the cron:
@@ -272,6 +310,22 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         await aiRuntime().notices(new Date(event.scheduledTime));
       } catch (error) {
         logError('AI cost notification failed', error, tenantId);
+      }
+      // F34: D1 claims and watermarks make collection retryable.
+      try {
+        await runCommentCollect(new Date(event.scheduledTime), {
+          store: createCommentStore(env.DB),
+          tenantConfigs,
+          allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+          capabilities: commentCapabilities(),
+          commentsContext,
+          drafterFor: (tenantId, commentId) =>
+            aiRuntime().commentDrafterFor(tenantId, `comment:${commentId}`),
+          bot: this.bot,
+          texts,
+        });
+      } catch (error) {
+        logError('comment collect failed', error, tenantId);
       }
       return 0;
     },

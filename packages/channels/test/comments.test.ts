@@ -695,3 +695,15 @@ describe('comments capability: Facebook', () => {
     expect(requests).toHaveLength(0);
   });
 });
+
+it('fails closed when comment pagination is truncated', async () => {
+  const adapter = igAdapter(() =>
+    jsonResponse({
+      data: [],
+      paging: { next: 'https://graph.facebook.com/v22.0/p1/comments?after=next' },
+    }),
+  );
+  await expect(
+    adapter.comments!.listComments('p1', undefined, makeCtx(IG_SECRETS)),
+  ).rejects.toThrow('pagination limit');
+});

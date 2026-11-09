@@ -1,5 +1,6 @@
 import { botTexts } from './texts';
 import {
+  ClaudeCommentDrafter,
   ClaudeTextGenerator,
   ClaudeTranslator,
   DEFAULT_MODEL,
@@ -7,7 +8,7 @@ import {
   humanizeDePromptV1,
 } from '@handmake/ai';
 import { contentSlugSchema, safeErrorMessage, workIdSchema } from '@handmake/core';
-import type { TextGenerator } from '@handmake/core';
+import type { CommentDrafter, TextGenerator } from '@handmake/core';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { AllowList } from './allow-list';
 import { costMonth, formatCosts } from './ai-costs';
@@ -153,6 +154,32 @@ export function createAiCostRuntime(
             at: new Date(),
             ref,
             service: `translation:${pricing.model}`,
+            unit: 'tokens',
+            amountEur:
+              (usage.input_tokens * pricing.inputEurPerMillion +
+                usage.output_tokens * pricing.outputEurPerMillion) /
+              1_000_000,
+          });
+        },
+      });
+    },
+    /** Book comment usage by provider response id and comment reference. */
+    async commentDrafterFor(tenantId: string, ref: string): Promise<CommentDrafter> {
+      contentSlugSchema.parse(tenantId);
+      if (!ref.startsWith('comment:')) {
+        throw new Error('comment drafts require a comment:<id> cost reference');
+      }
+      const pricing = await configs.load(tenantId).then((config) => config.ai?.translation);
+      if (!pricing) throw new Error('comment drafting requires configured text pricing');
+      return new ClaudeCommentDrafter({
+        apiKey,
+        model: pricing.model,
+        onUsage: async (usage, responseId) => {
+          await ledger.recordCost(tenantId, {
+            id: responseId,
+            at: new Date(),
+            ref,
+            service: `comment-draft:${pricing.model}`,
             unit: 'tokens',
             amountEur:
               (usage.input_tokens * pricing.inputEurPerMillion +

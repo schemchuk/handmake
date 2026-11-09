@@ -171,6 +171,7 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
         // No total bound: the page count bounds one operation.
         return true;
       },
+      true,
     );
     return comments;
   }
@@ -245,6 +246,7 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
     call: MetaCallRetry,
     firstPath: string,
     onPage: (items: Record<string, unknown>[]) => boolean,
+    requireComplete = false,
   ): Promise<void> {
     let path: string | undefined = firstPath;
     for (let page = 0; path !== undefined && page < this.#maxPages; page += 1) {
@@ -284,5 +286,7 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
       }
       path = this.config.graph.nextPath(next);
     }
+    if (requireComplete && path !== undefined)
+      throw this.config.error('comment pagination limit reached');
   }
 }

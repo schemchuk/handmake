@@ -294,6 +294,7 @@ describe('scheduled wiring', () => {
       notices: vi.fn().mockRejectedValue(new Error('notices unavailable')),
       translatorFor: vi.fn(),
       textGeneratorFor: vi.fn(),
+      commentDrafterFor: vi.fn(),
     });
     await expect(
       app.scheduled({
@@ -344,13 +345,21 @@ describe('scheduled wiring', () => {
       )
       .bind(TENANT)
       .run();
+    await db
+      .prepare(
+        `INSERT INTO comments
+      (tenant_id, network, id, post_id, handle, text, status, comment_created_at, created_at, updated_at)
+      VALUES (?, 'instagram', 'old', 'post', 'reader', 'text', 'new', '', '2026-09-01', '2026-09-01')`,
+      )
+      .bind(TENANT)
+      .run();
     const app = createApp(envWith(db), botTexts);
     mockTelegramApi(app.bot);
     const removed = await app.scheduled({
       cron: '29 3 * * *',
       scheduledTime: new Date('2026-10-27T03:29:00.000Z').getTime(),
     } as ScheduledEvent);
-    expect(removed).toBe(1);
+    expect(removed).toBe(2);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

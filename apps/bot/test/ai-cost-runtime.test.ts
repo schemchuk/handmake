@@ -12,6 +12,25 @@ const constructed = vi.hoisted(() => vi.fn());
 vi.mock('@handmake/ai', () => ({
   humanizeDePromptV1: 'test prompt',
   DEFAULT_MODEL: 'code-model',
+  ClaudeCommentDrafter: class {
+    constructor(
+      public options: {
+        onUsage: (
+          usage: { input_tokens: number; output_tokens: number },
+          id: string,
+        ) => Promise<void>;
+      },
+    ) {
+      constructed(options);
+    }
+    async draft() {
+      await this.options.onUsage(
+        { input_tokens: 1000000, output_tokens: 100000 },
+        'comment-response',
+      );
+      return { translationUk: 'T', replyDe: 'D', notesUk: '' };
+    }
+  },
   ClaudeTranslator: class {
     constructor(
       public options: {
@@ -184,4 +203,15 @@ describe('AI cost runtime', () => {
     expect(send.mock.calls[0]![1]).toContain('2026-10\nВитрачено: 3.0000 EUR');
     expect(send.mock.calls.every(([id]) => id === 11 || id === 12)).toBe(true);
   });
+});
+
+it('books comment draft usage by response id and comment reference', async () => {
+  const { runtime } = setup();
+  const record = vi.spyOn(ledger, 'recordCost');
+  const drafter = await runtime.commentDrafterFor('one', 'comment:c1');
+  await drafter.draft({ network: 'instagram', handle: 'reader', text: 'hello', postId: 'p1' });
+  expect(record).toHaveBeenCalledWith(
+    'one',
+    expect.objectContaining({ id: 'comment-response', ref: 'comment:c1', amountEur: 3 }),
+  );
 });

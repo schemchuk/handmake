@@ -95,14 +95,13 @@ export interface CommentStore {
     network: CommentNetwork,
     id: string,
     claimedAt: Date,
+    now?: Date,
   ): Promise<boolean>;
-  /**
-   * Newest comment_created_at among rows safely processed (status past
-   * 'drafting'). This is diagnostic only, not a safe pagination watermark:
-   * older pending rows and unseen API pages may still exist. Invalid timestamps
-   * are excluded.
-   */
-  latestHandledCreatedAt(tenantId: string, network: CommentNetwork): Promise<Date | undefined>;
+  /** Counts only; notification reservations include confirmed deliveries. */
+  countUncertain(
+    tenantId: string,
+    cutoff: Date,
+  ): Promise<{ drafting: number; notifications: number }>;
   getWatermark(tenantId: string, network: CommentNetwork): Promise<Date | undefined>;
   setWatermark(
     tenantId: string,
@@ -214,28 +213,28 @@ export function createCommentStore(db: D1Database): CommentStore {
       return result.meta.changes === 1;
     },
 
-    async reopenNotification(tenantId, network, id, claimedAt) {
+    async reopenNotification(tenantId, network, id, claimedAt, now = new Date()) {
       const result = await db
         .prepare(
-          `UPDATE comments SET notified_at = NULL
+          `UPDATE comments SET notified_at = NULL, updated_at = ?
         WHERE tenant_id = ? AND network = ? AND id = ? AND status = 'drafted' AND notified_at = ?`,
         )
-        .bind(tenantId, network, id, claimedAt.toISOString())
+        .bind(now.toISOString(), tenantId, network, id, claimedAt.toISOString())
         .run();
       return result.meta.changes === 1;
     },
 
-    async latestHandledCreatedAt(tenantId, network) {
+    async countUncertain(tenantId, cutoff) {
       const row = await db
         .prepare(
-          `SELECT MAX(julianday(comment_created_at)) AS latest
-        FROM comments WHERE tenant_id = ? AND network = ? AND status NOT IN ('new', 'drafting')`,
+          `SELECT
+        COUNT(CASE WHEN status = 'drafting' THEN 1 END) AS drafting,
+        COUNT(CASE WHEN status = 'drafted' AND notified_at IS NOT NULL THEN 1 END) AS notifications
+        FROM comments WHERE tenant_id = ? AND updated_at < ?`,
         )
-        .bind(tenantId, network)
-        .first<{ latest: number | null }>();
-      return row?.latest == null
-        ? undefined
-        : new Date(Math.round((row.latest - 2440587.5) * 86400000));
+        .bind(tenantId, cutoff.toISOString())
+        .first<{ drafting: number; notifications: number }>();
+      return row ?? { drafting: 0, notifications: 0 };
     },
 
     async getWatermark(tenantId, network) {
