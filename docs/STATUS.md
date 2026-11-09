@@ -1,15 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review T49c2a — persistence + PR #99 fixes (PR #100)
-- **Branch:** `feat/t49c2a-comment-store` (pushed)
-- **Last commit:** `df15396` — feat(bot): add tenant-scoped comment inbox persistence
-- **Next step:** claude-code reviews PR #100; merge needs Volodymyr's explicit OK
-  (reader data). Do not deploy or apply remote migration 0009. After merge, hand
-  T49c2b to codex in a fresh session, reusing WIP `624436d`: drain persisted pending
-  drafts, use a safe pagination watermark and reserve notification before Telegram.
-  Only confirmed delivery rejection may reopen the reservation; ambiguous delivery
-  and interrupted paid drafting require operator reconciliation. CI still running.
+- **Active agent:** codex
+- **Current task:** T49c2b — comment collection + Worker wiring (`bot`)
+- **Branch:** none yet (`feat/t49c2b-comment-collect`); reuse WIP `624436d` on `feat/t49c2-comment-collect`
+- **Last commit:** `533fff7` — T49c2a comment store + PR #99 notes (#100)
+- **Next step:** codex starts T49c2b in a fresh session (docs/03-tasks.md), including the
+  "Review notes from PR #100" line (retention re-collect, stuck drafting/notification rows,
+  unused `latestHandledCreatedAt`, `reopenNotification` updated_at). Sensitive: Volodymyr's OK
+  before merge; he applies migration 0009 to remote D1 and adds the six optional Meta secrets
+  before the T49c2b deploy. No bot deploy after PR #100 (store not wired yet).
 - **T49c2a validation:** bot 575/575 (--maxWorkers 1), including 16 local D1 store
   tests; AI 139/139 and channels 209/209. Workspace typecheck, ESLint, Prettier
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;

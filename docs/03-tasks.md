@@ -1536,7 +1536,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Subdivision (approved by Volodymyr 2026-11-09): WIP `624436d`
   already changes 742 non-test lines, exceeding ADR 009 before fixes. Preserve it
   as the recovery source; extract the following sequential PRs without rewriting
-  the pushed branch's history. T49c2a is ready for review in PR #100.
+  the pushed branch's history. T49c2a done 2026-11-09: PR #100 merged (`533fff7`); no deploy needed (store not wired yet).
   - **T49c2a — Persistence + PR #99 fixes.** Owner: codex; Reviewer: claude-code;
     depends on T49c1. Migration 0009, comment store and D1 tests; inclusive
     watermark, generic malformed-JSON error, shared client type and typecheck fix.
@@ -1553,6 +1553,12 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
     watermark bounds, concurrent ticks, failed drafting/delivery, cost booking
     and network isolation; workspace checks and bot suite with --maxWorkers 1.
     Target: <=400 changed non-test lines; defer reply transitions to T49c3.
+    Review notes from PR #100: (1) after the 30-day delete a comment the API still returns
+    (at the inclusive watermark or with unparseable `createdAt`) comes back as `new` and gets a
+    second paid draft and card — skip comments older than the retention cutoff; (2) stuck
+    `drafting` rows and ambiguous notifications have no reconciliation path — reclaim stale
+    `drafting` after a timeout or at least report a count without reader data; (3) use or drop
+    the unused `latestHandledCreatedAt`; (4) `reopenNotification` should set `updated_at`.
   Both PRs remain sensitive: explicit Volodymyr approval before merge; no deploy
   or remote D1 migration during implementation. T49c3 depends on T49c2b.
 - Owner: codex · Reviewer: claude-code · Depends on: T49c1. Sensitive: reader data.
