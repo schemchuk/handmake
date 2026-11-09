@@ -60,7 +60,9 @@ export interface MetaCommentsConfig {
   mapPost: (raw: Record<string, unknown>, ownerId: string) => ChannelPostRef | undefined;
   /**
    * Maps a comments-edge entry; returning undefined skips it (e.g. one of
-   * our own replies on a Page post or an unattributable entry).
+   * our own replies on a Page post). Entries the network filter should have
+   * excluded but kept anyway (Instagram may ignore `since`) are dropped by
+   * the shared client-side watermark filter after mapping.
    */
   mapComment: (raw: Record<string, unknown>, ownerId: string) => ChannelComment | undefined;
   /** Bound on followed pages per operation; default DEFAULT_COMMENTS_MAX_PAGES. */
@@ -68,12 +70,23 @@ export interface MetaCommentsConfig {
 }
 
 /**
- * `since` as a Graph API query fragment. The network filter is inclusive,
- * so the caller may see the watermark entry again and must dedupe by id.
+ * `since` as a Graph API query fragment. The network filter is inclusive and
+ * unreliable (Instagram's comments edge may ignore `since` altogether), so
+ * the capability also applies the watermark client-side by `createdAt`:
+ * entries with a parseable timestamp at or before `since` are dropped after
+ * mapping; entries without one pass through and the caller's dedupe by id
+ * (D1) covers their repeats.
  */
 export function unixSinceQuery(since: Date | undefined): string {
   if (since === undefined) return '';
   return `&since=${Math.floor(since.getTime() / 1000)}`;
+}
+
+/** Client-side watermark guard: strictly newer than `since`, or unparseable. */
+function isNewerThanWatermark(comment: ChannelComment, since: Date | undefined): boolean {
+  if (since === undefined) return true;
+  const createdAt = Date.parse(comment.createdAt);
+  return Number.isNaN(createdAt) || createdAt > since.getTime();
 }
 
 export function createMetaCommentsCapability(
@@ -151,7 +164,7 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
       (items) => {
         for (const raw of items) {
           const mapped = this.config.mapComment(raw, ownerId);
-          if (mapped) comments.push(mapped);
+          if (mapped && isNewerThanWatermark(mapped, since)) comments.push(mapped);
         }
         // No total bound: the page count bounds one operation.
         return true;

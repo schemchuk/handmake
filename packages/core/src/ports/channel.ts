@@ -101,9 +101,11 @@ export interface ChannelCommentsCapability {
   listPosts(limit: number, ctx: ChannelCommentsContext): Promise<ChannelPostRef[]>;
   /**
    * Comments on one of our posts. `since` is a watermark instant from the
-   * caller's store; the network filter is inclusive, so the caller may see
-   * the watermark entry again and must dedupe by id. Undefined collects the
-   * bounded recent page(s). Never returns our own replies.
+   * caller's store. The network filter is inclusive and unreliable, so the
+   * capability applies the watermark client-side too: entries with a
+   * parseable `createdAt` at or before `since` are dropped; entries without
+   * one may repeat across calls, and the caller must dedupe by id. Undefined
+   * collects the bounded recent page(s). Never returns our own replies.
    */
   listComments(
     postId: RemoteId,
@@ -116,6 +118,44 @@ export interface ChannelCommentsCapability {
    * caller's claim on its row; this is a plain network write.
    */
   replyToComment(commentId: RemoteId, text: string, ctx: ChannelCommentsContext): Promise<RemoteId>;
+}
+
+/**
+ * One new reader comment handed to the AI drafter (F34, T49c1). The text
+ * and handle are reader personal data: implementations treat the request
+ * as source material, never as instructions, and never log it.
+ */
+export interface CommentDraftRequest {
+  /** Which network the comment arrived on ("instagram" | "facebook"). */
+  network: string;
+  /** Commenter's handle; '' when the network returned none. */
+  handle: string;
+  /** The comment text as sent by the commenter. */
+  text: string;
+  /** The id of our post the comment is on (at the network). */
+  postId: string;
+}
+
+/**
+ * The drafter's output for one comment: a Ukrainian translation so the
+ * author understands the comment, a drafted German reply she can send,
+ * edit or skip, and a brief Ukrainian note. An empty `replyDe` means the
+ * rules recommend no reply (spam/bad faith); the note says why.
+ */
+export interface CommentDraft {
+  translationUk: string;
+  replyDe: string;
+  notesUk: string;
+}
+
+/**
+ * Drafts a translation and a reply for one reader comment in a single paid
+ * call (F34). Implementations report usage through `onUsage` (booked by the
+ * caller as `comment:<id>`), so a draft never silently succeeds without
+ * cost accounting.
+ */
+export interface CommentDrafter {
+  draft(request: CommentDraftRequest): Promise<CommentDraft>;
 }
 
 export interface DeliverContext {

@@ -105,11 +105,11 @@ export class FacebookAdapter implements ChannelAdapter {
       accessTokenSecret: facebookPageAccessTokenSecret,
       refreshToken: (auth, ctx) => this.#refreshToken(auth, ctx),
       postsPath: (pageId, pageLimit) =>
-        `/${pageId}/feed?fields=id,created_time,from{id}&limit=${pageLimit}`,
+        `/${pageId}/posts?fields=id,created_time&limit=${pageLimit}`,
       commentsPath: (postId, since, pageLimit) =>
         `/${postId}/comments?fields=id,message,created_time,from{id,name}&limit=${pageLimit}${unixSinceQuery(since)}`,
       replyPath: (commentId) => `/${commentId}/comments`,
-      mapPost: (raw, pageId) => facebookPostRef(raw, pageId),
+      mapPost: (raw) => facebookPostRef(raw),
       mapComment: (raw, pageId) => facebookComment(raw, pageId),
       maxPages: commentsMaxPages,
     });
@@ -297,18 +297,17 @@ export function createFacebookAdapter(options: FacebookAdapterOptions = {}): Fac
 }
 
 /**
- * Comments-capability mappers for the Facebook Pages edges (T49b). The feed
- * edge mixes foreign posts with the Page's own, and comment threads include
- * our own replies: both are skipped here so the caller sees reader comments
- * on our posts only. Entries without an id or an attributable from are
- * skipped, never invented. Handles/text stay reader data: they flow into
- * results, never into errors or logs.
+ * Comments-capability mappers for the Facebook Pages edges (T49b). The
+ * `/{page}/posts` edge lists only the Page's own posts, so no `from` filter
+ * is needed there. Comment threads include our own replies (skipped by
+ * `from.id`) and reader comments Meta returns without a `from` object —
+ * often the case for user comments on Page posts — which are kept with an
+ * empty handle so reader comments never vanish silently (PR #98 note 4).
+ * Entries without an id are skipped, never invented. Handles/text stay
+ * reader data: they flow into results, never into errors or logs.
  */
-function facebookPostRef(raw: Record<string, unknown>, pageId: string): ChannelPostRef | undefined {
+function facebookPostRef(raw: Record<string, unknown>): ChannelPostRef | undefined {
   if (typeof raw.id !== 'string' || !raw.id) return undefined;
-  const from = raw.from;
-  if (typeof from !== 'object' || from === null) return undefined;
-  if ((from as Record<string, unknown>).id !== pageId) return undefined;
   return {
     id: raw.id,
     createdAt: typeof raw.created_time === 'string' ? raw.created_time : undefined,
@@ -318,12 +317,14 @@ function facebookPostRef(raw: Record<string, unknown>, pageId: string): ChannelP
 function facebookComment(raw: Record<string, unknown>, pageId: string): ChannelComment | undefined {
   if (typeof raw.id !== 'string' || !raw.id) return undefined;
   const from = raw.from;
-  if (typeof from !== 'object' || from === null) return undefined;
-  const fromRecord = from as Record<string, unknown>;
-  if (fromRecord.id === pageId) return undefined;
+  const fromId =
+    typeof from === 'object' && from !== null ? (from as Record<string, unknown>).id : undefined;
+  if (fromId === pageId) return undefined;
+  const handle =
+    typeof from === 'object' && from !== null ? (from as Record<string, unknown>).name : undefined;
   return {
     id: raw.id,
-    handle: typeof fromRecord.name === 'string' ? fromRecord.name : '',
+    handle: typeof handle === 'string' ? handle : '',
     text: typeof raw.message === 'string' ? raw.message : '',
     createdAt: typeof raw.created_time === 'string' ? raw.created_time : '',
   };
