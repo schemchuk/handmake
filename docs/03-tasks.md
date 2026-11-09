@@ -1536,7 +1536,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Subdivision (approved by Volodymyr 2026-11-09): WIP `624436d`
   already changes 742 non-test lines, exceeding ADR 009 before fixes. Preserve it
   as the recovery source; extract the following sequential PRs without rewriting
-  the pushed branch's history. T49c2a is in progress.
+  the pushed branch's history. T49c2a is ready for review in PR #100.
   - **T49c2a — Persistence + PR #99 fixes.** Owner: codex; Reviewer: claude-code;
     depends on T49c1. Migration 0009, comment store and D1 tests; inclusive
     watermark, generic malformed-JSON error, shared client type and typecheck fix.

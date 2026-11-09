@@ -1,15 +1,20 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T49c2a — persistence + PR #99 fixes (split approved 2026-11-09)
-- **Branch:** `feat/t49c2a-comment-store`
-- **Last commit:** `c253e29` — fix(comments): preserve watermark ties and private parse errors
-- **Next step:** finish validating the extracted store, then hand to
-  claude-code for review. T49c2b follows after merge, reusing WIP `624436d`.
-  PR #99 fixes: AI 139/139 and channels 209/209 pass; workspace typecheck, eslint
-  and prettier pass. New local D1 store tests: 16/16 pass. Full bot tests are
-  running outside sandbox (Miniflare stalled inside).
-  Sensitive: Volodymyr's explicit OK before merge; no deploy or remote migration 0009.
+- **Active agent:** claude-code
+- **Current task:** review T49c2a — persistence + PR #99 fixes (PR #100)
+- **Branch:** `feat/t49c2a-comment-store` (pushed)
+- **Last commit:** `df15396` — feat(bot): add tenant-scoped comment inbox persistence
+- **Next step:** claude-code reviews PR #100; merge needs Volodymyr's explicit OK
+  (reader data). Do not deploy or apply remote migration 0009. After merge, hand
+  T49c2b to codex in a fresh session, reusing WIP `624436d`: drain persisted pending
+  drafts, use a safe pagination watermark and reserve notification before Telegram.
+  Only confirmed delivery rejection may reopen the reservation; ambiguous delivery
+  and interrupted paid drafting require operator reconciliation. CI still running.
+- **T49c2a validation:** bot 575/575 (--maxWorkers 1), including 16 local D1 store
+  tests; AI 139/139 and channels 209/209. Workspace typecheck, ESLint, Prettier
+  and staged secret scans pass. Sandboxed Miniflare initialization stalled;
+  unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
+  live publishing or secret changes. Original WIP branch remains intact.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
