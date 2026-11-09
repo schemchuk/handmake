@@ -4,9 +4,8 @@
 - **Current task:** T49b — Meta comment reader/reply capability (`channels`)
 - **Branch:** none yet (`feat/t49b-meta-comments`)
 - **Last commit:** `43f740d` — feat(channels,publisher,bot): T49a PR #96 review notes (#97)
-- **Next step:** kimi-code starts T49b (docs/03-tasks.md) in a fresh session. Reminder:
-  the bot deploy after PR #97 is run manually by Volodymyr (auto mode blocks it); claude-code
-  records the Worker version here once it is known.
+- **Next step:** kimi-code starts T49b (docs/03-tasks.md) in a fresh session. Bot deployed
+  after PR #97 (manually by Volodymyr): Worker version `03700671-a1f5-4129-9f76-23d73b667b55`.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
