@@ -52,6 +52,71 @@ export interface PollResult {
   totalVotes: number;
 }
 
+/**
+ * Context for the optional comments capability (F34): secret resolution
+ * only — no photos, no idempotency base. Watermarks, dedupe and the
+ * at-most-once reply guarantee live in the caller (D1), the capability
+ * itself is stateless.
+ */
+export interface ChannelCommentsContext {
+  /** Resolves secret names from tenant config to values. */
+  secrets: SecretResolver;
+}
+
+/** One of our own posts at the network, as seen by the comments reader. */
+export interface ChannelPostRef {
+  /** The post's id at the network. */
+  id: string;
+  /** Creation instant reported by the network (ISO 8601), when present. */
+  createdAt?: string;
+}
+
+/**
+ * One comment on our own post. `handle` and `text` are reader personal
+ * data: the capability never puts them into errors or logs, and the
+ * caller (T49c) keeps them out of Git.
+ */
+export interface ChannelComment {
+  /** The comment's id at the network. */
+  id: string;
+  /** Commenter's handle at the network (Instagram username, Facebook name). */
+  handle: string;
+  /** Comment text as sent by the commenter. */
+  text: string;
+  /** Creation instant reported by the network (ISO 8601); '' when absent. */
+  createdAt: string;
+}
+
+/**
+ * Optional comment reader/reply capability (F34, T49b). Only networks
+ * with a comments API expose it; `ChannelAdapter.comments` stays undefined
+ * elsewhere (e.g. Telegram: its discussion group is explicitly out of
+ * scope, spec F35). All operations are bounded and retried like `deliver`.
+ */
+export interface ChannelCommentsCapability {
+  /**
+   * Our recent posts at the network, newest first, at most `limit` items
+   * (a positive integer) across a bounded number of pages.
+   */
+  listPosts(limit: number, ctx: ChannelCommentsContext): Promise<ChannelPostRef[]>;
+  /**
+   * Comments on one of our posts. `since` is an exclusive watermark
+   * instant from the caller's store; undefined collects the bounded
+   * recent page(s). Never returns our own replies.
+   */
+  listComments(
+    postId: RemoteId,
+    since: Date | undefined,
+    ctx: ChannelCommentsContext,
+  ): Promise<ChannelComment[]>;
+  /**
+   * Replies to one comment with the given (already approved) text and
+   * returns the reply's remote id. The at-most-once guarantee is the
+   * caller's claim on its row; this is a plain network write.
+   */
+  replyToComment(commentId: RemoteId, text: string, ctx: ChannelCommentsContext): Promise<RemoteId>;
+}
+
 export interface DeliverContext {
   /** Resolves secret names from tenant config to values. */
   secrets: SecretResolver;
@@ -127,6 +192,8 @@ export interface ChannelAdapter {
     progress?: DeliverProgress,
   ): Promise<RemoteId[]>;
   closePoll?(pollId: RemoteId, ctx: DeliverContext): Promise<PollResult>;
+  /** Optional comment reader/reply capability; undefined where the network has none. */
+  readonly comments?: ChannelCommentsCapability;
 }
 
 /**

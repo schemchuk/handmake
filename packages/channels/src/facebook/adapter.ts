@@ -1,5 +1,8 @@
 import type {
   ChannelAdapter,
+  ChannelComment,
+  ChannelCommentsCapability,
+  ChannelPostRef,
   DeliverContext,
   DeliverProgress,
   Post,
@@ -9,6 +12,7 @@ import type {
   ShowRenderContext,
 } from '@handmake/core';
 
+import { createMetaCommentsCapability, unixSinceQuery } from '../meta/comments';
 import {
   MetaGraphClient,
   MetaGraphError,
@@ -26,7 +30,10 @@ import {
   renderFacebookShow,
 } from './render';
 
-export type FacebookAdapterOptions = MetaGraphOptions;
+export interface FacebookAdapterOptions extends MetaGraphOptions {
+  /** Bound on followed comment/posts pages per comments-capability op; default 5. */
+  commentsMaxPages?: number;
+}
 
 /** Secret names the adapter resolves through `DeliverContext.secrets`. */
 export const facebookPageIdSecret = 'FACEBOOK_PAGE_ID';
@@ -82,13 +89,30 @@ type MediaGroupOp = Extract<SendOperation, { kind: 'mediaGroup' }>;
 export class FacebookAdapter implements ChannelAdapter {
   readonly key = 'facebook';
   readonly capabilities = facebookCapabilities;
+  readonly comments: ChannelCommentsCapability;
 
   readonly #graph: MetaGraphClient;
   readonly #graphOptions: MetaGraphOptions;
 
-  constructor(graphOptions: FacebookAdapterOptions = {}) {
+  constructor({ commentsMaxPages, ...graphOptions }: FacebookAdapterOptions = {}) {
     this.#graph = new MetaGraphClient('Facebook', graphOptions);
     this.#graphOptions = graphOptions;
+    this.comments = createMetaCommentsCapability({
+      network: 'Facebook',
+      error: (message) => new FacebookAdapterError(message),
+      graph: this.#graph,
+      ownerIdSecret: facebookPageIdSecret,
+      accessTokenSecret: facebookPageAccessTokenSecret,
+      refreshToken: (auth, ctx) => this.#refreshToken(auth, ctx),
+      postsPath: (pageId, pageLimit) =>
+        `/${pageId}/feed?fields=id,created_time,from{id}&limit=${pageLimit}`,
+      commentsPath: (postId, since, pageLimit) =>
+        `/${postId}/comments?fields=id,message,created_time,from{id,name}&limit=${pageLimit}${unixSinceQuery(since)}`,
+      replyPath: (commentId) => `/${commentId}/comments`,
+      mapPost: (raw, pageId) => facebookPostRef(raw, pageId),
+      mapComment: (raw, pageId) => facebookComment(raw, pageId),
+      maxPages: commentsMaxPages,
+    });
   }
 
   render(post: Post, settings: unknown): SendOperation[] {
@@ -243,8 +267,10 @@ export class FacebookAdapter implements ChannelAdapter {
    * One token exchange attempt. fb_exchange_token refuses an already-expired
    * token, so this is a mid-deliver last resort, not the rotation path — the
    * operator rotates the stored token before expiry (docs/facebook-runbook.md).
+   * Takes only the secret resolver: the comments capability passes its lighter
+   * context through the same path.
    */
-  async #refreshToken(auth: MetaAuthState, ctx: DeliverContext): Promise<string> {
+  async #refreshToken(auth: MetaAuthState, ctx: Pick<DeliverContext, 'secrets'>): Promise<string> {
     const appId = await ctx.secrets.resolve(metaAppIdSecret);
     const appSecret = await ctx.secrets.resolve(metaAppSecretSecret);
     if (!appId || !appSecret) {
@@ -268,4 +294,37 @@ export class FacebookAdapter implements ChannelAdapter {
 
 export function createFacebookAdapter(options: FacebookAdapterOptions = {}): FacebookAdapter {
   return new FacebookAdapter(options);
+}
+
+/**
+ * Comments-capability mappers for the Facebook Pages edges (T49b). The feed
+ * edge mixes foreign posts with the Page's own, and comment threads include
+ * our own replies: both are skipped here so the caller sees reader comments
+ * on our posts only. Entries without an id or an attributable from are
+ * skipped, never invented. Handles/text stay reader data: they flow into
+ * results, never into errors or logs.
+ */
+function facebookPostRef(raw: Record<string, unknown>, pageId: string): ChannelPostRef | undefined {
+  if (typeof raw.id !== 'string' || !raw.id) return undefined;
+  const from = raw.from;
+  if (typeof from !== 'object' || from === null) return undefined;
+  if ((from as Record<string, unknown>).id !== pageId) return undefined;
+  return {
+    id: raw.id,
+    createdAt: typeof raw.created_time === 'string' ? raw.created_time : undefined,
+  };
+}
+
+function facebookComment(raw: Record<string, unknown>, pageId: string): ChannelComment | undefined {
+  if (typeof raw.id !== 'string' || !raw.id) return undefined;
+  const from = raw.from;
+  if (typeof from !== 'object' || from === null) return undefined;
+  const fromRecord = from as Record<string, unknown>;
+  if (fromRecord.id === pageId) return undefined;
+  return {
+    id: raw.id,
+    handle: typeof fromRecord.name === 'string' ? fromRecord.name : '',
+    text: typeof raw.message === 'string' ? raw.message : '',
+    createdAt: typeof raw.created_time === 'string' ? raw.created_time : '',
+  };
 }
