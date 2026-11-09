@@ -89,11 +89,7 @@ const canonicalIntros: Record<string, string> = {
  * Instagram (captions are not clickable, so the link lives in the bio),
  * Facebook renders the URL as a clickable link inside the post message.
  */
-function canonicalLine(
-  lang: string,
-  canonical: CanonicalLinkSettings,
-  id: string,
-): string {
+function canonicalLine(lang: string, canonical: CanonicalLinkSettings, id: string): string {
   let origin: URL | undefined;
   try {
     origin = new URL(canonical.baseUrl);
@@ -152,7 +148,12 @@ export function renderFacebook(post: Post, settings?: unknown): SendOperation[] 
       `Facebook language "${parsed.language}" has no text in this post`,
     );
   }
-  const caption = buildFacebookCaption(post.texts[parsed.language]!, parsed.language, post.id, settings);
+  const caption = buildFacebookCaption(
+    post.texts[parsed.language]!,
+    parsed.language,
+    post.id,
+    settings,
+  );
   return [
     {
       kind: 'mediaGroup',
