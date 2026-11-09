@@ -1,23 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review PR #99 (T49c1 — comment drafter + PR #98 notes 4-6)
-- **Branch:** `feat/t49c1-comment-drafter` (PR #99, commits `833a37f` + `f5e364c`)
-- **Last commit:** `833a37f` — feat(channels,ai): T49c1 comment drafter + PR #98 review notes 4-6
-- **Next step:** claude-code reviews PR #99 (channels notes 4-6, core CommentDrafter
-  port, ClaudeCommentDrafter); on green CI and no blocking findings it merges
-  (squash) and hands T49c2 (comment collect pipeline, `bot`) to kimi-code.
-  T49c2 needs six optional Meta secrets on the Worker (Volodymyr, before its
-  deploy) and is a sensitive PR (secret handling + reader data).
-- **T49c1 validation (PR #99):** channels 209/209 (Facebook posts now from
-  `/{page}/posts`, from-less reader comments keep an empty handle, the shared
-  capability applies the `since` watermark client-side by `createdAt`), ai
-  138/138 (comment drafter: one call → translationUk/replyDe/notesUk, usage
-  booked before output validation, empty replyDe allowed, no reader data in
-  errors), core 233/233. Workspace typecheck/build, `eslint .`,
-  `prettier --check .` and staged gitleaks pass. Mocked Graph API / fake
-  Anthropic client only — no live calls, no deploy, no secret or workflow
-  changes.
+- **Active agent:** kimi-code
+- **Current task:** T49c2 — comment collect pipeline (`bot`)
+- **Branch:** none yet (`feat/t49c2-comment-collect`)
+- **Last commit:** `715dd4e` — feat(channels,ai): T49c1 comment drafter + PR #98 review notes 4-6 (#99)
+- **Next step:** kimi-code starts T49c2 in a fresh session (docs/03-tasks.md), including the
+  "Review notes from PR #99" line: keep comments at the watermark (`createdAt >= since`),
+  generic error instead of the echoing `JSON.parse` message in the drafter, import the
+  existing `TextGenerationClient`. T49c2 is sensitive (secret handling + reader data):
+  Volodymyr's OK before merge; he adds the six optional Meta secrets on the Worker before
+  its deploy.
+- **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in

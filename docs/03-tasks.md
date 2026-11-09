@@ -1514,6 +1514,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   Facebook posts edge from `/{page}/feed` to `/{page}/posts`.
 
 #### T49c1 — Channels review notes + comment drafter (`channels`, `ai`, `core`) · first PR of the split
+- Done 2026-11-09: PR #99 merged (`715dd4e`); bot deployed by Volodymyr (Worker `3a5db8aa`).
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T49b.
 - Change: PR #98 review notes 4-6 — the shared capability applies the `since`
   watermark client-side by `createdAt` (entries without a parseable timestamp
@@ -1548,6 +1549,12 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   other; rows vanish after 30 days.
 - Tests: Miniflare D1 store tests + collect tests with fake capability,
   fake drafter and mocked Telegram (idempotency, watermark bound, races, cost).
+- Review notes from PR #99: `isNewerThanWatermark` in `meta/comments.ts` keeps entries with
+  `createdAt == since` (drop only strictly older; the id dedupe covers repeats — Graph timestamps
+  have second resolution) and the core port doc says so; `ClaudeCommentDrafter` wraps
+  `JSON.parse` and throws a generic message (V8's SyntaxError quotes the model output, which
+  carries the translated reader comment), with the no-echo test extended to malformed JSON;
+  import `TextGenerationClient` from `claude-text-generator` instead of redeclaring it.
 
 #### T49c3 — Author reply handling + legal draft (`bot`, docs/legal) · third PR of the split
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T49c2. Sensitive: reader data, legal text.
