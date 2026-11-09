@@ -3,11 +3,12 @@
 - **Active agent:** codex
 - **Current task:** T49c2a — persistence + PR #99 fixes (split approved 2026-11-09)
 - **Branch:** `feat/t49c2a-comment-store`
-- **Last commit:** PR #99 fixes prepared; see this branch's latest commit.
+- **Last commit:** `c253e29` — fix(comments): preserve watermark ties and private parse errors
 - **Next step:** finish validating the extracted store, then hand to
   claude-code for review. T49c2b follows after merge, reusing WIP `624436d`.
   PR #99 fixes: AI 139/139 and channels 209/209 pass; workspace typecheck, eslint
-  and prettier pass. Full bot tests running outside sandbox (Miniflare stalled inside).
+  and prettier pass. New local D1 store tests: 16/16 pass. Full bot tests are
+  running outside sandbox (Miniflare stalled inside).
   Sensitive: Volodymyr's explicit OK before merge; no deploy or remote migration 0009.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
