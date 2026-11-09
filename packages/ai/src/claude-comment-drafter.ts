@@ -6,6 +6,7 @@ import type { CommentDraft, CommentDraftRequest, CommentDrafter } from '@handmak
 
 import { COMMENT_REPLY_PROMPT_VERSION, commentReplyPromptV1 } from './comment-reply-prompt';
 import { DEFAULT_TIMEOUT_MS } from './claude-translator';
+import type { TextGenerationClient } from './claude-text-generator';
 
 const nonblank = z.string().refine((value) => value.trim().length > 0);
 const requestSchema = z
@@ -73,7 +74,16 @@ export class ClaudeCommentDrafter implements CommentDrafter {
       .filter((block) => block.type === 'text')
       .map((block) => block.text)
       .join('');
-    const draft = outputSchema.parse(JSON.parse(text));
+    // JSON.parse's SyntaxError quotes the offending input — the model output
+    // carries the translated reader comment, i.e. personal data — so a
+    // malformed payload is rejected with a generic message (PR #99 note).
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error('comment draft returned malformed JSON');
+    }
+    const draft = outputSchema.parse(parsed);
     return {
       translationUk: draft.translation_uk.trim(),
       replyDe: draft.reply_de.trim(),
@@ -83,10 +93,3 @@ export class ClaudeCommentDrafter implements CommentDrafter {
 }
 
 export { COMMENT_REPLY_PROMPT_VERSION };
-
-/** The one SDK call the drafter needs; tests pass a fake. */
-export interface TextGenerationClient {
-  messages: {
-    create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
-  };
-}

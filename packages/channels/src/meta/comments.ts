@@ -73,20 +73,22 @@ export interface MetaCommentsConfig {
  * `since` as a Graph API query fragment. The network filter is inclusive and
  * unreliable (Instagram's comments edge may ignore `since` altogether), so
  * the capability also applies the watermark client-side by `createdAt`:
- * entries with a parseable timestamp at or before `since` are dropped after
- * mapping; entries without one pass through and the caller's dedupe by id
- * (D1) covers their repeats.
+ * entries with a parseable timestamp before `since` are dropped after
+ * mapping; entries at exactly `since` are kept (the watermark is inclusive —
+ * Graph timestamps have second resolution and the caller dedupes repeats by
+ * id); entries without one pass through and the caller's dedupe covers their
+ * repeats too.
  */
 export function unixSinceQuery(since: Date | undefined): string {
   if (since === undefined) return '';
   return `&since=${Math.floor(since.getTime() / 1000)}`;
 }
 
-/** Client-side watermark guard: strictly newer than `since`, or unparseable. */
+/** Client-side watermark guard: at or after `since` (inclusive), or unparseable. */
 function isNewerThanWatermark(comment: ChannelComment, since: Date | undefined): boolean {
   if (since === undefined) return true;
   const createdAt = Date.parse(comment.createdAt);
-  return Number.isNaN(createdAt) || createdAt > since.getTime();
+  return Number.isNaN(createdAt) || createdAt >= since.getTime();
 }
 
 export function createMetaCommentsCapability(

@@ -103,9 +103,12 @@ export interface ChannelCommentsCapability {
    * Comments on one of our posts. `since` is a watermark instant from the
    * caller's store. The network filter is inclusive and unreliable, so the
    * capability applies the watermark client-side too: entries with a
-   * parseable `createdAt` at or before `since` are dropped; entries without
-   * one may repeat across calls, and the caller must dedupe by id. Undefined
-   * collects the bounded recent page(s). Never returns our own replies.
+   * parseable `createdAt` before `since` are dropped; entries at exactly
+   * `since` are kept (the watermark is inclusive — Graph timestamps have
+   * second resolution) and the caller's dedupe by id covers their repeats.
+   * Entries without a parseable timestamp may repeat across calls as well,
+   * and the caller must dedupe by id. Undefined collects the bounded recent
+   * page(s). Never returns our own replies.
    */
   listComments(
     postId: RemoteId,

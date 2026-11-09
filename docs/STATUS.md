@@ -1,17 +1,20 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T49c2 — comment collect pipeline (`bot`)
-- **Branch:** `feat/t49c2-comment-collect` (pushed)
-- **Last commit:** `624436d` — chore(bot): T49c2 work in progress from kimi-code (does not typecheck)
-- **Next step:** codex continues T49c2 from kimi-code's WIP (kimi-code hit its usage limit; the
-  task is reassigned in docs/03-tasks.md). Known gaps: `packages/ai` drafter test fails
-  typecheck (`stop_reason` typed as `string`), `CommentStore` impl misses
-  `latestHandledCreatedAt`, no collect tests yet; verify the PR #99 review notes in the WIP
-  (watermark `createdAt >= since`, generic drafter `JSON.parse` error, imported
-  `TextGenerationClient`). T49c2 is sensitive (secret handling + reader data): Volodymyr's OK
-  before merge; he adds the six optional Meta secrets on the Worker and applies migration 0009
-  before its deploy.
+- **Active agent:** claude-code
+- **Current task:** review T49c2a — persistence + PR #99 fixes (PR #100)
+- **Branch:** `feat/t49c2a-comment-store` (pushed)
+- **Last commit:** `df15396` — feat(bot): add tenant-scoped comment inbox persistence
+- **Next step:** claude-code reviews PR #100; merge needs Volodymyr's explicit OK
+  (reader data). Do not deploy or apply remote migration 0009. After merge, hand
+  T49c2b to codex in a fresh session, reusing WIP `624436d`: drain persisted pending
+  drafts, use a safe pagination watermark and reserve notification before Telegram.
+  Only confirmed delivery rejection may reopen the reservation; ambiguous delivery
+  and interrupted paid drafting require operator reconciliation. CI still running.
+- **T49c2a validation:** bot 575/575 (--maxWorkers 1), including 16 local D1 store
+  tests; AI 139/139 and channels 209/209. Workspace typecheck, ESLint, Prettier
+  and staged secret scans pass. Sandboxed Miniflare initialization stalled;
+  unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
+  live publishing or secret changes. Original WIP branch remains intact.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft

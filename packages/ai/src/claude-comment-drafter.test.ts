@@ -157,13 +157,32 @@ describe('ClaudeCommentDrafter', () => {
     expect(draft.notesUk).toContain('спам');
   });
 
-  it('error messages never echo the reader comment or handle', async () => {
-    const { drafter } = setup({ ...reply, stop_reason: 'max_tokens' });
+  it.each([
+    {
+      name: 'an incomplete generation',
+      response: { ...reply, stop_reason: 'max_tokens' as const },
+    },
+    {
+      name: 'malformed JSON output',
+      response: {
+        ...reply,
+        content: [
+          {
+            type: 'text' as const,
+            text: `{"translation_uk":"${READER_TEXT}","reply_de":`,
+            citations: null,
+          },
+        ],
+      },
+    },
+  ])('error messages never echo the reader comment or handle on $name', async ({ response }) => {
+    const { drafter } = setup(response);
     let caught: unknown;
     await drafter.draft(request).catch((error) => {
       caught = error;
     });
     const message = caught instanceof Error ? caught.message : String(caught);
+    expect(caught).toBeInstanceOf(Error);
     expect(message).not.toContain(READER_TEXT);
     expect(message).not.toContain(READER_HANDLE);
   });
