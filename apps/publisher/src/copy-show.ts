@@ -118,6 +118,10 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
   // Also commits progress left on disk by a previous interrupted commit before resuming.
   await persist();
   const copyPhotoBytes = media.slice(0, -1);
+  // One content push per run covers every Meta channel (the plan order puts
+  // Instagram before Facebook): the first opted-in preparation pushes,
+  // later ones skip the no-op second push (PR #96 review note 4).
+  let contentPushed = false;
   for (const [channel, snapshot] of Object.entries(plan.channels)) {
     const entry = ledger.channels[channel]!;
     if (entry.status === 'done') {
@@ -128,35 +132,38 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
       let photoUrls: string[] | undefined;
       if (channel === 'instagram') {
         // T26a3: frame the 4:5 carousel copies beside the show, commit and
-        // (opted-in) push before Meta fetches the URLs.
-        photoUrls = (
-          await prepareInstagramDelivery({
-            root,
-            env,
-            git,
-            repoDir: `content/shows/${show.id}`,
-            fileNames: show.images.map((image) => image.fileName),
-            photoBytes: copyPhotoBytes,
-            ops: snapshot.operations,
-            startAt: entry.remoteIds.length,
-            itemId: show.id,
-            logger: deps.logger ?? console.log,
-          })
-        ).photoUrls;
+        // (opted-in, once per run) push before Meta fetches the URLs.
+        const prepared = await prepareInstagramDelivery({
+          root,
+          env,
+          git,
+          repoDir: `content/shows/${show.id}`,
+          fileNames: show.images.map((image) => image.fileName),
+          photoBytes: copyPhotoBytes,
+          ops: snapshot.operations,
+          startAt: entry.remoteIds.length,
+          itemId: show.id,
+          contentAlreadyPushed: contentPushed,
+          logger: deps.logger ?? console.log,
+        });
+        contentPushed = contentPushed || prepared.pushed;
+        photoUrls = prepared.photoUrls;
       } else if (channel === 'facebook') {
         // T26b: Meta fetches the show's own committed images by raw-GitHub
-        // URL; the opted-in push makes fresh URLs resolve.
-        photoUrls = (
-          await prepareFacebookDelivery({
-            env,
-            git,
-            repoDir: `content/shows/${show.id}`,
-            fileNames: show.images.map((image) => image.fileName),
-            ops: snapshot.operations,
-            startAt: entry.remoteIds.length,
-            logger: deps.logger ?? console.log,
-          })
-        ).photoUrls;
+        // URL; the opted-in push (skipped when Instagram already pushed)
+        // makes fresh URLs resolve.
+        const prepared = await prepareFacebookDelivery({
+          env,
+          git,
+          repoDir: `content/shows/${show.id}`,
+          fileNames: show.images.map((image) => image.fileName),
+          ops: snapshot.operations,
+          startAt: entry.remoteIds.length,
+          contentAlreadyPushed: contentPushed,
+          logger: deps.logger ?? console.log,
+        });
+        contentPushed = contentPushed || prepared.pushed;
+        photoUrls = prepared.photoUrls;
       }
       await registry.get(channel).deliver(
         snapshot.operations,

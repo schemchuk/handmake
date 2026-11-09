@@ -225,6 +225,10 @@ export async function runPublish(
     ? path.join('content', 'works', workPublication.work.id, 'photos')
     : path.join('content', 'posts', postFolderName(post));
 
+  // One content push per run covers every Meta channel (the tenant order
+  // puts Instagram before Facebook): the first opted-in preparation pushes,
+  // later ones skip the no-op second push (PR #96 review note 4).
+  let contentPushed = false;
   for (const channel of post.channels) {
     const entry = ledger.channels[channel];
     if (entry?.status === 'done') {
@@ -247,37 +251,41 @@ export async function runPublish(
       let photoUrls: string[] | undefined;
       if (channel === 'instagram') {
         // Frame the 4:5 carousel copies, commit them and (when the workflow
-        // opted in) push, all before Meta fetches the URLs; a failure here
-        // lands in the catch below and never blocks earlier channels.
-        photoUrls = (
-          await prepareInstagramDelivery({
-            root,
-            env,
-            git,
-            repoDir: photoRepoDir,
-            fileNames: post.photos,
-            photoBytes,
-            ops,
-            startAt,
-            itemId: post.id,
-            logger: log,
-          })
-        ).photoUrls;
+        // opted in and no earlier channel pushed) push, all before Meta
+        // fetches the URLs; a failure here lands in the catch below and
+        // never blocks earlier channels.
+        const prepared = await prepareInstagramDelivery({
+          root,
+          env,
+          git,
+          repoDir: photoRepoDir,
+          fileNames: post.photos,
+          photoBytes,
+          ops,
+          startAt,
+          itemId: post.id,
+          contentAlreadyPushed: contentPushed,
+          logger: log,
+        });
+        contentPushed = contentPushed || prepared.pushed;
+        photoUrls = prepared.photoUrls;
       } else if (channel === 'facebook') {
         // Meta fetches the item's own committed photos by raw-GitHub URL;
-        // the opted-in push makes fresh URLs resolve. A failure here lands
-        // in the catch below and never blocks earlier channels.
-        photoUrls = (
-          await prepareFacebookDelivery({
-            env,
-            git,
-            repoDir: photoRepoDir,
-            fileNames: post.photos,
-            ops,
-            startAt,
-            logger: log,
-          })
-        ).photoUrls;
+        // the opted-in push (skipped when Instagram already pushed) makes
+        // fresh URLs resolve. A failure here lands in the catch below and
+        // never blocks earlier channels.
+        const prepared = await prepareFacebookDelivery({
+          env,
+          git,
+          repoDir: photoRepoDir,
+          fileNames: post.photos,
+          ops,
+          startAt,
+          contentAlreadyPushed: contentPushed,
+          logger: log,
+        });
+        contentPushed = contentPushed || prepared.pushed;
+        photoUrls = prepared.photoUrls;
       }
       await adapter.deliver(
         ops,

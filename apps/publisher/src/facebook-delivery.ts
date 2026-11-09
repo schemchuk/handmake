@@ -21,12 +21,19 @@ export interface PrepareFacebookDeliveryDeps {
   ops: Array<{ kind: string }>;
   /** Ledger resume point: ops before it are already delivered. */
   startAt: number;
+  /**
+   * Set by the caller when an earlier Meta preparation in this run already
+   * pushed (a second push would be a no-op): the push is skipped.
+   */
+  contentAlreadyPushed?: boolean;
   logger?: (line: string) => void;
 }
 
 export interface PreparedFacebookDelivery {
   /** Public URL of each photo, aligned with the caller's photo bytes. */
   photoUrls: string[];
+  /** True when this preparation ran the opted-in content push. */
+  pushed: boolean;
 }
 
 /**
@@ -52,11 +59,12 @@ export async function prepareFacebookDelivery(
   // Nothing left to deliver (e.g. an announcement renders to zero ops): no
   // push — Meta is never asked to fetch URLs.
   const remaining = deps.ops.slice(deps.startAt);
-  if (remaining.length === 0) return { photoUrls: urls };
+  if (remaining.length === 0) return { photoUrls: urls, pushed: false };
 
-  if (deps.env['CONTENT_PUSH_BEFORE_DELIVERY'] === 'true') {
+  if (deps.env['CONTENT_PUSH_BEFORE_DELIVERY'] === 'true' && !deps.contentAlreadyPushed) {
     await deps.git.push(requiredEnv('GITHUB_REF_NAME', deps.env));
     log('pushed content before Facebook delivery');
+    return { photoUrls: urls, pushed: true };
   }
-  return { photoUrls: urls };
+  return { photoUrls: urls, pushed: false };
 }
