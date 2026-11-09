@@ -1533,7 +1533,9 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   booking, malformed output, refusal, injection-safe input handling).
 
 #### T49c2 — Comment collect pipeline (`bot`) · second PR of the split
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T49c1. Sensitive: reader data.
+- Reassigned 2026-11-09 to codex (kimi-code hit its usage limit mid-task; its WIP is `624436d`
+  on `feat/t49c2-comment-collect`).
+- Owner: codex · Reviewer: claude-code · Depends on: T49c1. Sensitive: reader data.
 - Change: D1 migration `comments` + `comment_watermarks` tables (every query
   keyed by tenant_id) and the store (INSERT OR IGNORE collect, atomic
   draft/send/skip claims, watermark get/set, 30-day `deleteOlderThan`). The

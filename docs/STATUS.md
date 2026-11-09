@@ -1,15 +1,17 @@
 # STATUS
 
-- **Active agent:** kimi-code
+- **Active agent:** codex
 - **Current task:** T49c2 — comment collect pipeline (`bot`)
-- **Branch:** none yet (`feat/t49c2-comment-collect`)
-- **Last commit:** `715dd4e` — feat(channels,ai): T49c1 comment drafter + PR #98 review notes 4-6 (#99)
-- **Next step:** kimi-code starts T49c2 in a fresh session (docs/03-tasks.md), including the
-  "Review notes from PR #99" line: keep comments at the watermark (`createdAt >= since`),
-  generic error instead of the echoing `JSON.parse` message in the drafter, import the
-  existing `TextGenerationClient`. T49c2 is sensitive (secret handling + reader data):
-  Volodymyr's OK before merge; he adds the six optional Meta secrets on the Worker before
-  its deploy.
+- **Branch:** `feat/t49c2-comment-collect` (pushed)
+- **Last commit:** `624436d` — chore(bot): T49c2 work in progress from kimi-code (does not typecheck)
+- **Next step:** codex continues T49c2 from kimi-code's WIP (kimi-code hit its usage limit; the
+  task is reassigned in docs/03-tasks.md). Known gaps: `packages/ai` drafter test fails
+  typecheck (`stop_reason` typed as `string`), `CommentStore` impl misses
+  `latestHandledCreatedAt`, no collect tests yet; verify the PR #99 review notes in the WIP
+  (watermark `createdAt >= since`, generic drafter `JSON.parse` error, imported
+  `TextGenerationClient`). T49c2 is sensitive (secret handling + reader data): Volodymyr's OK
+  before merge; he adds the six optional Meta secrets on the Worker and applies migration 0009
+  before its deploy.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
