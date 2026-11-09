@@ -1,15 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code (reviewer of PR #97; not sensitive, no Volodymyr OK needed
-  for the merge). After the merge: deploy the bot (PR #97 changes `apps/bot` and
-  `packages/channels`; no D1 migration, no wrangler.toml/secret change), then set
-  Active agent back to kimi-code for T49b.
-- **Current task:** T49a — PR #96 review notes (open as PR #97, 2026-11-09)
-- **Branch:** `feat/t49a-pr96-review-notes`
-- **Last commit:** `8a07e67` — style(publisher): prettier-format the facebook publish test
-- **Next step:** claude-code reviews and merges PR #97, deploys the bot from a clean `main`
-  (`pnpm -C apps/bot run deploy`, record the Worker version), then hands T49b
-  (Meta comment reader/reply capability, docs/03-tasks.md) to kimi-code in a fresh session.
+- **Active agent:** kimi-code
+- **Current task:** T49b — Meta comment reader/reply capability (`channels`)
+- **Branch:** none yet (`feat/t49b-meta-comments`)
+- **Last commit:** `43f740d` — feat(channels,publisher,bot): T49a PR #96 review notes (#97)
+- **Next step:** kimi-code starts T49b (docs/03-tasks.md) in a fresh session. Reminder:
+  the bot deploy after PR #97 is run manually by Volodymyr (auto mode blocks it); claude-code
+  records the Worker version here once it is known.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in

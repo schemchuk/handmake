@@ -1472,6 +1472,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   two-Meta-channel publish pushes exactly once.
 - Tests: facebook-render image-count cases; preview Facebook block (caption, skip reason, canonical
   link); publisher push-count assertions in the publish and copy-show paths.
+- Done 2026-11-09: PR #97 merged (`43f740d`), no review findings.
 
 #### T49b — Meta comment reader/reply capability (`channels`) · second PR
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T49a.
