@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T49c2b — comment collection + Worker wiring (`bot`)
+- **Active agent:** claude-code
+- **Current task:** review T49c2b — comment collection + Worker wiring (PR #101)
 - **Branch:** `feat/t49c2b-comment-collect` (reuses WIP `624436d`; original branch unchanged)
-- **Last commit:** `533fff7` — T49c2a comment store + PR #99 notes (#100)
-- **Next step:** push T49c2b and open the sensitive task PR for claude-code.
+- **Last commit:** `3f1962d` — feat(bot): collect comments and wire Worker inbox
+- **Next step:** claude-code reviews PR #101 in a fresh session; wait for CI and Volodymyr's OK before merge.
   All four PR #100 notes addressed. No deploy or remote migration; Volodymyr's explicit OK
   is required before merge. He applies migration 0009 and adds the optional Meta secrets before deploy.
 - **T49c2b validation:** all 584 bot tests covered across runs (full 582/584, corrected final
