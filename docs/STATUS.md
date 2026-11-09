@@ -6,8 +6,8 @@
 - **Last commit:** `75ec2d7` — feat(channels,core): T49b Meta comment reader/reply capability (#98)
 - **Next step:** kimi-code starts T49c in a fresh session; include the `Review notes from PR #98`
   line under T49c in docs/03-tasks.md (notes 4-6; note 3 already fixed). Split before coding if it
-  exceeds the ADR 009 budget. Bot deploy after PR #98 is pending: auto mode blocked it, Volodymyr
-  runs `pnpm -C apps/bot run deploy` from clean `main` and the Worker version goes here.
+  exceeds the ADR 009 budget. Bot deployed by Volodymyr after PR #98: Worker version
+  `c382a608-6e53-405e-b004-d39c0106072f`.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in

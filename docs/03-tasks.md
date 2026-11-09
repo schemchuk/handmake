@@ -1475,7 +1475,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Done 2026-11-09: PR #97 merged (`43f740d`), no review findings.
 
 #### T49b — Meta comment reader/reply capability (`channels`) · second PR
-- Done 2026-11-09: PR #98 merged (`75ec2d7`); bot deploy pending (manual, Volodymyr).
+- Done 2026-11-09: PR #98 merged (`75ec2d7`); bot deployed by Volodymyr (Worker `c382a608`).
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T49a.
 - Change: an optional `comments` capability on the Meta adapters: list our recent posts (bounded),
   list new comments on one post since a watermark, and reply to one comment — Instagram
