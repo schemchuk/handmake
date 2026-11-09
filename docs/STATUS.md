@@ -7,15 +7,15 @@
 - **Next step:** codex starts T49c2b in a fresh session (docs/03-tasks.md), including the
   "Review notes from PR #100" line (retention re-collect, stuck drafting/notification rows,
   unused `latestHandledCreatedAt`, `reopenNotification` updated_at). Sensitive: Volodymyr's OK
-  before merge; he applies migration 0009 to remote D1 and adds the six optional Meta secrets
-  before the T49c2b deploy. No bot deploy after PR #100 (store not wired yet).
+  before merge; he applies migration 0009 to remote D1 before the T49c2b deploy (the six
+  optional Meta secrets are on the Worker since 2026-11-09). No bot deploy after PR #100 (store not wired yet).
 - **T49c2a validation:** bot 575/575 (--maxWorkers 1), including 16 local D1 store
   tests; AI 139/139 and channels 209/209. Workspace typecheck, ESLint, Prettier
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
-- **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
+- **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
