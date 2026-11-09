@@ -1505,6 +1505,13 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   is added, marked for Volodymyr's and the author's review.
 - Tests: mocked Meta APIs + Miniflare D1 — idempotent collect, reply at most once, retention, cost
   booking, button races, edited drafts.
+- Review notes from PR #98: (1) Facebook `facebookComment` currently drops comments without
+  `from` — Meta often omits `from` on user comments on Page posts unless the app has
+  `pages_read_user_content`, so keep from-less comments with an empty handle (skip only when
+  `from.id === pageId`); (2) the Instagram `/{media}/comments` edge may ignore `since` — filter
+  client-side by `createdAt` during collect (dedupe by id is already planned); (3) Facebook posts:
+  consider `/{page}/posts` (only the Page's own posts) instead of `/{page}/feed` with the `from`
+  filter and its paging budget.
 - Review notes from PR #98: port doc on `listComments` must say `since` is inclusive (dedupe by id);
   `facebookComment` keeps comments without `from` (empty handle), skipping only `from.id === pageId`;
   also filter Instagram comments by `createdAt` client-side (the edge may ignore `since`); switch the

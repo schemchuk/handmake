@@ -100,9 +100,10 @@ export interface ChannelCommentsCapability {
    */
   listPosts(limit: number, ctx: ChannelCommentsContext): Promise<ChannelPostRef[]>;
   /**
-   * Comments on one of our posts. `since` is an exclusive watermark
-   * instant from the caller's store; undefined collects the bounded
-   * recent page(s). Never returns our own replies.
+   * Comments on one of our posts. `since` is a watermark instant from the
+   * caller's store; the network filter is inclusive, so the caller may see
+   * the watermark entry again and must dedupe by id. Undefined collects the
+   * bounded recent page(s). Never returns our own replies.
    */
   listComments(
     postId: RemoteId,

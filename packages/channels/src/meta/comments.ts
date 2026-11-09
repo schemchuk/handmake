@@ -220,9 +220,10 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
   /**
    * Follows Graph API cursor paging for at most `#maxPages` pages; `onPage`
    * returns false to stop early (enough posts collected). Malformed pages
-   * fail closed. `paging.next` URLs are followed by path+query only, so the
-   * configured apiBase is preserved and no token ever reaches an error
-   * message (tokens are not logged at all).
+   * fail closed with the path (no query) named. `paging.next` URLs go
+   * through `MetaGraphClient.nextPath`: the apiBase prefix is stripped and
+   * any access_token in the URL is dropped, so a followed request re-auths
+   * from `auth.token` and no token can reach an error message.
    */
   async #collectPages(
     auth: MetaAuthState,
@@ -233,22 +234,23 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
     let path: string | undefined = firstPath;
     for (let page = 0; path !== undefined && page < this.#maxPages; page += 1) {
       const currentPath = path;
+      // Error messages name the path only, never the query: a followed
+      // paging.next URL may carry params that must stay out of logs.
+      const displayPath = currentPath.split('?')[0]!;
+      const malformed = (): Error =>
+        this.config.error(`${this.config.network} ${displayPath} returned a malformed result`);
       const result = (await call(() => this.config.graph.call(auth, 'GET', currentPath))) as Record<
         string,
         unknown
       >;
       const data = result.data;
       if (!Array.isArray(data)) {
-        throw this.config.error(
-          `${this.config.network} ${currentPath} returned a malformed result`,
-        );
+        throw malformed();
       }
       const items: Record<string, unknown>[] = [];
       for (const entry of data) {
         if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-          throw this.config.error(
-            `${this.config.network} ${currentPath} returned a malformed result`,
-          );
+          throw malformed();
         }
         items.push(entry as Record<string, unknown>);
       }
@@ -263,19 +265,9 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
         continue;
       }
       if (typeof next !== 'string') {
-        throw this.config.error(
-          `${this.config.network} ${currentPath} returned a malformed result`,
-        );
+        throw malformed();
       }
-      let parsed: URL;
-      try {
-        parsed = new URL(next);
-      } catch {
-        throw this.config.error(
-          `${this.config.network} ${currentPath} returned a malformed result`,
-        );
-      }
-      path = `${parsed.pathname}${parsed.search}`;
+      path = this.config.graph.nextPath(next);
     }
   }
 }

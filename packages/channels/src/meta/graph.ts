@@ -203,6 +203,40 @@ export class MetaGraphClient {
     }
     return parsed;
   }
+
+  /**
+   * Maps a Graph API `paging.next` URL to a path+query for `call()` (T49b).
+   * A full next URL repeats the version segment — following it raw would
+   * request /v21.0/v21.0/... — so the apiBase path prefix is stripped; a
+   * foreign origin is rejected. `access_token` is dropped from the query:
+   * the followed request re-authenticates from `auth.token`, and a token
+   * must never ride along in a URL that an error message may name.
+   * Throws MetaGraphError on an unparsable or foreign URL.
+   */
+  nextPath(nextUrl: string): string {
+    let parsed: URL;
+    let base: URL;
+    try {
+      parsed = new URL(nextUrl);
+    } catch {
+      throw new MetaGraphError(`${this.network} paging.next URL is not a valid URL`);
+    }
+    try {
+      base = new URL(this.#apiBase);
+    } catch {
+      throw new MetaGraphError(`${this.network} paging.next URL cannot be resolved`);
+    }
+    if (parsed.origin !== base.origin) {
+      throw new MetaGraphError(`${this.network} paging.next URL has an unexpected origin`);
+    }
+    const basePath = base.pathname.replace(/\/$/, '');
+    let path = parsed.pathname;
+    if (path.startsWith(`${basePath}/`)) {
+      path = path.slice(basePath.length);
+    }
+    parsed.searchParams.delete('access_token');
+    return `${path}${parsed.search}`;
+  }
 }
 
 /**

@@ -235,6 +235,62 @@ describe('comments capability: Instagram', () => {
 
     expect(posts.map((post) => post.id)).toEqual(['media-p0', 'media-p0-next']);
     expect(requests).toHaveLength(2);
+    // The real-shaped next URL repeats the version segment; following it
+    // must not request /v21.0/v21.0/... .
+    expect(requests.map((r) => new URL(r.url).pathname)).toEqual([
+      `/v21.0/${IG_USER_ID}/media`,
+      `/v21.0/${IG_USER_ID}/media`,
+    ]);
+    expect(new URL(requests[1]!.url).searchParams.get('after')).toBe('p0-next');
+  });
+
+  it('strips the version prefix and any token from a real-shaped paging.next URL', async () => {
+    const staleToken = 'stale-token-in-next-url';
+    const handler = (req: RecordedRequest): Response => {
+      const url = new URL(req.url);
+      if (url.pathname !== `/v21.0/${IG_USER_ID}/media`) return jsonResponse({}, 404);
+      if (url.searchParams.get('after') === null) {
+        return jsonResponse({
+          data: [{ id: 'media-p0', timestamp: '2026-11-08T09:00:00+0000' }],
+          paging: {
+            next: `https://graph.facebook.com/v21.0/${IG_USER_ID}/media?access_token=${staleToken}&after=c1`,
+          },
+        });
+      }
+      return jsonResponse({ data: 'corrupted' });
+    };
+    const { fetchImpl, requests } = fakeFetch(handler);
+    const adapter = new InstagramAdapter({ fetchImpl, sleep: sleepNoop });
+
+    let caught: unknown;
+    await adapter.comments.listPosts(50, makeCtx(IG_SECRETS)).catch((error) => {
+      caught = error;
+    });
+
+    expect(caught).toBeInstanceOf(InstagramAdapterError);
+    const message = (caught as Error).message;
+    // The error names the path only — never the query that carried the token.
+    expect(message).toContain('/media returned a malformed result');
+    expect(message).not.toContain(staleToken);
+    expect(message).not.toContain(TOKEN);
+    // The followed request re-authenticated with the current token only.
+    expect(new URL(requests[1]!.url).searchParams.get('access_token')).toBe(TOKEN);
+  });
+
+  it('rejects a paging.next URL on a foreign origin', async () => {
+    const handler = (req: RecordedRequest): Response =>
+      new URL(req.url).pathname.endsWith('/media')
+        ? jsonResponse({
+            data: [{ id: 'media-p0', timestamp: '2026-11-08T09:00:00+0000' }],
+            paging: { next: 'https://evil.example/v21.0/ig-user-1/media?after=c1' },
+          })
+        : jsonResponse({}, 404);
+    const { fetchImpl } = fakeFetch(handler);
+    const adapter = new InstagramAdapter({ fetchImpl, sleep: sleepNoop });
+
+    await expect(adapter.comments.listPosts(50, makeCtx(IG_SECRETS))).rejects.toThrowError(
+      /paging.next URL has an unexpected origin/,
+    );
   });
 
   it('lists comments newer than the watermark as unix seconds', async () => {
