@@ -328,10 +328,7 @@ describe('runPublish with Facebook enabled (T26b)', () => {
 
     expect(instagram.contexts).toHaveLength(0);
     expect(facebook.contexts).toHaveLength(0);
-    let ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(
-      tenantId,
-      draftId,
-    ))!;
+    let ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
     expect(ledger.channels['telegram']!.status).toBe('done');
     expect(ledger.channels['instagram']!.status).toBe('failed');
     expect(ledger.channels['instagram']!.error).toMatch(/push rejected/);
