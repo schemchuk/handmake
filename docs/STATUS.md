@@ -7,6 +7,7 @@
 - **Next step:** kimi-code starts T49c3 in a fresh session (docs/03-tasks.md), including the
   "Review notes from PR #101" line. Sensitive: Volodymyr's OK before merge.
 - **T49c2b live:** migration 0009 applied to remote D1 by Volodymyr; bot deployed 2026-11-09.
+  Volodymyr accepted collecting before the F34 Datenschutz paragraph (T49c3) and the token scope check (2026-11-09).
   The first tick without a watermark drafts (paid) and cards every comment of the last 30 days
   on the 25 newest posts per network.
 - **T49c2b validation:** all 584 bot tests covered across runs (full 582/584, corrected final
