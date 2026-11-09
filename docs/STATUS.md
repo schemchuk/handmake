@@ -2,14 +2,15 @@
 
 - **Active agent:** claude-code
 - **Current task:** T26b review — PR #96 (Facebook Page adapter)
-- **Branch:** `feat/t26b-facebook-adapter` (feat commit `f3ec962`; docs handoff in the next commit)
-- **Last commit:** `f3ec962` — feat(channels): T26b Facebook Page adapter
-- **Next step:** claude-code reviews PR #96. Sensitive — it changes `publish.yml` and enables
-  Facebook in the tenant yaml, so Volodymyr's explicit OK is wanted before the merge. The GitHub
-  Secrets `FACEBOOK_PAGE_ID` / `FACEBOOK_PAGE_ACCESS_TOKEN` must exist before the first live
-  Facebook delivery (docs/facebook-runbook.md); until then the Facebook channel fails cleanly per
-  the isolation acceptance. No bot deploy needed (no `apps/bot` change; the publisher runs from
-  `main` via Actions).
+- **Branch:** `feat/t26b-facebook-adapter` (feat `f3ec962`, handoff `e318f67`, review fix `25899a6`)
+- **Last commit:** `25899a6` — style(channels): prettier-format facebook render
+- **Next step:** claude-code re-reviews PR #96 (blocking format:check finding fixed in
+  `25899a6`; the first CI rerun failed only on a transient actionlint download 504, not on code).
+  Sensitive — the PR changes `publish.yml` and enables Facebook in the tenant yaml, so
+  Volodymyr's explicit OK is wanted before the merge. The GitHub Secrets `FACEBOOK_PAGE_ID` /
+  `FACEBOOK_PAGE_ACCESS_TOKEN` must exist before the first live Facebook delivery
+  (docs/facebook-runbook.md); until then the Facebook channel fails cleanly per the isolation
+  acceptance. No bot deploy needed (no `apps/bot` change; the publisher runs from `main`).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15;
   T49 waits on T26a-T26b (T26b in review).
 - **Open questions for Volodymyr:** T26b (PR #96) enables Facebook in the tenant yaml and changes
