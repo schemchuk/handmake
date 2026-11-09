@@ -1452,6 +1452,58 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   should say plainly that a 190 on the non-expiring System User token means re-issuing the token
   (the `fb_exchange_token` refresh cannot help there); (3) add a Facebook block to the bot author
   preview; (4) optional: push once before the Meta channels instead of once per preparation.
+- Split 2026-11-09 into T49a-T49c (one PR each, ADR 009); Threads comments join as T49d after T26c.
+  Go-live gates before the first live collect (Volodymyr): the Instagram System User token must
+  carry `instagram_manage_comments` (Facebook already has `pages_read_engagement` /
+  `pages_manage_engagement`, docs/facebook-runbook.md) and the F34 reader-data paragraph must be in
+  the Datenschutzerklärung (draft in T49c, marked for review).
+
+#### T49a — PR #96 review notes (`channels`, `publisher`, `bot`, docs) · first PR
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T26b.
+- Change: (1) `renderFacebookShow` rejects a show with 0 or more than `facebookMaxPhotos` images at
+  render time, like `renderFacebook`; (2) `docs/facebook-runbook.md` states plainly that a 190 on
+  the non-expiring System User token means re-issuing the token (`fb_exchange_token` cannot help
+  there); (3) the bot author preview shows a Facebook block — the caption with the canonical link
+  line or the skip reason — mirroring the Instagram block; (4) the publisher pushes once before the
+  Meta deliveries when both Meta channels run (the second preparation's push is skipped) instead of
+  once per preparation.
+- Acceptance: a bad show fails in preview and render before any network write; the runbook wording
+  is unambiguous; the preview Facebook block matches what `renderFacebook` produces; a
+  two-Meta-channel publish pushes exactly once.
+- Tests: facebook-render image-count cases; preview Facebook block (caption, skip reason, canonical
+  link); publisher push-count assertions in the publish and copy-show paths.
+
+#### T49b — Meta comment reader/reply capability (`channels`) · second PR
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T49a.
+- Change: an optional `comments` capability on the Meta adapters: list our recent posts (bounded),
+  list new comments on one post since a watermark, and reply to one comment — Instagram
+  (`/{ig-user}/media`, `/{media}/comments`, `/{comment}/replies`) and Facebook (`/{page}/feed`,
+  `/{post}/comments`, `/{comment}/comments`) over the shared `MetaGraphClient` (per-call 429 retry,
+  the once-per-run 190 refresh, never-log-tokens). The capability is stateless: watermarks and
+  dedupe live in the caller (T49c). Comment text/handles never appear in errors or logs.
+- Acceptance: the three operations work per network against the mocked Graph API; paging is
+  bounded; a 429/190 behaves exactly like the publishing path.
+- Tests: mocked Graph API only — list posts, list comments with a watermark, reply, malformed
+  results, rate-limit and token-error mapping.
+
+#### T49c — Bot comment inbox (`bot`, `ai`) · third PR, split again before coding if it exceeds the budget
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T49b. Sensitive: reader data.
+- Change: D1 `comments` table + store (tenant, network, comment id, post id, handle, text, status,
+  Ukrainian translation, German draft, timestamps; every query keyed by tenant_id). The existing
+  15-minute tick collects new comments through the T49b capability (INSERT OR IGNORE; a per
+  tenant+network watermark bounds Meta API calls), then one AI call per new comment drafts the
+  Ukrainian translation and the German reply — prompt in `packages/ai`, reply rules ported from
+  `/ig-reply`, MIT notice kept — with the cost booked through `recordCost` (ref `comment:<id>`). The
+  author gets one message per comment with the translation, the draft and Send / Edit / Skip
+  buttons. Send claims the row atomically and replies through the capability (a comment is answered
+  at most once; a failed send re-opens the row); Edit waits for her text and then Send; Skip closes
+  the row. The daily cleanup cron deletes comment rows older than 30 days. Nothing reaches Git or
+  logs; only allow-listed users see the inbox (the existing gate).
+- Acceptance: a comment is answered at most once; skipped and sent comments disappear after 30 days;
+  only allow-listed users see the inbox; a draft Datenschutzerklärung paragraph for reader comments
+  is added, marked for Volodymyr's and the author's review.
+- Tests: mocked Meta APIs + Miniflare D1 — idempotent collect, reply at most once, retention, cost
+  booking, button races, edited drafts.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on
