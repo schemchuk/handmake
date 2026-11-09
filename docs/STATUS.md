@@ -6,8 +6,7 @@
 - **Last commit:** `3d33793` — feat(bot): collect comments and wire Worker inbox (#101)
 - **Next step:** kimi-code starts T49c3 in a fresh session (docs/03-tasks.md), including the
   "Review notes from PR #101" line. Sensitive: Volodymyr's OK before merge.
-- **T49c2b deploy pending:** PR #101 merged but NOT deployed — remote D1 still lacks migration
-  0009 (checked 2026-11-09). Volodymyr applies it, then the bot is deployed from clean `main`.
+- **T49c2b live:** migration 0009 applied to remote D1 by Volodymyr; bot deployed 2026-11-09.
   The first tick without a watermark drafts (paid) and cards every comment of the last 30 days
   on the 25 newest posts per network.
 - **T49c2b validation:** all 584 bot tests covered across runs (full 582/584, corrected final
@@ -19,7 +18,7 @@
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
-- **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
+- **Bot Worker:** `4599dc95-95db-4461-9b7a-7ecd64c43bad` (deployed by claude-code after PR #101, 2026-11-09).
 - **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
