@@ -4,16 +4,14 @@
 - **Current task:** T49 — Comment inbox with author-approved replies (T26b merged as PR #96, 2026-11-09)
 - **Branch:** `main` (T49 starts its own `feat/` branch)
 - **Last commit:** `633db24` — feat(channels): T26b Facebook Page adapter (#96)
-- **Next step:** bot deploy from `633db24` pending (PR #96 changes `packages/`; auto mode blocked
-  the deploy, Volodymyr runs `pnpm -C apps/bot run deploy` and records the Worker version here).
-  Facebook is live in the tenant yaml: the first live Facebook post follows the checklist in
-  docs/facebook-runbook.md. kimi-code starts T49 in a fresh session (Sensitive: reader data,
-  Volodymyr's OK before merge) and also fixes the review notes from PR #96 listed under T49 in
-  docs/03-tasks.md.
+- **Next step:** bot deployed from `633db24` (Worker version `86660810-9132-461e-8873-2e4c1d86bd96`,
+  2026-11-09 07:53 UTC, run by Volodymyr). GitHub Secrets `FACEBOOK_PAGE_ID` /
+  `FACEBOOK_PAGE_ACCESS_TOKEN` set. Facebook is live in the tenant yaml: the first live Facebook
+  post follows the checklist in docs/facebook-runbook.md. kimi-code starts T49 in a fresh session
+  (Sensitive: reader data, Volodymyr's OK before merge) and also fixes the review notes from PR #96
+  listed under T49 in docs/03-tasks.md.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
-- **Open questions for Volodymyr:** create the GitHub Secrets `FACEBOOK_PAGE_ID` /
-  `FACEBOOK_PAGE_ACCESS_TOKEN` per docs/facebook-runbook.md (until then Facebook fails cleanly and
-  alerts); author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
+- **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision.
 - **T26b validation:** channels 181/181 (new: facebook-render 26, facebook-adapter 19; the
