@@ -212,6 +212,21 @@ describe('renderFacebookShow', () => {
     expect(renderFacebookShow({ ...fixture(), siteExcluded: true }, showContext)).toEqual([]);
   });
 
+  it('rejects a show with no images at render time', () => {
+    expect(() => renderFacebookShow({ ...fixture(), images: [] }, showContext)).toThrowError(
+      /no images/,
+    );
+  });
+
+  it('rejects a show with more than 10 images at render time', () => {
+    const show = fixture();
+    show.images = Array.from({ length: 11 }, (_, i) => ({
+      ...show.images[0]!,
+      fileName: `image-${i}.png`,
+    }));
+    expect(() => renderFacebookShow(show, showContext)).toThrowError(/at most 10/);
+  });
+
   it('requires a description in the caption language', () => {
     const show = fixture();
     delete show.versions.de;
