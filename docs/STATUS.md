@@ -1,19 +1,29 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T49 — Comment inbox with author-approved replies (T26b merged as PR #96, 2026-11-09)
-- **Branch:** `main` (T49 starts its own `feat/` branch)
-- **Last commit:** `633db24` — feat(channels): T26b Facebook Page adapter (#96)
-- **Next step:** bot deployed from `633db24` (Worker version `86660810-9132-461e-8873-2e4c1d86bd96`,
-  2026-11-09 07:53 UTC, run by Volodymyr). GitHub Secrets `FACEBOOK_PAGE_ID` /
-  `FACEBOOK_PAGE_ACCESS_TOKEN` set. Facebook is live in the tenant yaml: the first live Facebook
-  post follows the checklist in docs/facebook-runbook.md. kimi-code starts T49 in a fresh session
-  (Sensitive: reader data, Volodymyr's OK before merge) and also fixes the review notes from PR #96
-  listed under T49 in docs/03-tasks.md.
+- **Active agent:** claude-code (reviewer of PR #97; not sensitive, no Volodymyr OK needed
+  for the merge). After the merge: deploy the bot (PR #97 changes `apps/bot` and
+  `packages/channels`; no D1 migration, no wrangler.toml/secret change), then set
+  Active agent back to kimi-code for T49b.
+- **Current task:** T49a — PR #96 review notes (open as PR #97, 2026-11-09)
+- **Branch:** `feat/t49a-pr96-review-notes`
+- **Last commit:** `8a07e67` — style(publisher): prettier-format the facebook publish test
+- **Next step:** claude-code reviews and merges PR #97, deploys the bot from a clean `main`
+  (`pnpm -C apps/bot run deploy`, record the Worker version), then hands T49b
+  (Meta comment reader/reply capability, docs/03-tasks.md) to kimi-code in a fresh session.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
-  docs/03-tasks.md, needs a spec decision.
+  docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
+  the Instagram System User token must carry `instagram_manage_comments`, and the F34
+  reader-data paragraph must be added to the Datenschutzerklärung (draft in T49c, marked for review).
+- **T49a validation (PR #97):** channels 183/183 (new: renderFacebookShow rejects 0 and 11
+  show images at render time), bot 559/559 with `--maxWorkers 1` (new: 6 Facebook-block preview
+  tests — caption length + clickable canonical link line, no-link state, three skip reasons,
+  absent settings), publisher 220/220 (push counts now 1 per run; the push-rejection test
+  rewritten: a rejected push fails the first Meta channel — Instagram — and the ledger-driven
+  resume delivers Facebook), core 233/233. Workspace typecheck, `eslint .`, `prettier --check .`
+  pass. The T49 split (T49a-T49c) is recorded in docs/03-tasks.md (`6cf5552` on main).
+  No workflow, secret, tenant-config, deploy or live-call changes.
 - **T26b validation:** channels 181/181 (new: facebook-render 26, facebook-adapter 19; the
   Instagram adapter refactored onto the shared MetaGraphClient with its 47 tests unchanged and
   green), publisher 220/220 (new facebook-publish 7: plain raw-GitHub URLs, no framed copies,
