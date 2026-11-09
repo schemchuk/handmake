@@ -1,7 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { createInstagramAdapter, createTelegramAdapter } from '@handmake/channels';
+import {
+  createFacebookAdapter,
+  createInstagramAdapter,
+  createTelegramAdapter,
+} from '@handmake/channels';
 import {
   canonicalLinkSettings,
   ChannelRegistry,
@@ -30,6 +34,7 @@ import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 import { buildPostFromPayload } from './build-post';
 import { createGitCommitter } from './git';
 import type { GitCommitter } from './git';
+import { prepareFacebookDelivery } from './facebook-delivery';
 import { prepareInstagramDelivery } from './instagram-delivery';
 import { fetchAndProcessPhotos } from './photos';
 import { createPublishCallbackSender } from './publish-callback';
@@ -96,6 +101,10 @@ export function defaultRegistry(
       // Meta pulls the photos from the public URLs the publisher prepares
       // (T26a3) — nothing to wire here.
       registry.register(createInstagramAdapter());
+    } else if (key === 'facebook') {
+      // Same Meta Graph pattern as Instagram (T26b): fixed-name secrets,
+      // publisher-prepared public photo URLs — nothing to wire here.
+      registry.register(createFacebookAdapter());
     } else {
       throw new PublishError(
         `tenant "${tenant.id}" enables channel "${key}" but no adapter is registered for it`,
@@ -251,6 +260,21 @@ export async function runPublish(
             ops,
             startAt,
             itemId: post.id,
+            logger: log,
+          })
+        ).photoUrls;
+      } else if (channel === 'facebook') {
+        // Meta fetches the item's own committed photos by raw-GitHub URL;
+        // the opted-in push makes fresh URLs resolve. A failure here lands
+        // in the catch below and never blocks earlier channels.
+        photoUrls = (
+          await prepareFacebookDelivery({
+            env,
+            git,
+            repoDir: photoRepoDir,
+            fileNames: post.photos,
+            ops,
+            startAt,
             logger: log,
           })
         ).photoUrls;

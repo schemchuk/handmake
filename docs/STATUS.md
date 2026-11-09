@@ -1,19 +1,33 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T26b — Facebook Page adapter (T26a3 merged as PR #95, 2026-11-08; T26a closed)
-- **Branch:** `main` (T26b starts its own `feat/` branch)
-- **Last commit:** `e1a9b6a` — feat(publisher): T26a3 Instagram publishing wiring (#95)
-- **Next step:** bot deployed from `e1a9b6a` (Worker version `647608a4-8fe6-4934-8447-6bf940362dc5`,
-  2026-11-08 18:44 UTC, run by Volodymyr). Instagram is live in the tenant
-  yaml: the first live post with photos is the first live check (docs/instagram-runbook.md:
-  `children` format, raw-GitHub URL acceptance, ledger re-run). kimi-code starts T26b in a fresh
-  session (docs/03-tasks.md; Sensitive: new secrets, needs Volodymyr's OK before merge).
+- **Active agent:** claude-code
+- **Current task:** T26b review — PR #96 (Facebook Page adapter)
+- **Branch:** `feat/t26b-facebook-adapter` (feat `f3ec962`, handoff `e318f67`, review fix `25899a6`)
+- **Last commit:** `25899a6` — style(channels): prettier-format facebook render
+- **Next step:** claude-code re-reviews PR #96 (blocking format:check finding fixed in
+  `25899a6`; the first CI rerun failed only on a transient actionlint download 504, not on code).
+  Sensitive — the PR changes `publish.yml` and enables Facebook in the tenant yaml, so
+  Volodymyr's explicit OK is wanted before the merge. The GitHub Secrets `FACEBOOK_PAGE_ID` /
+  `FACEBOOK_PAGE_ACCESS_TOKEN` must exist before the first live Facebook delivery
+  (docs/facebook-runbook.md); until then the Facebook channel fails cleanly per the isolation
+  acceptance. No bot deploy needed (no `apps/bot` change; the publisher runs from `main`).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15;
-  T49 waits on T26b.
-- **Open questions for Volodymyr:** author should reread the changed analytics paragraph
-  in the Datenschutzerklärung; draft retention policy remains open; idea "real model show without
-  AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+  T49 waits on T26a-T26b (T26b in review).
+- **Open questions for Volodymyr:** T26b (PR #96) enables Facebook in the tenant yaml and changes
+  publish.yml — OK to merge? Please create the GitHub Secrets per docs/facebook-runbook.md; first
+  live Facebook post should follow the checklist there; author should reread the changed analytics
+  paragraph in the Datenschutzerklärung; draft retention policy remains open; idea "real model show
+  without AI label" recorded under Later in docs/03-tasks.md, needs a spec decision.
+- **T26b validation:** channels 181/181 (new: facebook-render 26, facebook-adapter 19; the
+  Instagram adapter refactored onto the shared MetaGraphClient with its 47 tests unchanged and
+  green), publisher 220/220 (new facebook-publish 7: plain raw-GitHub URLs, no framed copies,
+  push gating, delivery- and push-failure isolation, ledger re-run skip, show-copy URLs;
+  instagram-publish updated for the facebook-enabled tenant), core 233/233 (facebook schema key +
+  language guard), bot 553/553 (work-session announce-yes lists all three channels; full suite
+  green only with `--maxWorkers 1` — default workers hit random 5s timeouts from contention),
+  site 50/50, ai 121/121, stores 46/46. Workspace typecheck/build, eslint, changed-file prettier
+  and staged gitleaks pass; publish.yml parses (actionlint runs in CI). Mocked Graph API only — no
+  live Meta calls, no deploy, no secret changes.
 - **T26a3 validation:** channels 136/136 (new: call-level 429 retry keeps earlier carousel children,
   link_preview_options on text messages, site-excluded show renders without the show link), publisher
   213/213 (new: URL builder, real-sharp 1080x1350 framing, runPublish/runCopyShow wiring with mocked

@@ -1394,6 +1394,28 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance: one live post appears once; a re-run skips it via the ledger; a failure does not block
   other channels and alerts the operator.
 - Tests: mocked Graph API, single vs multi photo, errors.
+- Done 2026-11-09: PR #96. `FacebookAdapter` + `renderFacebook`/`renderFacebookShow`: 1 photo →
+  `POST /{page}/photos` (published); 2-10 photos → unpublished uploads + one `/{page}/feed` post
+  via `attached_media`; German caption with the clickable canonical link (F33 "where the network
+  allows it"); same site-worthy skips as Instagram. Shared `MetaGraphClient` (meta/graph.ts):
+  query-token auth, per-call 429 retry, once-per-deliver 190 refresh, never-log-tokens mapping,
+  `metaPhotoUrls` pre-check; the Instagram adapter refactored onto it with unchanged messages and
+  behaviour. Publisher `prepareFacebookDelivery`: plain raw-GitHub URLs (no 4:5 framing — Facebook
+  accepts original aspects), opted-in pre-delivery push, wired into runPublish/runCopyShow and the
+  default registry. Tenant yaml enables `facebook: {language: de}` after telegram/instagram;
+  publish.yml passes FACEBOOK_PAGE_ID / FACEBOOK_PAGE_ACCESS_TOKEN in the publish and copy-show
+  jobs. core `channelsSchema` gains the `facebook` key + language-in-tenant-languages guard.
+  Operator doc: docs/facebook-runbook.md (non-expiring System User Page token, rotation, first
+  live checks). Tests: channels 181/181, publisher 220/220, core 233/233, bot 553/553, site 50/50,
+  ai 121/121, stores 46/46; workspace typecheck/build, eslint, changed-file prettier, staged
+  gitleaks pass. Mocked Graph API only — no live Meta calls, no deploy, no secret changes.
+  Sensitive (publish.yml + tenant enables Facebook): Volodymyr's OK wanted before merge; GitHub
+  Secrets FACEBOOK_PAGE_ID / FACEBOOK_PAGE_ACCESS_TOKEN must exist for live deliveries.
+  Review note candidates: (1) the bot author preview has no Facebook block (T26b scope is the
+  adapter + wiring) — a preview line can follow as a small task; (2) under
+  CONTENT_PUSH_BEFORE_DELIVERY=true both Meta preparations push (the second is a no-op) — dedupe
+  later if it ever matters; (3) facebookMaxPhotos=10 mirrors the other channels — verify against a
+  real 10-photo post on the first live carousel.
 
 ### T26c — Threads adapter (F33, `channels`) · Sensitive: new secrets
 - Deferred 2026-11-08 (Volodymyr): skipped until the Threads token (`THREADS_USER_ID`,

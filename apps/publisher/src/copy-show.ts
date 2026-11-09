@@ -12,6 +12,7 @@ import {
 } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import { createGitCommitter } from './git';
+import { prepareFacebookDelivery } from './facebook-delivery';
 import { prepareInstagramDelivery } from './instagram-delivery';
 import { defaultRegistry } from './publish';
 import type { PublishDeps } from './publish';
@@ -139,6 +140,20 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
             ops: snapshot.operations,
             startAt: entry.remoteIds.length,
             itemId: show.id,
+            logger: deps.logger ?? console.log,
+          })
+        ).photoUrls;
+      } else if (channel === 'facebook') {
+        // T26b: Meta fetches the show's own committed images by raw-GitHub
+        // URL; the opted-in push makes fresh URLs resolve.
+        photoUrls = (
+          await prepareFacebookDelivery({
+            env,
+            git,
+            repoDir: `content/shows/${show.id}`,
+            fileNames: show.images.map((image) => image.fileName),
+            ops: snapshot.operations,
+            startAt: entry.remoteIds.length,
             logger: deps.logger ?? console.log,
           })
         ).photoUrls;
