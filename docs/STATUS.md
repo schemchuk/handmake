@@ -14,6 +14,16 @@
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
   the Instagram System User token must carry `instagram_manage_comments`, and the F34
   reader-data paragraph must be added to the Datenschutzerklärung (draft in T49c, marked for review).
+- **T49c1 validation:** channels 209/209 (updated: Facebook posts now read from
+  `/{page}/posts` with no `from` filter; from-less reader comments keep an empty
+  handle; the shared capability applies the `since` watermark client-side by
+  `createdAt` — watermark entry dropped, timestamp-less entries pass), ai 138/138
+  (new: comment drafter — one call returning translationUk/replyDe/notesUk,
+  usage booked before output validation, empty replyDe allowed as a skip
+  recommendation, errors carry no reader data), core 233/233. Workspace
+  typecheck/build, `eslint .`, `prettier --check .` and staged gitleaks pass.
+  Mocked Graph API / fake Anthropic client only — no live calls, no deploy,
+  no secret or workflow changes.
 - **T49b validation (PR #98):** channels 205/205 (22 new comments tests — list posts
   /comments/reply per network, watermark as unix `since`, paging bound + early stop,
   malformed pages/reply, per-call 429 retry + exhaustion, 190 refresh once per run,
