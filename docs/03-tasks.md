@@ -1544,7 +1544,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
     claims, retryable pending work, monotonic watermark and 30-day deletion.
     Tests: real local D1 races/retention plus channels/AI regressions. Target:
     <=400 changed non-test lines. No cron wiring or remote migration.
-  - **T49c2b — Collection + Worker wiring.** Owner: codex; Reviewer: claude-code;
+  - **T49c2b — Collection + Worker wiring.** Done 2026-11-09: PR #101 merged (`3d33793`);
+    not deployed until Volodymyr applies migration 0009 to remote D1. Owner: codex; Reviewer: claude-code;
     depends on merged T49c2a. Reuse the WIP collector, cost integration, optional
     secrets, cards and cleanup wiring. Acceptance: all original T49c2 criteria,
     including retry recovery without watermark loss, bounded pagination without
@@ -1599,6 +1600,14 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   is present and marked as a draft.
 - Tests: button races, failed send, edited drafts, skip, stale-send reclaim,
   allow-list gate; legal HTML change covered by the existing site build test.
+- Review notes from PR #101: (1) `countUncertain().notifications` counts every delivered card
+  older than 1 h still `drafted`, so `comment reconciliation required` fires every tick — count
+  only truly ambiguous reservations (e.g. a delivery confirmation set after `sendMessage`
+  resolves) or drop that count; (2) one post whose comments exceed the page bound makes
+  `listComments` throw every tick, so that network's watermark never advances — log the
+  post-level failure distinctly (no reader data) or advance per post; (3) guard `callback_data`
+  (`comment:<network>:<id>:<action>`) against Telegram's 64-byte limit or use a short row key;
+  (4) drop the redundant `!Number.isNaN(created)` after the `Number.isFinite` guard.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on

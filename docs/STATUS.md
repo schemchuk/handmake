@@ -1,12 +1,15 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review T49c2b — comment collection + Worker wiring (PR #101)
-- **Branch:** `feat/t49c2b-comment-collect` (reuses WIP `624436d`; original branch unchanged)
-- **Last commit:** `3f1962d` — feat(bot): collect comments and wire Worker inbox
-- **Next step:** claude-code reviews PR #101 in a fresh session; wait for CI and Volodymyr's OK before merge.
-  All four PR #100 notes addressed. No deploy or remote migration; Volodymyr's explicit OK
-  is required before merge. He applies migration 0009 before deploy (the six optional Meta secrets are on the Worker since 2026-11-09).
+- **Active agent:** kimi-code
+- **Current task:** T49c3 — author reply handling + legal draft (`bot`, docs/legal)
+- **Branch:** none yet (`feat/t49c3-<slug>`)
+- **Last commit:** `3d33793` — feat(bot): collect comments and wire Worker inbox (#101)
+- **Next step:** kimi-code starts T49c3 in a fresh session (docs/03-tasks.md), including the
+  "Review notes from PR #101" line. Sensitive: Volodymyr's OK before merge.
+- **T49c2b deploy pending:** PR #101 merged but NOT deployed — remote D1 still lacks migration
+  0009 (checked 2026-11-09). Volodymyr applies it, then the bot is deployed from clean `main`.
+  The first tick without a watermark drafts (paid) and cards every comment of the last 30 days
+  on the 25 newest posts per network.
 - **T49c2b validation:** all 584 bot tests covered across runs (full 582/584, corrected final
   changed suites 45/45, --maxWorkers 1); channels 210/210. Workspace typecheck, ESLint,
   Prettier and staged secret scan pass. Sandbox Miniflare stalled; unrestricted runs completed.
