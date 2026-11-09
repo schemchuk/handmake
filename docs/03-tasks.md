@@ -1505,6 +1505,10 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   is added, marked for Volodymyr's and the author's review.
 - Tests: mocked Meta APIs + Miniflare D1 — idempotent collect, reply at most once, retention, cost
   booking, button races, edited drafts.
+- Review notes from PR #98: port doc on `listComments` must say `since` is inclusive (dedupe by id);
+  `facebookComment` keeps comments without `from` (empty handle), skipping only `from.id === pageId`;
+  also filter Instagram comments by `createdAt` client-side (the edge may ignore `since`); switch the
+  Facebook posts edge from `/{page}/feed` to `/{page}/posts`.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on

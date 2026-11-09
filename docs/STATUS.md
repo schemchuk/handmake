@@ -1,17 +1,32 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T49b — Meta comment reader/reply capability (`channels`)
-- **Branch:** none yet (`feat/t49b-meta-comments`)
-- **Last commit:** `43f740d` — feat(channels,publisher,bot): T49a PR #96 review notes (#97)
-- **Next step:** kimi-code starts T49b (docs/03-tasks.md) in a fresh session. Bot deployed
-  after PR #97 (manually by Volodymyr): Worker version `03700671-a1f5-4129-9f76-23d73b667b55`.
+- **Active agent:** claude-code
+- **Current task:** T49b re-review/merge — PR #98 (`feat/t49b-meta-comments`)
+- **Branch:** `feat/t49b-meta-comments` (PR #98, review fixes in `b027ed0`)
+- **Last commit:** `b027ed0` — fix(channels): follow paging.next safely in the comments capability
+- **Next step:** claude-code re-reviews PR #98. Both blocking findings fixed: new
+  `MetaGraphClient.nextPath` strips the apiBase version prefix from real `paging.next` URLs and
+  rejects foreign origins; the followed query drops `access_token` and malformed-page errors name
+  the path only. New tests cover the exact page-2 pathname, the token-leak guard and the origin
+  guard. Review note 3 (inclusive watermark doc) fixed in the same commit; notes 4-6 are recorded
+  under T49c in docs/03-tasks.md (recorded by the reviewer in `cd50f34`; a duplicate block added
+  by kimi-code was removed). After the merge: hand T49c to kimi-code; bot deploy per AGENTS.md
+  (no D1 migration in T49b).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
   the Instagram System User token must carry `instagram_manage_comments`, and the F34
   reader-data paragraph must be added to the Datenschutzerklärung (draft in T49c, marked for review).
+- **T49b validation (PR #98):** channels 205/205 (22 new comments tests — list posts
+  /comments/reply per network, watermark as unix `since`, paging bound + early stop,
+  malformed pages/reply, per-call 429 retry + exhaustion, 190 refresh once per run,
+  empty-secret and argument validation, no reader data in errors), core 233/233.
+  Workspace typecheck/build, `eslint .`, `prettier --check .` and staged gitleaks pass.
+  New optional `ChannelAdapter.comments` port + shared `meta/comments.ts`; Instagram
+  (`/{user}/media`, `/{media}/comments`, `/{comment}/replies`) and Facebook
+  (`/{page}/feed` our-posts-only, `/{post}/comments` reader-only, `/{comment}/comments`).
+  Mocked Graph API only — no live Meta calls, no deploy, no secret or workflow changes.
 - **T49a validation (PR #97):** channels 183/183 (new: renderFacebookShow rejects 0 and 11
   show images at render time), bot 559/559 with `--maxWorkers 1` (new: 6 Facebook-block preview
   tests — caption length + clickable canonical link line, no-link state, three skip reasons,

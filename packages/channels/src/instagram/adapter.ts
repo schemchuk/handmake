@@ -1,5 +1,8 @@
 import type {
   ChannelAdapter,
+  ChannelComment,
+  ChannelCommentsCapability,
+  ChannelPostRef,
   DeliverContext,
   DeliverProgress,
   Post,
@@ -9,6 +12,7 @@ import type {
   ShowRenderContext,
 } from '@handmake/core';
 
+import { createMetaCommentsCapability, unixSinceQuery } from '../meta/comments';
 import {
   MetaGraphClient,
   MetaGraphError,
@@ -31,6 +35,8 @@ export interface InstagramAdapterOptions extends MetaGraphOptions {
   statusPollIntervalMs?: number;
   /** Max container-status polls before failing the op; default 30. */
   statusPollMaxAttempts?: number;
+  /** Bound on followed comment/posts pages per comments-capability op; default 5. */
+  commentsMaxPages?: number;
 }
 
 const DEFAULT_STATUS_POLL_INTERVAL_MS = 2000;
@@ -91,6 +97,7 @@ type MediaGroupOp = Extract<SendOperation, { kind: 'mediaGroup' }>;
 export class InstagramAdapter implements ChannelAdapter {
   readonly key = 'instagram';
   readonly capabilities = instagramCapabilities;
+  readonly comments: ChannelCommentsCapability;
 
   readonly #graph: MetaGraphClient;
   readonly #graphOptions: MetaGraphOptions;
@@ -99,6 +106,7 @@ export class InstagramAdapter implements ChannelAdapter {
   readonly #statusPollMaxAttempts: number;
 
   constructor({
+    commentsMaxPages,
     statusPollIntervalMs,
     statusPollMaxAttempts,
     ...graphOptions
@@ -108,6 +116,21 @@ export class InstagramAdapter implements ChannelAdapter {
     this.#sleep = graphOptions.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
     this.#statusPollIntervalMs = statusPollIntervalMs ?? DEFAULT_STATUS_POLL_INTERVAL_MS;
     this.#statusPollMaxAttempts = statusPollMaxAttempts ?? DEFAULT_STATUS_POLL_MAX_ATTEMPTS;
+    this.comments = createMetaCommentsCapability({
+      network: 'Instagram',
+      error: (message) => new InstagramAdapterError(message),
+      graph: this.#graph,
+      ownerIdSecret: instagramUserIdSecret,
+      accessTokenSecret: instagramAccessTokenSecret,
+      refreshToken: (auth, ctx) => this.#refreshToken(auth, ctx),
+      postsPath: (ownerId, pageLimit) => `/${ownerId}/media?fields=id,timestamp&limit=${pageLimit}`,
+      commentsPath: (postId, since, pageLimit) =>
+        `/${postId}/comments?fields=id,text,username,timestamp&limit=${pageLimit}${unixSinceQuery(since)}`,
+      replyPath: (commentId) => `/${commentId}/replies`,
+      mapPost: instagramPostRef,
+      mapComment: instagramComment,
+      maxPages: commentsMaxPages,
+    });
   }
 
   render(post: Post, settings: unknown): SendOperation[] {
@@ -300,8 +323,10 @@ export class InstagramAdapter implements ChannelAdapter {
    * One token exchange attempt. fb_exchange_token refuses an already-expired
    * token, so this is a mid-deliver last resort, not the rotation path — the
    * operator refreshes the stored token before expiry (docs/instagram-runbook.md).
+   * Takes only the secret resolver: the comments capability passes its lighter
+   * context through the same path.
    */
-  async #refreshToken(auth: MetaAuthState, ctx: DeliverContext): Promise<string> {
+  async #refreshToken(auth: MetaAuthState, ctx: Pick<DeliverContext, 'secrets'>): Promise<string> {
     const appId = await ctx.secrets.resolve(metaAppIdSecret);
     const appSecret = await ctx.secrets.resolve(metaAppSecretSecret);
     if (!appId || !appSecret) {
@@ -327,4 +352,28 @@ export class InstagramAdapter implements ChannelAdapter {
 
 export function createInstagramAdapter(options: InstagramAdapterOptions = {}): InstagramAdapter {
   return new InstagramAdapter(options);
+}
+
+/**
+ * Comments-capability mappers for the Instagram edges (T49b). Field-level
+ * gaps degrade to empty strings (a comment is still answerable); an entry
+ * without an id is skipped, never invented. Handles/text stay reader data:
+ * they flow into results, never into errors or logs.
+ */
+function instagramPostRef(raw: Record<string, unknown>): ChannelPostRef | undefined {
+  if (typeof raw.id !== 'string' || !raw.id) return undefined;
+  return {
+    id: raw.id,
+    createdAt: typeof raw.timestamp === 'string' ? raw.timestamp : undefined,
+  };
+}
+
+function instagramComment(raw: Record<string, unknown>): ChannelComment | undefined {
+  if (typeof raw.id !== 'string' || !raw.id) return undefined;
+  return {
+    id: raw.id,
+    handle: typeof raw.username === 'string' ? raw.username : '',
+    text: typeof raw.text === 'string' ? raw.text : '',
+    createdAt: typeof raw.timestamp === 'string' ? raw.timestamp : '',
+  };
 }
