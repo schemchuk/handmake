@@ -107,14 +107,14 @@ function igHandler(
   };
 }
 
-/** Routes a Facebook comments-capability run: /{page}/feed, /{post}/comments, /{comment}/comments. */
+/** Routes a Facebook comments-capability run: /{page}/posts, /{post}/comments, /{comment}/comments. */
 function fbHandler() {
   return (req: RecordedRequest, _n: number): Response => {
     const path = new URL(req.url).pathname;
     if (req.method === 'POST' && path.endsWith('/comments')) {
       return jsonResponse({ id: 'reply-1' });
     }
-    if (path.endsWith('/feed')) {
+    if (path.endsWith('/posts')) {
       return jsonResponse({
         data: [
           {
@@ -122,12 +122,6 @@ function fbHandler() {
             created_time: '2026-11-08T09:00:00+0000',
             from: { id: FB_PAGE_ID },
           },
-          {
-            id: 'post-foreign',
-            created_time: '2026-11-08T08:00:00+0000',
-            from: { id: 'visitor-1' },
-          },
-          { id: 'post-no-from', created_time: '2026-11-08T07:00:00+0000' },
           { id: 'post-1', created_time: '2026-11-07T09:00:00+0000', from: { id: FB_PAGE_ID } },
         ],
       });
@@ -147,7 +141,7 @@ function fbHandler() {
             created_time: '2026-11-09T10:00:00+0000',
             from: { id: FB_PAGE_ID },
           },
-          { id: 'post-1_c0', message: 'ohne absender', created_time: '2026-11-09T09:00:00+0000' },
+          { id: 'post-1_c0', message: 'ohne absender', created_time: '2026-11-09T09:45:00+0000' },
         ],
       });
     }
@@ -321,6 +315,53 @@ describe('comments capability: Instagram', () => {
     await adapter.comments.listComments('media-1', undefined, makeCtx(IG_SECRETS));
 
     expect(new URL(requests[0]!.url).searchParams.get('since')).toBeNull();
+  });
+
+  it('applies the watermark client-side when the edge ignores since', async () => {
+    // The Instagram comments edge may drop the since filter: an entry at the
+    // watermark, an older one and one without a timestamp all come back.
+    const since = new Date('2026-11-09T10:00:00Z');
+    const handler = (req: RecordedRequest): Response =>
+      new URL(req.url).pathname.endsWith('/comments')
+        ? jsonResponse({
+            data: [
+              {
+                id: 'c-old',
+                username: 'old_reader',
+                text: 'älter',
+                timestamp: '2026-11-09T09:00:00+0000',
+              },
+              {
+                id: 'c-new',
+                username: READER_HANDLE,
+                text: READER_TEXT,
+                timestamp: '2026-11-09T10:05:00+0000',
+              },
+              { id: 'c-notime', username: 'mystery', text: 'ohne Zeit' },
+            ],
+          })
+        : jsonResponse({}, 404);
+    const { fetchImpl, requests } = fakeFetch(handler);
+    const adapter = new InstagramAdapter({ fetchImpl, sleep: sleepNoop });
+
+    const comments = await adapter.comments.listComments('media-1', since, makeCtx(IG_SECRETS));
+
+    expect(comments.map((comment) => comment.id)).toEqual(['c-new', 'c-notime']);
+    expect(new URL(requests[0]!.url).searchParams.get('since')).toBe(
+      String(Math.floor(since.getTime() / 1000)),
+    );
+  });
+
+  it('drops watermark entries with a parseable createdAt but keeps the query best-effort', async () => {
+    const since = new Date('2026-11-09T10:05:00Z');
+    const { fetchImpl } = fakeFetch(igHandler());
+    const adapter = new InstagramAdapter({ fetchImpl, sleep: sleepNoop });
+
+    const comments = await adapter.comments.listComments('media-1', since, makeCtx(IG_SECRETS));
+
+    // c1 sits exactly at the watermark: the inclusive network filter returns
+    // it, the client-side filter drops it; the caller dedupes by id anyway.
+    expect(comments).toEqual([]);
   });
 
   it('replies to one comment and returns the reply id', async () => {
@@ -515,7 +556,7 @@ describe('comments capability: Instagram', () => {
 });
 
 describe('comments capability: Facebook', () => {
-  it('lists our own feed posts only, skipping foreign and unattributable entries', async () => {
+  it("lists the Page's own posts from the /{page}/posts edge", async () => {
     const { fetchImpl, requests } = fakeFetch(fbHandler());
     const adapter = new FacebookAdapter({ fetchImpl, sleep: sleepNoop });
 
@@ -526,11 +567,11 @@ describe('comments capability: Facebook', () => {
       { id: 'post-1', createdAt: '2026-11-07T09:00:00+0000' },
     ]);
     const url = new URL(requests[0]!.url);
-    expect(url.pathname).toBe(`/v21.0/${FB_PAGE_ID}/feed`);
-    expect(url.searchParams.get('fields')).toBe('id,created_time,from{id}');
+    expect(url.pathname).toBe(`/v21.0/${FB_PAGE_ID}/posts`);
+    expect(url.searchParams.get('fields')).toBe('id,created_time');
   });
 
-  it('lists reader comments only: our own replies and senderless entries are skipped', async () => {
+  it('lists reader comments only: our own replies are skipped, from-less comments keep an empty handle', async () => {
     const { fetchImpl, requests } = fakeFetch(fbHandler());
     const adapter = new FacebookAdapter({ fetchImpl, sleep: sleepNoop });
     const since = new Date('2026-11-09T09:30:00Z');
@@ -543,6 +584,12 @@ describe('comments capability: Facebook', () => {
         handle: READER_HANDLE,
         text: READER_TEXT,
         createdAt: '2026-11-09T10:05:00+0000',
+      },
+      {
+        id: 'post-1_c0',
+        handle: '',
+        text: 'ohne absender',
+        createdAt: '2026-11-09T09:45:00+0000',
       },
     ]);
     const url = new URL(requests[0]!.url);
@@ -583,7 +630,7 @@ describe('comments capability: Facebook', () => {
 
     const comments = await adapter.comments.listComments('post-1', undefined, makeCtx(FB_SECRETS));
 
-    expect(comments).toHaveLength(1);
+    expect(comments).toHaveLength(2);
     expect(sleeps).toEqual([500]);
     expect(requests).toHaveLength(2);
   });
@@ -592,7 +639,7 @@ describe('comments capability: Facebook', () => {
     const base = fbHandler();
     const handler = (req: RecordedRequest, n: number): Response => {
       const url = new URL(req.url);
-      if (url.searchParams.get('access_token') === TOKEN && url.pathname.endsWith('/feed')) {
+      if (url.searchParams.get('access_token') === TOKEN && url.pathname.endsWith('/posts')) {
         return jsonResponse(
           { error: { code: 190, error_subcode: 463, message: 'Session has expired' } },
           400,
