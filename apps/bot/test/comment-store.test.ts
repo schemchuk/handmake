@@ -208,7 +208,7 @@ describe('createCommentStore', () => {
     expect(await store.listPendingDrafts(other, 'instagram')).toHaveLength(1);
     expect(await store.listPendingDrafts(TENANT, 'facebook')).toHaveLength(0);
     expect(await store.reopenNotification(TENANT, 'instagram', 'comment-1', LATER)).toBe(false);
-    expect(await store.reopenNotification(TENANT, 'instagram', 'comment-1', NOW)).toBe(true);
+    expect(await store.reopenNotification(TENANT, 'instagram', 'comment-1', NOW, LATER)).toBe(true);
     expect(await store.listPendingNotify(other)).toHaveLength(0);
     const [row] = await store.listPendingNotify(TENANT);
     expect(row).toMatchObject({
@@ -219,7 +219,7 @@ describe('createCommentStore', () => {
       notifiedAt: null,
       commentCreatedAt: '2026-11-09T11:00:00.000Z',
       createdAt: NOW.toISOString(),
-      updatedAt: NOW.toISOString(),
+      updatedAt: LATER.toISOString(),
     });
   });
 
@@ -246,31 +246,25 @@ describe('createCommentStore', () => {
     expect(await store.getWatermark(TENANT, 'instagram')).toEqual(LATER);
   });
 
-  it('reports handled timestamps diagnostically, excluding invalid, pending and other scopes', async () => {
-    const store = createCommentStore(await makeD1());
-    expect(await store.latestHandledCreatedAt(TENANT, 'instagram')).toBeUndefined();
-    for (const patch of [
-      {},
-      { id: 'invalid', commentCreatedAt: 'invalid' },
-      { id: 'empty', commentCreatedAt: '' },
-      { tenantId: 'other-tenant', commentCreatedAt: LATER.toISOString() },
-      { network: 'facebook' as const, commentCreatedAt: LATER.toISOString() },
-    ]) {
-      const comment = newComment(patch);
-      await store.collect(comment);
-      await store.claimDrafting(comment.tenantId, comment.network, comment.id, NOW);
-      await store.storeDraft(
-        comment.tenantId,
-        comment.network,
-        comment.id,
-        { translationUk: 'T', replyDe: 'D', notesUk: '' },
-        NOW,
-      );
-    }
-    await store.collect(newComment({ id: 'pending', commentCreatedAt: LATER.toISOString() }));
-    expect(await store.latestHandledCreatedAt(TENANT, 'instagram')).toEqual(
-      new Date('2026-11-09T11:00:00Z'),
+  it('reports stale ambiguous work as tenant-scoped counts only', async () => {
+    const db = await makeD1();
+    const store = createCommentStore(db);
+    await store.collect(newComment());
+    await store.claimDrafting(TENANT, 'instagram', 'comment-1', NOW);
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 1, notifications: 0 });
+    expect(await store.countUncertain('other', LATER)).toEqual({ drafting: 0, notifications: 0 });
+    await store.storeDraft(
+      TENANT,
+      'instagram',
+      'comment-1',
+      { translationUk: 'T', replyDe: 'D', notesUk: '' },
+      NOW,
     );
+    await store.markNotified(TENANT, 'instagram', 'comment-1', NOW);
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 1 });
+    await store.reopenNotification(TENANT, 'instagram', 'comment-1', NOW, LATER);
+    expect((await rowOf(db, 'instagram', 'comment-1'))?.['updated_at']).toBe(LATER.toISOString());
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 0 });
   });
 
   it('deletes all tenant/network states strictly before the 30-day boundary', async () => {
@@ -305,7 +299,6 @@ describe('createCommentStore', () => {
       expect(await store.storeDraft(tenantId, network, 'comment-1', draft, NOW)).toBe(false);
       expect(await store.markNotified(tenantId, network, 'comment-1', NOW)).toBe(false);
       expect(await store.reopenNotification(tenantId, network, 'comment-1', NOW)).toBe(false);
-      expect(await store.latestHandledCreatedAt(tenantId, network)).toBeUndefined();
     }
     expect((await rowOf(db, 'instagram', 'comment-1'))?.['status']).toBe('new');
   });

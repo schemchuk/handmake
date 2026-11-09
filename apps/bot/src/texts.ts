@@ -205,6 +205,18 @@ export const botTexts = {
   regenDeButton: '🔁 DE',
   publishButton: '🚀 Опублікувати',
   discardButton: '🗑 Відхилити',
+
+  // --- T49c: comment inbox cards (F34) -----------------------------------------
+  commentCardHeader: (network: string, handle: string) =>
+    `💬 Новий коментар · ${network}${handle === '' ? '' : ` · від @${handle}`}`,
+  commentCardCommentLabel: 'Коментар:',
+  commentCardTranslationLabel: '🇺🇦 Переклад:',
+  commentCardReplyLabel: '🇩🇪 Чернетка відповіді:',
+  commentCardNoReply: 'без відповіді — див. нотатку нижче.',
+  commentCardNotesLabel: '📝 Нотатка:',
+  commentSendButton: '✅ Надіслати',
+  commentEditButton: '✏️ Змінити',
+  commentSkipButton: '↩️ Пропустити',
 } as const;
 
 export type BotTexts = typeof botTexts;

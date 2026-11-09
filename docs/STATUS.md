@@ -2,13 +2,15 @@
 
 - **Active agent:** codex
 - **Current task:** T49c2b — comment collection + Worker wiring (`bot`)
-- **Branch:** none yet (`feat/t49c2b-comment-collect`); reuse WIP `624436d` on `feat/t49c2-comment-collect`
+- **Branch:** `feat/t49c2b-comment-collect` (reuses WIP `624436d`; original branch unchanged)
 - **Last commit:** `533fff7` — T49c2a comment store + PR #99 notes (#100)
-- **Next step:** codex starts T49c2b in a fresh session (docs/03-tasks.md), including the
-  "Review notes from PR #100" line (retention re-collect, stuck drafting/notification rows,
-  unused `latestHandledCreatedAt`, `reopenNotification` updated_at). Sensitive: Volodymyr's OK
-  before merge; he applies migration 0009 to remote D1 and adds the six optional Meta secrets
-  before the T49c2b deploy. No bot deploy after PR #100 (store not wired yet).
+- **Next step:** push T49c2b and open the sensitive task PR for claude-code.
+  All four PR #100 notes addressed. No deploy or remote migration; Volodymyr's explicit OK
+  is required before merge. He applies migration 0009 and adds the optional Meta secrets before deploy.
+- **T49c2b validation:** all 584 bot tests covered across runs (full 582/584, corrected final
+  changed suites 45/45, --maxWorkers 1); channels 210/210. Workspace typecheck, ESLint,
+  Prettier and staged secret scan pass. Sandbox Miniflare stalled; unrestricted runs completed.
+  No deployment, remote migration, paid calls, publishing or secret changes.
 - **T49c2a validation:** bot 575/575 (--maxWorkers 1), including 16 local D1 store
   tests; AI 139/139 and channels 209/209. Workspace typecheck, ESLint, Prettier
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;

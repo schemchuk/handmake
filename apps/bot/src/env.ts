@@ -26,4 +26,11 @@ export interface Env {
   /** HMAC key for the publisher's POST /callbacks/published (H7). Secret value:
    * must match the GitHub secret of the same name that signs the callback. */
   PUBLISH_CALLBACK_SECRET: string;
+  /** Optional Meta credentials; missing owner/token pairs disable collection. */
+  INSTAGRAM_USER_ID?: string;
+  INSTAGRAM_ACCESS_TOKEN?: string;
+  FACEBOOK_PAGE_ID?: string;
+  FACEBOOK_PAGE_ACCESS_TOKEN?: string;
+  META_APP_ID?: string;
+  META_APP_SECRET?: string;
 }
