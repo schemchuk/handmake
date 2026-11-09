@@ -172,6 +172,17 @@ export function renderFacebook(post: Post, settings?: unknown): SendOperation[] 
  */
 export function renderFacebookShow(show: Show, context: ShowRenderContext): SendOperation[] {
   if (show.siteExcluded) return [];
+  // Fail at render time (bot preview + publisher), like renderFacebook, not
+  // later in deliver: a show outside 1..facebookMaxPhotos images can never
+  // become a valid Facebook post (PR #96 review note).
+  if (show.images.length === 0) {
+    throw new FacebookRenderError('Facebook show post has no images to send');
+  }
+  if (show.images.length > facebookMaxPhotos) {
+    throw new FacebookRenderError(
+      `Facebook allows at most ${facebookMaxPhotos} photos per show post; show has ${show.images.length}`,
+    );
+  }
   const settings = parseFacebookChannelSettings(context.settings);
   const { baseUrl, defaultLanguage } = context.site;
   const origin = new URL(baseUrl);

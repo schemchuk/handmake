@@ -293,6 +293,63 @@ describe('Instagram preview section (T26a1, F33)', () => {
   });
 });
 
+describe('Facebook preview section (T26b, F33)', () => {
+  const now = new Date('2026-11-05T10:00:00Z');
+  const draft = (overrides: Record<string, unknown> = {}) => ({
+    ...createDraft('tenant', 'draft', now),
+    state: 'ready' as const,
+    texts: { uk: 'Привіт!', de: 'Neue bestickte Tasche aus der Werkstatt' },
+    photoRefs: ['photo'],
+    ...overrides,
+  });
+  const canonical = {
+    links: true as const,
+    baseUrl: 'https://fadenundstimmung.de',
+    defaultLanguage: 'de',
+    section: 'posts' as const,
+  };
+
+  it('shows the caption length and the clickable canonical link line', () => {
+    const preview = buildPreview(draft(), botTexts, now, undefined, undefined, {
+      language: 'de',
+      canonical,
+    });
+    expect(preview.text).toContain('📘 Facebook (DE,');
+    expect(preview.text).toContain(
+      'посилання в підписі (клікабельне): https://fadenundstimmung.de/posts/draft/',
+    );
+  });
+
+  it('shows no link line when the canonical footer is off', () => {
+    const preview = buildPreview(draft(), botTexts, now, undefined, undefined, { language: 'de' });
+    expect(preview.text).toContain('📘 Facebook (DE,');
+    expect(preview.text).not.toContain('посилання в підписі');
+  });
+
+  it.each([
+    ['no photos', { photoRefs: [] }, false, 'без фото дописи не приймає'],
+    ['a non-site post', { type: 'announcement' }, false, 'туди йдуть лише дописи для сайту'],
+    ['a site-excluded test post', {}, true, 'тестовий допис у Facebook не піде'],
+  ])('notes that %s is skipped for Facebook', (_name, overrides, siteExcluded, fragment) => {
+    const preview = buildPreview(
+      draft(overrides),
+      botTexts,
+      now,
+      undefined,
+      undefined,
+      { language: 'de', canonical },
+      siteExcluded,
+    );
+    expect(preview.text).toContain(`📘 Facebook: ${fragment}`);
+    expect(preview.text).not.toContain('📘 Facebook (DE,');
+  });
+
+  it('keeps the preview unchanged without Facebook settings', () => {
+    const preview = buildPreview(draft(), botTexts, now);
+    expect(preview.text).not.toContain('📘 Facebook');
+  });
+});
+
 describe('preview projects a test publish (B3, PR #89 note 2)', () => {
   const now = new Date('2026-11-05T10:00:00Z');
   const config = {

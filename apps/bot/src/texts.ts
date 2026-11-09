@@ -1,5 +1,5 @@
 import { instagramCaptionLimit } from '@handmake/channels';
-import type { InstagramSkip } from '@handmake/channels';
+import type { FacebookSkip, InstagramSkip } from '@handmake/channels';
 
 import type { AiBudget, AiCostLedger } from './ai-costs';
 
@@ -188,6 +188,15 @@ export const botTexts = {
       'no-photos': '📸 Instagram: без фото дописи не приймає — цей туди не піде.',
       'not-site-worthy': '📸 Instagram: туди йдуть лише дописи для сайту — цей пропустимо.',
       'site-excluded': '📸 Instagram: тестовий допис у Instagram не піде.',
+    })[reason],
+  previewFacebookHeader: (lang: string, chars: number) =>
+    `📘 Facebook (${lang.toUpperCase()}, ${chars} симв.):`,
+  previewFacebookLink: (url: string) => `посилання в підписі (клікабельне): ${url}`,
+  previewFacebookSkip: (reason: FacebookSkip) =>
+    ({
+      'no-photos': '📘 Facebook: без фото дописи не приймає — цей туди не піде.',
+      'not-site-worthy': '📘 Facebook: туди йдуть лише дописи для сайту — цей пропустимо.',
+      'site-excluded': '📘 Facebook: тестовий допис у Facebook не піде.',
     })[reason],
   previewBlockedText: (error: string) =>
     `❌ Допис не проходить ліміти каналів:\n${error}\n\nВиправ текст кнопками ✏️ нижче.`,

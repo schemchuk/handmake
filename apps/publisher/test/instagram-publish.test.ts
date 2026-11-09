@@ -274,9 +274,9 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
       GITHUB_REF_NAME: 'main',
     });
 
-    // Both Meta channel preparations push (the second is a no-op);
-    // without the opt-in nothing is pushed.
-    expect(git.push).toHaveBeenCalledTimes(2);
+    // One push per run covers both Meta channels (the second preparation
+    // skips the no-op push); without the opt-in nothing is pushed.
+    expect(git.push).toHaveBeenCalledTimes(1);
     expect(git.push).toHaveBeenCalledWith('main');
   });
 
@@ -354,7 +354,9 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
     expect(rerun.skipped.sort()).toEqual(['facebook', 'instagram', 'telegram']);
     expect(instagram.contexts).toHaveLength(1);
     expect(facebook.contexts).toHaveLength(1);
-    expect(git.push).toHaveBeenCalledTimes(2);
+    // One push in the first run; the re-run skips every channel and never
+    // reaches a Meta preparation.
+    expect(git.push).toHaveBeenCalledTimes(1);
   });
 });
 

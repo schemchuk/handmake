@@ -75,12 +75,19 @@ export interface PrepareInstagramDeliveryDeps {
   startAt: number;
   /** Post/show id for the framed-copy commit message. */
   itemId: string;
+  /**
+   * Set by the caller when an earlier Meta preparation in this run already
+   * pushed (a second push would be a no-op): the push is skipped.
+   */
+  contentAlreadyPushed?: boolean;
   logger?: (line: string) => void;
 }
 
 export interface PreparedInstagramDelivery {
   /** Public URL of `photoBytes[i]`; carousel photos point at the framed copies. */
   photoUrls: string[];
+  /** True when this preparation ran the opted-in content push. */
+  pushed: boolean;
 }
 
 /**
@@ -106,7 +113,7 @@ export async function prepareInstagramDelivery(
   // Nothing left to deliver (e.g. an announcement renders to zero ops): no
   // framing, no commit and no push — Meta is never asked to fetch URLs.
   const remaining = deps.ops.slice(deps.startAt);
-  if (remaining.length === 0) return { photoUrls: urls };
+  if (remaining.length === 0) return { photoUrls: urls, pushed: false };
 
   const framedRepoPaths: string[] = [];
   for (const op of remaining) {
@@ -136,9 +143,10 @@ export async function prepareInstagramDelivery(
         : 'framed copies already committed',
     );
   }
-  if (deps.env['CONTENT_PUSH_BEFORE_DELIVERY'] === 'true') {
+  if (deps.env['CONTENT_PUSH_BEFORE_DELIVERY'] === 'true' && !deps.contentAlreadyPushed) {
     await deps.git.push(requiredEnv('GITHUB_REF_NAME', deps.env));
     log('pushed content before Instagram delivery');
+    return { photoUrls: urls, pushed: true };
   }
-  return { photoUrls: urls };
+  return { photoUrls: urls, pushed: false };
 }

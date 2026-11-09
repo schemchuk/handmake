@@ -239,15 +239,15 @@ describe('runPublish with Facebook enabled (T26b)', () => {
     expect(git.push).not.toHaveBeenCalled();
   });
 
-  it('pushes the content commit before delivery with the workflow opt-in', async () => {
+  it('pushes the content commit once before the Meta deliveries with the workflow opt-in', async () => {
     await runPost(basePayload, {
       CONTENT_RAW_BASE_URL: 'https://raw.example/base',
       CONTENT_PUSH_BEFORE_DELIVERY: 'true',
       GITHUB_REF_NAME: 'main',
     });
 
+    expect(git.push).toHaveBeenCalledTimes(1);
     expect(git.push).toHaveBeenCalledWith('main');
-    expect(git.push.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
 
   it('announces on Facebook with zero ops and never pushes', async () => {
@@ -312,34 +312,37 @@ describe('runPublish with Facebook enabled (T26b)', () => {
     ).toBe(true);
   });
 
-  it('fails Facebook cleanly when the pre-delivery push is rejected, after Instagram delivered', async () => {
-    // Both Meta preparations push under the opt-in; the first (Instagram)
-    // succeeds, the second (Facebook) is rejected.
-    git.push
-      .mockImplementationOnce(async () => {})
-      .mockRejectedValueOnce(new Error('push rejected'));
+  it('fails Instagram when the one pre-delivery push is rejected; Facebook resumes on the next run', async () => {
+    // One push per run happens at the FIRST Meta preparation (Instagram,
+    // first in the tenant order). Its rejection fails Instagram before any
+    // Instagram network write; Facebook stays pending and delivers on the
+    // resume run, whose own push covers it.
+    git.push.mockRejectedValueOnce(new Error('push rejected'));
 
-    await expect(
-      runPost(basePayload, {
-        CONTENT_RAW_BASE_URL: 'https://raw.example/base',
-        CONTENT_PUSH_BEFORE_DELIVERY: 'true',
-        GITHUB_REF_NAME: 'main',
-      }),
-    ).rejects.toThrow(PublishError);
+    const env = {
+      CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+      CONTENT_PUSH_BEFORE_DELIVERY: 'true',
+      GITHUB_REF_NAME: 'main',
+    };
+    await expect(runPost(basePayload, env)).rejects.toThrow(PublishError);
 
-    // Instagram delivered and pushed fine; the Facebook preparation is
-    // where the rejected push surfaces, so its delivery never starts.
-    expect(instagram.contexts).toHaveLength(1);
+    expect(instagram.contexts).toHaveLength(0);
     expect(facebook.contexts).toHaveLength(0);
-    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(
-      tenantId,
-      draftId,
-    ))!;
+    let ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
     expect(ledger.channels['telegram']!.status).toBe('done');
-    expect(ledger.channels['instagram']!.status).toBe('done');
-    expect(ledger.channels['facebook']!.status).toBe('failed');
-    expect(ledger.channels['facebook']!.error).toMatch(/push rejected/);
+    expect(ledger.channels['instagram']!.status).toBe('failed');
+    expect(ledger.channels['instagram']!.error).toMatch(/push rejected/);
+    expect(ledger.channels['facebook']!.status).not.toBe('done');
     expect(notifier.messages.some((m) => m.target === 'operator')).toBe(true);
+
+    // Resume: the re-run pushes once and delivers both Meta channels.
+    const resumed = await runPost(basePayload, env);
+    expect(resumed.delivered['instagram']).toEqual(['instagram-remote-0']);
+    expect(resumed.delivered['facebook']).toEqual(['facebook-remote-0']);
+    ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
+    expect(ledger.channels['instagram']!.status).toBe('done');
+    expect(ledger.channels['facebook']!.status).toBe('done');
+    expect(git.push).toHaveBeenCalledTimes(2);
   });
 
   it('skips Facebook on a re-run via the ledger and does not deliver again', async () => {

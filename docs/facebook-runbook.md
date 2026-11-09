@@ -18,11 +18,15 @@ The Meta-wide parts (token exchange endpoint, app credentials) match
 The stored Page token should be a **System User** token with
 `expires_at = 0` (verify with `debug_token`, same as the Instagram
 runbook). It then never expires and needs no scheduled rotation; rotate
-only when revoked or when the System User loses the Page asset. The
+only when revoked or when the System User loses the Page asset.
+
+A **190 on this token means re-issuing it** — plain and simple. The
 `fb_exchange_token` exchange of an already-expired token fails by design,
-so the adapter's in-flight refresh on a 190 error is a last resort only —
-the reliable rotation is external, exactly as documented in
-`docs/instagram-runbook.md`.
+and it cannot mint a new System User token either, so the adapter's
+in-flight refresh on a 190 error is a last resort only (it helps when the
+token dies mid-deliver or Meta flags it early, not after a quiet expiry).
+The reliable recovery is the re-issue below, exactly as documented for the
+Instagram runbook.
 
 To create or renew the Page token: Graph API Explorer with the app →
 `/{page-id}?fields=access_token` while holding a valid user token with
