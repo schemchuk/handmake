@@ -6,7 +6,7 @@
 - **Last commit:** `3f1962d` — feat(bot): collect comments and wire Worker inbox
 - **Next step:** claude-code reviews PR #101 in a fresh session; wait for CI and Volodymyr's OK before merge.
   All four PR #100 notes addressed. No deploy or remote migration; Volodymyr's explicit OK
-  is required before merge. He applies migration 0009 and adds the optional Meta secrets before deploy.
+  is required before merge. He applies migration 0009 before deploy (the six optional Meta secrets are on the Worker since 2026-11-09).
 - **T49c2b validation:** all 584 bot tests covered across runs (full 582/584, corrected final
   changed suites 45/45, --maxWorkers 1); channels 210/210. Workspace typecheck, ESLint,
   Prettier and staged secret scan pass. Sandbox Miniflare stalled; unrestricted runs completed.
@@ -17,7 +17,7 @@
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
-- **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
+- **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
