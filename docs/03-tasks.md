@@ -1489,6 +1489,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   results, rate-limit and token-error mapping.
 
 #### T49c — Bot comment inbox (`bot`, `ai`) · third PR, split again before coding if it exceeds the budget
+- Split 2026-11-09 into T49c1-T49c3 (one PR each, ADR 009): the full inbox is
+  ~800 non-test lines (store + collect cron + reply handling + drafter + legal).
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T49b. Sensitive: reader data.
 - Change: D1 `comments` table + store (tenant, network, comment id, post id, handle, text, status,
   Ukrainian translation, German draft, timestamps; every query keyed by tenant_id). The existing
@@ -1510,6 +1512,58 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   `facebookComment` keeps comments without `from` (empty handle), skipping only `from.id === pageId`;
   also filter Instagram comments by `createdAt` client-side (the edge may ignore `since`); switch the
   Facebook posts edge from `/{page}/feed` to `/{page}/posts`.
+
+#### T49c1 — Channels review notes + comment drafter (`channels`, `ai`, `core`) · first PR of the split
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T49b.
+- Change: PR #98 review notes 4-6 — the shared capability applies the `since`
+  watermark client-side by `createdAt` (entries without a parseable timestamp
+  pass through; the caller still dedupes by id), `facebookComment` keeps
+  from-less comments with an empty handle (skips only `from.id === pageId`),
+  the Facebook posts edge moves from `/{page}/feed` to `/{page}/posts` (the
+  `from` filter goes away). Plus the AI drafter: a `CommentDrafter` port in
+  core and `ClaudeCommentDrafter` in `packages/ai` — one call producing the
+  Ukrainian translation, the German reply draft and a Ukrainian note, reply
+  rules ported from instagram-agent-skill `ig-reply` (MIT notice kept), strict
+  JSON input/output, paid usage reported through `onUsage`.
+- Acceptance: notes 4-6 hold per network against the mocked Graph API; the
+  drafter returns both drafts per one call and books usage exactly once.
+- Tests: updated channels comments tests (posts edge, from-less comments,
+  client-side since filter) and ai drafter tests with a fake client (usage
+  booking, malformed output, refusal, injection-safe input handling).
+
+#### T49c2 — Comment collect pipeline (`bot`) · second PR of the split
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T49c1. Sensitive: reader data.
+- Change: D1 migration `comments` + `comment_watermarks` tables (every query
+  keyed by tenant_id) and the store (INSERT OR IGNORE collect, atomic
+  draft/send/skip claims, watermark get/set, 30-day `deleteOlderThan`). The
+  15-minute tick collects new comments through the T49b capability per enabled
+  Meta channel (bounded recent posts, per-network watermark, per-tenant
+  isolation), then one drafter call per new comment books the cost (ref
+  `comment:<id>`) and sends the author the card with Send / Edit / Skip
+  buttons. The daily cleanup cron also deletes old comment rows. Worker
+  secrets: the six Meta secret names become optional `Env` fields resolved by
+  name (absence disables that network; added to the log-scrubbing list).
+- Acceptance: idempotent collect; a comment is drafted and notified at most
+  once; cost booked per drafted comment; one failing network never blocks the
+  other; rows vanish after 30 days.
+- Tests: Miniflare D1 store tests + collect tests with fake capability,
+  fake drafter and mocked Telegram (idempotency, watermark bound, races, cost).
+
+#### T49c3 — Author reply handling + legal draft (`bot`, docs/legal) · third PR of the split
+- Owner: kimi-code · Reviewer: claude-code · Depends on: T49c2. Sensitive: reader data, legal text.
+- Change: the Send / Edit / Skip buttons and the text interception (Edit arms
+  one chat-scoped reply, the next author text replaces the German draft and
+  re-renders the card; a 30-minute arm window; Send claims the row atomically
+  and replies through the capability, a failed send re-opens the row; stale
+  `sending` rows are reclaimed with an uncertainty note). Only allow-listed
+  users reach the inbox through the existing gate. A draft Datenschutzerklärung
+  paragraph for reader comments is added to `docs/legal/services.de.html`,
+  marked for Volodymyr's and the author's review.
+- Acceptance: a comment is answered at most once (button races); a failed send
+  re-opens the row; skipped comments disappear at 30 days; the legal paragraph
+  is present and marked as a draft.
+- Tests: button races, failed send, edited drafts, skip, stale-send reclaim,
+  allow-list gate; legal HTML change covered by the existing site build test.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on
