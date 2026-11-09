@@ -1,29 +1,29 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T49c1 — channels review notes 4-6 + comment drafter (T49c split)
-- **Branch:** `feat/t49c1-comment-drafter` from `main`
-- **Last commit:** `75ec2d7` — feat(channels,core): T49b Meta comment reader/reply capability (#98)
-- **Next step:** kimi-code implements T49c1 per the split recorded in
-  docs/03-tasks.md (T49c1-T49c3); T49c2 then T49c3 follow as separate PRs.
+- **Active agent:** claude-code
+- **Current task:** review PR #99 (T49c1 — comment drafter + PR #98 notes 4-6)
+- **Branch:** `feat/t49c1-comment-drafter` (PR #99, commits `833a37f` + `f5e364c`)
+- **Last commit:** `833a37f` — feat(channels,ai): T49c1 comment drafter + PR #98 review notes 4-6
+- **Next step:** claude-code reviews PR #99 (channels notes 4-6, core CommentDrafter
+  port, ClaudeCommentDrafter); on green CI and no blocking findings it merges
+  (squash) and hands T49c2 (comment collect pipeline, `bot`) to kimi-code.
   T49c2 needs six optional Meta secrets on the Worker (Volodymyr, before its
   deploy) and is a sensitive PR (secret handling + reader data).
+- **T49c1 validation (PR #99):** channels 209/209 (Facebook posts now from
+  `/{page}/posts`, from-less reader comments keep an empty handle, the shared
+  capability applies the `since` watermark client-side by `createdAt`), ai
+  138/138 (comment drafter: one call → translationUk/replyDe/notesUk, usage
+  booked before output validation, empty replyDe allowed, no reader data in
+  errors), core 233/233. Workspace typecheck/build, `eslint .`,
+  `prettier --check .` and staged gitleaks pass. Mocked Graph API / fake
+  Anthropic client only — no live calls, no deploy, no secret or workflow
+  changes.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
   the Instagram System User token must carry `instagram_manage_comments`, and the F34
-  reader-data paragraph must be added to the Datenschutzerklärung (draft in T49c, marked for review).
-- **T49c1 validation:** channels 209/209 (updated: Facebook posts now read from
-  `/{page}/posts` with no `from` filter; from-less reader comments keep an empty
-  handle; the shared capability applies the `since` watermark client-side by
-  `createdAt` — watermark entry dropped, timestamp-less entries pass), ai 138/138
-  (new: comment drafter — one call returning translationUk/replyDe/notesUk,
-  usage booked before output validation, empty replyDe allowed as a skip
-  recommendation, errors carry no reader data), core 233/233. Workspace
-  typecheck/build, `eslint .`, `prettier --check .` and staged gitleaks pass.
-  Mocked Graph API / fake Anthropic client only — no live calls, no deploy,
-  no secret or workflow changes.
+  reader-data paragraph must be added to the Datenschutzerklärung (draft in T49c3, marked for review).
 - **T49b validation (PR #98):** channels 205/205 (22 new comments tests — list posts
   /comments/reply per network, watermark as unix `since`, paging bound + early stop,
   malformed pages/reply, per-call 429 retry + exhaustion, 190 refresh once per run,
