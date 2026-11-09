@@ -1,13 +1,21 @@
 import {
+  FacebookRenderError,
+  facebookSkipReason,
   instagramCaptionWindow,
   InstagramRenderError,
   instagramSkipReason,
+  renderFacebook,
   renderInstagram,
   renderTelegram,
   TelegramRenderError,
   telegramCapabilities,
 } from '@handmake/channels';
-import { buildApprovedWorkJob, canonicalLinkSettings, readWorkDraftData } from '@handmake/core';
+import {
+  buildApprovedWorkJob,
+  canonicalLinkSettings,
+  canonicalUrl,
+  readWorkDraftData,
+} from '@handmake/core';
 import type { CanonicalLinkSettings, Draft, Post, TenantConfig } from '@handmake/core';
 
 import type { BotTexts } from './texts';
@@ -134,6 +142,14 @@ export async function buildTenantPreview(
     // Instagram captions carry no link (ported rule: captions are not
     // clickable), so no canonical settings are passed.
     config?.channels.instagram,
+    // Facebook captions ARE clickable (F33), so the canonical settings ride
+    // along and the preview shows the exact caption the Page receives.
+    config?.channels.facebook
+      ? {
+          ...config.channels.facebook,
+          ...(canonical ? { canonical } : {}),
+        }
+      : undefined,
     !publishesLive,
   );
 }
@@ -147,6 +163,7 @@ export function buildPreview(
     canonical?: CanonicalLinkSettings;
   },
   instagram?: TenantConfig['channels']['instagram'],
+  facebook?: TenantConfig['channels']['facebook'] & { canonical?: CanonicalLinkSettings },
   /** Projects a site-excluded (test) publish. */
   siteExcluded = false,
 ): PreviewMessage {
@@ -162,6 +179,9 @@ export function buildPreview(
   let instagramCaption: { lang: string; caption: string } | undefined;
   let instagramSkip: ReturnType<typeof instagramSkipReason> | undefined;
   let instagramApplies = false;
+  let facebookCaption: { lang: string; caption: string } | undefined;
+  let facebookSkip: ReturnType<typeof facebookSkipReason> | undefined;
+  let facebookApplies = false;
   try {
     if (draft.kind === 'work') buildApprovedWorkJob(draft);
     const workChannels =
@@ -183,8 +203,27 @@ export function buildPreview(
         };
       }
     }
+    // Facebook follows the same announce-only and test-publish rules as
+    // Instagram; its captions carry the clickable canonical site link.
+    facebookApplies = facebook !== undefined && (workChannels?.includes('facebook') ?? true);
+    if (facebookApplies && post.texts[facebook!.language] !== undefined) {
+      const ops = renderFacebook(post, facebook);
+      if (ops.length === 0) {
+        facebookSkip = facebookSkipReason(post);
+      } else {
+        const op = ops[0] as { caption?: string; captionLang?: string };
+        facebookCaption = {
+          lang: op.captionLang ?? facebook!.language,
+          caption: op.caption ?? '',
+        };
+      }
+    }
   } catch (error) {
-    if (error instanceof TelegramRenderError || error instanceof InstagramRenderError) {
+    if (
+      error instanceof TelegramRenderError ||
+      error instanceof InstagramRenderError ||
+      error instanceof FacebookRenderError
+    ) {
       // Render limits are author-actionable: name the exact rule (render
       // errors read as-is inside the channel-agnostic blocked text).
       blockedError = error.message;
@@ -248,6 +287,27 @@ export function buildPreview(
     } else if (instagramSkip !== undefined) {
       lines.push('');
       lines.push(texts.previewInstagramSkip(instagramSkip));
+    }
+  }
+
+  // Facebook (F33, T26b): unlike Instagram, the caption carries the clickable
+  // canonical site link, so the block shows that link line — the one thing
+  // the author cannot see in the Telegram/Instagram sections above.
+  if (facebookApplies && blockedError === undefined) {
+    if (facebookCaption !== undefined) {
+      lines.push('');
+      lines.push(texts.previewFacebookHeader(facebookCaption.lang, facebookCaption.caption.length));
+      const canonical = facebook?.canonical;
+      if (canonical?.links) {
+        lines.push(
+          texts.previewFacebookLink(
+            canonicalUrl(canonical, canonical.section, post.id, facebookCaption.lang),
+          ),
+        );
+      }
+    } else if (facebookSkip !== undefined) {
+      lines.push('');
+      lines.push(texts.previewFacebookSkip(facebookSkip));
     }
   }
 
