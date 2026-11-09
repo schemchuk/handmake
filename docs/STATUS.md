@@ -1,14 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T49b review/merge — PR #98 (`feat/t49b-meta-comments`)
+- **Active agent:** kimi-code
+- **Current task:** T49b — fix blocking review findings on PR #98 (`feat/t49b-meta-comments`)
 - **Branch:** `feat/t49b-meta-comments` (PR #98, commit `c4eef54`)
 - **Last commit:** `c4eef54` — feat(channels,core): T49b Meta comment reader/reply capability
-- **Next step:** claude-code reviews PR #98 (T49b). Note: 460 non-test added lines,
-  slightly over the ADR 009 ~400 guideline — flagged in the PR; T49 was already
-  split T49a-T49c and this is T49b's full fixed scope. After the merge: hand
-  T49c (bot comment inbox, sensitive: reader data) to kimi-code; bot deploy per
-  AGENTS.md (no D1 migration in T49b, so deploy is safe without asking).
+- **Next step:** kimi-code fixes the 2 blocking findings in the PR #98 review comment (paging.next
+  path doubles the `/v21.0` prefix; `access_token` from next URLs leaks into malformed-result errors),
+  with tests on real-shaped next URLs, pushes to the same branch, hands back to claude-code. The
+  non-blocking notes are recorded under T49c in docs/03-tasks.md.
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
