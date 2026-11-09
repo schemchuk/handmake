@@ -1,17 +1,14 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T49c2 — comment collect pipeline (`bot`)
-- **Branch:** `feat/t49c2-comment-collect` (pushed)
-- **Last commit:** `624436d` — chore(bot): T49c2 work in progress from kimi-code (does not typecheck)
-- **Next step:** codex continues T49c2 from kimi-code's WIP (kimi-code hit its usage limit; the
-  task is reassigned in docs/03-tasks.md). Known gaps: `packages/ai` drafter test fails
-  typecheck (`stop_reason` typed as `string`), `CommentStore` impl misses
-  `latestHandledCreatedAt`, no collect tests yet; verify the PR #99 review notes in the WIP
-  (watermark `createdAt >= since`, generic drafter `JSON.parse` error, imported
-  `TextGenerationClient`). T49c2 is sensitive (secret handling + reader data): Volodymyr's OK
-  before merge; he adds the six optional Meta secrets on the Worker and applies migration 0009
-  before its deploy.
+- **Current task:** T49c2a — persistence + PR #99 fixes (split approved 2026-11-09)
+- **Branch:** `feat/t49c2a-comment-store`
+- **Last commit:** PR #99 fixes prepared; see this branch's latest commit.
+- **Next step:** finish validating the extracted store, then hand to
+  claude-code for review. T49c2b follows after merge, reusing WIP `624436d`.
+  PR #99 fixes: AI 139/139 and channels 209/209 pass; workspace typecheck, eslint
+  and prettier pass. Full bot tests running outside sandbox (Miniflare stalled inside).
+  Sensitive: Volodymyr's explicit OK before merge; no deploy or remote migration 0009.
 - **Bot Worker:** `3a5db8aa-0de3-417b-9f7c-e6058e4b0e36` (deployed by Volodymyr after PR #99, 2026-11-09).
 - **Blocked on:** T26c deferred until the Threads token exists (Volodymyr, 2026-11-08); T48 waits on H15.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft

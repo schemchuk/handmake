@@ -352,16 +352,17 @@ describe('comments capability: Instagram', () => {
     );
   });
 
-  it('drops watermark entries with a parseable createdAt but keeps the query best-effort', async () => {
+  it('keeps watermark entries at exactly the watermark and drops strictly older ones', async () => {
     const since = new Date('2026-11-09T10:05:00Z');
     const { fetchImpl } = fakeFetch(igHandler());
     const adapter = new InstagramAdapter({ fetchImpl, sleep: sleepNoop });
 
     const comments = await adapter.comments.listComments('media-1', since, makeCtx(IG_SECRETS));
 
-    // c1 sits exactly at the watermark: the inclusive network filter returns
-    // it, the client-side filter drops it; the caller dedupes by id anyway.
-    expect(comments).toEqual([]);
+    // c1 sits exactly at the watermark: the inclusive client-side filter keeps
+    // it (Graph timestamps have second resolution) and the caller dedupes the
+    // repeat by id; strictly older entries are dropped.
+    expect(comments.map((comment) => comment.id)).toEqual(['c1']);
   });
 
   it('replies to one comment and returns the reply id', async () => {

@@ -1533,8 +1533,28 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   booking, malformed output, refusal, injection-safe input handling).
 
 #### T49c2 — Comment collect pipeline (`bot`) · second PR of the split
-- Reassigned 2026-11-09 to codex (kimi-code hit its usage limit mid-task; its WIP is `624436d`
-  on `feat/t49c2-comment-collect`).
+- Subdivision (approved by Volodymyr 2026-11-09): WIP `624436d`
+  already changes 742 non-test lines, exceeding ADR 009 before fixes. Preserve it
+  as the recovery source; extract the following sequential PRs without rewriting
+  the pushed branch's history. T49c2a is in progress.
+  - **T49c2a — Persistence + PR #99 fixes.** Owner: codex; Reviewer: claude-code;
+    depends on T49c1. Migration 0009, comment store and D1 tests; inclusive
+    watermark, generic malformed-JSON error, shared client type and typecheck fix.
+    Acceptance: tenant isolation, insert dedupe, atomic drafting/notification
+    claims, retryable pending work, monotonic watermark and 30-day deletion.
+    Tests: real local D1 races/retention plus channels/AI regressions. Target:
+    <=400 changed non-test lines. No cron wiring or remote migration.
+  - **T49c2b — Collection + Worker wiring.** Owner: codex; Reviewer: claude-code;
+    depends on merged T49c2a. Reuse the WIP collector, cost integration, optional
+    secrets, cards and cleanup wiring. Acceptance: all original T49c2 criteria,
+    including retry recovery without watermark loss, bounded pagination without
+    skipped comments, atomic notification claims and no reader data in errors.
+    Tests: fake capabilities/drafter and mocked Telegram for idempotency,
+    watermark bounds, concurrent ticks, failed drafting/delivery, cost booking
+    and network isolation; workspace checks and bot suite with --maxWorkers 1.
+    Target: <=400 changed non-test lines; defer reply transitions to T49c3.
+  Both PRs remain sensitive: explicit Volodymyr approval before merge; no deploy
+  or remote D1 migration during implementation. T49c3 depends on T49c2b.
 - Owner: codex · Reviewer: claude-code · Depends on: T49c1. Sensitive: reader data.
 - Change: D1 migration `comments` + `comment_watermarks` tables (every query
   keyed by tenant_id) and the store (INSERT OR IGNORE collect, atomic
