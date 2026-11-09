@@ -85,6 +85,7 @@ describe('parseTenantConfig', () => {
       channelId: 'TELEGRAM_CHANNEL_ID',
       joinUrl: 'https://t.me/Faden_und_Stimmung',
     });
+    expect(config.channels.facebook).toEqual({ language: 'de' });
     expect(config.offerings).toEqual([]);
   });
 
@@ -140,6 +141,14 @@ describe('parseTenantConfig', () => {
       '  instagram:\n    language: fr',
     );
     expect(() => parseTenantConfig(withBadLanguage)).toThrowError(/instagram\.language/);
+  });
+
+  it('rejects facebook.language outside the tenant languages', () => {
+    const withBadLanguage = realConfig().replace(
+      '  facebook:\n    language: de',
+      '  facebook:\n    language: fr',
+    );
+    expect(() => parseTenantConfig(withBadLanguage)).toThrowError(/facebook\.language/);
   });
 
   it('rejects a non-empty offerings stub', () => {

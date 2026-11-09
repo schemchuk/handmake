@@ -12,6 +12,10 @@ channels:
   # Telegram delivery (T26a3).
   instagram:
     language: de
+  # After the other channels on purpose: a Facebook failure must never
+  # block Telegram or Instagram (T26b).
+  facebook:
+    language: de
 
 contentStore:
   type: git-repo

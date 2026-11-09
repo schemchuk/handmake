@@ -2,7 +2,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promi
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { renderInstagram, renderTelegram } from '@handmake/channels';
+import { renderFacebook, renderInstagram, renderTelegram } from '@handmake/channels';
 import { ChannelRegistry, showSchema } from '@handmake/core';
 import type {
   ChannelAdapter,
@@ -107,6 +107,20 @@ const instagramAdapter = () =>
     ],
   );
 
+const facebookAdapter = () =>
+  new RecordingAdapter(
+    'facebook',
+    (post, settings) => renderFacebook(post, settings),
+    (show) => [
+      {
+        kind: 'mediaGroup',
+        photoIndexes: show.images.map((_, index) => index),
+        caption: 'Show copy',
+        captionLang: 'de',
+      },
+    ],
+  );
+
 const gitMock = () => ({
   commit: vi.fn(async (_paths: string[], _message: string) => true),
   push: vi.fn(async (_ref: string) => {}),
@@ -126,6 +140,7 @@ const tmpDirs: string[] = [];
 let root: string;
 let telegram: RecordingAdapter;
 let instagram: RecordingAdapter;
+let facebook: RecordingAdapter;
 let git: ReturnType<typeof gitMock>;
 let notifier: FakeNotifier;
 
@@ -149,6 +164,7 @@ beforeEach(async () => {
   await copyFile(realTenantConfig, path.join(root, 'config', 'tenants', 'faden-und-stimmung.yaml'));
   telegram = telegramAdapter();
   instagram = instagramAdapter();
+  facebook = facebookAdapter();
   git = gitMock();
   notifier = new FakeNotifier();
 });
@@ -161,6 +177,7 @@ function registry() {
   const registry = new ChannelRegistry();
   registry.register(telegram);
   registry.register(instagram);
+  registry.register(facebook);
   return registry;
 }
 
@@ -194,7 +211,7 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
   it('delivers framed 4:5 carousel URLs to Instagram and the original bytes to Telegram', async () => {
     const result = await runPost(basePayload);
 
-    expect(Object.keys(result.delivered).sort()).toEqual(['instagram', 'telegram']);
+    expect(Object.keys(result.delivered).sort()).toEqual(['facebook', 'instagram', 'telegram']);
     const folder = postFolderName(result.post);
     expect(instagram.contexts).toHaveLength(1);
     expect(instagram.contexts[0]!.photoUrls).toEqual([
@@ -202,11 +219,20 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
       `https://raw.example/base/content/posts/${folder}/photo-2.ig.jpg`,
       `https://raw.example/base/content/posts/${folder}/photo-3.ig.jpg`,
     ]);
+    // Facebook fetches the item's own committed photos: plain URLs, no
+    // framed copies.
+    expect(facebook.contexts).toHaveLength(1);
+    expect(facebook.contexts[0]!.photoUrls).toEqual([
+      `https://raw.example/base/content/posts/${folder}/photo-1.jpg`,
+      `https://raw.example/base/content/posts/${folder}/photo-2.jpg`,
+      `https://raw.example/base/content/posts/${folder}/photo-3.jpg`,
+    ]);
     // Telegram receives the processed original bytes, aligned with
     // post.photos; the framing happens only in the committed copies Meta
     // fetches by URL.
     expect(telegram.contexts[0]!.photos).toHaveLength(3);
     expect(instagram.contexts[0]!.photos).toEqual(telegram.contexts[0]!.photos);
+    expect(facebook.contexts[0]!.photos).toEqual(telegram.contexts[0]!.photos);
     // The framed copies sit beside the item, committed by the publisher, and
     // differ from the originals Meta never sees.
     for (const name of ['photo-1.ig.jpg', 'photo-2.ig.jpg', 'photo-3.ig.jpg']) {
@@ -248,7 +274,9 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
       GITHUB_REF_NAME: 'main',
     });
 
-    expect(git.push).toHaveBeenCalledTimes(1);
+    // Both Meta channel preparations push (the second is a no-op);
+    // without the opt-in nothing is pushed.
+    expect(git.push).toHaveBeenCalledTimes(2);
     expect(git.push).toHaveBeenCalledWith('main');
   });
 
@@ -268,7 +296,9 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
     );
 
     expect(result.delivered['instagram']).toEqual([]);
+    expect(result.delivered['facebook']).toEqual([]);
     expect(instagram.contexts[0]!.photoUrls).toEqual([]);
+    expect(facebook.contexts[0]!.photoUrls).toEqual([]);
     expect(git.push).not.toHaveBeenCalled();
     const framedCommit = git.commit.mock.calls.find((call) =>
       call[0].every((p: string) => p.endsWith('.ig.jpg')),
@@ -321,9 +351,10 @@ describe('runPublish with Instagram enabled (T26a3)', () => {
     expect(first.skipped).toEqual([]);
 
     const rerun = await runPost(basePayload, env);
-    expect(rerun.skipped.sort()).toEqual(['instagram', 'telegram']);
+    expect(rerun.skipped.sort()).toEqual(['facebook', 'instagram', 'telegram']);
     expect(instagram.contexts).toHaveLength(1);
-    expect(git.push).toHaveBeenCalledTimes(1);
+    expect(facebook.contexts).toHaveLength(1);
+    expect(git.push).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -397,11 +428,18 @@ describe('runCopyShow with Instagram enabled (T26a3)', () => {
 
     expect(result.skipped).toEqual([]);
     expect(instagram.contexts).toHaveLength(1);
+    expect(facebook.contexts).toHaveLength(1);
     const framedUrls = show.images.map(
       (image) =>
         `https://raw.example/base/content/shows/${show.id}/${image.fileName.replace(/\.[^.]+$/, '')}.ig.jpg`,
     );
     expect(instagram.contexts[0]!.photoUrls).toEqual(framedUrls);
+    // Facebook fetches the show's own committed images by plain URL.
+    expect(facebook.contexts[0]!.photoUrls).toEqual(
+      show.images.map(
+        (image) => `https://raw.example/base/content/shows/${show.id}/${image.fileName}`,
+      ),
+    );
     // Telegram still gets the marked image bytes themselves.
     expect(telegram.contexts[0]!.photos).toHaveLength(show.images.length);
     for (const image of show.images) {
@@ -413,6 +451,7 @@ describe('runCopyShow with Instagram enabled (T26a3)', () => {
     }
     const ledger = result.ledger;
     expect(ledger.channels['instagram']!.status).toBe('done');
+    expect(ledger.channels['facebook']!.status).toBe('done');
     expect(ledger.channels['telegram']!.status).toBe('done');
   });
 });

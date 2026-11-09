@@ -1,0 +1,438 @@
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+import { renderFacebook, renderInstagram, renderTelegram } from '@handmake/channels';
+import { ChannelRegistry, showSchema } from '@handmake/core';
+import type {
+  ChannelAdapter,
+  ChannelCapabilities,
+  DeliverContext,
+  DeliverProgress,
+  Post,
+  RemoteId,
+  SendOperation,
+  Show,
+  ShowRenderContext,
+} from '@handmake/core';
+import { FakeMediaSource, FakeNotifier } from '@handmake/core/testing';
+import { GitRepoContentStore, postFolderName } from '@handmake/stores';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import sharp from 'sharp';
+
+import { runPublish, PublishError } from '../src/publish';
+import { runCopyShow } from '../src/copy-show';
+import type { DispatchPayload } from '../src/payload';
+import { markingFixtures } from './fixtures/show-marking';
+
+const realTenantConfig = new URL(
+  '../../../config/tenants/faden-und-stimmung.yaml',
+  import.meta.url,
+);
+
+const now = new Date('2026-11-09T10:00:00.000Z');
+const draftId = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+const tenantId = 'faden-und-stimmung';
+
+const CAPABILITIES: ChannelCapabilities = {
+  maxPhotos: 10,
+  captionLimit: 63206,
+  messageLimit: 63206,
+  polls: false,
+  pollMaxOptions: 0,
+  pollQuestionLimit: 0,
+  pollOptionLimit: 0,
+};
+
+/** Records the DeliverContext of every deliver; no network. */
+class RecordingAdapter implements ChannelAdapter {
+  readonly contexts: DeliverContext[] = [];
+
+  constructor(
+    readonly key: string,
+    private readonly renderImpl: (post: Post, settings: unknown) => SendOperation[],
+    private readonly renderShowImpl?: (show: Show, context: ShowRenderContext) => SendOperation[],
+  ) {}
+
+  get capabilities(): ChannelCapabilities {
+    return CAPABILITIES;
+  }
+
+  render(post: Post, settings: unknown): SendOperation[] {
+    return this.renderImpl(post, settings);
+  }
+
+  renderShow(show: Show, context: ShowRenderContext): SendOperation[] {
+    if (!this.renderShowImpl) throw new Error(`${this.key} does not support shows`);
+    return this.renderShowImpl(show, context);
+  }
+
+  async deliver(
+    ops: SendOperation[],
+    ctx: DeliverContext,
+    progress?: DeliverProgress,
+  ): Promise<RemoteId[]> {
+    this.contexts.push(ctx);
+    const ids: RemoteId[] = [...(progress?.knownIds ?? [])];
+    for (let i = progress?.startAt ?? 0; i < ops.length; i++) {
+      const remoteId = `${this.key}-remote-${i}`;
+      ids.push(remoteId);
+      await progress?.onDelivered(i, remoteId);
+    }
+    return ids;
+  }
+}
+
+const telegramAdapter = () =>
+  new RecordingAdapter(
+    'telegram',
+    (post) => renderTelegram(post, { channelId: 'TEST_CHANNEL', languages: ['uk', 'de'] }),
+    (show) => [
+      { kind: 'mediaGroup', photoIndexes: show.images.map((_, index) => index) },
+      { kind: 'video', replyToOp: 0 },
+    ],
+  );
+
+const instagramAdapter = () =>
+  new RecordingAdapter(
+    'instagram',
+    (post, settings) => renderInstagram(post, settings),
+    (show) => [
+      {
+        kind: 'mediaGroup',
+        photoIndexes: show.images.map((_, index) => index),
+        caption: 'Show copy',
+        captionLang: 'de',
+      },
+    ],
+  );
+
+const facebookAdapter = () =>
+  new RecordingAdapter(
+    'facebook',
+    (post, settings) => renderFacebook(post, settings),
+    (show) => [
+      {
+        kind: 'mediaGroup',
+        photoIndexes: show.images.map((_, index) => index),
+        caption: 'Show copy',
+        captionLang: 'de',
+      },
+    ],
+  );
+
+const gitMock = () => ({
+  commit: vi.fn(async (_paths: string[], _message: string) => true),
+  push: vi.fn(async (_ref: string) => {}),
+});
+
+const basePayload: DispatchPayload = {
+  tenantId,
+  draftId,
+  kind: 'post',
+  type: 'free',
+  texts: { uk: 'Тестовий допис (T26b).', de: 'Testbeitrag (T26b).' },
+  fileIds: ['file-1', 'file-2'],
+  provenance: 'human',
+};
+
+const tmpDirs: string[] = [];
+let root: string;
+let telegram: RecordingAdapter;
+let instagram: RecordingAdapter;
+let facebook: RecordingAdapter;
+let git: ReturnType<typeof gitMock>;
+let notifier: FakeNotifier;
+
+async function freshDir(prefix: string): Promise<string> {
+  const dir = await mkdtemp(path.join(tmpdir(), prefix));
+  tmpDirs.push(dir);
+  return dir;
+}
+
+async function jpeg(width: number, height: number): Promise<Uint8Array> {
+  return new Uint8Array(
+    await sharp({ create: { width, height, channels: 3, background: '#7a6a55' } })
+      .jpeg()
+      .toBuffer(),
+  );
+}
+
+beforeEach(async () => {
+  root = await freshDir('handmake-facebook-publish-');
+  await mkdir(path.join(root, 'config', 'tenants'), { recursive: true });
+  await copyFile(realTenantConfig, path.join(root, 'config', 'tenants', 'faden-und-stimmung.yaml'));
+  telegram = telegramAdapter();
+  instagram = instagramAdapter();
+  facebook = facebookAdapter();
+  git = gitMock();
+  notifier = new FakeNotifier();
+});
+
+afterAll(async () => {
+  await Promise.all(tmpDirs.map((dir) => rm(dir, { recursive: true, force: true })));
+});
+
+function registry() {
+  const registry = new ChannelRegistry();
+  registry.register(telegram);
+  registry.register(instagram);
+  registry.register(facebook);
+  return registry;
+}
+
+async function mediaSource(): Promise<FakeMediaSource> {
+  const source = new FakeMediaSource();
+  source.photos.set('file-1', await jpeg(900, 600));
+  source.photos.set('file-2', await jpeg(600, 900));
+  return source;
+}
+
+async function runPost(
+  payload: DispatchPayload,
+  env: NodeJS.ProcessEnv = { CONTENT_RAW_BASE_URL: 'https://raw.example/base' },
+) {
+  const payloadPath = path.join(root, 'payload.json');
+  await writeFile(payloadPath, JSON.stringify(payload));
+  return runPublish(payloadPath, {
+    root,
+    env,
+    now,
+    registry: registry(),
+    mediaSource: await mediaSource(),
+    git,
+    notifier,
+    logger: () => {},
+  });
+}
+
+describe('runPublish with Facebook enabled (T26b)', () => {
+  it('delivers the item photos by plain raw-GitHub URLs, no framed copies', async () => {
+    const result = await runPost(basePayload);
+
+    expect(Object.keys(result.delivered).sort()).toEqual(['facebook', 'instagram', 'telegram']);
+    const folder = postFolderName(result.post);
+    expect(facebook.contexts).toHaveLength(1);
+    expect(facebook.contexts[0]!.photoUrls).toEqual([
+      `https://raw.example/base/content/posts/${folder}/photo-1.jpg`,
+      `https://raw.example/base/content/posts/${folder}/photo-2.jpg`,
+    ]);
+    // Facebook keeps the processed original bytes aligned with the photos.
+    expect(facebook.contexts[0]!.photos).toEqual(telegram.contexts[0]!.photos);
+    // No Facebook-specific files: beside the post sit only the photos and
+    // the Instagram 4:5 framed copies (the full tenant config enables
+    // Instagram in the same run).
+    const files = await readdir(path.join(root, 'content', 'posts', folder));
+    expect(files.sort()).toEqual([
+      'index.md',
+      'photo-1.ig.jpg',
+      'photo-1.jpg',
+      'photo-2.ig.jpg',
+      'photo-2.jpg',
+    ]);
+    const framedCommit = git.commit.mock.calls.find((call) =>
+      call[0].every((p: string) => p.endsWith('.fb.jpg')),
+    );
+    expect(framedCommit).toBeUndefined();
+    expect(result.delivered['facebook']).toEqual(['facebook-remote-0']);
+    // Without the workflow opt-in nothing is pushed.
+    expect(git.push).not.toHaveBeenCalled();
+  });
+
+  it('pushes the content commit before delivery with the workflow opt-in', async () => {
+    await runPost(basePayload, {
+      CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+      CONTENT_PUSH_BEFORE_DELIVERY: 'true',
+      GITHUB_REF_NAME: 'main',
+    });
+
+    expect(git.push).toHaveBeenCalledWith('main');
+    expect(git.push.mock.calls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('announces on Facebook with zero ops and never pushes', async () => {
+    const result = await runPost(
+      {
+        ...basePayload,
+        fileIds: [],
+        type: 'announcement',
+        texts: { uk: 'Оголошення.', de: 'Ankündigung.' },
+      },
+      {
+        CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+        CONTENT_PUSH_BEFORE_DELIVERY: 'true',
+        GITHUB_REF_NAME: 'main',
+      },
+    );
+
+    expect(result.delivered['facebook']).toEqual([]);
+    expect(facebook.contexts[0]!.photoUrls).toEqual([]);
+    expect(git.push).not.toHaveBeenCalled();
+  });
+
+  it('fails only the Facebook channel on a delivery error; earlier channels stay done', async () => {
+    const failing = new RecordingAdapter('facebook', (post, settings) =>
+      renderFacebook(post, settings),
+    );
+    failing.deliver = async () => {
+      throw new Error('simulated facebook failure');
+    };
+    const registry = new ChannelRegistry();
+    registry.register(telegram);
+    registry.register(instagram);
+    registry.register(failing);
+    const payloadPath = path.join(root, 'payload.json');
+    await writeFile(payloadPath, JSON.stringify(basePayload));
+
+    await expect(
+      runPublish(payloadPath, {
+        root,
+        env: { CONTENT_RAW_BASE_URL: 'https://raw.example/base' },
+        now,
+        registry,
+        mediaSource: await mediaSource(),
+        git,
+        notifier,
+        logger: () => {},
+      }),
+    ).rejects.toThrow(PublishError);
+
+    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(
+      tenantId,
+      draftId,
+    ))!;
+    expect(ledger.channels['telegram']!.status).toBe('done');
+    expect(ledger.channels['instagram']!.status).toBe('done');
+    expect(ledger.channels['facebook']!.status).toBe('failed');
+    expect(ledger.channels['facebook']!.error).toMatch(/simulated facebook failure/);
+    expect(
+      notifier.messages.some(
+        (m) => m.target === 'operator' && m.message.includes('simulated facebook failure'),
+      ),
+    ).toBe(true);
+  });
+
+  it('fails Facebook cleanly when the pre-delivery push is rejected, after Instagram delivered', async () => {
+    // Both Meta preparations push under the opt-in; the first (Instagram)
+    // succeeds, the second (Facebook) is rejected.
+    git.push
+      .mockImplementationOnce(async () => {})
+      .mockRejectedValueOnce(new Error('push rejected'));
+
+    await expect(
+      runPost(basePayload, {
+        CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+        CONTENT_PUSH_BEFORE_DELIVERY: 'true',
+        GITHUB_REF_NAME: 'main',
+      }),
+    ).rejects.toThrow(PublishError);
+
+    // Instagram delivered and pushed fine; the Facebook preparation is
+    // where the rejected push surfaces, so its delivery never starts.
+    expect(instagram.contexts).toHaveLength(1);
+    expect(facebook.contexts).toHaveLength(0);
+    const ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(
+      tenantId,
+      draftId,
+    ))!;
+    expect(ledger.channels['telegram']!.status).toBe('done');
+    expect(ledger.channels['instagram']!.status).toBe('done');
+    expect(ledger.channels['facebook']!.status).toBe('failed');
+    expect(ledger.channels['facebook']!.error).toMatch(/push rejected/);
+    expect(notifier.messages.some((m) => m.target === 'operator')).toBe(true);
+  });
+
+  it('skips Facebook on a re-run via the ledger and does not deliver again', async () => {
+    const env = {
+      CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+      CONTENT_PUSH_BEFORE_DELIVERY: 'true',
+      GITHUB_REF_NAME: 'main',
+    };
+    const first = await runPost(basePayload, env);
+    expect(first.skipped).toEqual([]);
+
+    const rerun = await runPost(basePayload, env);
+    expect(rerun.skipped.sort()).toEqual(['facebook', 'instagram', 'telegram']);
+    expect(facebook.contexts).toHaveLength(1);
+  });
+});
+
+describe('runCopyShow with Facebook enabled (T26b)', () => {
+  const showFixture = new URL('../../../packages/core/test/fixtures/show.json', import.meta.url);
+
+  async function publishShow() {
+    const show = showSchema.parse(JSON.parse(await readFile(showFixture, 'utf8')));
+    const fixtures = await markingFixtures();
+    const image = new Uint8Array(fixtures.markedImage.result.bytes);
+    const video = new Uint8Array(fixtures.markedVideo.result.bytes);
+    for (const entry of show.images) entry.marker = fixtures.markedImage.marker;
+    show.video.marker = fixtures.markedVideo.marker;
+    const store = new GitRepoContentStore({ rootDir: root });
+    await store.saveWork(
+      {
+        id: show.workId,
+        tenant: show.tenant,
+        date: show.date,
+        collection: 'fixture',
+        kind: 'interior',
+        photos: ['original.jpg'],
+        versions: show.versions,
+      },
+      [{ fileName: 'original.jpg', data: image }],
+    );
+    const payload: DispatchPayload = {
+      kind: 'show',
+      tenantId: show.tenant,
+      draftId: show.id,
+      type: 'free',
+      fileIds: [],
+      provenance: show.provenance,
+      texts: Object.fromEntries(
+        Object.entries(show.versions).map(([lang, version]) => [lang, version.description]),
+      ),
+      show: {
+        show,
+        media: [...show.images, show.video].map(({ fileName }) => ({ fileName, ref: fileName })),
+      },
+    };
+    const source = {
+      fetchMedia: vi.fn(async (ref: string) => (ref.endsWith('.mp4') ? video : image)),
+    };
+    const payloadPath = path.join(root, 'show-payload.json');
+    await writeFile(payloadPath, JSON.stringify(payload));
+    await runPublish(payloadPath, {
+      root,
+      env: {},
+      now,
+      showMediaSource: source,
+      git: gitMock(),
+      notifier,
+      logger: () => {},
+    });
+    return show;
+  }
+
+  it('delivers the show images by plain raw-GitHub URLs', async () => {
+    const show = await publishShow();
+
+    const result = await runCopyShow(show.tenant, show.id, {
+      root,
+      env: { CONTENT_RAW_BASE_URL: 'https://raw.example/base' },
+      now,
+      registry: registry(),
+      git,
+      notifier,
+      logger: () => {},
+    });
+
+    expect(result.skipped).toEqual([]);
+    expect(facebook.contexts).toHaveLength(1);
+    expect(facebook.contexts[0]!.photoUrls).toEqual(
+      show.images.map(
+        (image) => `https://raw.example/base/content/shows/${show.id}/${image.fileName}`,
+      ),
+    );
+    const ledger = result.ledger;
+    expect(ledger.channels['facebook']!.status).toBe('done');
+  });
+});

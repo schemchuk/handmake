@@ -8,6 +8,10 @@
  * endpoint only, never the full URL).
  */
 
+/** Secret names the Meta adapters resolve for the once-per-deliver expired-token retry. */
+export const metaAppIdSecret = 'META_APP_ID';
+export const metaAppSecretSecret = 'META_APP_SECRET';
+
 export interface ExchangeLongLivedTokenOptions {
   appId: string;
   appSecret: string;
