@@ -1492,6 +1492,9 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   (the `fb_exchange_token` refresh cannot help there); (3) add a Facebook block to the bot author
   preview; (4) optional: push once before the Meta channels instead of once per preparation.
 - Split 2026-11-09 into T49a-T49c (one PR each, ADR 009); Threads comments join as T49d after T26c.
+- Review notes from PR #104 (for T49d, `packages/channels`): Threads container polling now allows
+  only ~25 s per container (6 × 5 s), below Meta's ~30 s average; raise `statusPollMaxAttempts` to ~12
+  or poll carousel children in parallel.
   Go-live gates before the first live collect (Volodymyr): the Instagram System User token must
   carry `instagram_manage_comments` (Facebook already has `pages_read_engagement` /
   `pages_manage_engagement`, docs/facebook-runbook.md) and the F34 reader-data paragraph must be in

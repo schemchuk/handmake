@@ -1,14 +1,15 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T26d — PR #104 ready for independent review (CI pending)
-- **Branch:** `feat/t26d-threads-token`
-- **Last commit:** `6ed8306` — feat(publisher): automate Threads token refresh (T26d)
-- **Next step:** claude-code reviews PR #104, waits for green CI and obtains Volodymyr's OK for
-  the sensitive workflow/secret merge. After merge, deploy the bot from clean `main`, dispatch
-  `threads-token.yml` once on `main`, inspect sanitized logs and verify the next authorized Threads
-  publish; record both run URLs in the PR. H17 is set; `SECRETS_WRITE_TOKEN` has no expiration.
-  Deadline: merged and run once before mid-December 2026. Handoff commit follows the implementation.
+- **Current task:** T26d rollout — PR #104 merged 2026-11-10 with Volodymyr's OK (`33dd1b0`)
+- **Branch:** `main`
+- **Last commit:** `33dd1b0` — feat(publisher): automate Threads token refresh (T26d) (#104)
+- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`; the
+  classifier blocks claude-code) and the Worker version goes here. Dispatch `threads-token.yml` on
+  `main` no earlier than 2026-11-10 15:00 UTC (the token set 2026-11-09 14:25 UTC must be 24 h old),
+  check the log has no token or response, record the run URL in PR #104; then the first live
+  Threads post per docs/threads-runbook.md. Review note from PR #104 (non-blocking) goes to T49d:
+  Threads container polling allows only ~25 s (6 × 5 s); raise `statusPollMaxAttempts` to ~12.
 - **T26d validation:** publisher 246/246, channels full suite 249/249 before consolidating the polling
   regression into an existing test; final Threads suite 32/32; bot preview 30/30.
   Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
