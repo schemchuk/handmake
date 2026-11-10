@@ -222,6 +222,10 @@ export const botTexts = {
   commentUnavailable: 'Коментар недоступний для цієї дії або вже обробляється.',
   commentSkipped: 'Коментар пропущено.',
   commentSent: 'Відповідь надіслано.',
+  commentReplyTooLong: (network: string) =>
+    network === 'threads'
+      ? 'Відповідь перевищує ліміт Threads: 500 байтів UTF-8. Скоротіть її перед надсиланням.'
+      : 'Відповідь перевищує ліміт: 2200 символів. Скоротіть її перед надсиланням.',
   commentSendFailed:
     'Сервіс відхилив відповідь. Можна змінити текст або натиснути «Надіслати» ще раз.',
   commentSendUncertain:

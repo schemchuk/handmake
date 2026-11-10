@@ -39,7 +39,7 @@ const COMMENTS_PAGE_LIMIT = 50;
 /** Per-page size for posts edges never exceeds the Graph API maximum. */
 const POSTS_PAGE_LIMIT_CAP = 100;
 
-export interface MetaCommentsConfig {
+interface MetaCommentsBaseConfig {
   /** Network label for error messages, e.g. "Instagram" / "Facebook". */
   network: string;
   /** Builds the adapter's public error; messages must carry no reader data. */
@@ -55,16 +55,6 @@ export interface MetaCommentsConfig {
   postsPath: (ownerId: string, pageLimit: number) => string;
   /** Builds this network's comments-edge path; `since` is the caller's watermark. */
   commentsPath: (postId: string, since: Date | undefined, pageLimit: number) => string;
-  /** Builds this network's reply path for one comment. */
-  replyPath?: (commentId: string) => string;
-  /** Custom multi-call reply; owns rejection versus ambiguous-write classification. */
-  reply?: (
-    commentId: string,
-    text: string,
-    ctx: ChannelCommentsContext,
-    auth: MetaAuthState,
-    call: MetaCallRetry,
-  ) => Promise<RemoteId>;
   /**
    * Maps a posts-edge entry; returning undefined skips it (e.g. a foreign
    * post on a Page feed).
@@ -80,6 +70,22 @@ export interface MetaCommentsConfig {
   /** Bound on followed pages per operation; default DEFAULT_COMMENTS_MAX_PAGES. */
   maxPages?: number;
 }
+
+/** Exactly one reply strategy is required. */
+export type MetaCommentsConfig = MetaCommentsBaseConfig &
+  (
+    | { replyPath: (commentId: string) => string; reply?: never }
+    | {
+        replyPath?: never;
+        reply: (
+          commentId: string,
+          text: string,
+          ctx: ChannelCommentsContext,
+          auth: MetaAuthState,
+          call: MetaCallRetry,
+        ) => Promise<RemoteId>;
+      }
+  );
 
 /**
  * `since` as a Graph API query fragment. The network filter is inclusive and
@@ -199,8 +205,9 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
     }
     const { auth, call } = await this.#authorized(ctx);
     if (this.config.reply) return this.config.reply(id, text, ctx, auth, call);
+    const replyPath = this.config.replyPath;
     const result = (await call(() =>
-      this.config.graph.call(auth, 'POST', this.config.replyPath!(id), { message: text }),
+      this.config.graph.call(auth, 'POST', replyPath(id), { message: text }),
     ).catch((error: unknown) => {
       if (
         (error instanceof MetaGraphError && error.rejected) ||

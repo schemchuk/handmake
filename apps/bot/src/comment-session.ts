@@ -4,7 +4,12 @@ import type { Bot } from 'grammy';
 
 import type { CreateBotOptions } from './bot';
 import { buildCommentCard } from './comment-collect';
-import type { CommentNetwork, CommentStore, StoredComment } from './comment-store';
+import {
+  commentReplyTooLong,
+  type CommentNetwork,
+  type CommentStore,
+  type StoredComment,
+} from './comment-store';
 import type { AppContext } from './context';
 
 export interface CommentSessionOptions {
@@ -65,9 +70,18 @@ export function registerCommentSession(bot: Bot<AppContext>, options: CreateBotO
     }
     const row = await store.get(tenantId, network, id!);
     if (!row?.replyDe?.trim()) return void (await ctx.reply(texts.commentUnavailable));
+    if (commentReplyTooLong(network, row.replyDe)) {
+      await ctx.reply(texts.commentReplyTooLong(network));
+      return;
+    }
     const claimed = await store.transition(tenantId, network, id!, 'drafted', 'sending', now);
     if (!claimed) return void (await ctx.reply(texts.commentUnavailable));
     options.background(async () => {
+      if (commentReplyTooLong(network, claimed.replyDe!)) {
+        await store.transition(tenantId, network, id!, 'sending', 'drafted', new Date());
+        await bot.api.sendMessage(String(ctx.chat!.id), texts.commentReplyTooLong(network));
+        return;
+      }
       try {
         await capability.replyToComment(id!, claimed.replyDe!, context);
       } catch (error) {

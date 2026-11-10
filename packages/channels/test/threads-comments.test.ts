@@ -10,7 +10,9 @@ const ctx = {
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
 function setup(handler: (url: URL, init?: RequestInit) => Response | Promise<Response>) {
   const fetchImpl = vi.fn<typeof fetch>(async (input, init) =>
-    handler(new URL(String(input)), init),
+    new URL(String(input)).searchParams.get('fields') === 'status'
+      ? json({ status: 'FINISHED' })
+      : handler(new URL(String(input)), init),
   );
   return {
     fetchImpl,
@@ -53,7 +55,7 @@ it('replies through a form-encoded container then publishes exactly that contain
     return json({ id: '101' });
   });
   expect(await s.comments.replyToComment('3', 'Danke 🧵', ctx)).toBe('101');
-  expect(s.fetchImpl).toHaveBeenCalledTimes(2);
+  expect(s.fetchImpl).toHaveBeenCalledTimes(3);
 });
 it.each(['network', 'server', 'malformed'])(
   'never retries an ambiguous publish (%s)',
@@ -67,7 +69,7 @@ it.each(['network', 'server', 'malformed'])(
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(CommentReplyRejectedError);
     expect(String(error)).not.toMatch(/private-token|reader text/);
-    expect(s.fetchImpl).toHaveBeenCalledTimes(2);
+    expect(s.fetchImpl).toHaveBeenCalledTimes(3);
   },
 );
 it('rejects over-budget UTF-8 text before any API call', async () => {
@@ -89,7 +91,7 @@ it('allows an explicitly rejected publish to reopen', async () => {
   await expect(s.comments.replyToComment('3', 'Danke', ctx)).rejects.toBeInstanceOf(
     CommentReplyRejectedError,
   );
-  expect(s.fetchImpl).toHaveBeenCalledTimes(2);
+  expect(s.fetchImpl).toHaveBeenCalledTimes(3);
 });
 
 it.each(['create', 'publish'])(
@@ -104,6 +106,31 @@ it.each(['create', 'publish'])(
     expect(error).toBeInstanceOf(CommentReplyRejectedError);
     expect(String(error)).toContain('rotate THREADS_ACCESS_TOKEN');
     expect(String(error)).not.toMatch(/private-token|reader text/);
-    expect(s.fetchImpl).toHaveBeenCalledTimes(stage === 'create' ? 1 : 2);
+    expect(s.fetchImpl).toHaveBeenCalledTimes(stage === 'create' ? 1 : 3);
   },
 );
+
+it.each([true, false])('bounds readiness polling before publish (ready: %s)', async (ready) => {
+  let polls = 0;
+  let publishes = 0;
+  const comments = createThreadsAdapter({
+    sleep: async () => {},
+    statusPollMaxAttempts: 3,
+    fetchImpl: async (input) => {
+      const url = new URL(String(input));
+      if (url.searchParams.get('fields') === 'status') {
+        polls++;
+        return json({ status: ready && polls === 2 ? 'FINISHED' : 'IN_PROGRESS' });
+      }
+      if (url.pathname.endsWith('/threads_publish')) publishes++;
+      return json({ id: '100' });
+    },
+  }).comments;
+  if (ready) await expect(comments.replyToComment('3', 'Danke', ctx)).resolves.toBe('100');
+  else
+    await expect(comments.replyToComment('3', 'Danke', ctx)).rejects.toBeInstanceOf(
+      CommentReplyRejectedError,
+    );
+  expect(polls).toBe(ready ? 2 : 3);
+  expect(publishes).toBe(ready ? 1 : 0);
+});

@@ -204,3 +204,23 @@ it('collects Threads once and names the network on the author card', async () =>
   expect(JSON.stringify(s.send.mock.calls)).toContain('comment:threads:c1:send');
   expect(await s.store.getWatermark('tenant', 'threads')).toEqual(now);
 });
+
+it.each(['threads', 'instagram', 'facebook'] as const)(
+  'shows the network limit and removes Send only for oversized %s drafts',
+  (network) => {
+    const card = (replyDe: string) =>
+      buildCommentCard(
+        { ...comment, network },
+        { translationUk: 'T', replyDe, notesUk: '' },
+        botTexts,
+      );
+    const oversized = card('🧵'.repeat(126));
+    const hasSend = (value: ReturnType<typeof card>) =>
+      value.keyboard.inline_keyboard
+        .flat()
+        .some((button) => button.callback_data.endsWith(':send'));
+    expect(hasSend(oversized)).toBe(network !== 'threads');
+    expect(hasSend(card('🧵'.repeat(125)))).toBe(true);
+    if (network === 'threads') expect(oversized.text).toContain('500 байтів UTF-8');
+  },
+);

@@ -1,10 +1,18 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T49e — PR #105 review notes (docs/03-tasks.md)
-- **Branch:** none yet (`feat/t49e-threads-reply-notes`)
-- **Last commit:** `6e08209` — docs(status): T49d merged as PR #105, add T49e review notes
-- **Next step:** codex starts T49e in a fresh session.
+- **Active agent:** claude-code
+- **Current task:** T49e — implementation complete, awaiting review
+- **Branch:** `feat/t49e-threads-reply-notes`
+- **Last commit:** see branch HEAD — `fix: address Threads comment reply review notes`
+- **Next step:** claude-code reviews the T49e PR, checks CI, merges if clear, then deploys the bot
+  from clean main under AGENTS.md.
+- **Blocked on:** independent review.
+- **Open questions for Volodymyr:** none for T49e.
+- **T49e validation:** channels 260/260; AI drafter 19/19; bot collect/session 47/47 across
+  final runs (collect 16/16, session 31/31). Workspace typecheck/build, ESLint and changed-file
+  formatting pass. Sandboxed D1 startup stalled; unrestricted runs passed. Initial session runs
+  used the old oversized-Threads expectation; final fresh session run passed. No deploy,
+  migration, live publishing, paid calls, workflow or production secret changes.
 - **T49d rollout:** PR #105 merged (`d0c930f`); migration 0011 applied to remote D1 by Volodymyr
   2026-11-10; bot deployed by claude-code, Worker `6715a397-b2cc-418e-b91c-c5864e4b63a5`.
   Live checks pending: one real Threads comment answered once; the next `threads-token.yml` run

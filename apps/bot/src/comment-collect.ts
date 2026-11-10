@@ -9,7 +9,12 @@ import type {
 
 import type { AllowList } from './allow-list';
 import type { AppContext } from './context';
-import { commentRetentionDays, type CommentNetwork, type CommentStore } from './comment-store';
+import {
+  commentReplyTooLong,
+  commentRetentionDays,
+  type CommentNetwork,
+  type CommentStore,
+} from './comment-store';
 import type { BotTexts } from './texts';
 import type { TenantConfigSource } from './tenant-config-source';
 
@@ -242,6 +247,8 @@ export function buildCommentCard(
   if (draft.notesUk.trim() !== '') {
     lines.push('', texts.commentCardNotesLabel, draft.notesUk.slice(0, 256));
   }
+  const tooLong = commentReplyTooLong(comment.network, draft.replyDe);
+  if (tooLong) lines.push('', texts.commentReplyTooLong(comment.network));
   const data = (action: string) => {
     const value = `comment:${comment.network}:${comment.id}:${action}`;
     if (comment.id.includes(':') || new TextEncoder().encode(value).length > 64)
@@ -253,7 +260,7 @@ export function buildCommentCard(
     keyboard: {
       inline_keyboard: [
         [
-          { text: texts.commentSendButton, callback_data: data('send') },
+          ...(!tooLong ? [{ text: texts.commentSendButton, callback_data: data('send') }] : []),
           { text: texts.commentEditButton, callback_data: data('edit') },
           { text: texts.commentSkipButton, callback_data: data('skip') },
         ],

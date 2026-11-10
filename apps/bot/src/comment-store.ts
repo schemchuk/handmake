@@ -19,6 +19,12 @@ export const commentReplyLimit = 2200;
 /** Networks the comment pipeline collects; the drafter accepts exactly these. */
 export type CommentNetwork = 'instagram' | 'facebook' | 'threads';
 
+export function commentReplyTooLong(network: CommentNetwork, text: string): boolean {
+  return network === 'threads'
+    ? new TextEncoder().encode(text).length > 500
+    : text.length > commentReplyLimit;
+}
+
 export type CommentStatus = 'new' | 'drafting' | 'drafted' | 'sending' | 'sent' | 'skipped';
 
 export interface NewComment {
