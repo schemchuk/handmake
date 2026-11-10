@@ -18,6 +18,7 @@ export const collectPostLimit = 25;
 const networkLabels: Record<CommentNetwork, string> = {
   instagram: 'Instagram',
   facebook: 'Facebook',
+  threads: 'Threads',
 };
 
 export interface CommentCollectOptions {
@@ -69,6 +70,7 @@ async function collectTenant(
   const config = await options.tenantConfigs.load(tenantId);
   const networks: CommentNetwork[] = [];
   if (config.channels.instagram && options.capabilities.instagram) networks.push('instagram');
+  if (config.channels.threads && options.capabilities.threads) networks.push('threads');
   if (config.channels.facebook && options.capabilities.facebook) networks.push('facebook');
   if (networks.length === 0) return;
   await notifyPending(now, tenantId, authorId, options);

@@ -66,7 +66,7 @@ async function setup(network: CommentNetwork = 'instagram') {
   return { db, store, bot, calls, reply, tasks, add, click, flush, row, network };
 }
 
-describe.each(['instagram', 'facebook'] as const)('comment session: %s', (network) => {
+describe.each(['instagram', 'facebook', 'threads'] as const)('comment session: %s', (network) => {
   it('serializes racing sends and scrubs handled reader data while retaining dedupe', async () => {
     const s = await setup(network);
     await Promise.all([s.click('send'), s.click('send'), s.click('skip')]);

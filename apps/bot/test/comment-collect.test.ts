@@ -189,3 +189,18 @@ it('continues collecting after the quarantine warning fails without logging read
     log.mockRestore();
   }
 });
+
+it('collects Threads once and names the network on the author card', async () => {
+  const s = await setup();
+  s.options.capabilities = { threads: s.capability };
+  s.options.tenantConfigs = {
+    load: async () => ({ ...config, channels: { threads: { language: 'de' } } }),
+  };
+  await runCommentCollect(now, s.options);
+  await runCommentCollect(now, s.options);
+  expect(s.draft).toHaveBeenCalledTimes(1);
+  expect(s.send).toHaveBeenCalledTimes(1);
+  expect(s.send.mock.calls[0]?.[1]).toContain('Threads');
+  expect(JSON.stringify(s.send.mock.calls)).toContain('comment:threads:c1:send');
+  expect(await s.store.getWatermark('tenant', 'threads')).toEqual(now);
+});

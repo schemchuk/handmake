@@ -237,16 +237,16 @@ describe('Threads delivery', () => {
     let polls = 0;
     const api = mockApi((path) =>
       /^\/v1.0\/\d+$/.test(path)
-        ? response({ status: ++polls === 2 ? 'FINISHED' : 'IN_PROGRESS' })
+        ? response({ status: ++polls === 8 ? 'FINISHED' : 'IN_PROGRESS' })
         : undefined,
     );
     await api.adapter.deliver([text], context);
-    expect(api.sleep).toHaveBeenCalledTimes(1);
+    expect(api.sleep).toHaveBeenCalledTimes(7);
     const slow = mockApi((path) =>
       /^\/v1.0\/\d+$/.test(path) ? response({ status: 'IN_PROGRESS' }) : undefined,
     );
     await expect(slow.adapter.deliver([text], context)).rejects.toThrow(/timed out/);
-    expect(slow.sleep.mock.calls).toEqual(Array.from({ length: 5 }, () => [5000]));
+    expect(slow.sleep.mock.calls).toEqual(Array.from({ length: 11 }, () => [5000]));
   });
   it.each([
     response({ error: { code: 190, error_subcode: 463 } }, 400),

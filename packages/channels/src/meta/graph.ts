@@ -11,6 +11,10 @@
  */
 
 export interface MetaGraphOptions {
+  /** Suppress provider/transport messages that may echo reader data or secrets. */
+  redactErrors?: boolean;
+  /** Treat every OAuth code 190 as invalid credentials, even without a subcode. */
+  tokenError190AlwaysExpired?: boolean;
   /** Injectable for tests; defaults to the global `fetch`. */
   fetchImpl?: typeof fetch;
   /** Injectable for tests; defaults to `https://graph.facebook.com/v21.0`. */
@@ -88,6 +92,8 @@ interface GraphErrorBody {
 }
 
 export class MetaGraphClient {
+  readonly #redactErrors: boolean;
+  readonly #tokenError190AlwaysExpired: boolean;
   readonly #fetch: typeof fetch;
   readonly #apiBase: string;
   readonly #sleep: (ms: number) => Promise<void>;
@@ -97,8 +103,18 @@ export class MetaGraphClient {
   constructor(
     /** Network name for error messages, e.g. "Instagram" / "Facebook". */
     private readonly network: string,
-    { fetchImpl, apiBase, sleep, maxAttempts, rateLimitBackoffMs }: MetaGraphOptions = {},
+    {
+      fetchImpl,
+      apiBase,
+      sleep,
+      maxAttempts,
+      rateLimitBackoffMs,
+      redactErrors,
+      tokenError190AlwaysExpired,
+    }: MetaGraphOptions = {},
   ) {
+    this.#redactErrors = redactErrors ?? false;
+    this.#tokenError190AlwaysExpired = tokenError190AlwaysExpired ?? false;
     this.#fetch = fetchImpl ?? fetch;
     this.#apiBase = apiBase ?? DEFAULT_API_BASE;
     this.#sleep = sleep ?? DEFAULT_SLEEP;
@@ -172,7 +188,7 @@ export class MetaGraphClient {
       response = await this.#fetch(url, init);
     } catch (cause) {
       throw new MetaGraphError(
-        `${this.network} ${path} request failed: ${(cause as Error).message}`,
+        `${this.network} ${path} request failed: ${this.#redactErrors ? 'transport failure' : (cause as Error).message}`,
       );
     }
 
@@ -191,17 +207,24 @@ export class MetaGraphClient {
       const code = typeof error?.code === 'number' ? error.code : undefined;
       const subcode = typeof error?.error_subcode === 'number' ? error.error_subcode : undefined;
       const message = typeof error?.message === 'string' ? error.message : undefined;
+      const displayMessage = this.#redactErrors ? undefined : message;
       if (response.status === 429 || code === 4 || code === 80004) {
         throw new MetaRateLimitError(
-          `${this.network} ${path} rate limited: ${message ?? 'Too Many Requests'}`,
+          `${this.network} ${path} rate limited: ${displayMessage ?? 'Too Many Requests'}`,
           this.#rateLimitBackoffMs,
         );
       }
-      if (code === 190 && (subcode === 463 || subcode === 467 || isExpiredTokenMessage(message))) {
+      if (
+        code === 190 &&
+        (this.#tokenError190AlwaysExpired ||
+          subcode === 463 ||
+          subcode === 467 ||
+          isExpiredTokenMessage(message))
+      ) {
         throw new MetaTokenExpiredError(`${this.network} ${path}: access token expired`);
       }
       throw new MetaGraphError(
-        `${this.network} ${path} failed: ${message ?? `HTTP ${response.status}`}`,
+        `${this.network} ${path} failed: ${displayMessage ?? `HTTP ${response.status}`}`,
         response.status >= 400 && response.status < 500,
       );
     }

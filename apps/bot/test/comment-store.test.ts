@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { commentRetentionDays, createCommentStore } from '../src/comment-store';
@@ -302,4 +303,48 @@ describe('createCommentStore', () => {
     }
     expect((await rowOf(db, 'instagram', 'comment-1'))?.['status']).toBe('new');
   });
+});
+
+it('migration 0011 preserves existing comments, edit arms, watermarks and indexes', async () => {
+  const db = await makeD1('0010_comment_edits.sql');
+  const store = createCommentStore(db);
+  for (const network of ['instagram', 'facebook'] as const) {
+    await store.collect(newComment({ network }));
+    await store.setWatermark(TENANT, network, NOW, NOW);
+  }
+  await db
+    .prepare(
+      "UPDATE comments SET edit_chat_id = '42', edit_expires_at = ? WHERE network = 'instagram'",
+    )
+    .bind(LATER.toISOString())
+    .run();
+  const before = await db.prepare('SELECT * FROM comments ORDER BY network').all();
+  const watermarks = await db.prepare('SELECT * FROM comment_watermarks ORDER BY network').all();
+  const sql = readFileSync(
+    new URL('../migrations/0011_threads_comments.sql', import.meta.url),
+    'utf8',
+  )
+    .split('\n')
+    .filter((line) => !line.startsWith('--'))
+    .join(' ');
+  await db.exec(sql);
+  expect((await db.prepare('SELECT * FROM comments ORDER BY network').all()).results).toEqual(
+    before.results,
+  );
+  expect(
+    (await db.prepare('SELECT * FROM comment_watermarks ORDER BY network').all()).results,
+  ).toEqual(watermarks.results);
+  const indexes = await db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
+    .all<{ name: string }>();
+  expect(indexes.results.map((r) => r.name)).toEqual(
+    expect.arrayContaining([
+      'idx_comments_pending_notify',
+      'idx_comments_retention',
+      'idx_comments_edit_chat',
+    ]),
+  );
+  expect(await store.collect(newComment({ network: 'threads' }))).toBe(true);
+  await store.setWatermark(TENANT, 'threads', NOW, NOW);
+  expect(await store.getWatermark(TENANT, 'threads')).toEqual(NOW);
 });

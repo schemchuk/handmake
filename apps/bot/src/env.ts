@@ -31,6 +31,8 @@ export interface Env {
   INSTAGRAM_ACCESS_TOKEN?: string;
   FACEBOOK_PAGE_ID?: string;
   FACEBOOK_PAGE_ACCESS_TOKEN?: string;
+  THREADS_USER_ID?: string;
+  THREADS_ACCESS_TOKEN?: string;
   META_APP_ID?: string;
   META_APP_SECRET?: string;
 }

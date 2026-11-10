@@ -56,7 +56,15 @@ export interface MetaCommentsConfig {
   /** Builds this network's comments-edge path; `since` is the caller's watermark. */
   commentsPath: (postId: string, since: Date | undefined, pageLimit: number) => string;
   /** Builds this network's reply path for one comment. */
-  replyPath: (commentId: string) => string;
+  replyPath?: (commentId: string) => string;
+  /** Custom multi-call reply; owns rejection versus ambiguous-write classification. */
+  reply?: (
+    commentId: string,
+    text: string,
+    ctx: ChannelCommentsContext,
+    auth: MetaAuthState,
+    call: MetaCallRetry,
+  ) => Promise<RemoteId>;
   /**
    * Maps a posts-edge entry; returning undefined skips it (e.g. a foreign
    * post on a Page feed).
@@ -190,8 +198,9 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
       throw this.config.error('comments reply text must be a non-empty string');
     }
     const { auth, call } = await this.#authorized(ctx);
+    if (this.config.reply) return this.config.reply(id, text, ctx, auth, call);
     const result = (await call(() =>
-      this.config.graph.call(auth, 'POST', this.config.replyPath(id), { message: text }),
+      this.config.graph.call(auth, 'POST', this.config.replyPath!(id), { message: text }),
     ).catch((error: unknown) => {
       if (
         (error instanceof MetaGraphError && error.rejected) ||
