@@ -5,7 +5,7 @@
 - **Branch:** `feat/t26d-threads-token` (to create)
 - **Last commit:** `8e4e6be` — feat(channels): add Threads publishing (T26c) (#103)
 - **Next step:** codex implements T26d in a fresh session, plus the review notes from PR #103
-  listed in the task. Needs H17 (`SECRETS_WRITE_TOKEN`) for the manual run; sensitive (workflow,
+  listed in the task. H17 done 2026-11-10 (`SECRETS_WRITE_TOKEN` set, no expiration); sensitive (workflow,
   secrets): Volodymyr's OK before merge. Deadline: merged and run once before mid-December 2026.
 - **T26c rollout:** PR #103 merged 2026-11-10 with Volodymyr's OK. Bot deploy after the merge was
   blocked for claude-code by the auto-mode classifier; Volodymyr deploys manually
