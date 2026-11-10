@@ -3,7 +3,7 @@ import type { GitCommitter } from './git';
 import { contentRawBaseUrl, contentRawPhotoUrl } from './instagram-delivery';
 
 /**
- * Facebook Page publishing wiring (T26b): Meta pulls the photos from
+ * Meta photo publishing wiring: Meta pulls the photos from
  * public raw-GitHub URLs, exactly like Instagram (T26a3), but Facebook
  * accepts the original aspect ratios — no 4:5 framing, no committed
  * copies. The photos were committed with the item, so the opted-in
@@ -11,7 +11,7 @@ import { contentRawBaseUrl, contentRawPhotoUrl } from './instagram-delivery';
  * when Meta fetches them.
  */
 
-export interface PrepareFacebookDeliveryDeps {
+export interface PrepareMetaPhotoDeliveryDeps {
   network?: 'Facebook' | 'Threads';
   env: NodeJS.ProcessEnv;
   git: GitCommitter;
@@ -30,7 +30,7 @@ export interface PrepareFacebookDeliveryDeps {
   logger?: (line: string) => void;
 }
 
-export interface PreparedFacebookDelivery {
+export interface PreparedMetaPhotoDelivery {
   /** Public URL of each photo, aligned with the caller's photo bytes. */
   photoUrls: string[];
   /** True when this preparation ran the opted-in content push. */
@@ -38,15 +38,15 @@ export interface PreparedFacebookDelivery {
 }
 
 /**
- * Everything the Facebook delivery needs before any network side effect:
+ * Everything the Meta photo delivery needs before any network side effect:
  * public photo URLs aligned with the photos and the opted-in content push
  * (so Meta can fetch fresh URLs). Throws when no raw base URL is
  * available — the caller records the channel failure. Nothing is written
  * or committed here: the photos are the item's own committed files.
  */
 export async function prepareMetaPhotoDelivery(
-  deps: PrepareFacebookDeliveryDeps,
-): Promise<PreparedFacebookDelivery> {
+  deps: PrepareMetaPhotoDeliveryDeps,
+): Promise<PreparedMetaPhotoDelivery> {
   const log = deps.logger ?? (() => {});
   if (
     deps.network === 'Threads' &&
@@ -74,5 +74,3 @@ export async function prepareMetaPhotoDelivery(
   }
   return { photoUrls: urls, pushed: false };
 }
-
-export { prepareMetaPhotoDelivery as prepareFacebookDelivery };

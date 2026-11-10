@@ -1,12 +1,19 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T26d — Automatic Threads token refresh (docs/03-tasks.md)
-- **Branch:** `feat/t26d-threads-token` (to create)
-- **Last commit:** `8e4e6be` — feat(channels): add Threads publishing (T26c) (#103)
-- **Next step:** codex implements T26d in a fresh session, plus the review notes from PR #103
-  listed in the task. H17 done 2026-11-10 (`SECRETS_WRITE_TOKEN` set, no expiration); sensitive (workflow,
-  secrets): Volodymyr's OK before merge. Deadline: merged and run once before mid-December 2026.
+- **Active agent:** claude-code
+- **Current task:** T26d — PR #104 ready for independent review (CI pending)
+- **Branch:** `feat/t26d-threads-token`
+- **Last commit:** `6ed8306` — feat(publisher): automate Threads token refresh (T26d)
+- **Next step:** claude-code reviews PR #104, waits for green CI and obtains Volodymyr's OK for
+  the sensitive workflow/secret merge. After merge, deploy the bot from clean `main`, dispatch
+  `threads-token.yml` once on `main`, inspect sanitized logs and verify the next authorized Threads
+  publish; record both run URLs in the PR. H17 is set; `SECRETS_WRITE_TOKEN` has no expiration.
+  Deadline: merged and run once before mid-December 2026. Handoff commit follows the implementation.
+- **T26d validation:** publisher 246/246, channels full suite 249/249 before consolidating the polling
+  regression into an existing test; final Threads suite 32/32; bot preview 30/30.
+  Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
+  cover expiry, invalid responses, HTTP/network/JSON failures, masking order and secret stdin.
+  No live refresh, production secret change, publishing or deployment. Live acceptance remains pending.
 - **T26c rollout:** PR #103 merged 2026-11-10 with Volodymyr's OK. Bot deploy after the merge was
   blocked for claude-code by the auto-mode classifier; Volodymyr deploys manually
   (`pnpm -C apps/bot run deploy` from clean `main`) and the Worker version goes below.

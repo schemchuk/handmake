@@ -1448,6 +1448,8 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
 - Tests: form rendering, build check; the live opt-in is checked manually and recorded in the PR.
 
 ### T26d — Automatic Threads token refresh (`workflows`, `publisher`) · Sensitive: workflows, secrets
+- Implementation complete 2026-11-10, PR #104 (`feat/t26d-threads-token`); independent review,
+  sensitive merge approval and post-merge live acceptance pending. Includes all three PR #103 review notes.
 - Added 2026-11-10 by Volodymyr: the Threads long-lived token expires 60 days after issue or last
   refresh (the one from 2026-11-09 around 2027-01-08). Must be merged and run once before mid-December 2026.
 - Owner: codex · Reviewer: claude-code · Depends on: T26c, H17

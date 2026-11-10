@@ -436,7 +436,7 @@ describe('Threads author preview (T26c)', () => {
   it('shows the exact text, UTF-8 budget and canonical link', () => {
     const result = preview(draft.texts.de);
     expect(result.text).toContain('🧵 Threads (');
-    expect(result.text).toContain('/500 байт UTF-8)');
+    expect(result.text).toContain('/500 одиниць тексту; умлаути й емодзі займають кілька одиниць)');
     expect(result.text).toContain('https://craft.example/posts/draft/');
     expect(
       result.keyboard?.inline_keyboard.flat().some((b) => b.callback_data.endsWith(':publish')),
