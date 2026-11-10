@@ -189,6 +189,8 @@ export const botTexts = {
       'not-site-worthy': '📸 Instagram: туди йдуть лише дописи для сайту — цей пропустимо.',
       'site-excluded': '📸 Instagram: тестовий допис у Instagram не піде.',
     })[reason],
+  previewThreads: (chars: number, text: string) => `🧵 Threads (${chars}/500 байт UTF-8):\n${text}`,
+  previewThreadsSkip: '🧵 Threads: цей допис не піде — тестовий або не для сайту.',
   previewFacebookHeader: (lang: string, chars: number) =>
     `📘 Facebook (${lang.toUpperCase()}, ${chars} симв.):`,
   previewFacebookLink: (url: string) => `посилання в підписі (клікабельне): ${url}`,
@@ -214,7 +216,8 @@ export const botTexts = {
   commentCardReplyLabel: '🇩🇪 Чернетка відповіді:',
   commentCardNoReply: 'без відповіді — див. нотатку нижче.',
   commentCardNotesLabel: '📝 Нотатка:',
-  commentEditPrompt: 'Надішліть нову німецьку відповідь одним повідомленням протягом 30 хвилин.',
+  commentEditPrompt:
+    'Надішліть нову німецьку відповідь протягом 30 хвилин. Збережемо перші 2200 символів.',
   commentUnavailable: 'Коментар недоступний для цієї дії або вже обробляється.',
   commentSkipped: 'Коментар пропущено.',
   commentSent: 'Відповідь надіслано.',

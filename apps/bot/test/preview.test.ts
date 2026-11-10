@@ -406,3 +406,66 @@ describe('preview projects a test publish (B3, PR #89 note 2)', () => {
     expect(test.text).not.toContain('❌');
   });
 });
+
+describe('Threads author preview (T26c)', () => {
+  const draft = {
+    ...createDraft('tenant', 'draft', now),
+    state: 'ready' as const,
+    texts: { uk: 'Привіт', de: 'Handarbeit 🧵' },
+    photoRefs: ['photo'],
+  };
+  const preview = (de: string, siteExcluded = false) =>
+    buildPreview(
+      { ...draft, texts: { ...draft.texts, de } },
+      botTexts,
+      now,
+      undefined,
+      undefined,
+      undefined,
+      siteExcluded,
+      {
+        language: 'de',
+        canonical: {
+          links: true,
+          baseUrl: 'https://craft.example',
+          defaultLanguage: 'de',
+          section: 'posts',
+        },
+      },
+    );
+  it('shows the exact text, UTF-8 budget and canonical link', () => {
+    const result = preview(draft.texts.de);
+    expect(result.text).toContain('🧵 Threads (');
+    expect(result.text).toContain('/500 байт UTF-8)');
+    expect(result.text).toContain('https://craft.example/posts/draft/');
+    expect(
+      result.keyboard?.inline_keyboard.flat().some((b) => b.callback_data.endsWith(':publish')),
+    ).toBe(true);
+  });
+  it('blocks approval when text plus canonical URL exceeds 500', () => {
+    const result = preview('x'.repeat(490));
+    expect(result.text).toContain('Threads text');
+    expect(
+      result.keyboard?.inline_keyboard.flat().some((b) => b.callback_data.endsWith(':publish')),
+    ).toBe(false);
+  });
+  it('skips Threads limits for test publications', () => {
+    const result = preview('x'.repeat(501), true);
+    expect(result.text).toContain(botTexts.previewThreadsSkip);
+    expect(
+      result.keyboard?.inline_keyboard.flat().some((b) => b.callback_data.endsWith(':publish')),
+    ).toBe(true);
+  });
+  it('loads Threads settings for a tenant and omits its block when disabled', async () => {
+    const config = {
+      id: 'tenant',
+      languages: ['uk', 'de'],
+      channels: { threads: { language: 'de' } },
+      featureFlags: { canonicalLinks: true },
+      site: { baseUrl: 'https://craft.example', defaultLanguage: 'de' },
+    };
+    const result = await buildTenantPreview(draft, botTexts, { load: async () => config as never });
+    expect(result.text).toContain('https://craft.example/posts/draft/');
+    expect((await buildTenantPreview(draft, botTexts)).text).not.toContain('🧵 Threads');
+  });
+});

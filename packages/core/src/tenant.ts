@@ -71,6 +71,7 @@ export const channelsSchema = z
       })
       .strict()
       .optional(),
+    threads: z.object({ language: languageCodeSchema }).strict().optional(),
   })
   .strict()
   .refine((channels) => Object.keys(channels).length > 0, 'at least one channel must be enabled');
@@ -267,6 +268,14 @@ export const tenantConfigSchema = z
         code: 'custom',
         path: ['channels', 'instagram', 'language'],
         message: `instagram.language "${instagram.language}" is not in languages [${config.languages.join(', ')}]`,
+      });
+    }
+    const threads = config.channels.threads;
+    if (threads && !config.languages.includes(threads.language)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['channels', 'threads', 'language'],
+        message: 'threads.language must be in tenant languages',
       });
     }
     const facebook = config.channels.facebook;

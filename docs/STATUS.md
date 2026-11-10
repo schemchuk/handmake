@@ -1,11 +1,15 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T26c — Threads adapter (F33, `channels`)
-- **Branch:** none yet (`feat/t26c-<slug>`)
-- **Last commit:** `1c25683` — feat(bot): handle author comment replies (T49c3) (#102)
-- **Next step:** codex starts T26c in a fresh session (docs/03-tasks.md), including the
-  "Review notes from PR #102" line. Sensitive: new secrets, Volodymyr's OK before merge.
+- **Active agent:** claude-code
+- **Current task:** Review T26c — Threads adapter (PR #103)
+- **Branch:** `feat/t26c-threads`
+- **Last commit:** `89e74a5` — feat(channels): publish site content to Threads
+- **Next step:** claude-code reviews PR #103, including the PR #102 fixes; check CI before merge.
+  Sensitive: workflows, secrets and reader data; Volodymyr's OK required before merge.
+- **T26c validation:** workspace typecheck/build, ESLint, Prettier, actionlint and dry-run pass;
+  channels 248/248, core 234/234, publisher 229/229. Bot: full 611/612 (pre-fix channel order),
+  final changed suites 96/96 (--maxWorkers 1); all 612 covered across runs. Sandbox Miniflare/tsx
+  could not start; unrestricted runs passed. Publisher needed a 30s timeout. No live calls or deploy.
 - **T49c3 rollout:** PR #102 merged 2026-11-10 with Volodymyr's OK; public Datenschutz shows the
   comments paragraph, review notes kept in an HTML comment. Volodymyr applies migration 0010 to
   remote D1 (applied by Volodymyr 2026-11-10); bot deployed by claude-code the same day.

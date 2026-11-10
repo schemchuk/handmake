@@ -1421,8 +1421,7 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   real 10-photo post on the first live carousel.
 
 ### T26c — Threads adapter (F33, `channels`) · Sensitive: new secrets
-- Deferred 2026-11-08 (Volodymyr): skipped until the Threads token (`THREADS_USER_ID`,
-  `THREADS_ACCESS_TOKEN`) exists; T26a, T26b and T49 go ahead without Threads.
+- Unblocked 2026-11-09: Threads publishing secrets exist in GitHub Secrets.
 - Owner: codex · Reviewer: claude-code · Depends on: T26a
 - Review notes from PR #102 (`apps/bot`): (1) drop the hard-coded `countUncertain().notifications`
   field from the type and query; (2) in `collectTenant`, catch a failed author warning after
@@ -1432,6 +1431,10 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
 - Change: `ThreadsChannel` via the Threads API: text plus image or carousel, 500-character limit shown
   in the preview, canonical link in the text.
 - Acceptance and tests: as T26b.
+- Implemented 2026-11-10, awaiting claude-code review: text/image/carousel + shows, canonical
+  links, conservative 500-byte preview gate, shared Meta transport and original-photo URL wiring.
+  PR #102 notes resolved (count removal, isolated warning failures, fully visible capped edits).
+  Operator steps and live-check caveats: docs/threads-runbook.md. No live publishing or deploy.
 
 ### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T41, H15

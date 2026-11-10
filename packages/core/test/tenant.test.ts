@@ -86,6 +86,8 @@ describe('parseTenantConfig', () => {
       joinUrl: 'https://t.me/Faden_und_Stimmung',
     });
     expect(config.channels.facebook).toEqual({ language: 'de' });
+    expect(config.channels.threads).toEqual({ language: 'de' });
+    expect(Object.keys(config.channels)).toEqual(['telegram', 'instagram', 'facebook', 'threads']);
     expect(config.offerings).toEqual([]);
   });
 
@@ -281,4 +283,15 @@ ai:
   ])('rejects malformed or unknown ai fields', (section) => {
     expect(() => parseTenantConfig(secondTenant + section)).toThrow(TenantConfigError);
   });
+});
+
+it('rejects Threads languages outside the tenant language set and unknown settings', () => {
+  expect(() =>
+    parseTenantConfig(
+      realConfig().replace('  threads:\n    language: de', '  threads:\n    language: fr'),
+    ),
+  ).toThrow(/threads.language/);
+  expect(
+    channelsSchema.safeParse({ threads: { language: 'de', accessToken: 'bad' } }).success,
+  ).toBe(false);
 });

@@ -1,4 +1,4 @@
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -161,7 +161,10 @@ async function jpeg(width: number, height: number): Promise<Uint8Array> {
 beforeEach(async () => {
   root = await freshDir('handmake-instagram-publish-');
   await mkdir(path.join(root, 'config', 'tenants'), { recursive: true });
-  await copyFile(realTenantConfig, path.join(root, 'config', 'tenants', 'faden-und-stimmung.yaml'));
+  await writeFile(
+    path.join(root, 'config', 'tenants', 'faden-und-stimmung.yaml'),
+    (await readFile(realTenantConfig, 'utf8')).replace(/  threads:\n    language: de\n/, ''),
+  );
   telegram = telegramAdapter();
   instagram = instagramAdapter();
   facebook = facebookAdapter();

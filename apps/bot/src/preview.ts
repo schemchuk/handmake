@@ -9,6 +9,9 @@ import {
   renderTelegram,
   TelegramRenderError,
   telegramCapabilities,
+  renderThreads,
+  threadsTextLength,
+  ThreadsRenderError,
 } from '@handmake/channels';
 import {
   buildApprovedWorkJob,
@@ -151,6 +154,9 @@ export async function buildTenantPreview(
         }
       : undefined,
     !publishesLive,
+    config?.channels.threads
+      ? { ...config.channels.threads, ...(canonical ? { canonical } : {}) }
+      : undefined,
   );
 }
 
@@ -166,6 +172,7 @@ export function buildPreview(
   facebook?: TenantConfig['channels']['facebook'] & { canonical?: CanonicalLinkSettings },
   /** Projects a site-excluded (test) publish. */
   siteExcluded = false,
+  threads?: TenantConfig['channels']['threads'] & { canonical?: CanonicalLinkSettings },
 ): PreviewMessage {
   const post = draftAsPost(draft, now, siteExcluded);
   const uk = draft.texts['uk'];
@@ -175,6 +182,7 @@ export function buildPreview(
     Object.keys(post.texts)[0];
   const primaryText = primaryLanguage ? post.texts[primaryLanguage] : undefined;
 
+  let threadsPreview: string | undefined;
   let blockedError: string | undefined;
   let instagramCaption: { lang: string; caption: string } | undefined;
   let instagramSkip: ReturnType<typeof instagramSkipReason> | undefined;
@@ -187,6 +195,15 @@ export function buildPreview(
     const workChannels =
       draft.kind === 'work' ? readWorkDraftData(draft).config.channels : undefined;
     if (draft.kind !== 'work' || (workChannels?.length ?? 0) > 0) renderTelegram(post, telegram);
+    if (threads && (workChannels?.includes('threads') ?? true)) {
+      const op = renderThreads(post, threads)[0];
+      const text =
+        op?.kind === 'message' ? op.text : op?.kind === 'mediaGroup' ? op.caption : undefined;
+      threadsPreview =
+        text === undefined
+          ? texts.previewThreadsSkip
+          : texts.previewThreads(threadsTextLength(text), text);
+    }
     // Instagram copies only items that announce on it (a work announcing on
     // other channels alone must never be judged by Instagram rules); a
     // site-excluded/test post never renders.
@@ -222,7 +239,8 @@ export function buildPreview(
     if (
       error instanceof TelegramRenderError ||
       error instanceof InstagramRenderError ||
-      error instanceof FacebookRenderError
+      error instanceof FacebookRenderError ||
+      error instanceof ThreadsRenderError
     ) {
       // Render limits are author-actionable: name the exact rule (render
       // errors read as-is inside the channel-agnostic blocked text).
@@ -311,6 +329,7 @@ export function buildPreview(
     }
   }
 
+  if (threadsPreview && !blockedError) lines.push('', threadsPreview);
   const rows = keyboard(draft.draftId, texts, blockedError !== undefined);
   if (draft.kind === 'work' && !blockedError) {
     const { config } = readWorkDraftData(draft);
