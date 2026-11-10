@@ -1654,8 +1654,8 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   (4) drop the redundant `!Number.isNaN(created)` after the `Number.isFinite` guard.
 
 #### T49d — Threads comments in the inbox (`channels`, `bot`, `workflows`, docs/legal) · Sensitive: reader data, secrets, workflows, legal text
-- Implementation complete 2026-11-10, PR #105 (`feat/t49d-threads-comments`); independent review and
-  Volodymyr's sensitive-merge approval pending. Remote migration, deploy and live acceptance are pending.
+- Done 2026-11-10: PR #105 merged (`d0c930f`) with Volodymyr's OK; no blocking findings, review
+  notes moved to T49e. Remote migration 0011, bot deploy and live acceptance are pending.
 - Added 2026-11-10 by claude-code on Volodymyr's request. Owner: codex · Reviewer: claude-code ·
   Depends on: T49c3, T26d; H18 for go-live only (code and tests run against mocks).
 - Change:
@@ -1690,6 +1690,22 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   reply, ambiguous publish, over-budget reply, 190 without refresh), migration on a D1 copy with
   existing rows, bot collect/send for `threads`, refresh script with the Worker step (success,
   Worker failure after GitHub write, no secret in output), actionlint.
+
+#### T49e — PR #105 review notes (`channels`, `bot`)
+- Added 2026-11-10 by claude-code. Owner: codex · Reviewer: claude-code · Depends on: T49d.
+- Review notes from PR #105 (non-blocking):
+  1. Threads `reply` publishes the container without a status check; a "not ready" 4xx reopens the
+     reply and the author must press Send again. Add a short bounded container status check
+     before `threads_publish` (keep the ambiguous-publish rule).
+  2. A reply over 500 UTF-8 bytes is rejected with the generic reopen message while the drafter
+     targets `commentReplyLimit` (2200). Add a per-network reply limit to the drafter/session so
+     the author sees why (Threads 500 bytes).
+  3. `MetaCommentsConfig` makes both `replyPath` and `reply` optional and uses `replyPath!`; make
+     it a union type requiring exactly one.
+- Acceptance: Instagram and Facebook behaviour unchanged; Threads reply waits for a ready container
+  within a bound; over-limit Threads drafts are flagged to the author before Send.
+- Tests: mocked container not-ready then ready, not-ready past the bound (reopens), per-network
+  limit in drafter/session, typecheck for the config union.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on
