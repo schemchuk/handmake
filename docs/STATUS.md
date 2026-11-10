@@ -1,14 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T49d rollout — PR #105 merged (`d0c930f`) with Volodymyr's OK
-- **Branch:** `main`
-- **Last commit:** `d0c930f` — feat: add Threads comments to the author inbox (T49d) (#105)
-- **Next step:** Volodymyr applies migration 0011 to remote D1
-  (`pnpm -C apps/bot exec wrangler d1 migrations apply handmake-bot --remote`); then claude-code deploys
-  the bot from clean `main` and records the Worker version. Then T49e (PR #105 review notes) goes
-  to codex. Live checks pending: one real Threads comment answered once, next
-  `threads-token.yml` run writes both GitHub and Worker copies.
+- **Active agent:** codex
+- **Current task:** T49e — PR #105 review notes (docs/03-tasks.md)
+- **Branch:** none yet (`feat/t49e-threads-reply-notes`)
+- **Last commit:** `6e08209` — docs(status): T49d merged as PR #105, add T49e review notes
+- **Next step:** codex starts T49e in a fresh session.
+- **T49d rollout:** PR #105 merged (`d0c930f`); migration 0011 applied to remote D1 by Volodymyr
+  2026-11-10; bot deployed by claude-code, Worker `6715a397-b2cc-418e-b91c-c5864e4b63a5`.
+  Live checks pending: one real Threads comment answered once; the next `threads-token.yml` run
+  writes both GitHub and Worker copies.
 - **T49d validation:** channels 256/256 plus final Threads suites 42/42; publisher 248/248 plus
   final rotation script 8/8; full bot 624/624 (one worker); legal rendering 16/16.
   Workspace typecheck/build, ESLint, formatting and actionlint pass.
@@ -57,8 +57,8 @@
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
-- **Bot Worker:** `f6782d60-5f33-4733-87e2-d5407b54fd68` (after PR #104, 2026-11-10, deployed by Volodymyr).
-- **Blocked on:** T49d deploy waits on remote migration 0011 (Volodymyr). T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
+- **Bot Worker:** `6715a397-b2cc-418e-b91c-c5864e4b63a5` (after PR #105, 2026-11-10, deployed by claude-code).
+- **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
