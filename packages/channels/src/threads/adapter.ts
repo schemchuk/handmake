@@ -151,7 +151,7 @@ export class ThreadsAdapter implements ChannelAdapter {
       if (result?.status === 'FINISHED') return;
       if (result?.status !== 'IN_PROGRESS')
         throw new ThreadsAdapterError('Threads container failed or returned an unknown status');
-      if (poll + 1 < attempts) await this.#sleep(this.#options.statusPollIntervalMs ?? 60000);
+      if (poll + 1 < attempts) await this.#sleep(this.#options.statusPollIntervalMs ?? 5000);
     }
     throw new ThreadsAdapterError('Threads container processing timed out');
   }

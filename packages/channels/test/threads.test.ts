@@ -246,7 +246,7 @@ describe('Threads delivery', () => {
       /^\/v1.0\/\d+$/.test(path) ? response({ status: 'IN_PROGRESS' }) : undefined,
     );
     await expect(slow.adapter.deliver([text], context)).rejects.toThrow(/timed out/);
-    expect(slow.sleep).toHaveBeenCalledTimes(5);
+    expect(slow.sleep.mock.calls).toEqual(Array.from({ length: 5 }, () => [5000]));
   });
   it.each([
     response({ error: { code: 190, error_subcode: 463 } }, 400),

@@ -1,12 +1,18 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T26d — Automatic Threads token refresh (docs/03-tasks.md)
-- **Branch:** `feat/t26d-threads-token` (to create)
+- **Current task:** T26d — Automatic Threads token refresh; implementation complete, PR preparation
+- **Branch:** `feat/t26d-threads-token`
 - **Last commit:** `8e4e6be` — feat(channels): add Threads publishing (T26c) (#103)
-- **Next step:** codex implements T26d in a fresh session, plus the review notes from PR #103
-  listed in the task. H17 done 2026-11-10 (`SECRETS_WRITE_TOKEN` set, no expiration); sensitive (workflow,
-  secrets): Volodymyr's OK before merge. Deadline: merged and run once before mid-December 2026.
+- **Next step:** codex pushes T26d and opens its PR, then hands off to claude-code for independent
+  review. Sensitive workflow/secret changes require Volodymyr's OK before merge. After merge,
+  dispatch once on `main`, inspect sanitized logs and verify the next authorized Threads publish;
+  record both run URLs in the PR. H17 is set; `SECRETS_WRITE_TOKEN` has no expiration.
+- **T26d validation:** publisher 246/246, channels 248 original tests plus one temporary polling
+  regression passed (249/249); final consolidated Threads suite 32/32; bot preview 30/30.
+  Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
+  cover expiry, invalid responses, HTTP/network/JSON failures, masking order and secret stdin.
+  No live refresh, production secret change, publishing or deployment. Live acceptance remains pending.
 - **T26c rollout:** PR #103 merged 2026-11-10 with Volodymyr's OK. Bot deploy after the merge was
   blocked for claude-code by the auto-mode classifier; Volodymyr deploys manually
   (`pnpm -C apps/bot run deploy` from clean `main`) and the Worker version goes below.
