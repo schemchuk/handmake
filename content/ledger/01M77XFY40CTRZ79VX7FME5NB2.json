@@ -1,0 +1,29 @@
+{
+  "tenantId": "faden-und-stimmung",
+  "postId": "01M77XFY40CTRZ79VX7FME5NB2",
+  "channels": {
+    "telegram": {
+      "status": "done",
+      "remoteIds": [
+        49,
+        50
+      ],
+      "updatedAt": "2026-11-10T17:25:58.315Z"
+    },
+    "instagram": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-10T17:25:58.315Z"
+    },
+    "facebook": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-10T17:25:58.315Z"
+    },
+    "threads": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-10T17:25:58.315Z"
+    }
+  }
+}
