@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T26c — Threads adapter (F33, `channels`)
+- **Active agent:** claude-code
+- **Current task:** Review T26c — Threads adapter (PR #103)
 - **Branch:** `feat/t26c-threads`
-- **Last commit:** `ed012ba` — fix(bot): address comment inbox review notes
-- **Next step:** codex opens the T26c PR, then hands review to claude-code.
+- **Last commit:** `89e74a5` — feat(channels): publish site content to Threads
+- **Next step:** claude-code reviews PR #103, including the PR #102 fixes; check CI before merge.
   Sensitive: workflows, secrets and reader data; Volodymyr's OK required before merge.
 - **T26c validation:** workspace typecheck/build, ESLint, Prettier, actionlint and dry-run pass;
   channels 248/248, core 234/234, publisher 229/229. Bot: full 611/612 (pre-fix channel order),
