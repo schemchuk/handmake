@@ -9,8 +9,6 @@
   the Threads drafter appends a 500-byte instruction to `commentReplyPromptV1`.
   Live checks pending: one real Threads comment answered once; next `threads-token.yml` run
   (Mon 07:23 UTC) writes both GitHub and Worker copies.
-- **Blocked on:** T48 waits on H15.
-- **Open questions for Volodymyr:** none for T49e.
 - **T49e rollout:** bot deployed by claude-code 2026-11-10, Worker
   `c5010485-4881-48c8-a06f-75bb3f24c024`.
 - **T49e validation:** channels 260/260; AI drafter 19/19; bot collect/session 47/47 across
