@@ -11,7 +11,7 @@ import type { TextGenerationClient } from './claude-text-generator';
 const nonblank = z.string().refine((value) => value.trim().length > 0);
 const requestSchema = z
   .object({
-    network: z.enum(['instagram', 'facebook']),
+    network: z.enum(['instagram', 'facebook', 'threads']),
     handle: z.string(),
     text: nonblank,
     postId: nonblank,
@@ -62,7 +62,11 @@ export class ClaudeCommentDrafter implements CommentDrafter {
       model: this.options.model,
       max_tokens: 4000,
       output_config: { effort: 'medium', format: zodOutputFormat(outputSchema) },
-      system: commentReplyPromptV1,
+      system:
+        input.network === 'threads'
+          ? commentReplyPromptV1 +
+            '\nFor Threads, reply_de must fit within 500 UTF-8 bytes, including spaces and punctuation.'
+          : commentReplyPromptV1,
       messages: [{ role: 'user', content: JSON.stringify(input) }],
     });
     if (!response.usage || !response.id) throw new Error('comment draft usage is unavailable');

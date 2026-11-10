@@ -79,6 +79,12 @@ describe('ClaudeCommentDrafter', () => {
     expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage, 'msg_comment');
   });
 
+  it('accepts Threads and gives its UTF-8 reply budget to the drafter', async () => {
+    const { drafter, create } = setup();
+    await drafter.draft({ ...request, network: 'threads' });
+    expect(create.mock.calls[0]![0].system).toContain('500 UTF-8 bytes');
+  });
+
   it('requires usage identity before any output validation', async () => {
     const create = vi.fn(
       async (_params: Anthropic.MessageCreateParamsNonStreaming) =>

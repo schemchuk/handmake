@@ -117,6 +117,12 @@ export class ThreadsAdapter implements ChannelAdapter {
               }),
             ),
           );
+          await this.#awaitContainer(
+            container,
+            auth,
+            call,
+            Math.min(this.#options.statusPollMaxAttempts ?? 4, 4),
+          );
         } catch (error) {
           if (error instanceof ThreadsCommentsTokenError) throw error;
           // A container is not a public reply; creation failures are safe to reopen.
@@ -228,8 +234,12 @@ export class ThreadsAdapter implements ChannelAdapter {
       throw new ThreadsAdapterError('Threads returned a malformed id');
     return id;
   }
-  async #awaitContainer(id: string, auth: MetaAuthState, call: MetaCallRetry): Promise<void> {
-    const attempts = this.#options.statusPollMaxAttempts ?? 12;
+  async #awaitContainer(
+    id: string,
+    auth: MetaAuthState,
+    call: MetaCallRetry,
+    attempts = this.#options.statusPollMaxAttempts ?? 12,
+  ): Promise<void> {
     for (let poll = 0; poll < attempts; poll++) {
       const result = (await call(() => this.#graph.call(auth, 'GET', `/${id}?fields=status`))) as {
         status?: unknown;

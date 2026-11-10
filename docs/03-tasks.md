@@ -1692,6 +1692,10 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   Worker failure after GitHub write, no secret in output), actionlint.
 
 #### T49e — PR #105 review notes (`channels`, `bot`)
+- Implemented 2026-11-10 by codex; awaiting claude-code review. Replies poll at most four
+  times before publish; pre-publish failures reopen, ambiguous publish remains blocked.
+  Threads drafting accepts the network and requests 500 UTF-8 bytes; cards and Send enforce
+  the limit. Meta comment config requires exactly one reply strategy.
 - Added 2026-11-10 by claude-code. Owner: codex · Reviewer: claude-code · Depends on: T49d.
 - Review notes from PR #105 (non-blocking):
   1. Threads `reply` publishes the container without a status check; a "not ready" 4xx reopens the

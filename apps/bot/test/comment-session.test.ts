@@ -157,7 +157,12 @@ describe.each(['instagram', 'facebook', 'threads'] as const)('comment session: %
     expect(card).toContain(saved);
     await s.click('send');
     await s.flush();
-    expect(s.reply).toHaveBeenCalledExactlyOnceWith('c1', saved, expect.any(Object));
+    if (network === 'threads') {
+      expect(s.reply).not.toHaveBeenCalled();
+      expect(sentTexts(s.calls).join(' ')).toContain('500 байтів UTF-8');
+    } else {
+      expect(s.reply).toHaveBeenCalledExactlyOnceWith('c1', saved, expect.any(Object));
+    }
   });
   it('sanitizes card delivery errors so reader text cannot reach Worker logs', async () => {
     const s = await setup(network);
@@ -212,4 +217,15 @@ describe.each(['instagram', 'facebook', 'threads'] as const)('comment session: %
     expect((await s.row())?.status).toBe('drafted');
     expect(sentTexts(s.calls)).toContain(botTexts.refusalText);
   });
+});
+
+it('flags an oversized UTF-8 Threads edit and blocks even a stale Send button', async () => {
+  const s = await setup('threads');
+  await s.click('edit');
+  await s.bot.handleUpdate(textUpdate(1, '🧵'.repeat(126)));
+  expect(sentTexts(s.calls).join(' ')).toContain('500 байтів UTF-8');
+  await s.click('send');
+  await s.flush();
+  expect(s.reply).not.toHaveBeenCalled();
+  expect((await s.row())?.status).toBe('drafted');
 });
