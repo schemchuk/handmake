@@ -1,13 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T49e — PR #106 ready for review
-- **Branch:** `feat/t49e-threads-reply-notes`
-- **Last commit:** `0bc3eba` — fix: address Threads comment reply review notes
-- **Next step:** claude-code reviews PR #106, checks CI, merges if clear, then deploys the bot
-  from clean main under AGENTS.md.
-- **Blocked on:** independent review.
+- **Active agent:** none
+- **Current task:** none — T49e merged as PR #106 (`d679fe3`, merged by Volodymyr)
+- **Branch:** `main`
+- **Last commit:** `d679fe3` — fix: address Threads comment reply review notes (T49e) (#106)
+- **Next step:** Volodymyr names the next task. Carry the PR #106 review note into the next
+  implementer task: bump `COMMENT_REPLY_PROMPT_VERSION` (or record a Threads variant id) since
+  the Threads drafter appends a 500-byte instruction to `commentReplyPromptV1`.
+  Live checks pending: one real Threads comment answered once; next `threads-token.yml` run
+  (Mon 07:23 UTC) writes both GitHub and Worker copies.
+- **Blocked on:** T48 waits on H15.
 - **Open questions for Volodymyr:** none for T49e.
+- **T49e rollout:** bot deployed by claude-code 2026-11-10, Worker
+  `c5010485-4881-48c8-a06f-75bb3f24c024`.
 - **T49e validation:** channels 260/260; AI drafter 19/19; bot collect/session 47/47 across
   final runs (collect 16/16, session 31/31). Workspace typecheck/build, ESLint and changed-file
   formatting pass. Sandboxed D1 startup stalled; unrestricted runs passed. Initial session runs
@@ -65,7 +70,7 @@
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
-- **Bot Worker:** `6715a397-b2cc-418e-b91c-c5864e4b63a5` (after PR #105, 2026-11-10, deployed by claude-code).
+- **Bot Worker:** `c5010485-4881-48c8-a06f-75bb3f24c024` (after PR #106, 2026-11-10, deployed by claude-code).
 - **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in

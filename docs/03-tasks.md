@@ -1692,7 +1692,9 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   Worker failure after GitHub write, no secret in output), actionlint.
 
 #### T49e — PR #105 review notes (`channels`, `bot`)
-- Implemented 2026-11-10 by codex; awaiting claude-code review. Replies poll at most four
+- Done 2026-11-10: PR #106 merged (`d679fe3`); bot deployed (Worker `c5010485`). Review note from
+  PR #106 (non-blocking, for the next implementer task): bump `COMMENT_REPLY_PROMPT_VERSION` or
+  record a Threads variant id for the appended 500-byte instruction. Replies poll at most four
   times before publish; pre-publish failures reopen, ambiguous publish remains blocked.
   Threads drafting accepts the network and requests 500 UTF-8 bytes; cards and Send enforce
   the limit. Meta comment config requires exactly one reply strategy.
