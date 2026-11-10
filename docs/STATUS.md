@@ -4,8 +4,8 @@
 - **Current task:** T26d rollout — PR #104 merged 2026-11-10 with Volodymyr's OK (`33dd1b0`)
 - **Branch:** `main`
 - **Last commit:** `33dd1b0` — feat(publisher): automate Threads token refresh (T26d) (#104)
-- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`; the
-  classifier blocks claude-code) and the Worker version goes here. Dispatch `threads-token.yml` on
+- **Next step:** Bot deployed from `main` by Volodymyr 2026-11-10, Worker version
+  `f6782d60-5f33-4733-87e2-d5407b54fd68`. Dispatch `threads-token.yml` on
   `main` no earlier than 2026-11-10 15:00 UTC (the token set 2026-11-09 14:25 UTC must be 24 h old),
   check the log has no token or response, record the run URL in PR #104; then the first live
   Threads post per docs/threads-runbook.md. Review note from PR #104 (non-blocking) goes to T49d:
