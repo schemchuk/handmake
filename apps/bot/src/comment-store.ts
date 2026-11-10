@@ -53,6 +53,30 @@ export interface StoredComment {
 }
 
 export interface CommentStore {
+  get(tenantId: string, network: CommentNetwork, id: string): Promise<StoredComment | null>;
+  transition(
+    tenantId: string,
+    network: CommentNetwork,
+    id: string,
+    from: CommentStatus,
+    to: CommentStatus,
+    now: Date,
+  ): Promise<StoredComment | null>;
+  armEdit(
+    tenantId: string,
+    network: CommentNetwork,
+    id: string,
+    chatId: string,
+    now: Date,
+  ): Promise<boolean>;
+  applyEdit(
+    tenantId: string,
+    chatId: string,
+    text: string,
+    now: Date,
+  ): Promise<StoredComment | null>;
+  /** Terminal quarantine: never automatically resend a possibly delivered reply. */
+  reclaimSending(tenantId: string, cutoff: Date, now: Date): Promise<number>;
   /**
    * Inserts a freshly collected comment unless it is already known (INSERT OR
    * IGNORE on the primary key). A repeat is never an error: the watermark is
@@ -97,7 +121,7 @@ export interface CommentStore {
     claimedAt: Date,
     now?: Date,
   ): Promise<boolean>;
-  /** Counts only; notification reservations include confirmed deliveries. */
+  /** Counts stale paid calls only; notification delivery cannot be reconciled here. */
   countUncertain(
     tenantId: string,
     cutoff: Date,
@@ -119,7 +143,75 @@ const selectComment = `SELECT tenant_id AS tenantId, network, id, post_id AS pos
   created_at AS createdAt, updated_at AS updatedAt FROM comments WHERE tenant_id = ?`;
 
 export function createCommentStore(db: D1Database): CommentStore {
+  const returning = `RETURNING tenant_id AS tenantId, network, id, post_id AS postId,
+    handle, text, status, translation_uk AS translationUk, reply_de AS replyDe,
+    notes_uk AS notesUk, notified_at AS notifiedAt, comment_created_at AS commentCreatedAt,
+    created_at AS createdAt, updated_at AS updatedAt`;
   return {
+    async get(tenantId, network, id) {
+      return db
+        .prepare(`${selectComment} AND network = ? AND id = ?`)
+        .bind(tenantId, network, id)
+        .first<StoredComment>();
+    },
+    async transition(tenantId, network, id, from, to, now) {
+      // Keep the id tombstone until retention expires, but erase handled reader data.
+      const erase = to === 'sent' || to === 'skipped';
+      return db
+        .prepare(
+          `UPDATE comments SET status = ?, updated_at = ?,
+        edit_chat_id = NULL, edit_expires_at = NULL
+        ${erase ? ", handle = '', text = '', translation_uk = NULL, reply_de = NULL, notes_uk = NULL" : ''}
+        WHERE tenant_id = ? AND network = ? AND id = ? AND status = ? ${returning}`,
+        )
+        .bind(to, now.toISOString(), tenantId, network, id, from)
+        .first<StoredComment>();
+    },
+    async armEdit(tenantId, network, id, chatId, now) {
+      const results = await db.batch([
+        db
+          .prepare(
+            'UPDATE comments SET edit_chat_id = NULL, edit_expires_at = NULL WHERE tenant_id = ? AND edit_chat_id = ?',
+          )
+          .bind(tenantId, chatId),
+        db
+          .prepare(
+            `UPDATE comments SET edit_chat_id = ?, edit_expires_at = ?, updated_at = ?
+          WHERE tenant_id = ? AND network = ? AND id = ? AND status = 'drafted'`,
+          )
+          .bind(
+            chatId,
+            new Date(now.getTime() + 1800000).toISOString(),
+            now.toISOString(),
+            tenantId,
+            network,
+            id,
+          ),
+      ]);
+      return results[1]!.meta.changes === 1;
+    },
+    async applyEdit(tenantId, chatId, text, now) {
+      return db
+        .prepare(
+          `UPDATE comments SET reply_de = ?, edit_chat_id = NULL,
+        edit_expires_at = NULL, updated_at = ? WHERE tenant_id = ? AND edit_chat_id = ?
+        AND edit_expires_at > ? AND status = 'drafted' ${returning}`,
+        )
+        .bind(text, now.toISOString(), tenantId, chatId, now.toISOString())
+        .first<StoredComment>();
+    },
+    async reclaimSending(tenantId, cutoff, now) {
+      const result = await db
+        .prepare(
+          `UPDATE comments SET status = 'skipped', updated_at = ?,
+        handle = '', text = '', translation_uk = NULL, reply_de = NULL, notes_uk = NULL,
+        edit_chat_id = NULL, edit_expires_at = NULL
+        WHERE tenant_id = ? AND status = 'sending' AND updated_at < ?`,
+        )
+        .bind(now.toISOString(), tenantId, cutoff.toISOString())
+        .run();
+      return result.meta.changes;
+    },
     async collect(comment) {
       const result = await db
         .prepare(
@@ -229,7 +321,7 @@ export function createCommentStore(db: D1Database): CommentStore {
         .prepare(
           `SELECT
         COUNT(CASE WHEN status = 'drafting' THEN 1 END) AS drafting,
-        COUNT(CASE WHEN status = 'drafted' AND notified_at IS NOT NULL THEN 1 END) AS notifications
+        0 AS notifications
         FROM comments WHERE tenant_id = ? AND updated_at < ?`,
         )
         .bind(tenantId, cutoff.toISOString())

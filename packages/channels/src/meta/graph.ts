@@ -55,7 +55,10 @@ export class MetaTokenExpiredError extends Error {
  * stable while transport behaviour lives here.
  */
 export class MetaGraphError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly rejected = false,
+  ) {
     super(message);
     this.name = 'MetaGraphError';
   }
@@ -199,6 +202,7 @@ export class MetaGraphClient {
       }
       throw new MetaGraphError(
         `${this.network} ${path} failed: ${message ?? `HTTP ${response.status}`}`,
+        response.status >= 400 && response.status < 500,
       );
     }
     return parsed;

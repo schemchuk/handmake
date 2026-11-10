@@ -1,3 +1,4 @@
+import { CommentReplyRejectedError } from '@handmake/core';
 import type { ChannelCommentsContext } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
@@ -706,4 +707,46 @@ it('fails closed when comment pagination is truncated', async () => {
   await expect(
     adapter.comments!.listComments('p1', undefined, makeCtx(IG_SECRETS)),
   ).rejects.toThrow('pagination limit');
+});
+
+describe('reply delivery certainty', () => {
+  it.each([400, 403, 429])(
+    'marks HTTP %s reply rejection as retryable without echoing reader data',
+    async (status) => {
+      const adapter = igAdapter(() => jsonResponse({ error: { message: READER_TEXT } }, status));
+      await expect(
+        adapter.comments.replyToComment('c1', 'Danke!', makeCtx(IG_SECRETS)),
+      ).rejects.toThrowError(CommentReplyRejectedError);
+      await expect(
+        adapter.comments.replyToComment('c1', 'Danke!', makeCtx(IG_SECRETS)),
+      ).rejects.toThrowError('comment reply rejected');
+    },
+  );
+  it.each([500, 502])('keeps HTTP %s failures ambiguous', async (status) => {
+    const adapter = igAdapter(() => jsonResponse({ error: { message: 'unavailable' } }, status));
+    const error = await adapter.comments
+      .replyToComment('c1', 'Danke!', makeCtx(IG_SECRETS))
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(InstagramAdapterError);
+    expect(error).not.toBeInstanceOf(CommentReplyRejectedError);
+  });
+  it('does not make a transport failure or malformed success retryable', async () => {
+    for (const fetchImpl of [
+      async () => {
+        throw new Error('connection lost');
+      },
+      async () => jsonResponse({}),
+      async () => new Response('invalid json'),
+    ]) {
+      const adapter = new FacebookAdapter({
+        fetchImpl: fetchImpl as typeof fetch,
+        sleep: sleepNoop,
+      });
+      const error = await adapter.comments
+        .replyToComment('c1', 'Danke!', makeCtx(FB_SECRETS))
+        .catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(FacebookAdapterError);
+      expect(error).not.toBeInstanceOf(CommentReplyRejectedError);
+    }
+  });
 });

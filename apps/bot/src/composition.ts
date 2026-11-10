@@ -170,6 +170,11 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        comments: {
+          store: createCommentStore(env.DB),
+          capabilities: commentCapabilities(),
+          context: commentsContext,
+        },
         tenantConfigs,
         // Previews must show what the publisher will deliver: while
         // PUBLISH_LIVE is off, publishes are site-excluded test runs.

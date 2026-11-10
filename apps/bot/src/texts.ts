@@ -214,6 +214,15 @@ export const botTexts = {
   commentCardReplyLabel: '🇩🇪 Чернетка відповіді:',
   commentCardNoReply: 'без відповіді — див. нотатку нижче.',
   commentCardNotesLabel: '📝 Нотатка:',
+  commentEditPrompt: 'Надішліть нову німецьку відповідь одним повідомленням протягом 30 хвилин.',
+  commentUnavailable: 'Коментар недоступний для цієї дії або вже обробляється.',
+  commentSkipped: 'Коментар пропущено.',
+  commentSent: 'Відповідь надіслано.',
+  commentSendFailed:
+    'Сервіс відхилив відповідь. Можна змінити текст або натиснути «Надіслати» ще раз.',
+  commentSendUncertain:
+    'Результат надсилання невідомий. Перевірте відповідь у соцмережі; бот не повторюватиме її автоматично.',
+  commentSendReclaimed: 'Завислі надсилання закрито без повтору. Перевірте відповіді в соцмережах.',
   commentSendButton: '✅ Надіслати',
   commentEditButton: '✏️ Змінити',
   commentSkipButton: '↩️ Пропустити',

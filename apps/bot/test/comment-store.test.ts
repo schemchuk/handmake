@@ -261,7 +261,7 @@ describe('createCommentStore', () => {
       NOW,
     );
     await store.markNotified(TENANT, 'instagram', 'comment-1', NOW);
-    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 1 });
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 0 });
     await store.reopenNotification(TENANT, 'instagram', 'comment-1', NOW, LATER);
     expect((await rowOf(db, 'instagram', 'comment-1'))?.['updated_at']).toBe(LATER.toISOString());
     expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 0 });
