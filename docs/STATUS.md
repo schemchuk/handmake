@@ -8,7 +8,7 @@
   "Review notes from PR #102" line. Sensitive: new secrets, Volodymyr's OK before merge.
 - **T49c3 rollout:** PR #102 merged 2026-11-10 with Volodymyr's OK; public Datenschutz shows the
   comments paragraph, review notes kept in an HTML comment. Volodymyr applies migration 0010 to
-  remote D1, then claude-code deploys the bot and records the Worker version here.
+  remote D1 (applied by Volodymyr 2026-11-10); bot deployed by claude-code the same day.
 - **T49c3 behavior:** explicit reply rejections reopen; ambiguous sends remain blocked, then are
   quarantined as skipped after one hour with an author warning. Handled reader text is erased;
   dedupe ids remain until 30-day cleanup. Edit arms are durable and expire after 30 minutes.
@@ -31,7 +31,7 @@
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
-- **Bot Worker:** `4599dc95-95db-4461-9b7a-7ecd64c43bad` (deployed by claude-code after PR #101, 2026-11-09).
+- **Bot Worker:** `349ce268-0e49-453a-aa82-732f9cde56b2` (deployed by claude-code after PR #102, 2026-11-10).
 - **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
