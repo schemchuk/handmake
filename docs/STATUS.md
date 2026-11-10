@@ -1,10 +1,10 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T49e — implementation complete, awaiting review
+- **Current task:** T49e — PR #106 ready for review
 - **Branch:** `feat/t49e-threads-reply-notes`
-- **Last commit:** see branch HEAD — `fix: address Threads comment reply review notes`
-- **Next step:** claude-code reviews the T49e PR, checks CI, merges if clear, then deploys the bot
+- **Last commit:** `0bc3eba` — fix: address Threads comment reply review notes
+- **Next step:** claude-code reviews PR #106, checks CI, merges if clear, then deploys the bot
   from clean main under AGENTS.md.
 - **Blocked on:** independent review.
 - **Open questions for Volodymyr:** none for T49e.
