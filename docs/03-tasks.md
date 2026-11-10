@@ -1431,7 +1431,7 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
 - Change: `ThreadsChannel` via the Threads API: text plus image or carousel, 500-character limit shown
   in the preview, canonical link in the text.
 - Acceptance and tests: as T26b.
-- Implemented 2026-11-10, awaiting claude-code review: text/image/carousel + shows, canonical
+- ✅ Merged 2026-11-10 as PR #103: text/image/carousel + shows, canonical
   links, conservative 500-byte preview gate, shared Meta transport and original-photo URL wiring.
   PR #102 notes resolved (count removal, isolated warning failures, fully visible capped edits).
   Operator steps and live-check caveats: docs/threads-runbook.md. No live publishing or deploy.
@@ -1451,6 +1451,12 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
 - Added 2026-11-10 by Volodymyr: the Threads long-lived token expires 60 days after issue or last
   refresh (the one from 2026-11-09 around 2027-01-08). Must be merged and run once before mid-December 2026.
 - Owner: codex · Reviewer: claude-code · Depends on: T26c, H17
+- Review notes from PR #103 (`apps/bot`, `apps/publisher`): (1) the Threads preview label
+  "N/500 байт UTF-8" means nothing to the author; keep the byte budget but say it plainly (umlauts
+  and emoji count double); (2) drop the unused `prepareFacebookDelivery` alias and rename
+  `PrepareFacebookDeliveryDeps`/`PreparedFacebookDelivery` to Meta names; (3) container polling
+  (6 × 60 s, carousel children one by one) can hold a 10-photo carousel ~55 min; shorten the interval
+  or poll children in parallel.
 - Change: scheduled workflow `threads-token.yml` (weekly cron plus `workflow_dispatch`) calls
   `GET https://graph.threads.com/refresh_access_token?grant_type=th_refresh_token` with the current
   `THREADS_ACCESS_TOKEN` (the token must be at least 24 hours old and unexpired). On success it masks

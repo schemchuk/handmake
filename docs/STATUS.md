@@ -1,11 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T26c — Threads adapter (PR #103)
-- **Branch:** `feat/t26c-threads`
-- **Last commit:** `89e74a5` — feat(channels): publish site content to Threads
-- **Next step:** claude-code reviews PR #103, including the PR #102 fixes; check CI before merge.
-  Sensitive: workflows, secrets and reader data; Volodymyr's OK required before merge.
+- **Active agent:** codex
+- **Current task:** T26d — Automatic Threads token refresh (docs/03-tasks.md)
+- **Branch:** `feat/t26d-threads-token` (to create)
+- **Last commit:** `8e4e6be` — feat(channels): add Threads publishing (T26c) (#103)
+- **Next step:** codex implements T26d in a fresh session, plus the review notes from PR #103
+  listed in the task. Needs H17 (`SECRETS_WRITE_TOKEN`) for the manual run; sensitive (workflow,
+  secrets): Volodymyr's OK before merge. Deadline: merged and run once before mid-December 2026.
+- **T26c rollout:** PR #103 merged 2026-11-10 with Volodymyr's OK. Bot deploy after the merge was
+  blocked for claude-code by the auto-mode classifier; Volodymyr deploys manually
+  (`pnpm -C apps/bot run deploy` from clean `main`) and the Worker version goes below.
+  First live Threads post and runbook checks (docs/threads-runbook.md) still pending.
 - **T26c validation:** workspace typecheck/build, ESLint, Prettier, actionlint and dry-run pass;
   channels 248/248, core 234/234, publisher 229/229. Bot: full 611/612 (pre-fix channel order),
   final changed suites 96/96 (--maxWorkers 1); all 612 covered across runs. Sandbox Miniflare/tsx
@@ -35,7 +40,7 @@
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
-- **Bot Worker:** `349ce268-0e49-453a-aa82-732f9cde56b2` (deployed by claude-code after PR #102, 2026-11-10).
+- **Bot Worker:** `349ce268-0e49-453a-aa82-732f9cde56b2` (after PR #102, 2026-11-10); PR #103 deploy pending (Volodymyr).
 - **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
