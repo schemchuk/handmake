@@ -175,12 +175,13 @@ export function fakeDb(): D1Database {
  * A real D1 (Miniflare, in-memory) with every migration from migrations/
  * applied — the "local D1" the task requires for repository tests.
  */
-export async function makeD1(): Promise<D1Database> {
+export async function makeD1(throughMigration?: string): Promise<D1Database> {
   const miniflare = new Miniflare({ script: '', modules: true, d1Databases: ['DB'] });
   const db = await miniflare.getD1Database('DB');
   const migrationsDir = fileURLToPath(new URL('../migrations', import.meta.url));
   const files = (await readdir(migrationsDir)).filter((name) => name.endsWith('.sql')).sort();
   for (const file of files) {
+    if (throughMigration && file > throughMigration) break;
     // Miniflare's exec rejects comment-only fragments and truncates
     // multi-line statements, so migrations are flattened to one line before
     // applying (wrangler itself applies them as-is).

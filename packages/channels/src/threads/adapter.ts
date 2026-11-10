@@ -1,11 +1,17 @@
 import type {
   ChannelAdapter,
+  ChannelCommentsCapability,
   DeliverContext,
   DeliverProgress,
   RemoteId,
   SendOperation,
 } from '@handmake/core';
+import { CommentReplyRejectedError } from '@handmake/core';
+import { createMetaCommentsCapability } from '../meta/comments';
 import {
+  MetaGraphError,
+  MetaRateLimitError,
+  MetaTokenExpiredError,
   MetaGraphClient,
   metaPhotoUrls,
   type MetaAuthState,
@@ -23,13 +29,22 @@ import {
 export const threadsUserIdSecret = 'THREADS_USER_ID';
 export const threadsAccessTokenSecret = 'THREADS_ACCESS_TOKEN';
 export class ThreadsAdapterError extends Error {}
+/** Invalid credentials explicitly reject a reply; rotation stays outside the Worker. */
+class ThreadsCommentsTokenError extends CommentReplyRejectedError {
+  constructor() {
+    super();
+    this.message = 'Threads token expired; rotate THREADS_ACCESS_TOKEN';
+  }
+}
 export interface ThreadsAdapterOptions extends MetaGraphOptions {
+  commentsMaxPages?: number;
   statusPollIntervalMs?: number;
   statusPollMaxAttempts?: number;
 }
 /** Ledger prefix skips delivered ops. Ambiguous writes are never retried in-process. */
 export class ThreadsAdapter implements ChannelAdapter {
   readonly key = 'threads';
+  readonly comments: ChannelCommentsCapability;
   readonly capabilities = threadsCapabilities;
   readonly #graph: MetaGraphClient;
   readonly #sleep: (ms: number) => Promise<void>;
@@ -40,6 +55,8 @@ export class ThreadsAdapter implements ChannelAdapter {
     const fetchImpl = options.fetchImpl ?? fetch;
     this.#graph = new MetaGraphClient('Threads', {
       ...options,
+      redactErrors: true,
+      tokenError190AlwaysExpired: true,
       apiBase: options.apiBase ?? 'https://graph.threads.com/v1.0',
       fetchImpl: (input, init) => {
         if (init?.method === 'POST') {
@@ -53,6 +70,75 @@ export class ThreadsAdapter implements ChannelAdapter {
           };
         }
         return fetchImpl(input, init);
+      },
+    });
+    this.comments = createMetaCommentsCapability({
+      network: 'Threads',
+      error: (message) => new ThreadsAdapterError(message),
+      graph: this.#graph,
+      ownerIdSecret: threadsUserIdSecret,
+      accessTokenSecret: threadsAccessTokenSecret,
+      refreshToken: async () => {
+        throw new ThreadsCommentsTokenError();
+      },
+      postsPath: (id, limit) => `/${id}/threads?fields=id,timestamp,permalink&limit=${limit}`,
+      // Ownership is explicit: username is not the numeric owner id.
+      commentsPath: (id, _since, limit) =>
+        `/${id}/replies?fields=id,text,username,timestamp,is_reply_owned_by_me&limit=${limit}`,
+      mapPost: (raw) =>
+        typeof raw.id === 'string' && raw.id
+          ? {
+              id: raw.id,
+              createdAt: typeof raw.timestamp === 'string' ? raw.timestamp : undefined,
+            }
+          : undefined,
+      mapComment: (raw) =>
+        typeof raw.id === 'string' && raw.id && raw.is_reply_owned_by_me !== true
+          ? {
+              id: raw.id,
+              text: typeof raw.text === 'string' ? raw.text : '',
+              handle: typeof raw.username === 'string' ? raw.username : '',
+              createdAt: typeof raw.timestamp === 'string' ? raw.timestamp : '',
+            }
+          : undefined,
+      maxPages: options.commentsMaxPages,
+      reply: async (id, text, ctx, auth, call) => {
+        if (new TextEncoder().encode(text).length > 500) throw new CommentReplyRejectedError();
+        const ownerId = await ctx.secrets.resolve(threadsUserIdSecret);
+        if (!/^\d+$/.test(ownerId)) throw new CommentReplyRejectedError();
+        let container: string;
+        try {
+          container = this.#id(
+            await call(() =>
+              this.#graph.call(auth, 'POST', `/${ownerId}/threads`, {
+                media_type: 'TEXT',
+                text,
+                reply_to_id: id,
+              }),
+            ),
+          );
+        } catch (error) {
+          if (error instanceof ThreadsCommentsTokenError) throw error;
+          // A container is not a public reply; creation failures are safe to reopen.
+          throw new CommentReplyRejectedError();
+        }
+        try {
+          return this.#id(
+            await call(() =>
+              this.#graph.call(auth, 'POST', `/${ownerId}/threads_publish`, {
+                creation_id: container,
+              }),
+            ),
+          );
+        } catch (error) {
+          if (
+            (error instanceof MetaGraphError && error.rejected) ||
+            error instanceof MetaRateLimitError ||
+            error instanceof MetaTokenExpiredError
+          )
+            throw new CommentReplyRejectedError();
+          throw error;
+        }
       },
     });
   }
@@ -143,7 +229,7 @@ export class ThreadsAdapter implements ChannelAdapter {
     return id;
   }
   async #awaitContainer(id: string, auth: MetaAuthState, call: MetaCallRetry): Promise<void> {
-    const attempts = this.#options.statusPollMaxAttempts ?? 6;
+    const attempts = this.#options.statusPollMaxAttempts ?? 12;
     for (let poll = 0; poll < attempts; poll++) {
       const result = (await call(() => this.#graph.call(auth, 'GET', `/${id}?fields=status`))) as {
         status?: unknown;

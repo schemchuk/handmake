@@ -1654,6 +1654,8 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   (4) drop the redundant `!Number.isNaN(created)` after the `Number.isFinite` guard.
 
 #### T49d — Threads comments in the inbox (`channels`, `bot`, `workflows`, docs/legal) · Sensitive: reader data, secrets, workflows, legal text
+- Implementation complete 2026-11-10 on `feat/t49d-threads-comments`; independent review and
+  Volodymyr's sensitive-merge approval pending. Remote migration, deploy and live acceptance are pending.
 - Added 2026-11-10 by claude-code on Volodymyr's request. Owner: codex · Reviewer: claude-code ·
   Depends on: T49c3, T26d; H18 for go-live only (code and tests run against mocks).
 - Change:

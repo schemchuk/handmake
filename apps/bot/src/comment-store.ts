@@ -17,7 +17,7 @@ export const commentRetentionDays = 30;
 export const commentReplyLimit = 2200;
 
 /** Networks the comment pipeline collects; the drafter accepts exactly these. */
-export type CommentNetwork = 'instagram' | 'facebook';
+export type CommentNetwork = 'instagram' | 'facebook' | 'threads';
 
 export type CommentStatus = 'new' | 'drafting' | 'drafted' | 'sending' | 'sent' | 'skipped';
 

@@ -1,5 +1,5 @@
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
-import { FacebookAdapter, InstagramAdapter } from '@handmake/channels';
+import { FacebookAdapter, InstagramAdapter, ThreadsAdapter } from '@handmake/channels';
 import { draftRetentionDays, safeErrorMessage } from '@handmake/core';
 import type { ChannelCommentsCapability, ChannelCommentsContext } from '@handmake/core';
 import { webhookCallback } from 'grammy';
@@ -149,6 +149,8 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     INSTAGRAM_ACCESS_TOKEN: env.INSTAGRAM_ACCESS_TOKEN,
     FACEBOOK_PAGE_ID: env.FACEBOOK_PAGE_ID,
     FACEBOOK_PAGE_ACCESS_TOKEN: env.FACEBOOK_PAGE_ACCESS_TOKEN,
+    THREADS_USER_ID: env.THREADS_USER_ID,
+    THREADS_ACCESS_TOKEN: env.THREADS_ACCESS_TOKEN,
     META_APP_ID: env.META_APP_ID,
     META_APP_SECRET: env.META_APP_SECRET,
   };
@@ -162,6 +164,9 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     }
     if (env.FACEBOOK_PAGE_ID && env.FACEBOOK_PAGE_ACCESS_TOKEN) {
       capabilities.facebook = new FacebookAdapter().comments;
+    }
+    if (env.THREADS_USER_ID && env.THREADS_ACCESS_TOKEN) {
+      capabilities.threads = new ThreadsAdapter().comments;
     }
     return capabilities;
   }

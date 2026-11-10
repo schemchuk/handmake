@@ -39,7 +39,7 @@ export function registerCommentSession(bot: Bot<AppContext>, options: CreateBotO
   bot.on('callback_query:data', async (ctx, next) => {
     if (!ctx.callbackQuery.data.startsWith('comment:')) return next();
     await ctx.answerCallbackQuery();
-    const match = /^comment:(instagram|facebook):([^:]+):(send|edit|skip)$/.exec(
+    const match = /^comment:(instagram|facebook|threads):([^:]+):(send|edit|skip)$/.exec(
       ctx.callbackQuery.data,
     );
     if (!match || !ctx.chat || ctx.chat.type !== 'private') return;

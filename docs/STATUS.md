@@ -2,12 +2,16 @@
 
 - **Active agent:** codex
 - **Current task:** T49d — Threads comments in the inbox (docs/03-tasks.md)
-- **Branch:** `feat/t49d-threads-comments` (to create)
+- **Branch:** `feat/t49d-threads-comments`
 - **Last commit:** `33dd1b0` — feat(publisher): automate Threads token refresh (T26d) (#104)
-- **Next step:** codex implements T49d in a fresh session (includes the PR #104 review note on
-  Threads polling). Sensitive (reader data, secrets, workflow, legal text, D1 migration):
-  Volodymyr's OK before merge. H18 done 2026-11-10 except the D1 migration, which Volodymyr
-  applies after the T49d merge.
+- **Next step:** codex finishes T49d validation and opens the PR for claude-code review.
+  Sensitive merge needs Volodymyr's OK. After merge, Volodymyr applies migration 0011 before
+  the reviewer deploys the bot; live comment/reply and dual-secret rotation checks stay pending.
+- **T49d validation:** channels 256/256 plus final Threads suites 42/42; publisher 248/248 plus
+  final rotation script 8/8; full bot 624/624 (one worker); legal rendering 16/16.
+  Workspace typecheck/build, ESLint, formatting and actionlint pass.
+  Initial sandbox D1 run stalled; unrestricted changed suites passed. No deploy, remote migration,
+  live comments, paid calls or production secrets changed.
 - **T26d rollout:** bot deployed by Volodymyr 2026-11-10, Worker
   `f6782d60-5f33-4733-87e2-d5407b54fd68`. First refresh run succeeded 2026-11-10 16:16 UTC
   (run 42852781111, log clean, recorded in PR #104). Remaining: first live Threads post per
