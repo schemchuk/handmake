@@ -1,15 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T26d rollout — PR #104 merged 2026-11-10 with Volodymyr's OK (`33dd1b0`)
-- **Branch:** `main`
+- **Active agent:** codex
+- **Current task:** T49d — Threads comments in the inbox (docs/03-tasks.md)
+- **Branch:** `feat/t49d-threads-comments` (to create)
 - **Last commit:** `33dd1b0` — feat(publisher): automate Threads token refresh (T26d) (#104)
-- **Next step:** Bot deployed from `main` by Volodymyr 2026-11-10, Worker version
-  `f6782d60-5f33-4733-87e2-d5407b54fd68`. Dispatch `threads-token.yml` on
-  `main` no earlier than 2026-11-10 15:00 UTC (the token set 2026-11-09 14:25 UTC must be 24 h old),
-  check the log has no token or response, record the run URL in PR #104; then the first live
-  Threads post per docs/threads-runbook.md. Review note from PR #104 (non-blocking) goes to T49d:
-  Threads container polling allows only ~25 s (6 × 5 s); raise `statusPollMaxAttempts` to ~12.
+- **Next step:** codex implements T49d in a fresh session (includes the PR #104 review note on
+  Threads polling). Sensitive (reader data, secrets, workflow, legal text, D1 migration):
+  Volodymyr's OK before merge; Volodymyr applies the migration and does H18 before go-live.
+- **T26d rollout (claude-code, outside the working tree):** bot deployed by Volodymyr 2026-11-10,
+  Worker `f6782d60-5f33-4733-87e2-d5407b54fd68`. Dispatch `threads-token.yml` on `main` no earlier
+  than 2026-11-10 15:00 UTC (the token set 2026-11-09 14:25 UTC must be 24 h old), check the log has
+  no token or response, record the run URL in PR #104; then the first live Threads post per
+  docs/threads-runbook.md. If H18 re-issues the token first, wait 24 h after that instead.
 - **T26d validation:** publisher 246/246, channels full suite 249/249 before consolidating the polling
   regression into an existing test; final Threads suite 32/32; bot preview 30/30.
   Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
@@ -48,7 +50,7 @@
   and staged secret scans pass. Sandboxed Miniflare initialization stalled;
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
-- **Bot Worker:** `349ce268-0e49-453a-aa82-732f9cde56b2` (after PR #102, 2026-11-10); PR #103 deploy pending (Volodymyr).
+- **Bot Worker:** `f6782d60-5f33-4733-87e2-d5407b54fd68` (after PR #104, 2026-11-10, deployed by Volodymyr).
 - **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in

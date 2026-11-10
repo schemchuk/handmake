@@ -36,6 +36,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H16 | (F35, spec v8 approved 2026-11-06) Volodymyr creates a Telegram group «Faden und Stimmung · Austausch» and links it to the channel as its discussion group (channel settings → Discussion). Group settings: only members may write and comment; slow mode 30 s; members may send photos and text only (video, files, voice, stickers, polls off), link previews off, adding members/pinning/changing info off; built-in anti-spam on. Telegram cannot block plain-text links or forwards by setting, so that rests on anti-spam, moderation and the rules. Volodymyr is the admin; the bot is not added; the author joins only if she wants, with notifications off. He adds the group link to the channel description and pins the rules once the author approves their wording (T50). **Done 2026-11-06:** group created and linked, rules approved and pinned, link in the channel description. | T50 |
 | H15 | Email service account with EU hosting and a data processing agreement (Brevo or MailerLite, decided in T48); the author prepares one free embroidery pattern as a PDF (lead magnet). | T48 |
 | H17 | Fine-grained GitHub token for T26d: this repo only, permission "Secrets: read and write", longest expiry offered; store it as GitHub Secret `SECRETS_WRITE_TOKEN` and note its expiry date in STATUS.md. **Done 2026-11-10:** token `handmake-secrets-write` (repo `schemchuk/handmake` only, Secrets read/write, Metadata read) with no expiration (Volodymyr's choice), stored as GitHub Secret `SECRETS_WRITE_TOKEN`. | T26d |
+| H18 | (T49d go-live) Re-authorize the Threads token with `threads_basic`, `threads_content_publish`, `threads_read_replies` and `threads_manage_replies`, then update GitHub Secret `THREADS_ACCESS_TOKEN` and set Worker `handmake-bot` secrets `THREADS_USER_ID` and `THREADS_ACCESS_TOKEN`. Create a Cloudflare API token limited to "Workers Scripts: Edit" on this account and store it as GitHub Secret `CLOUDFLARE_WORKERS_TOKEN`. Apply the T49d D1 migration to remote. | T49d |
 | H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. **Done 2026-11-01:** 11 photos of 3 works received (blouse with cross-stitch, crocheted pillow cover, crocheted flower appliqué), kept locally and NOT committed (public repo, author's works). Usable: blouse 1-3, pillow 1-2, appliqué 4 and 6; blurry or process shots skipped (pillow 3, appliqué 1-3, 5). Author's consent to send them to AI providers is still needed before T43. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
 
@@ -1492,9 +1493,6 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   (the `fb_exchange_token` refresh cannot help there); (3) add a Facebook block to the bot author
   preview; (4) optional: push once before the Meta channels instead of once per preparation.
 - Split 2026-11-09 into T49a-T49c (one PR each, ADR 009); Threads comments join as T49d after T26c.
-- Review notes from PR #104 (for T49d, `packages/channels`): Threads container polling now allows
-  only ~25 s per container (6 × 5 s), below Meta's ~30 s average; raise `statusPollMaxAttempts` to ~12
-  or poll carousel children in parallel.
   Go-live gates before the first live collect (Volodymyr): the Instagram System User token must
   carry `instagram_manage_comments` (Facebook already has `pages_read_engagement` /
   `pages_manage_engagement`, docs/facebook-runbook.md) and the F34 reader-data paragraph must be in
@@ -1654,6 +1652,42 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   post-level failure distinctly (no reader data) or advance per post; (3) guard `callback_data`
   (`comment:<network>:<id>:<action>`) against Telegram's 64-byte limit or use a short row key;
   (4) drop the redundant `!Number.isNaN(created)` after the `Number.isFinite` guard.
+
+#### T49d — Threads comments in the inbox (`channels`, `bot`, `workflows`, docs/legal) · Sensitive: reader data, secrets, workflows, legal text
+- Added 2026-11-10 by claude-code on Volodymyr's request. Owner: codex · Reviewer: claude-code ·
+  Depends on: T49c3, T26d; H18 for go-live only (code and tests run against mocks).
+- Change:
+  1. `packages/channels`: a `comments` capability on `ThreadsAdapter` over the shared
+     `createMetaComments`: posts `GET /{user}/threads?fields=id,timestamp,permalink`, comments
+     `GET /{post}/replies?fields=id,text,username,timestamp` (no network `since`; the shared
+     client-side watermark filter applies), own replies skipped. Replying is two calls
+     (`POST /{user}/threads` with `media_type=TEXT`, `text`, `reply_to_id`, then
+     `POST /{user}/threads_publish`), so extend `MetaCommentsConfig` with an optional `reply`
+     function used instead of `replyPath`, keeping the at-most-once rule (an ambiguous publish is
+     reported as such, never retried). A reply over the 500-byte Threads budget is rejected before
+     any call with `CommentReplyRejectedError`. A 190 never refreshes inside the Worker: rotation
+     belongs to `threads-token.yml`, so it fails with a token error naming only the secret.
+  2. Review note from PR #104: container polling allows only ~25 s (6 × 5 s), below Meta's ~30 s
+     average; raise `statusPollMaxAttempts` to about 12 or poll carousel children in parallel.
+  3. `apps/bot`: `CommentNetwork` gains `threads`; a new D1 migration rebuilds `comments` and
+     `comment_watermarks` with `threads` in the `network` CHECK (copy rows, keep indexes); `env.ts`
+     and `composition.ts` enable Threads only when both `THREADS_USER_ID` and `THREADS_ACCESS_TOKEN`
+     are set; the author card names Threads; `callback_data` stays within 64 bytes.
+  4. `threads-token.yml`: after the GitHub Secret is written, the same job sets the Worker secret
+     `THREADS_ACCESS_TOKEN` with `wrangler secret put` (value via stdin, output discarded) using
+     `CLOUDFLARE_WORKERS_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, only in that step. If the Worker update
+     fails after the GitHub write, the job fails with a line saying the two copies differ.
+  5. Docs: `docs/legal/services.de.html` says "Instagram-, Facebook- und Threads-Beiträgen";
+     docs/threads-runbook.md lists the four scopes, the Worker secrets and the H18 steps;
+     `.env.example` gets `CLOUDFLARE_WORKERS_TOKEN`.
+- Acceptance: with mocked APIs a Threads comment is collected once, reaches the author card and
+  is answered at most once (two-call reply, ambiguous publish not resent); Instagram and Facebook
+  behaviour is unchanged; the migration keeps existing rows; the refresh job writes both copies and
+  logs no token. Live check after H18 and Volodymyr's OK: one real Threads comment answered once.
+- Tests: mocked Threads Graph (list posts, list replies with watermark, own-reply skip, two-call
+  reply, ambiguous publish, over-budget reply, 190 without refresh), migration on a D1 copy with
+  existing rows, bot collect/send for `threads`, refresh script with the Worker step (success,
+  Worker failure after GitHub write, no secret in output), actionlint.
 
 ### T50 — Participants' group: rules, links, privacy text (F35, `site`, docs) · Sensitive: legal text
 - Done 2026-11-06: PR #90 merged (`2a619f7`), site deployed (run 42200943247, link live on
