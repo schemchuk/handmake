@@ -1420,7 +1420,7 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 ### T26c — Threads adapter (F33, `channels`) · Sensitive: new secrets
 - Deferred 2026-11-08 (Volodymyr): skipped until the Threads token (`THREADS_USER_ID`,
   `THREADS_ACCESS_TOKEN`) exists; T26a, T26b and T49 go ahead without Threads.
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T26a
+- Owner: codex · Reviewer: claude-code · Depends on: T26a
 - Review notes from PR #102 (`apps/bot`): (1) drop the hard-coded `countUncertain().notifications`
   field from the type and query; (2) in `collectTenant`, catch a failed author warning after
   `reclaimSending` (log a count only) so that tenant's collect still runs; (3) an edited reply

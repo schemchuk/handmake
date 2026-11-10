@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** kimi-code
+- **Active agent:** codex
 - **Current task:** T26c — Threads adapter (F33, `channels`)
 - **Branch:** none yet (`feat/t26c-<slug>`)
 - **Last commit:** `1c25683` — feat(bot): handle author comment replies (T49c3) (#102)
-- **Next step:** kimi-code starts T26c in a fresh session (docs/03-tasks.md), including the
+- **Next step:** codex starts T26c in a fresh session (docs/03-tasks.md), including the
   "Review notes from PR #102" line. Sensitive: new secrets, Volodymyr's OK before merge.
 - **T49c3 rollout:** PR #102 merged 2026-11-10 with Volodymyr's OK; public Datenschutz shows the
   comments paragraph, review notes kept in an HTML comment. Volodymyr applies migration 0010 to
