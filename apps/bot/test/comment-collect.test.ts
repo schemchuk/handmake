@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { Bot, GrammyError } from 'grammy';
 import { expect, it, vi } from 'vitest';
 import { parseTenantConfig, type ChannelCommentsCapability } from '@handmake/core';
-import { runCommentCollect, type CommentCollectOptions } from '../src/comment-collect';
+import {
+  buildCommentCard,
+  runCommentCollect,
+  type CommentCollectOptions,
+} from '../src/comment-collect';
 import { createCommentStore } from '../src/comment-store';
 import type { AppContext } from '../src/context';
 import { botTexts } from '../src/texts';
@@ -122,4 +126,45 @@ it('does not advance any network watermark after a later post page fails', async
   await runCommentCollect(now, s.options);
   expect(await s.store.getWatermark('tenant', 'instagram')).toBeUndefined();
   vi.restoreAllMocks();
+});
+
+it('guards callback byte length, including multibyte ids, before reserving notification', () => {
+  const draft = { translationUk: 'T', replyDe: 'D', notesUk: '' };
+  for (const id of ['x'.repeat(60), 'ä'.repeat(30), 'bad:id']) {
+    expect(() =>
+      buildCommentCard({ ...comment, network: 'instagram', id }, draft, botTexts),
+    ).toThrow('comment callback exceeds supported format');
+  }
+  const card = buildCommentCard(
+    { ...comment, network: 'facebook', id: '123_456' },
+    draft,
+    botTexts,
+  );
+  for (const button of card.keyboard.inline_keyboard.flat())
+    expect(new TextEncoder().encode(button.callback_data).length).toBeLessThanOrEqual(64);
+});
+it('does not report delivered cards as uncertain every hour', async () => {
+  const s = await setup();
+  const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await runCommentCollect(now, s.options);
+    await runCommentCollect(new Date(now.getTime() + 7200000), s.options);
+    expect(log).not.toHaveBeenCalled();
+  } finally {
+    log.mockRestore();
+  }
+});
+it('notifies the author once when stale sends are quarantined', async () => {
+  const s = await setup();
+  const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await runCommentCollect(now, s.options);
+    await s.store.transition('tenant', 'instagram', 'c1', 'drafted', 'sending', now);
+    await runCommentCollect(new Date(now.getTime() + 7200000), s.options);
+    await runCommentCollect(new Date(now.getTime() + 10800000), s.options);
+    expect(s.send).toHaveBeenCalledTimes(2);
+    expect(s.send).toHaveBeenLastCalledWith('1', botTexts.commentSendReclaimed);
+  } finally {
+    log.mockRestore();
+  }
 });

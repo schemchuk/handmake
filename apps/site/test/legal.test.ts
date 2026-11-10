@@ -15,6 +15,9 @@ describe('legal publication policy', () => {
     }
     const privacy = renderLegal('datenschutz', env);
     expect(privacy).toContain('Erstellt mit kostenlosem Datenschutz-Generator');
+    expect(privacy).toContain('Kommentare auf unseren Social-Media-Beiträgen');
+    expect(privacy).not.toContain('<strong>Zur rechtlichen Prüfung:</strong>');
+    expect(privacy).toContain('T49c3 DRAFT');
     expect(privacy).toContain('Telegram-Gruppe «Faden und Stimmung · Austausch»');
     const additions = privacy.indexOf('id="mServices"');
     expect(additions).toBeGreaterThan(privacy.indexOf('id="m136"'));

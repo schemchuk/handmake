@@ -257,3 +257,10 @@ export function idempotencyKey(
 export function idempotencyBase(tenantId: string, postId: string, channel: string): string {
   return `${tenantId}:${postId}:${channel}`;
 }
+
+/** Explicit remote rejection; all other reply failures may have delivered. */
+export class CommentReplyRejectedError extends Error {
+  constructor() {
+    super('comment reply rejected');
+  }
+}

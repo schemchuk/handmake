@@ -1,11 +1,22 @@
 # STATUS
 
-- **Active agent:** kimi-code
-- **Current task:** T49c3 — author reply handling + legal draft (`bot`, docs/legal)
-- **Branch:** none yet (`feat/t49c3-<slug>`)
-- **Last commit:** `3d33793` — feat(bot): collect comments and wire Worker inbox (#101)
-- **Next step:** kimi-code starts T49c3 in a fresh session (docs/03-tasks.md), including the
-  "Review notes from PR #101" line. Sensitive: Volodymyr's OK before merge.
+- **Active agent:** claude-code
+- **Current task:** review T49c3 — PR #102 (author replies + legal draft)
+- **Branch:** `feat/t49c3-comment-replies`
+- **Last commit:** `6f26456` — feat(bot): handle author comment replies
+- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/102 in a fresh
+  session and checks CI. Sensitive: wait for Volodymyr's explicit OK before merge, migration or deploy.
+- **T49c3 rollout gate:** sensitive reader data + legal draft. Requires Volodymyr's explicit OK
+  before merge; migration 0010 must be approved/applied before bot deployment. No remote changes.
+- **T49c3 behavior:** explicit reply rejections reopen; ambiguous sends remain blocked, then are
+  quarantined as skipped after one hour with an author warning. Handled reader text is erased;
+  dedupe ids remain until 30-day cleanup. Edit arms are durable and expire after 30 minutes.
+- **T49c3 validation:** workspace typecheck, ESLint, Prettier and staged gitleaks pass;
+  channels 216/216, legal rendering 16/16 and site fixture builds 4/4. Full bot run:
+  603/605; two newly added sanitization tests used the pre-fix transform cache after
+  the guard was added mid-run. Final fresh changed suites pass 45/45 (all 605 bot tests covered across runs, --maxWorkers 1).
+  Sandbox Miniflare stalled; unrestricted D1 runs work. Site malformed-work diagnostics
+  failed in the sandbox and passed unrestricted. No paid calls, live replies or remote changes.
 - **T49c2b live:** migration 0009 applied to remote D1 by Volodymyr; bot deployed 2026-11-09.
   Volodymyr accepted collecting before the F34 Datenschutz paragraph (T49c3) and the token scope check (2026-11-09).
   The first tick without a watermark drafts (paid) and cards every comment of the last 30 days

@@ -13,6 +13,8 @@
  * guarantee live in the caller (T49c, D1).
  */
 
+import { CommentReplyRejectedError } from '@handmake/core';
+
 import type {
   ChannelComment,
   ChannelCommentsCapability,
@@ -23,6 +25,8 @@ import type {
 
 import {
   MetaGraphError,
+  MetaRateLimitError,
+  MetaTokenExpiredError,
   type MetaAuthState,
   type MetaCallRetry,
   type MetaGraphClient,
@@ -188,7 +192,15 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
     const { auth, call } = await this.#authorized(ctx);
     const result = (await call(() =>
       this.config.graph.call(auth, 'POST', this.config.replyPath(id), { message: text }),
-    )) as { id?: unknown };
+    ).catch((error: unknown) => {
+      if (
+        (error instanceof MetaGraphError && error.rejected) ||
+        error instanceof MetaRateLimitError ||
+        error instanceof MetaTokenExpiredError
+      )
+        throw new CommentReplyRejectedError();
+      throw error;
+    })) as { id?: unknown };
     if (typeof result.id !== 'string' || !result.id) {
       throw this.config.error(`${this.config.network} comment reply returned a malformed result`);
     }

@@ -1,3 +1,4 @@
+import { registerCommentSession, type CommentSessionOptions } from './comment-session';
 import { buildApprovedWorkJob, isUlid, maxDraftPhotos, pollSchema } from '@handmake/core';
 import type { Draft, PostPoll, PublishJob, PublishRunner, Translator } from '@handmake/core';
 import { Bot } from 'grammy';
@@ -17,6 +18,7 @@ import type { ShowSessionOptions } from './show-session';
 
 export interface CreateBotOptions {
   token: string;
+  comments?: CommentSessionOptions;
   work?: WorkSessionOptions;
   show?: ShowSessionOptions;
   tenantConfigs?: TenantConfigSource;
@@ -69,6 +71,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     await next();
   });
 
+  registerCommentSession(bot, options);
   const workSession = registerWorkSession(bot, options);
   registerShowSession(bot, options, workSession.start);
 

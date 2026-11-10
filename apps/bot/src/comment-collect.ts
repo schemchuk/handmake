@@ -52,8 +52,16 @@ async function collectTenant(
   options: CommentCollectOptions,
 ): Promise<void> {
   const uncertain = await options.store.countUncertain(tenantId, new Date(now.getTime() - 3600000));
-  if (uncertain.drafting || uncertain.notifications)
-    console.warn('comment reconciliation required', uncertain);
+  if (uncertain.drafting) console.warn('comment reconciliation required', uncertain);
+  const reclaimed = await options.store.reclaimSending(
+    tenantId,
+    new Date(now.getTime() - 3600000),
+    now,
+  );
+  if (reclaimed) {
+    console.warn('comment sends quarantined', { count: reclaimed });
+    await options.bot.api.sendMessage(String(authorId), options.texts.commentSendReclaimed);
+  }
   const config = await options.tenantConfigs.load(tenantId);
   const networks: CommentNetwork[] = [];
   if (config.channels.instagram && options.capabilities.instagram) networks.push('instagram');
@@ -83,11 +91,16 @@ async function collectNetwork(
   try {
     const posts = await capability.listPosts(collectPostLimit, options.commentsContext);
     for (const post of posts) {
-      const comments = await capability.listComments(post.id, since, options.commentsContext);
+      const comments = await capability
+        .listComments(post.id, since, options.commentsContext)
+        .catch(() => {
+          console.error(`comment post scan failed; network watermark retained: ${network}`);
+          throw new Error('comment post scan failed');
+        });
       for (const comment of comments) {
         const created = Date.parse(comment.createdAt);
         if (!Number.isFinite(created) || created < cutoff) continue;
-        if (!Number.isNaN(created) && (watermark === undefined || created > watermark.getTime())) {
+        if (watermark === undefined || created > watermark.getTime()) {
           watermark = new Date(created);
         }
         await options.store.collect({
@@ -222,7 +235,12 @@ export function buildCommentCard(
   if (draft.notesUk.trim() !== '') {
     lines.push('', texts.commentCardNotesLabel, draft.notesUk);
   }
-  const data = (action: string) => `comment:${comment.network}:${comment.id}:${action}`;
+  const data = (action: string) => {
+    const value = `comment:${comment.network}:${comment.id}:${action}`;
+    if (comment.id.includes(':') || new TextEncoder().encode(value).length > 64)
+      throw new Error('comment callback exceeds supported format');
+    return value;
+  };
   return {
     text: lines.join('\n'),
     keyboard: {
