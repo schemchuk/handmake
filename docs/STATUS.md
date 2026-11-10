@@ -6,12 +6,13 @@
 - **Last commit:** `33dd1b0` — feat(publisher): automate Threads token refresh (T26d) (#104)
 - **Next step:** codex implements T49d in a fresh session (includes the PR #104 review note on
   Threads polling). Sensitive (reader data, secrets, workflow, legal text, D1 migration):
-  Volodymyr's OK before merge; Volodymyr applies the migration and does H18 before go-live.
+  Volodymyr's OK before merge. H18 done 2026-11-10 except the D1 migration, which Volodymyr
+  applies after the T49d merge.
 - **T26d rollout:** bot deployed by Volodymyr 2026-11-10, Worker
   `f6782d60-5f33-4733-87e2-d5407b54fd68`. First refresh run succeeded 2026-11-10 16:16 UTC
   (run 42852781111, log clean, recorded in PR #104). Remaining: first live Threads post per
-  docs/threads-runbook.md (also checks the publish with a refreshed token). H18 re-issues the
-  token; the next weekly run (Mon 07:23 UTC) needs it to be 24 h old.
+  docs/threads-runbook.md (also checks the publish with a refreshed token). H18 re-issued the
+  token 2026-11-10 16:16 UTC (expires 2027-01-09); the weekly run Mon 07:23 UTC refreshes it.
 - **T26d validation:** publisher 246/246, channels full suite 249/249 before consolidating the polling
   regression into an existing test; final Threads suite 32/32; bot preview 30/30.
   Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
