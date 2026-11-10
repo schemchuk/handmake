@@ -35,6 +35,7 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H14 | Enable Cloudflare Web Analytics for the Pages project `fadenundstimmung` (dashboard toggle, cookieless). **Done 2026-11-04:** enabled in the Pages project Metrics tab. **Reverted 2026-11-04:** Volodymyr disables it again (the JS beacon reads browser data, a §25 TDDDG consent risk); visits are read from the Cloudflare zone traffic statistics instead, which need no script; disabled and redeployed the same day (no beacon on the live site). | T41, T41b |
 | H16 | (F35, spec v8 approved 2026-11-06) Volodymyr creates a Telegram group «Faden und Stimmung · Austausch» and links it to the channel as its discussion group (channel settings → Discussion). Group settings: only members may write and comment; slow mode 30 s; members may send photos and text only (video, files, voice, stickers, polls off), link previews off, adding members/pinning/changing info off; built-in anti-spam on. Telegram cannot block plain-text links or forwards by setting, so that rests on anti-spam, moderation and the rules. Volodymyr is the admin; the bot is not added; the author joins only if she wants, with notifications off. He adds the group link to the channel description and pins the rules once the author approves their wording (T50). **Done 2026-11-06:** group created and linked, rules approved and pinned, link in the channel description. | T50 |
 | H15 | Email service account with EU hosting and a data processing agreement (Brevo or MailerLite, decided in T48); the author prepares one free embroidery pattern as a PDF (lead magnet). | T48 |
+| H17 | Fine-grained GitHub token for T26d: this repo only, permission "Secrets: read and write", longest expiry offered; store it as GitHub Secret `SECRETS_WRITE_TOKEN` and note its expiry date in STATUS.md. | T26d |
 | H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. **Done 2026-11-01:** 11 photos of 3 works received (blouse with cross-stitch, crocheted pillow cover, crocheted flower appliqué), kept locally and NOT committed (public repo, author's works). Usable: blouse 1-3, pillow 1-2, appliqué 4 and 6; blurry or process shots skipped (pillow 3, appliqué 1-3, 5). Author's consent to send them to AI providers is still needed before T43. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. | T34 |
 
@@ -1094,6 +1095,8 @@ T41 changes in v5: depends on H11 and H14 only (not on T40); scope as below.
 
 T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 
+T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after T26c, before T48.
+
 ### T41b — Keep test posts off the site, drop the beacon, enable indexing (`site`, `publisher`) · Sensitive
 - Owner: codex · Reviewer: claude-code · Depends on: T41, H14 revert
 - Change: (1) a post can be excluded from the site by a frontmatter field (posts stay in `content/`,
@@ -1440,6 +1443,26 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Acceptance: a test address receives the confirmation mail, and the PDF only after confirming; the
   third-party check from T41 allows only the provider's form endpoint.
 - Tests: form rendering, build check; the live opt-in is checked manually and recorded in the PR.
+
+### T26d — Automatic Threads token refresh (`workflows`, `publisher`) · Sensitive: workflows, secrets
+- Added 2026-11-10 by Volodymyr: the Threads long-lived token expires 60 days after issue or last
+  refresh (the one from 2026-11-09 around 2027-01-08). Must be merged and run once before mid-December 2026.
+- Owner: codex · Reviewer: claude-code · Depends on: T26c, H17
+- Change: scheduled workflow `threads-token.yml` (weekly cron plus `workflow_dispatch`) calls
+  `GET https://graph.threads.com/refresh_access_token?grant_type=th_refresh_token` with the current
+  `THREADS_ACCESS_TOKEN` (the token must be at least 24 hours old and unexpired). On success it masks
+  the new token with `::add-mask::` before any other step, checks `expires_in` is at least 50 days,
+  and writes it back with `gh secret set THREADS_ACCESS_TOKEN` (value via stdin, never as an argument)
+  using `SECRETS_WRITE_TOKEN`. The job has `permissions: {}` apart from what it needs and
+  `concurrency` against itself. Any failure (HTTP error, missing field, short expiry) fails the job
+  without printing the response body, so GitHub mails Volodymyr; weekly runs leave about eight
+  retries before expiry. Update docs/threads-runbook.md (rotation is now automatic; manual reauth only
+  after expiry; `SECRETS_WRITE_TOKEN` expiry is the remaining yearly chore) and `.env.example`.
+  When T49d puts the Threads token into the Worker, the same job also updates that Worker secret.
+- Acceptance: a manual `workflow_dispatch` run on `main` refreshes the secret and the next publish
+  run delivers to Threads with it; the run log shows no token or response body.
+- Tests: actionlint; a small script or unit test for the response check (valid, missing token,
+  short `expires_in`, error JSON) if the logic lives outside the YAML; manual run recorded in the PR.
 
 ### T49 — Comment inbox with author-approved replies (F34, `bot`, `channels`, `ai`) · Sensitive: reader data
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T26a-T26b (Threads comments join when T26c
