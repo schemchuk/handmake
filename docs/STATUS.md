@@ -1,13 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review T49c3 — PR #102 (author replies + legal draft)
-- **Branch:** `feat/t49c3-comment-replies`
-- **Last commit:** `6f26456` — feat(bot): handle author comment replies
-- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/102 in a fresh
-  session and checks CI. Sensitive: wait for Volodymyr's explicit OK before merge, migration or deploy.
-- **T49c3 rollout gate:** sensitive reader data + legal draft. Requires Volodymyr's explicit OK
-  before merge; migration 0010 must be approved/applied before bot deployment. No remote changes.
+- **Active agent:** kimi-code
+- **Current task:** T26c — Threads adapter (F33, `channels`)
+- **Branch:** none yet (`feat/t26c-<slug>`)
+- **Last commit:** `1c25683` — feat(bot): handle author comment replies (T49c3) (#102)
+- **Next step:** kimi-code starts T26c in a fresh session (docs/03-tasks.md), including the
+  "Review notes from PR #102" line. Sensitive: new secrets, Volodymyr's OK before merge.
+- **T49c3 rollout:** PR #102 merged 2026-11-10 with Volodymyr's OK; public Datenschutz shows the
+  comments paragraph, review notes kept in an HTML comment. Volodymyr applies migration 0010 to
+  remote D1, then claude-code deploys the bot and records the Worker version here.
 - **T49c3 behavior:** explicit reply rejections reopen; ambiguous sends remain blocked, then are
   quarantined as skipped after one hour with an author warning. Handled reader text is erased;
   dedupe ids remain until 30-day cleanup. Edit arms are durable and expire after 30 minutes.

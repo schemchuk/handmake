@@ -1421,6 +1421,11 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
 - Deferred 2026-11-08 (Volodymyr): skipped until the Threads token (`THREADS_USER_ID`,
   `THREADS_ACCESS_TOKEN`) exists; T26a, T26b and T49 go ahead without Threads.
 - Owner: kimi-code · Reviewer: claude-code · Depends on: T26a
+- Review notes from PR #102 (`apps/bot`): (1) drop the hard-coded `countUncertain().notifications`
+  field from the type and query; (2) in `collectTenant`, catch a failed author warning after
+  `reclaimSending` (log a count only) so that tenant's collect still runs; (3) an edited reply
+  longer than the 4096-char card is cut in the card but sent in full — reject or cap edits that
+  do not fit (Instagram's comment limit is lower).
 - Change: `ThreadsChannel` via the Threads API: text plus image or carousel, 500-character limit shown
   in the preview, canonical link in the text.
 - Acceptance and tests: as T26b.
@@ -1586,7 +1591,8 @@ T41b added 2026-11-04 after the T41 merge (PR #80); it runs before T47.
   import `TextGenerationClient` from `claude-text-generator` instead of redeclaring it.
 
 #### T49c3 — Author reply handling + legal draft (`bot`, docs/legal) · third PR of the split
-- Implemented in PR #102; awaiting independent review and Volodymyr's sensitive-merge approval.
+- Done 2026-11-10: PR #102 merged (`1c25683`) with Volodymyr's OK; review notes moved out of the
+  public Datenschutz text. Migration 0010 and bot deploy pending.
 - Owner: codex · Reviewer: claude-code · Depends on: T49c2. Sensitive: reader data, legal text.
 - Ownership transferred by Volodymyr on 2026-11-10. Ambiguous sends are quarantined
   as skipped after one hour, with an author warning; they are never resent automatically.
