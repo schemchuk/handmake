@@ -16,6 +16,8 @@ channels:
   # block Telegram or Instagram (T26b).
   facebook:
     language: de
+  threads:
+    language: de
 
 contentStore:
   type: git-repo

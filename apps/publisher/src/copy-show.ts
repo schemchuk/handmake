@@ -12,7 +12,7 @@ import {
 } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import { createGitCommitter } from './git';
-import { prepareFacebookDelivery } from './facebook-delivery';
+import { prepareMetaPhotoDelivery } from './facebook-delivery';
 import { prepareInstagramDelivery } from './instagram-delivery';
 import { defaultRegistry } from './publish';
 import type { PublishDeps } from './publish';
@@ -148,11 +148,12 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
         });
         contentPushed = contentPushed || prepared.pushed;
         photoUrls = prepared.photoUrls;
-      } else if (channel === 'facebook') {
+      } else if (channel === 'facebook' || channel === 'threads') {
         // T26b: Meta fetches the show's own committed images by raw-GitHub
         // URL; the opted-in push (skipped when Instagram already pushed)
         // makes fresh URLs resolve.
-        const prepared = await prepareFacebookDelivery({
+        const prepared = await prepareMetaPhotoDelivery({
+          network: channel === 'threads' ? 'Threads' : 'Facebook',
           env,
           git,
           repoDir: `content/shows/${show.id}`,

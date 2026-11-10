@@ -125,6 +125,8 @@ jobs:
           # secret fails the Facebook channel only.
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
           # The publisher pushes the content commit before delivery so Meta
           # can fetch fresh raw-GitHub photo URLs (framed carousel copies
           # included).
@@ -238,6 +240,8 @@ jobs:
           # show-copy delivery; Meta fetches the show's own images.
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
           CONTENT_PUSH_BEFORE_DELIVERY: 'true'
           PUBLISHER_GIT_NAME: github-actions[bot]
           PUBLISHER_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com

@@ -12,6 +12,7 @@ import { contentRawBaseUrl, contentRawPhotoUrl } from './instagram-delivery';
  */
 
 export interface PrepareFacebookDeliveryDeps {
+  network?: 'Facebook' | 'Threads';
   env: NodeJS.ProcessEnv;
   git: GitCommitter;
   /** Repo-relative item directory (e.g. content/posts/<folder>), aligned with the caller's git paths. */
@@ -43,14 +44,19 @@ export interface PreparedFacebookDelivery {
  * available — the caller records the channel failure. Nothing is written
  * or committed here: the photos are the item's own committed files.
  */
-export async function prepareFacebookDelivery(
+export async function prepareMetaPhotoDelivery(
   deps: PrepareFacebookDeliveryDeps,
 ): Promise<PreparedFacebookDelivery> {
   const log = deps.logger ?? (() => {});
+  if (
+    deps.network === 'Threads' &&
+    deps.ops.slice(deps.startAt).every((op) => op.kind === 'message')
+  )
+    return { photoUrls: [], pushed: false };
   const base = contentRawBaseUrl(deps.env);
   if (base === undefined) {
     throw new Error(
-      'Facebook delivery needs public photo URLs: set CONTENT_RAW_BASE_URL ' +
+      `${deps.network ?? 'Facebook'} delivery needs public photo URLs: set CONTENT_RAW_BASE_URL ` +
         'or run in GitHub Actions (GITHUB_REPOSITORY and GITHUB_REF_NAME)',
     );
   }
@@ -63,8 +69,10 @@ export async function prepareFacebookDelivery(
 
   if (deps.env['CONTENT_PUSH_BEFORE_DELIVERY'] === 'true' && !deps.contentAlreadyPushed) {
     await deps.git.push(requiredEnv('GITHUB_REF_NAME', deps.env));
-    log('pushed content before Facebook delivery');
+    log(`pushed content before ${deps.network ?? 'Facebook'} delivery`);
     return { photoUrls: urls, pushed: true };
   }
   return { photoUrls: urls, pushed: false };
 }
+
+export { prepareMetaPhotoDelivery as prepareFacebookDelivery };

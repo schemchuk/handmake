@@ -224,6 +224,7 @@ export function buildCommentCard(
   draft: CommentDraft,
   texts: BotTexts,
 ): { text: string; keyboard: { inline_keyboard: { text: string; callback_data: string }[][] } } {
+  // Reserve space for the full 2200-unit edited reply; only context is abbreviated.
   const lines = [
     texts.commentCardHeader(networkLabels[comment.network], comment.handle.slice(0, 64)),
     '',

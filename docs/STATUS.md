@@ -3,12 +3,13 @@
 - **Active agent:** codex
 - **Current task:** T26c — Threads adapter (F33, `channels`)
 - **Branch:** `feat/t26c-threads`
-- **Last commit:** `1c25683` — feat(bot): handle author comment replies (T49c3) (#102)
-- **Next step:** codex implements the Threads adapter, publisher wiring and 500-character preview.
-  PR #102 review notes resolved: remove the unused notification count; isolate failed quarantine
-  warnings; cap edited replies at 2200 UTF-16 units and bound card context so the full edit is visible.
-  Changed comment suites pass 48/48 (--maxWorkers 1); sandbox Miniflare stalled, unrestricted rerun passed.
-  Sensitive: workflows, secrets and reader data; Volodymyr's OK required before merge. No live calls or deploy.
+- **Last commit:** `ed012ba` — fix(bot): address comment inbox review notes
+- **Next step:** codex opens the T26c PR, then hands review to claude-code.
+  Sensitive: workflows, secrets and reader data; Volodymyr's OK required before merge.
+- **T26c validation:** workspace typecheck/build, ESLint, Prettier, actionlint and dry-run pass;
+  channels 248/248, core 234/234, publisher 229/229. Bot: full 611/612 (pre-fix channel order),
+  final changed suites 96/96 (--maxWorkers 1); all 612 covered across runs. Sandbox Miniflare/tsx
+  could not start; unrestricted runs passed. Publisher needed a 30s timeout. No live calls or deploy.
 - **T49c3 rollout:** PR #102 merged 2026-11-10 with Volodymyr's OK; public Datenschutz shows the
   comments paragraph, review notes kept in an HTML comment. Volodymyr applies migration 0010 to
   remote D1 (applied by Volodymyr 2026-11-10); bot deployed by claude-code the same day.
