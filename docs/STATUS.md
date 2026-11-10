@@ -7,11 +7,11 @@
 - **Next step:** codex implements T49d in a fresh session (includes the PR #104 review note on
   Threads polling). Sensitive (reader data, secrets, workflow, legal text, D1 migration):
   Volodymyr's OK before merge; Volodymyr applies the migration and does H18 before go-live.
-- **T26d rollout (claude-code, outside the working tree):** bot deployed by Volodymyr 2026-11-10,
-  Worker `f6782d60-5f33-4733-87e2-d5407b54fd68`. Dispatch `threads-token.yml` on `main` no earlier
-  than 2026-11-10 15:00 UTC (the token set 2026-11-09 14:25 UTC must be 24 h old), check the log has
-  no token or response, record the run URL in PR #104; then the first live Threads post per
-  docs/threads-runbook.md. If H18 re-issues the token first, wait 24 h after that instead.
+- **T26d rollout:** bot deployed by Volodymyr 2026-11-10, Worker
+  `f6782d60-5f33-4733-87e2-d5407b54fd68`. First refresh run succeeded 2026-11-10 16:16 UTC
+  (run 42852781111, log clean, recorded in PR #104). Remaining: first live Threads post per
+  docs/threads-runbook.md (also checks the publish with a refreshed token). H18 re-issues the
+  token; the next weekly run (Mon 07:23 UTC) needs it to be 24 h old.
 - **T26d validation:** publisher 246/246, channels full suite 249/249 before consolidating the polling
   regression into an existing test; final Threads suite 32/32; bot preview 30/30.
   Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
