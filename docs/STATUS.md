@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T49d — Threads comments in the inbox (docs/03-tasks.md)
+- **Active agent:** claude-code
+- **Current task:** Review T49d — Threads comments in the inbox (PR #105)
 - **Branch:** `feat/t49d-threads-comments`
-- **Last commit:** `33dd1b0` — feat(publisher): automate Threads token refresh (T26d) (#104)
-- **Next step:** codex finishes T49d validation and opens the PR for claude-code review.
+- **Last commit:** `17d832c` — feat: add Threads comments to the author inbox (T49d)
+- **Next step:** claude-code independently reviews PR #105 in a fresh session and checks CI.
   Sensitive merge needs Volodymyr's OK. After merge, Volodymyr applies migration 0011 before
   the reviewer deploys the bot; live comment/reply and dual-secret rotation checks stay pending.
 - **T49d validation:** channels 256/256 plus final Threads suites 42/42; publisher 248/248 plus
@@ -56,7 +56,7 @@
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
 - **Bot Worker:** `f6782d60-5f33-4733-87e2-d5407b54fd68` (after PR #104, 2026-11-10, deployed by Volodymyr).
-- **Blocked on:** T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
+- **Blocked on:** T49d merge waits on independent review, green CI and Volodymyr's explicit OK. T48 waits on H15. T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
