@@ -1,15 +1,16 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T26d — Automatic Threads token refresh; implementation complete, PR preparation
+- **Active agent:** claude-code
+- **Current task:** T26d — PR #104 ready for independent review (CI pending)
 - **Branch:** `feat/t26d-threads-token`
-- **Last commit:** `8e4e6be` — feat(channels): add Threads publishing (T26c) (#103)
-- **Next step:** codex pushes T26d and opens its PR, then hands off to claude-code for independent
-  review. Sensitive workflow/secret changes require Volodymyr's OK before merge. After merge,
-  dispatch once on `main`, inspect sanitized logs and verify the next authorized Threads publish;
-  record both run URLs in the PR. H17 is set; `SECRETS_WRITE_TOKEN` has no expiration.
-- **T26d validation:** publisher 246/246, channels 248 original tests plus one temporary polling
-  regression passed (249/249); final consolidated Threads suite 32/32; bot preview 30/30.
+- **Last commit:** `6ed8306` — feat(publisher): automate Threads token refresh (T26d)
+- **Next step:** claude-code reviews PR #104, waits for green CI and obtains Volodymyr's OK for
+  the sensitive workflow/secret merge. After merge, deploy the bot from clean `main`, dispatch
+  `threads-token.yml` once on `main`, inspect sanitized logs and verify the next authorized Threads
+  publish; record both run URLs in the PR. H17 is set; `SECRETS_WRITE_TOKEN` has no expiration.
+  Deadline: merged and run once before mid-December 2026. Handoff commit follows the implementation.
+- **T26d validation:** publisher 246/246, channels full suite 249/249 before consolidating the polling
+  regression into an existing test; final Threads suite 32/32; bot preview 30/30.
   Workspace typecheck/build, ESLint, Prettier and actionlint pass; new validator/script cases 17/17
   cover expiry, invalid responses, HTTP/network/JSON failures, masking order and secret stdin.
   No live refresh, production secret change, publishing or deployment. Live acceptance remains pending.
