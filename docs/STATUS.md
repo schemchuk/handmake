@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T49c3 — author reply handling + legal draft (`bot`, docs/legal)
+- **Active agent:** claude-code
+- **Current task:** review T49c3 — PR #102 (author replies + legal draft)
 - **Branch:** `feat/t49c3-comment-replies`
-- **Last commit:** `caa869b` — docs(status): note accepted T49c2b go-live before F34 gates
-- **Next step:** open the validated T49c3 PR, then hand review to claude-code.
+- **Last commit:** `6f26456` — feat(bot): handle author comment replies
+- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/102 in a fresh
+  session and checks CI. Sensitive: wait for Volodymyr's explicit OK before merge, migration or deploy.
 - **T49c3 rollout gate:** sensitive reader data + legal draft. Requires Volodymyr's explicit OK
   before merge; migration 0010 must be approved/applied before bot deployment. No remote changes.
 - **T49c3 behavior:** explicit reply rejections reopen; ambiguous sends remain blocked, then are
