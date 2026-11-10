@@ -168,3 +168,24 @@ it('notifies the author once when stale sends are quarantined', async () => {
     log.mockRestore();
   }
 });
+
+it('continues collecting after the quarantine warning fails without logging reader data', async () => {
+  const s = await setup();
+  const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await runCommentCollect(now, s.options);
+    await s.store.transition('tenant', 'instagram', 'c1', 'drafted', 'sending', now);
+    const later = new Date(now.getTime() + 7200000);
+    vi.mocked(s.capability.listComments).mockResolvedValue([
+      { ...comment, id: 'c2', createdAt: later.toISOString() },
+    ]);
+    s.send.mockRejectedValueOnce(new Error('private reader data'));
+    await runCommentCollect(later, s.options);
+    expect(s.draft).toHaveBeenCalledTimes(2);
+    expect((await s.store.get('tenant', 'instagram', 'c2'))?.notifiedAt).toBeTruthy();
+    expect(log).toHaveBeenCalledWith('comment quarantine warning failed', { count: 1 });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private reader data');
+  } finally {
+    log.mockRestore();
+  }
+});

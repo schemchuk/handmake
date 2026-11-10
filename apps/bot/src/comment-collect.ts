@@ -60,7 +60,11 @@ async function collectTenant(
   );
   if (reclaimed) {
     console.warn('comment sends quarantined', { count: reclaimed });
-    await options.bot.api.sendMessage(String(authorId), options.texts.commentSendReclaimed);
+    try {
+      await options.bot.api.sendMessage(String(authorId), options.texts.commentSendReclaimed);
+    } catch {
+      console.warn('comment quarantine warning failed', { count: reclaimed });
+    }
   }
   const config = await options.tenantConfigs.load(tenantId);
   const networks: CommentNetwork[] = [];
@@ -221,19 +225,19 @@ export function buildCommentCard(
   texts: BotTexts,
 ): { text: string; keyboard: { inline_keyboard: { text: string; callback_data: string }[][] } } {
   const lines = [
-    texts.commentCardHeader(networkLabels[comment.network], comment.handle),
+    texts.commentCardHeader(networkLabels[comment.network], comment.handle.slice(0, 64)),
     '',
     texts.commentCardCommentLabel,
-    comment.text,
+    comment.text.slice(0, 512),
     '',
     texts.commentCardTranslationLabel,
-    draft.translationUk,
+    draft.translationUk.slice(0, 512),
     '',
     texts.commentCardReplyLabel,
     draft.replyDe === '' ? texts.commentCardNoReply : draft.replyDe,
   ];
   if (draft.notesUk.trim() !== '') {
-    lines.push('', texts.commentCardNotesLabel, draft.notesUk);
+    lines.push('', texts.commentCardNotesLabel, draft.notesUk.slice(0, 256));
   }
   const data = (action: string) => {
     const value = `comment:${comment.network}:${comment.id}:${action}`;

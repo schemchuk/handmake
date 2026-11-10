@@ -251,8 +251,8 @@ describe('createCommentStore', () => {
     const store = createCommentStore(db);
     await store.collect(newComment());
     await store.claimDrafting(TENANT, 'instagram', 'comment-1', NOW);
-    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 1, notifications: 0 });
-    expect(await store.countUncertain('other', LATER)).toEqual({ drafting: 0, notifications: 0 });
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 1 });
+    expect(await store.countUncertain('other', LATER)).toEqual({ drafting: 0 });
     await store.storeDraft(
       TENANT,
       'instagram',
@@ -261,10 +261,10 @@ describe('createCommentStore', () => {
       NOW,
     );
     await store.markNotified(TENANT, 'instagram', 'comment-1', NOW);
-    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 0 });
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0 });
     await store.reopenNotification(TENANT, 'instagram', 'comment-1', NOW, LATER);
     expect((await rowOf(db, 'instagram', 'comment-1'))?.['updated_at']).toBe(LATER.toISOString());
-    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0, notifications: 0 });
+    expect(await store.countUncertain(TENANT, LATER)).toEqual({ drafting: 0 });
   });
 
   it('deletes all tenant/network states strictly before the 30-day boundary', async () => {

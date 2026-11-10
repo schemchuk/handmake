@@ -14,6 +14,7 @@ import type { CommentDraft } from '@handmake/core';
  */
 
 export const commentRetentionDays = 30;
+export const commentReplyLimit = 2200;
 
 /** Networks the comment pipeline collects; the drafter accepts exactly these. */
 export type CommentNetwork = 'instagram' | 'facebook';
@@ -122,10 +123,7 @@ export interface CommentStore {
     now?: Date,
   ): Promise<boolean>;
   /** Counts stale paid calls only; notification delivery cannot be reconciled here. */
-  countUncertain(
-    tenantId: string,
-    cutoff: Date,
-  ): Promise<{ drafting: number; notifications: number }>;
+  countUncertain(tenantId: string, cutoff: Date): Promise<{ drafting: number }>;
   getWatermark(tenantId: string, network: CommentNetwork): Promise<Date | undefined>;
   setWatermark(
     tenantId: string,
@@ -197,7 +195,13 @@ export function createCommentStore(db: D1Database): CommentStore {
         edit_expires_at = NULL, updated_at = ? WHERE tenant_id = ? AND edit_chat_id = ?
         AND edit_expires_at > ? AND status = 'drafted' ${returning}`,
         )
-        .bind(text, now.toISOString(), tenantId, chatId, now.toISOString())
+        .bind(
+          text.slice(0, commentReplyLimit).replace(/[\uD800-\uDBFF]$/u, ''),
+          now.toISOString(),
+          tenantId,
+          chatId,
+          now.toISOString(),
+        )
         .first<StoredComment>();
     },
     async reclaimSending(tenantId, cutoff, now) {
@@ -320,13 +324,12 @@ export function createCommentStore(db: D1Database): CommentStore {
       const row = await db
         .prepare(
           `SELECT
-        COUNT(CASE WHEN status = 'drafting' THEN 1 END) AS drafting,
-        0 AS notifications
+        COUNT(CASE WHEN status = 'drafting' THEN 1 END) AS drafting
         FROM comments WHERE tenant_id = ? AND updated_at < ?`,
         )
         .bind(tenantId, cutoff.toISOString())
-        .first<{ drafting: number; notifications: number }>();
-      return row ?? { drafting: 0, notifications: 0 };
+        .first<{ drafting: number }>();
+      return row ?? { drafting: 0 };
     },
 
     async getWatermark(tenantId, network) {

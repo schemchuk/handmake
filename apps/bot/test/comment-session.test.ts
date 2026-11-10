@@ -142,6 +142,23 @@ describe.each(['instagram', 'facebook'] as const)('comment session: %s', (networ
     await s.flush();
     expect(s.reply).toHaveBeenCalledExactlyOnceWith('c2', 'Vielen Dank!', expect.any(Object));
   });
+  it('caps edits to a fully visible reply even with long reader context', async () => {
+    const s = await setup(network);
+    await s.db
+      .prepare('UPDATE comments SET handle = ?, text = ?, translation_uk = ?, notes_uk = ?')
+      .bind('h'.repeat(200), 'c'.repeat(4000), 't'.repeat(4000), 'n'.repeat(4000))
+      .run();
+    await s.click('edit');
+    await s.bot.handleUpdate(textUpdate(1, 'R'.repeat(2199) + '🧵' + 'X'.repeat(1000)));
+    const saved = (await s.row())!.replyDe!;
+    expect(saved).toBe('R'.repeat(2199));
+    const card = sentTexts(s.calls).at(-1)!;
+    expect(card.length).toBeLessThanOrEqual(4096);
+    expect(card).toContain(saved);
+    await s.click('send');
+    await s.flush();
+    expect(s.reply).toHaveBeenCalledExactlyOnceWith('c1', saved, expect.any(Object));
+  });
   it('sanitizes card delivery errors so reader text cannot reach Worker logs', async () => {
     const s = await setup(network);
     await s.click('edit');

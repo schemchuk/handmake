@@ -214,7 +214,8 @@ export const botTexts = {
   commentCardReplyLabel: '🇩🇪 Чернетка відповіді:',
   commentCardNoReply: 'без відповіді — див. нотатку нижче.',
   commentCardNotesLabel: '📝 Нотатка:',
-  commentEditPrompt: 'Надішліть нову німецьку відповідь одним повідомленням протягом 30 хвилин.',
+  commentEditPrompt:
+    'Надішліть нову німецьку відповідь протягом 30 хвилин. Збережемо перші 2200 символів.',
   commentUnavailable: 'Коментар недоступний для цієї дії або вже обробляється.',
   commentSkipped: 'Коментар пропущено.',
   commentSent: 'Відповідь надіслано.',
