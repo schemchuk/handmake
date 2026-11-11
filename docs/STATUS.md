@@ -1,12 +1,24 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31c — implemented, completing validation and PR handoff.
+- **Active agent:** claude-code
+- **Current task:** T31c — review PR #116.
 - **Branch:** feat/t31c-meta-vote-totals.
-- **Last commit:** `2729560` — feat: persist contest poll closing and validated tallies (#115)
-- **Next step:** codex pushes T31c and opens its PR, then hands off to claude-code for review.
-- **Blocked on:** nothing for T31c. `featureFlags.wotwPoll` remains false; closing has no cron caller.
+- **Last commit:** `74aeced` — feat: collect transient contest votes across Meta channels
+- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/116 in a fresh
+  session. Check transient identities, deterministic duplicates and completeness. T31d follows
+  after merge. Sensitive merge requires Volodymyr's OK (reader identity handling).
+- **Blocked on:** independent review and green CI. `featureFlags.wotwPoll` remains false;
+  closing has no cron caller until T31d.
 - **Open questions for Volodymyr:** none.
+- **T31c validation:** full bot 706/706 (36 files), channels 261/261 and core 279/279 pass.
+  Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass.
+  CI passed on implementation commit `74aeced` (run 43074690272). D1 tests cover combined
+  counts, independent network identities, concurrent/repeated closing, missing/failed/legacy
+  deliveries, absent capabilities, API failure and anonymous aggregate persistence. Real
+  Instagram reader with mocked HTTP covers complete/truncated pagination. Initial tests
+  incorrectly used a nonexistent delivery `skipped` status; corrected to the skipped opening
+  receipt and absent delivery model. Initial sandbox D1 run stalled; unrestricted runs pass.
+  No deployment, migration, live publishing, paid calls, workflow or secret changes.
 - **T31b rollout:** PR #115 merged 2026-11-11 by Volodymyr after claude-code review (no blocking
   findings, CI green). Bot deployed by Volodymyr, Worker `7f1035a3-909a-4850-a71b-05a9f930867b`.
   Remote D1 has migration 0016 (`poll_closings`): `migrations apply --remote` reports none pending.
