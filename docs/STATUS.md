@@ -69,7 +69,7 @@
   unrestricted full bot rerun passed. No deploy, remote migration, paid calls,
   live publishing or secret changes. Original WIP branch remains intact.
 - **Bot Worker:** `c5010485-4881-48c8-a06f-75bb3f24c024` (after PR #106, 2026-11-10, deployed by claude-code).
-- **Blocked on:** T48 waits on the H15 lead-magnet PDF from the author (Brevo account, domain auth, sender and list done 2026-11-11). T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
+- **Blocked on:** nothing for T48: H15 done 2026-11-11 (Brevo account, domain auth, sender, list, lead-magnet PDF). T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
