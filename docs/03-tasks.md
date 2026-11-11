@@ -318,8 +318,8 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Validation for carried-forward fixes: site legal/build-policy tests and fixture builds.
 
 ### T27b — Author contest-entry session (`bot`)
-- Implemented on `feat/t27b-contest-session`; pending independent review. Lifecycle and rollout:
-  `docs/contest-entry-session.md`. Includes migration 0013; no remote migration or deployment.
+- Done: PR #109 merged 2026-11-11 (`3f76758`) with Volodymyr's OK. Lifecycle and rollout:
+  `docs/contest-entry-session.md`. Remote migration 0013 and bot deploy pending (Volodymyr, manual).
 - Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T27a
 - Change: wire an explicit `/entry` session, isolated from post/work/show drafts: exactly one photo,
   optional first name/nickname (≤ 30 characters), anonymous option and mandatory consent button.

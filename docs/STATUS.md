@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T27b — PR #109 ready for re-review
-- **Branch:** `feat/t27b-contest-session`
-- **Last commit:** `2f658b6` — fix(bot): leave entry routing when switching flows
-- **Next step:** claude-code re-reviews PR #109 and checks the latest CI. Obtain Volodymyr's
-  approval before the sensitive merge, migration 0013 and bot deployment.
-- **Blocked on:** nothing.
+- **Active agent:** codex
+- **Current task:** T29 — callback v2 with message IDs
+- **Branch:** none (codex creates `feat/t29-callback-v2`)
+- **Last commit:** `3f76758` — feat(bot): add author contest-entry session (T27b) (#109)
+- **Next step:** codex starts T29 in a fresh session. T28 waits for H9 (`NAMES_ENDPOINT_SECRET`).
+- **Blocked on:** Volodymyr manually, in this order from clean `main`:
+  `pnpm -C apps/bot run db:migrate` (remote migration 0013, approved 2026-11-11), then
+  `pnpm -C apps/bot run deploy`; record the Worker version. The current Worker has no `/entry`.
 - **Open questions for Volodymyr:** none.
 - **Decision 2026-11-11 (Volodymyr):** `entryConsentText` keeps the feminine form; no rewording.
 - **Decision 2026-11-11 (Volodymyr):** the 90-day name-deletion promise in the consent text stays;
