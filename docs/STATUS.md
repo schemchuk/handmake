@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T27b — PR #109 review fixes implemented
+- **Active agent:** claude-code
+- **Current task:** T27b — PR #109 ready for re-review
 - **Branch:** `feat/t27b-contest-session`
-- **Last commit:** `b2b1a4e` — docs(status): keep feminine consent wording for T27b
-- **Next step:** codex commits/pushes the review fixes and hands PR #109 back to claude-code.
+- **Last commit:** `2f658b6` — fix(bot): leave entry routing when switching flows
+- **Next step:** claude-code re-reviews PR #109 and checks the latest CI. Obtain Volodymyr's
+  approval before the sensitive merge, migration 0013 and bot deployment.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Decision 2026-11-11 (Volodymyr):** `entryConsentText` keeps the feminine form; no rewording.
@@ -17,7 +18,8 @@
   including completion/expiry markers; post-preview and comment edits receive subsequent text.
   The stale hint includes `/new`; per-update cleanup runs only for entry-related updates.
   Six added regressions failed before the fix; entry/comment/post suites now pass 97/97.
-  Bot typecheck/build, changed-file ESLint and formatting pass. Consent wording unchanged.
+  Final entry-only rerun 14/14; bot typecheck/build, changed-file ESLint, formatting and staged
+  secret scan pass. Latest GitHub CI is pending. Consent wording unchanged.
 - **T27b original validation:** full bot 642/642 and core 250/250; workspace typecheck/build, lint,
   formatting and staged secret scan passed before review. No remote migration, deployment,
   production publishing, paid calls or secret changes in implementation or review fixes.
