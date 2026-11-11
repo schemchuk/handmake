@@ -1,12 +1,15 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31 — close poll, author breaks ties, result draft.
-- **Branch:** none yet (`feat/t31-...` from `main`).
-- **Last commit:** `696e610` — feat: draft weekly contest polls from author entries (T30) (#112)
-- **Next step:** codex starts T31 in a fresh session, including the two PR #112 review notes listed
-  in T31 of docs/03-tasks.md.
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Active agent:** none
+- **Current task:** T31 — implementation split proposed; no code changed.
+- **Branch:** main (task-plan proposal only).
+- **Last commit:** this commit — docs: propose reviewable T31 implementation split
+- **Next step:** Volodymyr reviews T31a-d in docs/03-tasks.md. After approval, set Active agent
+  to codex and start T31a in a fresh session, including both PR #112 review notes.
+- **Blocked on:** task-plan approval under AGENTS.md workflow step 4. `featureFlags.wotwPoll`
+  remains false.
+- **Open questions for Volodymyr:** approve the proposed T31a-d split? The plan includes the
+  spec v7 all-network vote totals and author confirmation; it does not reduce T31 to Telegram.
 - **T30 rollout:** PR #112 merged 2026-11-11 with Volodymyr's OK. Migration 0015 applied to remote
   D1 by Volodymyr (verified: no pending migrations); bot deployed by claude-code from clean `main`,
   Worker `0f645813-aeb5-4b0f-853f-e5d95fafabe6`. First live poll draft not yet observed.

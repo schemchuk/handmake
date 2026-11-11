@@ -401,6 +401,73 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   nothing.
 - Tests: winner rules incl. ties and zero votes, button callback, idempotency.
 
+#### T31 implementation split — proposed 2026-11-11
+
+The complete task includes the v7 all-network extension below. Closing/recovery, transient
+comment counting, author callbacks and atomic result persistence exceed the ADR 009 budget
+for one PR. Proposed order: T31a → T31b → T31c → T31d. Each subtask has Owner: codex and
+Reviewer: claude-code, needs a fresh session and its own PR, and targets fewer than 400 changed
+non-test lines. T31 remains incomplete until all four pass independent review. This proposal
+requires Volodymyr's task-plan approval before implementation (AGENTS.md workflow step 4).
+The production flag stays off; no deployment, remote migration or live publication is part
+of this proposal.
+
+##### T31a — Shared draft insertion and localized entry fallback
+
+- Depends on: T30 and approval of this split.
+- Change: address both PR #112 review notes: share the draft INSERT statement builder between
+  the draft and poll-opening stores without changing transactional receipt semantics; localize
+  the numbered fallback in UA/DE captions, including previews and channel rendering.
+- Acceptance: skipped/discarded/concurrent opening behaviour is preserved; missing or hidden
+  names use the caption language, and names remain outside persisted drafts and Git.
+- Tests: draft/opening D1 regressions; UA/DE fallback with names present, absent and disallowed.
+
+##### T31b — Durable closing state and Telegram tally
+
+- Depends on: T31a.
+- Change: add tenant/week closing persistence and a network-independent tally model; resolve
+  the published poll and its ordered entry refs from channel deliveries; close through the
+  channel capability and save validated counts. Specify retry/recovery for a poll stopped
+  before counts were saved; unreadable results must reach author selection without inventing
+  counts. Keep the incomplete closing flow disabled until T31d wires it.
+- Acceptance: unpublished/skipped openings produce no result; repeated or concurrent work
+  cannot replace a completed tally; candidate order and tenant identity are checked. A failed
+  close is distinguished from zero votes. Any migration is local/test-only in this task.
+- Tests: delivery lookup, option/count validation, zero/tie/unique-leader rules, tenant isolation,
+  concurrent claims and interruption before/after closing the remote poll.
+
+##### T31c — Transient Meta vote totals
+
+- Depends on: T31b, T49b and T49d.
+- Change: use the existing comment-reader capability on the published contest posts for
+  Instagram, Facebook and Threads; accept digits 1..N only, count one vote per account per
+  network and combine with Telegram counts. Keep account identifiers in memory only; persist
+  aggregate counts and collection completeness. Do not use the persisted comment inbox as
+  the vote source. Define deterministic duplicate-comment handling in the implementation
+  notes before coding.
+- Acceptance: counts are tied to the published candidate order and tenant; pagination is
+  complete or explicitly unreadable; partial/API-failed counts cannot silently become a
+  final reader result; no voter identifiers enter D1, drafts, Git or logs.
+- Tests: pagination, duplicate accounts, invalid/out-of-range votes, cross-network identity,
+  missing/unpublished posts, reader failures and aggregate persistence without voter data.
+
+##### T31d — Author selection, result draft and cron integration
+
+- Depends on: T31c.
+- Change: wire the configured closing window and author callbacks to the durable tally.
+  Telegram-only unique leaders use reader wording; ties offer tied candidates, zero/unreadable
+  results offer all candidates and use author wording. For combined network votes, follow
+  spec v7 F19: show totals and require the author's winner decision. Atomically create one
+  deterministic `wotw-result` draft and set the entry winner flag for T32. Result content uses
+  name placeholders and goes through the existing preview/Publish flow for all channels.
+- Acceptance: exactly one result per tenant/week, including competing callbacks and cron
+  retries; only authorized authors can choose from that closing's candidates; stale buttons
+  cannot alter a result. Notifications can fail without losing durable state or creating
+  duplicate drafts. No automatic result publication or flag enablement.
+- Tests: full closing-to-preview cases, source wording, callback authorization and tenant
+  isolation, stale/concurrent choices, atomic winner/draft rollback, DST/year boundaries,
+  flag-off behaviour and cron failure isolation. Run affected suites plus workspace checks.
+
 ### T32 — Withdrawal and retention (`bot`, `channels`)
 - Depends on: T29, T31
 - Until T32 ships (Volodymyr, 2026-11-11): the T27b consent text keeps the 90-day name-deletion
