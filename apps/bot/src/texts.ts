@@ -10,6 +10,15 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  pollTooFewEntriesText: 'Цього тижня менше двох конкурсних робіт. Опитування не створено.',
+  pollQuestionText: 'Яка робота тижня вам найбільше подобається?',
+  pollDraftUkText:
+    'Роботи тижня. Голосуйте за номер у Telegram або напишіть номер роботи в коментарі.',
+  pollDraftDeText:
+    'Werke der Woche. Stimmt in Telegram ab oder schreibt die Nummer in einen Kommentar.',
+  previewInvalidEntryText:
+    'Некоректне посилання на конкурсну роботу. Виправ текст через редагування: посилання має вигляд {entry:ID}.',
+
   showRunReadyText: 'Результати готові. Онови перегляд, щоб перевірити та схвалити показ.',
   showRunPausedText:
     'Генерацію призупинено: платні виклики вимкнені. Ця відхилена спроба не спричинила списання. Збережені результати залишаються. «Продовжити генерацію» працюватиме після дозволу платних викликів.',

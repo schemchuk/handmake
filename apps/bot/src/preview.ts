@@ -14,6 +14,8 @@ import {
   ThreadsRenderError,
 } from '@handmake/channels';
 import {
+  EntryPlaceholderError,
+  pollSchema,
   postEntryReferences,
   resolvePostEntryNames,
   entryNamesAllowed,
@@ -22,7 +24,7 @@ import {
   canonicalUrl,
   readWorkDraftData,
 } from '@handmake/core';
-import type { CanonicalLinkSettings, Draft, Post, TenantConfig } from '@handmake/core';
+import type { CanonicalLinkSettings, Draft, EntryNames, Post, TenantConfig } from '@handmake/core';
 
 import type { BotTexts } from './texts';
 import type { TenantConfigSource } from './tenant-config-source';
@@ -83,6 +85,7 @@ function draftAsPost(draft: Draft, now: Date, siteExcluded = false): Post {
       ...(texts['de'] !== undefined ? { de: { provenance: 'ai-assisted' as const } } : {}),
     },
     texts,
+    ...(draft.type === 'wotw-poll' ? { poll: pollSchema.parse(draft.extras['poll']) } : {}),
   };
 }
 
@@ -117,7 +120,7 @@ export async function buildTenantPreview(
    * the projected post is site-excluded, so no canonical footer and no
    * Instagram copy — exactly what the publisher will do. Defaults to live. */
   publishesLive = true,
-  lookupNames?: (tenant: string, ids: string[]) => Promise<import('@handmake/core').EntryNames>,
+  lookupNames?: (tenant: string, ids: string[]) => Promise<EntryNames>,
 ): Promise<PreviewMessage> {
   let config: TenantConfig | undefined;
   try {
@@ -135,7 +138,13 @@ export async function buildTenantPreview(
       ? canonicalLinkSettings(config, draft.kind === 'work' ? 'works' : 'posts')
       : undefined
     : undefined;
-  const ids = postEntryReferences(draftAsPost(draft, new Date()));
+  let ids: string[];
+  try {
+    ids = postEntryReferences(draftAsPost(draft, new Date()));
+  } catch (error) {
+    if (!(error instanceof EntryPlaceholderError)) throw error;
+    return invalidEntryPreview(draft, texts);
+  }
   if (ids.length && !lookupNames) throw new Error('Contest names unavailable');
   const names = ids.length ? await lookupNames!(draft.tenantId, ids) : {};
   return buildPreview(
@@ -182,12 +191,19 @@ export function buildPreview(
   /** Projects a site-excluded (test) publish. */
   siteExcluded = false,
   threads?: TenantConfig['channels']['threads'] & { canonical?: CanonicalLinkSettings },
-  names: import('@handmake/core').EntryNames = {},
+  names: EntryNames = {},
   allowNames = false,
 ): PreviewMessage {
   const rawPost = draftAsPost(draft, now, siteExcluded);
-  const post = resolvePostEntryNames(rawPost, names, allowNames);
-  const anonymousPost = resolvePostEntryNames(rawPost, names, false);
+  let post: Post;
+  let anonymousPost: Post;
+  try {
+    post = resolvePostEntryNames(rawPost, names, allowNames);
+    anonymousPost = resolvePostEntryNames(rawPost, names, false);
+  } catch (error) {
+    if (!(error instanceof EntryPlaceholderError)) throw error;
+    return invalidEntryPreview(draft, texts);
+  }
   const uk = post.texts['uk'];
   const de = post.texts['de'];
   const primaryLanguage =
@@ -342,6 +358,7 @@ export function buildPreview(
     }
   }
 
+  if (post.poll) lines.push('', post.poll.question, ...post.poll.options);
   if (threadsPreview && !blockedError) lines.push('', threadsPreview);
   const rows = keyboard(draft.draftId, texts, blockedError !== undefined);
   if (draft.kind === 'work' && !blockedError) {
@@ -362,5 +379,13 @@ export function buildPreview(
   return {
     text: lines.join('\n'),
     keyboard: { inline_keyboard: rows },
+  };
+}
+
+/** Keep edit/discard available when an author mistypes a reserved entry token. */
+function invalidEntryPreview(draft: Draft, texts: BotTexts): PreviewMessage {
+  return {
+    text: texts.previewBlockedText(texts.previewInvalidEntryText),
+    keyboard: { inline_keyboard: keyboard(draft.draftId, texts, true) },
   };
 }

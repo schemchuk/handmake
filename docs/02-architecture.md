@@ -185,8 +185,8 @@ does not update its delivery row. The poll close and the withdrawal edit read th
    or nickname, and confirms the participant's consent. The entry is a row in its own D1 table
    (`contest_entries`: entryId, tenantId, week, file_id, display_name?, consent_at, status
    submitted | withdrawn), not a draft: entries are never translated or published on their own.
-2. **Open.** Worker cron at the opening time (Monday 10:00, config) reads the week's entries through
-   `SubmissionSource` (`AuthorEntrySource`), numbered 1..N in submission order. Fewer than 2 → the
+2. **Open.** Worker cron at the opening time (Monday 10:00, config) reads the previous calendar week's
+   entries through `SubmissionSource` (`AuthorEntrySource`), numbered 1..N in submission order. Fewer than 2 → the
    author is told, no poll. Otherwise it creates a `wotw-poll` draft (kind `post`, extras: poll spec and
    entry refs): album 1..N, poll "No 1".."No N", captions with `{entry:<id>}` placeholders. The author
    gets the usual preview (names resolved) and Publish.

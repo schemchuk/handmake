@@ -501,3 +501,23 @@ it('resolves preview names directly, keeps the draft immutable and anonymizes Me
   expect(draft.texts.uk).toBe(`{entry:${id}}`);
   await expect(buildTenantPreview(draft, botTexts)).rejects.toThrow('Contest names unavailable');
 });
+
+it.each(['{entry', '{entry:bad}', '{Entry:bad}'])(
+  'offers editing instead of throwing for a malformed entry token: %s',
+  async (text) => {
+    const draft = {
+      ...createDraft('tenant', 'draft', now),
+      state: 'ready' as const,
+      texts: { uk: text },
+    };
+    const lookup = vi.fn();
+    const preview = await buildTenantPreview(draft, botTexts, undefined, true, lookup);
+    expect(preview.text).toContain(botTexts.previewInvalidEntryText);
+    const actions = preview.keyboard!.inline_keyboard.flat().map((b) => b.callback_data);
+    expect(actions).toContain('draft:draft:edit:uk');
+    expect(actions).toContain('draft:draft:discard');
+    expect(actions).not.toContain('draft:draft:publish');
+    expect(lookup).not.toHaveBeenCalled();
+    expect(buildPreview(draft, botTexts).text).toContain(botTexts.previewInvalidEntryText);
+  },
+);

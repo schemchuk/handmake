@@ -6,15 +6,22 @@ import { signCallbackBody } from './published-callback';
 export type EntryNames = Record<string, string | null>;
 export const contestNamesPath = '/internal/contest-names';
 
+export class EntryPlaceholderError extends Error {
+  constructor() {
+    super('Invalid entry placeholder');
+    this.name = 'EntryPlaceholderError';
+  }
+}
+
 /** Reject broken reserved tokens without echoing their contents. Order defines work numbers. */
 export function entryReferences(text: string): string[] {
   const ids: string[] = [];
   const remainder = text.replace(/\{entry:([^{}]*)\}/g, (_, id: string) => {
-    if (!isUlid(id)) throw new Error('Invalid entry placeholder');
+    if (!isUlid(id)) throw new EntryPlaceholderError();
     ids.push(id);
     return '';
   });
-  if (/\{entry\b/i.test(remainder)) throw new Error('Invalid entry placeholder');
+  if (/\{entry\b/i.test(remainder)) throw new EntryPlaceholderError();
   return [...new Set(ids)];
 }
 
@@ -22,11 +29,12 @@ export function resolveEntryNames(
   text: string,
   names: EntryNames,
   policy: boolean,
-  order = entryReferences(text),
+  order?: string[],
 ): string {
-  entryReferences(text);
+  const references = entryReferences(text);
+  const numbered = order ?? references;
   return text.replace(/\{entry:([^{}]*)\}/g, (_, id: string) =>
-    policy && names[id] ? names[id]! : `Work No ${order.indexOf(id) + 1}`,
+    policy && names[id] ? names[id]! : `Work No ${numbered.indexOf(id) + 1}`,
   );
 }
 
