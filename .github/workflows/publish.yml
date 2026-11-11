@@ -86,10 +86,10 @@ jobs:
           fi
 
       - name: Install show media validation tools
+        timeout-minutes: 10
         run: |
           if jq -e '.kind == "show"' "$RUNNER_TEMP/payload.json" > /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends ffmpeg
+            .github/scripts/install-ffmpeg.sh
           fi
 
       - name: Publish to channels
@@ -215,9 +215,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install show media validation tools
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg
+          .github/scripts/install-ffmpeg.sh
 
       - name: Copy published show
         env:
