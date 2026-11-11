@@ -288,7 +288,7 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Tests: mocked Graph API, carousel vs single photo, container status polling, limit errors.
 
 ### T27 — Contest entries (F19 part 2a, `bot`, `core`)
-- Split proposed 2026-11-11 before coding (ADR 009): T27a → T27b keeps each PR below
+- Split approved by Volodymyr in chat 2026-11-11 before coding (ADR 009): T27a → T27b keeps each PR below
   approximately 400 changed non-test lines. T28 and T30 depend on completion of both parts.
 - Scope confirmed by Volodymyr in chat 2026-11-11: optional consented first names/nicknames may
   be stored in D1; participants' works are not published on the website. This is the explicit
@@ -296,13 +296,15 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   remote migration is authorized by this scope confirmation.
 
 ### T27a — Contest persistence and submission source (`bot`, `core`)
+- Implemented in PR #108; independent review pending.
 - Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T25
 - Change: add the network-independent `SubmissionSource` port and contest entry types; add a D1
   migration and tenant-scoped store for `contest_entries` (entry_id, tenant_id, week, file_id,
   display_name?, consent_at, status `submitted` | `withdrawn`, created_at). Persist submitted
   entries only with explicit consent. Add `AuthorEntrySource`: submitted entries for the requested
   week, in stable submission order, max 10; names stay outside Git and source payloads.
-- Define contest week bucketing in `Europe/Berlin`, shared with T27b. No participant Telegram IDs.
+- Contest week is the Monday calendar date (`YYYY-MM-DD`) in `Europe/Berlin`, shared with T27b.
+  Equal creation timestamps are ordered by entry ID. No participant Telegram IDs.
 - Acceptance: missing consent is rejected; tenant isolation holds; repeat insertion is idempotent;
   source ordering is deterministic and limited to 10; errors never contain display names.
 - Tests: real local D1 migration/store, consent validation, tenant isolation, duplicate insertion,

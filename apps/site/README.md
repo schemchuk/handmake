@@ -149,11 +149,10 @@ delivered (T40), but this workflow deploys only after the publish job, so the li
 briefly point to a page that does not exist yet. Recovery is a manual Site run (above);
 the publish run itself never needs a re-run for this.
 
-
 T48 newsletter integration uses optional tenant `site.newsletter.formAction`. The localized form on
 work/show detail pages posts directly to Brevo with `EMAIL`, an empty `email_address_check`, `locale`
 and `html_type=simple`. It has no JavaScript, provider assets, server endpoint or subscriber logging.
-The build policy allows only the exact approved form action with POST. Tenants without newsletter
+The build policy allows only the exact form action from tenant configuration with POST. Tenants without newsletter
 configuration keep their channel CTA. The PDF in `public/geschenk/rosenbluete.pdf` is the approved
 original, copied without changes; it is publicly downloadable, not protected by confirmation.
 

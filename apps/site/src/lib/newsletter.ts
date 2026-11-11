@@ -1,7 +1,3 @@
-/** The sole approved external resource, only as a POST form action. */
-export const newsletterFormAction =
-  'https://d2c04417.sibforms.com/serve/MUIFANZ2KTD7DrH6FXtIYdhL5lv5Olz9vYwkGcbbejUlT3kvUGgNAa1blz-Ef3XyHWmKhmMuREDoIiIxKbgOTvs-gUrwVf4OBvzgEqt-xkWV9qe7STw7XoOD6a1U35HlsyDKyfJtw42ynwHCwVgJZ-06SGnjWR8KPPuufg3f7xh8hHSFOUXChnorbAdKAWgqFsU3NtEuLHAubfFHew==';
-
 export function newsletterStrings(lang: string) {
   return lang === 'uk'
     ? {

@@ -1,3 +1,4 @@
+import { newsletterFormAction } from './newsletter';
 import { cp, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -23,6 +24,7 @@ export async function createPortfolioFixture() {
   tenant.site!.baseUrl = 'https://example.invalid';
   delete tenant.site!.circle;
   delete tenant.site!.groupUrl;
+  tenant.site!.newsletter = { formAction: newsletterFormAction };
   await mkdir(path.join(root, 'config/tenants'), { recursive: true });
   await writeFile(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
   await cp(

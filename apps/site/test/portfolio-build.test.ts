@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import type { Post, Show } from '@handmake/core';
 
-import { newsletterFormAction } from '../src/lib/newsletter';
+import { newsletterFormAction } from './fixtures/newsletter';
 import { createPortfolioFixture, ids } from './fixtures/portfolio';
 
 const exec = promisify(execFile);

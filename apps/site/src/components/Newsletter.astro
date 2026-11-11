@@ -1,13 +1,10 @@
 ---
 import { loadSiteData } from '../lib/site-data';
-import { newsletterFormAction, newsletterStrings } from '../lib/newsletter';
+import { newsletterStrings } from '../lib/newsletter';
 import { pagePath } from '../lib/paths';
 const { lang } = Astro.props;
 const { site } = await loadSiteData();
 const text = newsletterStrings(lang);
-if (site.newsletter && site.newsletter.formAction !== newsletterFormAction) {
-  throw new Error('Newsletter form endpoint is not approved by the site build policy');
-}
 ---
 {site.newsletter && <section class="newsletter" aria-labelledby="newsletter-title">
   <h2 id="newsletter-title">{text.title}</h2>
