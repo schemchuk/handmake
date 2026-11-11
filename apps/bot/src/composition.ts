@@ -1,3 +1,4 @@
+import { createEntrySessionStore } from './entry-session';
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
 import { FacebookAdapter, InstagramAdapter, ThreadsAdapter } from '@handmake/channels';
 import { draftRetentionDays, safeErrorMessage } from '@handmake/core';
@@ -175,6 +176,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        entries: createEntrySessionStore(env.DB),
         comments: {
           store: createCommentStore(env.DB),
           capabilities: commentCapabilities(),
@@ -293,6 +295,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         const commentsDeleted = await comments.deleteOlderThan(
           new Date(event.scheduledTime - commentRetentionDays * 24 * 60 * 60 * 1000),
         );
+        await createEntrySessionStore(env.DB).cleanup(new Date(event.scheduledTime));
         return (await drafts.deleteOlderThan(cutoff)) + commentsDeleted;
       }
       // F18: on every other tick, check whether an announcement/reminder

@@ -4,6 +4,7 @@ import type { ContestSubmission, SubmissionSource } from '@handmake/core';
 export interface NewContestEntry {
   entryId: string;
   tenantId: string;
+  /** Network-independent media reference; the Telegram adapter stores it as D1 file_id. */
   photoRef: string;
   displayName?: string;
   /** Explicit author confirmation; a timestamp alone does not imply consent. */

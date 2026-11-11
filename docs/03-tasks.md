@@ -318,6 +318,8 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Validation for carried-forward fixes: site legal/build-policy tests and fixture builds.
 
 ### T27b — Author contest-entry session (`bot`)
+- Implemented on `feat/t27b-contest-session`; pending independent review. Lifecycle and rollout:
+  `docs/contest-entry-session.md`. Includes migration 0013; no remote migration or deployment.
 - Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T27a
 - Change: wire an explicit `/entry` session, isolated from post/work/show drafts: exactly one photo,
   optional first name/nickname (≤ 30 characters), anonymous option and mandatory consent button.
@@ -379,6 +381,8 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 
 ### T32 — Withdrawal and retention (`bot`, `channels`)
 - Depends on: T29, T31
+- Until T32 ships (Volodymyr, 2026-11-11): the T27b consent text keeps the 90-day name-deletion
+  promise; names are deleted manually in D1.
 - Change: `editMessage` capability on the Telegram adapter (`editMessageCaption` or `editMessageText`,
   adapter decides). `/entries` lists recent entries with a "withdraw name" button: the name is deleted
   in D1, the affected Telegram messages are re-rendered and edited using `channel_deliveries`. Daily

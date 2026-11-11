@@ -1,13 +1,28 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T27b — author contest-entry session
-- **Branch:** none (codex creates `feat/t27b-contest-session`)
-- **Last commit:** `f346d5a` — feat(bot): add consented contest entry persistence (T27a) (#108)
-- **Next step:** codex starts T27b in a fresh session, including the PR #108 review notes in
-  docs/03-tasks.md (DST Monday-boundary tests; `photoRef`/`file_id` naming).
+- **Active agent:** claude-code
+- **Current task:** T27b — PR #109 ready for re-review
+- **Branch:** `feat/t27b-contest-session`
+- **Last commit:** `2f658b6` — fix(bot): leave entry routing when switching flows
+- **Next step:** claude-code re-reviews PR #109 and checks the latest CI. Obtain Volodymyr's
+  approval before the sensitive merge, migration 0013 and bot deployment.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+- **Decision 2026-11-11 (Volodymyr):** `entryConsentText` keeps the feminine form; no rewording.
+- **Decision 2026-11-11 (Volodymyr):** the 90-day name-deletion promise in the consent text stays;
+  until T32 ships, names are deleted manually in D1.
+- **T27b implementation:** isolated `/entry` session, revision-bound consent and atomic D1
+  insertion; migration 0013, 24-hour transient input retention and routing isolation. Lifecycle:
+  docs/contest-entry-session.md. PR #108 DST/mapping notes addressed. No remote changes.
+- **T27b review fixes:** foreign commands/buttons clear both transient input and entry routing,
+  including completion/expiry markers; post-preview and comment edits receive subsequent text.
+  The stale hint includes `/new`; per-update cleanup runs only for entry-related updates.
+  Six added regressions failed before the fix; entry/comment/post suites now pass 97/97.
+  Final entry-only rerun 14/14; bot typecheck/build, changed-file ESLint, formatting and staged
+  secret scan pass. Latest GitHub CI is pending. Consent wording unchanged.
+- **T27b original validation:** full bot 642/642 and core 250/250; workspace typecheck/build, lint,
+  formatting and staged secret scan passed before review. No remote migration, deployment,
+  production publishing, paid calls or secret changes in implementation or review fixes.
 - **T27a rollout:** migration 0012 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `8b18b4da-9d81-4382-8577-c36939da0e84`.
