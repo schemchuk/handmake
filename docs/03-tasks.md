@@ -296,6 +296,7 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   remote migration is authorized by this scope confirmation.
 
 ### T27a — Contest persistence and submission source (`bot`, `core`)
+- Implemented in PR #108; independent review pending.
 - Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T25
 - Change: add the network-independent `SubmissionSource` port and contest entry types; add a D1
   migration and tenant-scoped store for `contest_entries` (entry_id, tenant_id, week, file_id,

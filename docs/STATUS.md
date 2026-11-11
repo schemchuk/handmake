@@ -1,17 +1,22 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T27a — Contest persistence and submission source
+- **Active agent:** claude-code
+- **Current task:** review T27a — PR #108 (contest persistence and submission source)
 - **Branch:** feat/t27a-contest-store
-- **Last commit:** `97e926b` — feat(bot): persist consented contest submissions
-- **Next step:** await full bot regression run, then hand T27a to claude-code for review.
-- **Blocked on:** nothing; Volodymyr approved the split in chat 2026-11-11.
+- **Last commit:** `5ccb2dc` — fix(site): derive newsletter policy from tenant config
+- **Next step:** claude-code reviews PR #108; sensitive merge needs Volodymyr’s explicit OK.
+  Before remote migration 0012/deploy, ask Volodymyr. After merge, hand T27b to Codex.
+- **Blocked on:** independent review and sensitive-merge approval.
 - **Open questions for Volodymyr:** none.
 - **T27a persistence validation:** local D1 6/6, core 246/246, workspace typecheck and changed-file
   ESLint pass. Sandboxed Miniflare could not bind localhost; unrestricted rerun passed.
 - **T27a site validation:** site 53/53; final synthetic-endpoint fixture builds 4/4 and legal
   policy 19/19. Workspace build/typecheck, ESLint and formatting pass. Initial sandbox site
   malformed-document diagnostics failed; unrestricted full rerun passed. PR #107 fixes complete.
+- **T27a CI:** code head `5ccb2dc`, run 43006564073 passed: bot 634/634, core 246/246,
+  site 53/53, publisher 248/248, channels 260/260, stores 46/46, AI 140/140; formatting, lint,
+  actionlint, typecheck, build, dry-run and secret scan pass. Redundant full local bot run was
+  interrupted after CI passed (no completed local full-suite result). No remote changes.
 - **T27 scope approval:** Volodymyr confirmed in chat 2026-11-11: optional consented names in D1,
   no participants' works on the website. No remote migration or deployment performed.
 - **T48 rollout:** PR #107 merged 2026-11-11 with Volodymyr's OK (one German DOI mail for both
