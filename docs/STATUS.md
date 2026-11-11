@@ -4,8 +4,8 @@
 - **Current task:** T29 — callback v2 with message IDs
 - **Branch:** none (codex creates `feat/t29-callback-v2`)
 - **Last commit:** `3f76758` — feat(bot): add author contest-entry session (T27b) (#109)
-- **Next step:** codex starts T29 in a fresh session. T28 waits for H9 (`NAMES_ENDPOINT_SECRET`).
-- **Blocked on:** nothing. T28 waits for H9 (`NAMES_ENDPOINT_SECRET`).
+- **Next step:** codex starts T29 in a fresh session. T28 is unblocked (H9 done 2026-11-11).
+- **Blocked on:** nothing.
 - **T27b rollout:** migration 0013 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `7d463a14-6b3a-439e-8dc1-552e0354bc89`. Live `/entry` not yet tried.
