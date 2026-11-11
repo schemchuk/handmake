@@ -414,7 +414,7 @@ of this proposal.
 
 ##### T31a — Shared draft insertion and localized entry fallback
 
-- Implemented 2026-11-11; awaiting claude-code review. The shared statement also serves
+- Implemented 2026-11-11 in PR #113; awaiting claude-code review. The shared statement also serves
   collecting drafts. UA/DE captions resolve in their own language; unkeyed poll fields use
   the first post language. Unknown languages retain the English fallback.
 - Depends on: T30 and approval of this split.

@@ -1,10 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31a — shared draft insertion and localized entry fallback.
+- **Active agent:** claude-code
+- **Current task:** review T31a — PR #113 (shared draft insertion and localized entry fallback).
 - **Branch:** feat/t31a-draft-insert-localization
-- **Last commit:** `5a071ea` — docs: propose reviewable T31 implementation split
-- **Next step:** open the T31a PR and hand off to claude-code for independent review.
+- **Last commit:** `55c0be9` — fix: share draft inserts and localize contest fallbacks (T31a)
+- **Next step:** claude-code independently reviews PR #113, waits for green CI, merges if
+  approved, then deploys from clean main under AGENTS.md. No migration/config/secret changes.
+  After merge, hand off T31b to codex in a fresh session. T31b-d remain unimplemented.
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** none.
 - **T31 plan approval:** Volodymyr approved T31a-d in chat on 2026-11-11. Codex resumes as
