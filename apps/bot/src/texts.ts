@@ -107,7 +107,7 @@ export const botTexts = {
   startText:
     'Привіт! Я — бот «Faden und Stimmung». ' +
     'Надсилай текст і фото — я складу з них чернетку допису, а далі перекладу й покажу, що вийде. ' +
-    'Команди: /new — нова чернетка, /done — перекласти й переглянути, /discard — видалити чернетку.',
+    'Команди: /new — нова чернетка, /entry — конкурсна робота, /done — перекласти й переглянути, /discard — видалити чернетку.',
   refusalText: 'Hallo! Dieser Bot ist privat und nur für freigeschaltete Nutzer verfügbar.',
 
   draftCreatedText: (photoCount: number) =>
@@ -130,7 +130,8 @@ export const botTexts = {
     `Файл «${fileName}» не підійде: я приймаю лише фото у форматах JPEG/PNG і текст. ` +
     `HEIC та інші формати конвертуй у JPEG (або надішли фото як зображення, не як файл).`,
   unsupportedMessageText: 'Поки що я приймаю лише текст і фото — голосове, відео та стікери ні.',
-  unknownCommandText: 'Такої команди я не знаю. Команди: /new, /work, /show, /done, /discard.',
+  unknownCommandText:
+    'Такої команди я не знаю. Команди: /new, /entry, /work, /show, /done, /discard.',
 
   // --- T15: translate, preview, edit, regenerate -----------------------------
   draftNoneText: 'Немає чернетки — надішли текст чи фото, або почни з /new.',

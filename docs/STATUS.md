@@ -2,12 +2,16 @@
 
 - **Active agent:** codex
 - **Current task:** T27b — author contest-entry session
-- **Branch:** none (codex creates `feat/t27b-contest-session`)
-- **Last commit:** `f346d5a` — feat(bot): add consented contest entry persistence (T27a) (#108)
-- **Next step:** codex starts T27b in a fresh session, including the PR #108 review notes in
-  docs/03-tasks.md (DST Monday-boundary tests; `photoRef`/`file_id` naming).
+- **Branch:** `feat/t27b-contest-session`
+- **Last commit:** `9019b5a` — docs(status): record T27a migration and bot Worker version
+- **Next step:** codex finishes validation and opens the T27b PR for claude-code review.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+- **T27b implementation:** isolated `/entry` session, revision-bound consent and atomic D1
+  insertion; migration 0013, 24-hour transient input retention and routing isolation. Lifecycle:
+  docs/contest-entry-session.md. PR #108 DST/mapping notes addressed. No remote changes.
+- **T27b validation:** targeted D1 13/13 and core 250/250; workspace typecheck/build, lint and
+  formatting pass. Full bot suite running, including the added edit/confirmation race test.
 - **T27a rollout:** migration 0012 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `8b18b4da-9d81-4382-8577-c36939da0e84`.
