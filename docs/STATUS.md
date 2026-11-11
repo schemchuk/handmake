@@ -1,16 +1,18 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T30 — poll draft cron implemented; preparing review handoff.
+- **Active agent:** claude-code
+- **Current task:** T30 — poll draft cron; PR #112 awaits independent review.
 - **Branch:** `feat/t30-poll-draft-cron`
-- **Last commit:** `2aea875` — feat: resolve private contest names during rendering (T28) (#111)
-- **Next step:** commit and push T30, open its PR, then hand off to claude-code for review.
+- **Last commit:** `603a0a2` — feat: draft weekly contest polls from author entries
+- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/112 and checks CI.
+  Resolve the week-selection question with Volodymyr before enabling the feature; migration 0015
+  and deployment need his approval. All four PR #111 review notes are addressed.
 - **Blocked on:** nothing for review. Production needs migration 0015 before bot deployment;
   Volodymyr must approve that rollout. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** current implementation selects the current calendar week's
   entries, following the spec; confirm whether opening should instead select the previous week.
 - **T30 validation:** bot cron/preview/announcement/contest/composition 84/84; core 262/262;
-  publisher 257/257. Workspace typecheck/build, lint and changed-file formatting pass.
+  publisher 257/257. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass.
   Sandboxed D1 initialization stalled; unrestricted targeted tests passed. Test harness setup
   (allow-list, bot initialization and publish confirmation) was corrected before the final run.
   Migration 0015 adds anonymous tenant/week receipts so concurrent ticks, skipped weeks and
