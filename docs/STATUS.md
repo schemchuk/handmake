@@ -1,9 +1,9 @@
 # STATUS
 
-- **Active agent:** none — Volodymyr assigned T48 to Codex on 2026-11-11; awaiting provider inputs
+- **Active agent:** codex (T48, assigned by Volodymyr 2026-11-11; Owner in docs/03-tasks.md updated)
 - **Current task:** T48 — email sign-up and lead magnet; implementation not started
 - **Branch:** `main`
-- **Last commit:** `d679fe3` — fix: address Threads comment reply review notes (T49e) (#106)
+- **Last commit:** `4008d33` — docs(tasks): mark H15 done with the lead-magnet PDF
 - **Next step:** Resume T48 with Codex after the Brevo form inputs and confirmed H11 provider
   privacy text are available. Inspect the provider form before implementing its direct POST;
   allow only that exact endpoint in the site build policy. Record manual double-opt-in/PDF

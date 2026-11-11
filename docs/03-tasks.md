@@ -1438,7 +1438,13 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   Operator steps and live-check caveats: docs/threads-runbook.md. No live publishing or deploy.
 
 ### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data
-- Owner: kimi-code · Reviewer: claude-code · Depends on: T41, H15
+- Owner: codex · Reviewer: claude-code · Depends on: T41, H15
+- Reassigned 2026-11-11 by Volodymyr from kimi-code to codex. Ready from H15 (verified in public DNS
+  2026-11-11): Brevo free plan, domain `fadenundstimmung.de` authenticated (brevo-code, DKIM
+  `brevo1`/`brevo2._domainkey`, `_dmarc` p=none), sender `Faden und Stimmung <hallo@fadenundstimmung.de>`
+  (Cloudflare Email Routing forwards replies), empty list `Newsletter` (id 3), approved pattern PDF
+  kept locally. Not yet done (Volodymyr, in the Brevo UI): the double opt-in sign-up form, the
+  post-confirmation PDF delivery and the confirmed Brevo privacy text.
 - Change: ADR 013 email part accepted with the chosen provider (EU hosting, DPA). Sign-up form on the
   site (German and Ukrainian) posting to the provider's double opt-in form; the provider sends the
   pattern PDF after confirmation. No addresses touch our storage or logs. Datenschutzerklärung gets
