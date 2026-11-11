@@ -1460,6 +1460,9 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   JS. Do NOT load Brevo's `sib-styles.css` or `assets.brevo.com` fonts; only the form POST leaves the site.
   Check what Brevo returns to a plain (non-JS) POST and record it in the PR. Ukrainian sign-up: either
   this form (German DOI mail) or a second Brevo form for a Ukrainian mail; decide in the PR, ask Volodymyr.
+- Datenschutz input ready 2026-11-11: `docs/legal/newsletter.de.html` holds the generator's newsletter
+  section (verbatim) plus the Rechtsgrundlagen and overview additions; see its header comment for the
+  merge steps and the Brevo bullet T48 still drafts for Volodymyr's review.
 - Change: ADR 013 email part accepted with the chosen provider (EU hosting, DPA). Sign-up form on the
   site (German and Ukrainian) posting to the provider's double opt-in form; the provider sends the
   pattern PDF after confirmation. No addresses touch our storage or logs. Datenschutzerklärung gets

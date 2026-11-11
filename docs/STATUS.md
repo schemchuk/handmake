@@ -8,8 +8,8 @@
   privacy text are available. Inspect the provider form before implementing its direct POST;
   allow only that exact endpoint in the site build policy. Record manual double-opt-in/PDF
   acceptance in the task PR. No subscriber address may reach our storage or logs.
-- **Blocked on:** only the Volodymyr-confirmed Brevo privacy text (H11 generator) for the
-  Datenschutzerklärung. Brevo form, double opt-in mail and redirect are ready (2026-11-11, details in T48).
+- **Blocked on:** nothing to start T48. Generator newsletter text is in `docs/legal/newsletter.de.html`;
+  Volodymyr confirms the merged Datenschutz page (with the Brevo bullet) in the T48 PR before go-live.
 - **Open questions for Volodymyr:** Which provider form/delivery inputs are ready? Supply only
   public form configuration and confirmed legal text, never API keys or subscriber addresses.
 - **Carry-forward review note (PR #106):** The next task touching the comment drafter must bump
