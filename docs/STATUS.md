@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T29 — callback v2 with message IDs; reviewed, no blocking findings
-- **Branch:** feat/t29-callback-v2 (PR #110)
-- **Last commit:** see branch HEAD — merge main into feat/t29-callback-v2
-- **Next step:** with Volodymyr's OK: merge PR #110, then immediately apply migration 0014 and
-  deploy the bot from clean `main` (the v2 publisher on `main` needs the v1/v2 bot).
-- **Blocked on:** Volodymyr's OK for merge + migration 0014 + deploy. T28 is unblocked (H9 done
-  2026-11-11).
-- **Open questions for Volodymyr:** approve migration 0014 at rollout.
+- **Active agent:** codex
+- **Current task:** T28 — names endpoint and placeholder resolution
+- **Branch:** none (codex creates `feat/t28-names-endpoint`)
+- **Last commit:** `168615f` — feat: persist callback v2 channel message IDs (T29) (#110)
+- **Next step:** Volodymyr applies migration 0014 to remote D1 and deploys the bot from clean
+  `main` (the v2 publisher on `main` needs the v1/v2 bot); then codex starts T28 in a fresh
+  session. T28 is sensitive (touches `publish.yml`): merge needs Volodymyr's OK.
+- **Blocked on:** migration 0014 + bot deploy (manual, Volodymyr). Until then published callbacks
+  from `main` are rejected by the deployed bot; rerun publish after deploy if one fails.
+- **T29 review notes (non-blocking):** done channels are now rendered on reruns to find IDs, so
+  removing a done channel's tenant settings can fail a rerun; IDs map by op index, so a changed
+  adapter op list between runs could mismatch IDs.
 - **T29 validation:** callback schemas 9/9, bot callback integration 26/26 and full publisher
   249/249 tests pass. D1 tests include repeated v2 upsert and delayed v1 ID preservation;
   publisher tests cover op-kind lookup and completed-ledger reruns. Workspace typecheck/build and
