@@ -5,12 +5,13 @@
 - **Branch:** main (T31b not started).
 - **Last commit:** `95a9afd` — fix: share draft inserts and localize contest fallbacks (T31a) (#113)
 - **Next step:** codex starts T31b in a fresh session on `feat/t31b-…`, including the two
-  "Review notes from PR #113" in docs/03-tasks.md. Bot deploy of T31a from clean `main` is
-  pending (deploy by Volodymyr; record the Worker version here).
+  "Review notes from PR #113" in docs/03-tasks.md.
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** none.
 - **T31a rollout:** PR #113 merged 2026-11-11 by claude-code after review (no blocking findings,
-  CI green). No migration or config change. Worker deploy pending.
+  CI green). No migration or config change. Bot deployed by Volodymyr from clean `main`,
+  Worker `4755988b-3c35-4e92-9f8c-8423e613e625` (wrangler needed `--dns-result-order=ipv4first`:
+  local IPv6 is broken).
 - **CI ffmpeg (PR #114):** merged 2026-11-11 by Volodymyr. Ubuntu apt archive was unresolvable
   from runners; all four ffmpeg steps now use `.github/scripts/install-ffmpeg.sh` (static
   ffmpeg/ffprobe 6.1.1 from `eugeneware/ffmpeg-static@b6.1.1`, sha256-pinned), 10-minute limit.
