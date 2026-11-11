@@ -7,10 +7,10 @@
 - **Next step:** codex starts T31c in a fresh session on `feat/t31c-…`, including the two
   "Review notes from PR #115" in docs/03-tasks.md.
 - **Blocked on:** nothing for T31c. `featureFlags.wotwPoll` remains false; closing has no cron caller.
-- **Open questions for Volodymyr:** confirm whether D1 migration 0016 was applied remotely.
+- **Open questions for Volodymyr:** none.
 - **T31b rollout:** PR #115 merged 2026-11-11 by Volodymyr after claude-code review (no blocking
   findings, CI green). Bot deployed by Volodymyr, Worker `7f1035a3-909a-4850-a71b-05a9f930867b`.
-  Remote status of migration 0016 (`poll_closings`) unconfirmed; the code has no caller yet.
+  Remote D1 has migration 0016 (`poll_closings`): `migrations apply --remote` reports none pending.
 - **T31a rollout:** PR #113 merged 2026-11-11 by claude-code after review (no blocking findings,
   CI green). No migration or config change. Bot deployed by Volodymyr from clean `main`,
   Worker `4755988b-3c35-4e92-9f8c-8423e613e625` (wrangler needed `--dns-result-order=ipv4first`:
