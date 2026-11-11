@@ -272,3 +272,50 @@ it('selects Thursday meeting entries for Monday voting, excluding adjacent weeks
   expect(stored!.draft.extras['entryRefs']).toEqual(fx.ids);
   expect(stored!.draft.photoRefs).toEqual(['photo-0', 'photo-1']);
 });
+
+it.each(['drafts', 'poll_openings'])(
+  'rolls back both writes when insertion into %s fails and permits a retry',
+  async (table) => {
+    const fx = await fixture();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await fx.db.exec(
+      `CREATE TRIGGER reject_poll BEFORE INSERT ON ${table} BEGIN SELECT RAISE(ABORT, 'fixture rejection'); END;`,
+    );
+    await fx.run();
+    expect(await fx.options.openings.has(tenant, '2026-11-02')).toBe(false);
+    expect(await fx.drafts.listByState(tenant, 'ready')).toEqual([]);
+    expect(sentTexts(fx.calls)).toEqual([]);
+    await fx.db.exec('DROP TRIGGER reject_poll');
+    await fx.run();
+    expect(await fx.options.openings.has(tenant, '2026-11-02')).toBe(true);
+    expect(await fx.drafts.listByState(tenant, 'ready')).toHaveLength(1);
+  },
+);
+
+it.each([true, false])(
+  'localizes preview fallbacks with name policy %s without storing them',
+  async (allow) => {
+    const fx = await fixture();
+    fx.options.tenantConfigs.load = async () => ({
+      ...config,
+      entryNamePolicy: { telegram: allow },
+    });
+    await fx.db
+      .prepare('UPDATE contest_entries SET display_name = NULL WHERE entry_id = ?')
+      .bind(fx.ids[1])
+      .run();
+    await fx.run();
+    const preview = sentTexts(fx.calls)[0]!;
+    expect(preview).toContain('Робота № 2');
+    expect(preview).toContain('Werk Nr. 2');
+    expect(preview).not.toContain('Work No');
+    expect(preview.includes('Private fixture 0')).toBe(allow);
+    if (!allow) {
+      expect(preview).toContain('Робота № 1');
+      expect(preview).toContain('Werk Nr. 1');
+    }
+    const [row] = await fx.drafts.listByState(tenant, 'ready');
+    expect(row!.draft.texts.uk).toContain(`{entry:${fx.ids[1]}}`);
+    expect(JSON.stringify(row!.draft)).not.toMatch(/Private fixture|Робота №|Werk Nr\./);
+  },
+);

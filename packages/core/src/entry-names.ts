@@ -30,11 +30,14 @@ export function resolveEntryNames(
   names: EntryNames,
   policy: boolean,
   order?: string[],
+  language = 'en',
 ): string {
   const references = entryReferences(text);
   const numbered = order ?? references;
   return text.replace(/\{entry:([^{}]*)\}/g, (_, id: string) =>
-    policy && names[id] ? names[id]! : `Work No ${numbered.indexOf(id) + 1}`,
+    policy && names[id]
+      ? names[id]!
+      : `${language === 'uk' ? 'Робота №' : language === 'de' ? 'Werk Nr.' : 'Work No'} ${numbered.indexOf(id) + 1}`,
   );
 }
 
@@ -52,12 +55,20 @@ export function postEntryReferences(post: Pick<Post, 'texts' | 'poll'>): string[
 /** Resolved projections must never be passed back to a content store. */
 export function resolvePostEntryNames(post: Post, names: EntryNames, allow: boolean): Post {
   const order = postEntryReferences(post);
-  const resolve = (text: string) => resolveEntryNames(text, names, allow, order);
+  const resolve = (text: string, language: string) =>
+    resolveEntryNames(text, names, allow, order, language);
+  // Poll fields have no language key; use the post's primary (first) language.
+  const pollLanguage = Object.keys(post.texts)[0] ?? 'en';
   return {
     ...post,
-    texts: Object.fromEntries(Object.entries(post.texts).map(([k, v]) => [k, resolve(v)])),
+    texts: Object.fromEntries(Object.entries(post.texts).map(([k, v]) => [k, resolve(v, k)])),
     ...(post.poll
-      ? { poll: { question: resolve(post.poll.question), options: post.poll.options.map(resolve) } }
+      ? {
+          poll: {
+            question: resolve(post.poll.question, pollLanguage),
+            options: post.poll.options.map((option) => resolve(option, pollLanguage)),
+          },
+        }
       : {}),
   };
 }

@@ -2,6 +2,8 @@ import type { PublishJob } from '@handmake/core';
 import { createDraft, newUlid, postTypeSchema } from '@handmake/core';
 import type { Draft, DraftKind, DraftState } from '@handmake/core';
 
+import { draftInsertStatement } from './draft-insert';
+
 /** A 'translating' draft older than this may be claimed again: the background
  * task that claimed it died (e.g. runtime cancellation) without recording a
  * result. Two minutes cover any healthy translation with a wide margin. */
@@ -266,47 +268,11 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async create(draft, chatId) {
-      await db
-        .prepare(
-          `INSERT INTO drafts (tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-        )
-        .bind(
-          draft.tenantId,
-          draft.draftId,
-          chatId,
-          draft.state,
-          draft.kind,
-          draft.type,
-          JSON.stringify(draft.extras),
-          JSON.stringify(draft.texts),
-          JSON.stringify(draft.photoRefs),
-          draft.createdAt,
-          draft.updatedAt,
-        )
-        .run();
+      await draftInsertStatement(db, draft, chatId).run();
     },
 
     async createIfAbsent(draft, chatId) {
-      const result = await db
-        .prepare(
-          `INSERT OR IGNORE INTO drafts (tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-        )
-        .bind(
-          draft.tenantId,
-          draft.draftId,
-          chatId,
-          draft.state,
-          draft.kind,
-          draft.type,
-          JSON.stringify(draft.extras),
-          JSON.stringify(draft.texts),
-          JSON.stringify(draft.photoRefs),
-          draft.createdAt,
-          draft.updatedAt,
-        )
-        .run();
+      const result = await draftInsertStatement(db, draft, chatId, { ignoreExisting: true }).run();
       return result.meta.changes === 1;
     },
 
@@ -505,21 +471,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       // the pipeline's idempotency key, and the publisher refuses non-ULIDs.
       const draft = createDraft(tenantId, newUlid(now), now, { kind });
       try {
-        await db
-          .prepare(
-            `INSERT INTO drafts (tenant_id, id, chat_id, status, kind, texts, photos, version, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, '{}', '[]', 0, ?, ?)`,
-          )
-          .bind(
-            tenantId,
-            draft.draftId,
-            chatId,
-            draft.state,
-            kind,
-            draft.createdAt,
-            draft.updatedAt,
-          )
-          .run();
+        await draftInsertStatement(db, draft, chatId).run();
         return { draft, version: 0, pendingEdit: null };
       } catch (error) {
         if (!isUniqueViolation(error)) {

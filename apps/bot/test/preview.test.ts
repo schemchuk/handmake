@@ -497,7 +497,7 @@ it('resolves preview names directly, keeps the draft immutable and anonymizes Me
   );
   expect(lookup).toHaveBeenCalledWith('tenant', [id]);
   expect(preview.text).toContain('Private fixture');
-  expect(preview.text).toContain('Work No 1');
+  expect(preview.text).toContain('Werk Nr. 1');
   expect(draft.texts.uk).toBe(`{entry:${id}}`);
   await expect(buildTenantPreview(draft, botTexts)).rejects.toThrow('Contest names unavailable');
 });

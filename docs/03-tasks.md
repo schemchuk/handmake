@@ -401,19 +401,22 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   nothing.
 - Tests: winner rules incl. ties and zero votes, button callback, idempotency.
 
-#### T31 implementation split — proposed 2026-11-11
+#### T31 implementation split — approved 2026-11-11
 
 The complete task includes the v7 all-network extension below. Closing/recovery, transient
 comment counting, author callbacks and atomic result persistence exceed the ADR 009 budget
-for one PR. Proposed order: T31a → T31b → T31c → T31d. Each subtask has Owner: codex and
+for one PR. Approved order: T31a → T31b → T31c → T31d. Each subtask has Owner: codex and
 Reviewer: claude-code, needs a fresh session and its own PR, and targets fewer than 400 changed
-non-test lines. T31 remains incomplete until all four pass independent review. This proposal
-requires Volodymyr's task-plan approval before implementation (AGENTS.md workflow step 4).
+non-test lines. T31 remains incomplete until all four pass independent review. Volodymyr approved
+this split in chat on 2026-11-11 (AGENTS.md workflow step 4).
 The production flag stays off; no deployment, remote migration or live publication is part
 of this proposal.
 
 ##### T31a — Shared draft insertion and localized entry fallback
 
+- Implemented 2026-11-11; awaiting claude-code review. The shared statement also serves
+  collecting drafts. UA/DE captions resolve in their own language; unkeyed poll fields use
+  the first post language. Unknown languages retain the English fallback.
 - Depends on: T30 and approval of this split.
 - Change: address both PR #112 review notes: share the draft INSERT statement builder between
   the draft and poll-opening stores without changing transactional receipt semantics; localize
