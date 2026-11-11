@@ -289,6 +289,11 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 
 ### T27 — Contest entries (F19 part 2a, `bot`, `core`)
 - Depends on: T25
+- Review notes from PR #107 (T48, `site`, fix in this PR): (1) remove the stale `<!-- T48 DRAFT ... -->`
+  comment from `docs/legal/datenschutz.de.html` and the test expecting it; (2) `site.newsletter.formAction`
+  is duplicated by the hard-coded `newsletterFormAction` (Newsletter.astro throws on mismatch): derive the
+  build-policy allow-list from tenant config or reduce the field to a flag; (3) delete or mark archived
+  `docs/legal/newsletter.de.html`; (4) drop the double blank line before the T48 section in `apps/site/README.md`.
 - Change: migration: `contest_entries` (entry_id, tenant_id, week, file_id, display_name?, consent_at,
   status `submitted` | `withdrawn`, created_at). `/entry` session: exactly one photo, optional name
   (≤ 30 chars, first name or nickname), mandatory consent button. Consent text (UA) states what is shown
@@ -1437,10 +1442,11 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   PR #102 notes resolved (count removal, isolated warning failures, fully visible capped edits).
   Operator steps and live-check caveats: docs/threads-runbook.md. No live publishing or deploy.
 
-### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data
-- Implementation complete 2026-11-11 in draft PR #107 (`feat/t48-newsletter`); independent review, Volodymyr's
-  sensitive merge approval and live non-JS double-opt-in/PDF/unsubscribe acceptance pending.
-  Both languages currently use the configured German confirmation email (language decision pending).
+### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data ✅ done 2026-11-11
+- Merged 2026-11-11 as PR #107 (`0c1f942`) with Volodymyr's sensitive-merge OK. Volodymyr decided: one
+  German DOI mail for both UI languages; Datenschutz section and Brevo entity/address checked against
+  the account DPA; live operator test declined, so non-JS success page, `locale=uk`, DOI mail,
+  redirect and unsubscribe are unverified in production.
   Provider inspection: GET 200; empty URL-encoded non-JS POST 400 JSON with German EMAIL validation.
   No live subscriber created. PDF is public by explicit hosting decision, not access controlled.
   Validation: site 52/52, core 234/234, workspace typecheck/build and changed-file lint/format pass.

@@ -1,17 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code (T48 independent review)
-- **Current task:** T48 — implementation complete; draft PR #107 on `feat/t48-newsletter`
-- **Branch:** `feat/t48-newsletter`
-- **Last commit:** `49c23f2` — feat(site): add newsletter sign-up and pattern download
-- **Next step:** Claude Code reviews T48; record browser non-JS POST, double-opt-in, PDF redirect and
-  unsubscribe acceptance in the PR without addresses or unique links. Confirm the German DOI mail
-  for both UI languages with Volodymyr. Volodymyr and the author confirm the merged newsletter
-  Datenschutz text and draft Brevo entity/address against the account DPA; obtain explicit sensitive
-  merge approval. Reviewer deploys bot after merge because packages/core changes (AGENTS.md).
-- **Blocked on:** live acceptance and legal/language confirmation before merge/go-live, not implementation.
-- **Open questions for Volodymyr:** German confirmation mail for both languages? Confirm the new
-  Datenschutz newsletter/Brevo section in the PR; never share subscriber addresses or unique links.
+- **Active agent:** codex
+- **Current task:** T27 — Contest entries (next in the v5 order after T48)
+- **Branch:** none (codex creates `feat/t27-<slug>`)
+- **Last commit:** `0c1f942` — feat(site): add newsletter sign-up and pattern download (#107)
+- **Next step:** Codex starts T27 in a fresh session and also fixes the "Review notes from PR #107"
+  listed under T27 in docs/03-tasks.md.
+- **Blocked on:** nothing for T27.
+- **Open questions for Volodymyr:** none.
+- **T48 rollout:** PR #107 merged 2026-11-11 with Volodymyr's OK (one German DOI mail for both
+  languages, Datenschutz and Brevo entity checked against the DPA, live test declined). Site run
+  dispatched 2026-11-11 (run 43004941233). Bot deploy (packages/core changed) was blocked for
+  claude-code by the auto-mode classifier; Volodymyr deploys manually
+  (`pnpm -C apps/bot run deploy` from clean `main`) and the Worker version goes here.
 - **T48 validation:** site 52/52 and core 234/234; workspace typecheck/build, changed-file ESLint and
   formatting pass. Initial sandbox site run lost malformed-document child diagnostics; unrestricted
   full rerun passed. Provider GET 200; empty non-JS POST 400 JSON with German EMAIL validation.
