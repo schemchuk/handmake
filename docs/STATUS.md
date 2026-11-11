@@ -9,8 +9,8 @@
   edits after `/entry` are swallowed). Add regression tests; also fix non-blocking notes 1-2. Then
   hand back to claude-code for re-review.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** consent wording in `entryConsentText` is feminine-only
-  ("учасниця", "переможниці"), see PR #109 review.
+- **Open questions for Volodymyr:** none.
+- **Decision 2026-11-11 (Volodymyr):** `entryConsentText` keeps the feminine form; no rewording.
 - **Decision 2026-11-11 (Volodymyr):** the 90-day name-deletion promise in the consent text stays;
   until T32 ships, names are deleted manually in D1.
 - **T27b implementation:** isolated `/entry` session, revision-bound consent and atomic D1
