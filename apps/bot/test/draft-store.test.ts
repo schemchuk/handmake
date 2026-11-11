@@ -600,3 +600,24 @@ describe('markPublished / indexPublished (T18)', () => {
     expect(count?.n).toBe(2);
   });
 });
+
+it('preserves full draft fields on insert and never overwrites an ignored duplicate', async () => {
+  const store = await makeStore();
+  const draft = {
+    ...createDraft(tenantA, 'poll-insert', t0),
+    state: 'ready' as const,
+    type: 'wotw-poll' as const,
+    extras: { week: '2026-11-02', entryRefs: ['fixture-entry'] },
+    texts: { uk: 'Fixture UA', de: 'Fixture DE' },
+    photoRefs: ['fixture-photo'],
+  };
+  expect(await store.createIfAbsent(draft, 'chat-fixture')).toBe(true);
+  expect(await store.get(tenantA, draft.draftId)).toEqual({ draft, version: 0, pendingEdit: null });
+  expect(await store.chatIdOf(tenantA, draft.draftId)).toBe('chat-fixture');
+  expect(await store.createIfAbsent({ ...draft, texts: { uk: 'replacement' } }, 'other-chat')).toBe(
+    false,
+  );
+  await expect(store.create(draft, 'other-chat')).rejects.toThrow();
+  expect((await store.get(tenantA, draft.draftId))!.draft).toEqual(draft);
+  expect(await store.chatIdOf(tenantA, draft.draftId)).toBe('chat-fixture');
+});

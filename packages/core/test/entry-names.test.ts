@@ -5,7 +5,7 @@ import {
   resolvePostEntryNames,
   entryNamesAllowed,
 } from '../src/entry-names';
-import type { Post, TenantConfig } from '../src/index';
+import type { EntryNames, Post, TenantConfig } from '../src/index';
 const a = '01JBCA1B2C3D4E5F6G7H8J9K0M';
 const b = '01JBCA1B2C3D4E5F6G7H8J9K0N';
 it.each([
@@ -40,8 +40,8 @@ it('keeps numbering across languages and poll fields without mutating persisted 
     versions: { uk: { provenance: 'human' } },
   } satisfies Post;
   expect(resolvePostEntryNames(post, {}, false)).toMatchObject({
-    texts: { de: 'Work No 2' },
-    poll: { options: ['Work No 2'] },
+    texts: { uk: 'Робота № 1 Робота № 2', de: 'Werk Nr. 2' },
+    poll: { question: 'Робота № 1', options: ['Робота № 2'] },
   });
   expect(post.texts.de).toContain('{entry:');
 });
@@ -51,4 +51,19 @@ it('allows names only when tenant explicitly opts into Telegram', () => {
     expect(entryNamesAllowed(tenant, channel)).toBe(false);
   expect(entryNamesAllowed(tenant, 'telegram')).toBe(true);
   expect(entryNamesAllowed({} as TenantConfig, 'telegram')).toBe(false);
+});
+
+it.each(['uk', 'de'])('localizes missing and hidden names for %s', (language) => {
+  const fallback = language === 'uk' ? 'Робота №' : 'Werk Nr.';
+  const text = `{entry:${b}} / {entry:${a}} / {entry:${b}}`;
+  const order = [a, b];
+  expect(resolveEntryNames(text, { [a]: 'Fixture', [b]: null }, true, order, language)).toBe(
+    `${fallback} 2 / Fixture / ${fallback} 2`,
+  );
+  const hiddenCases: EntryNames[] = [{}, { [a]: 'Hidden', [b]: 'Hidden' }];
+  for (const names of hiddenCases) {
+    expect(resolveEntryNames(text, names, false, order, language)).toBe(
+      `${fallback} 2 / ${fallback} 1 / ${fallback} 2`,
+    );
+  }
 });
