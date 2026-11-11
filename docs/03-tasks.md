@@ -342,7 +342,8 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   (2) `NewContestEntry.photoRef` is stored as `file_id`: align the names or document the mapping.
 
 ### T28 — Names endpoint and placeholder resolution (`bot`, `publisher`, `core`)
-- Implementation: ready for Claude Code review on `feat/t28-names-endpoint`; sensitive merge needs Volodymyr's OK.
+- Done: PR #111 merged 2026-11-11 (`2aea875`) with Volodymyr's OK. Bot deployed from clean `main`
+  (Worker `48923756`) 2026-11-11; unsigned endpoint request returns 401. No migration.
 - Depends on: T27, H9 · Sensitive: touches `.github/workflows/publish.yml` (passes the secret)
 - Change: `resolveEntryNames(text, names, policy)` in `core` (`{entry:<id>}` → name or "Work No N";
   malformed token → error). Worker `GET /internal/contest-names?ids=…`: HMAC-SHA256 over
@@ -372,6 +373,12 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   insert-or-ignore, flag `featureFlags.wotwPoll`.
 - Acceptance: one poll draft per week; flag off → nothing; the author sees names in the preview.
 - Tests: window math incl. DST, `< 2` rule, idempotent cron, flag.
+- Review notes from PR #111 (fix in this PR): (1) replace inline `import('@handmake/core').EntryNames`
+  types in `apps/bot/src/bot.ts` and `apps/bot/src/preview.ts` with `import type`; (2)
+  `resolveEntryNames` parses the text twice when `order` is defaulted; (3) move
+  `export * from './entry-names'` in `packages/core/src/index.ts` into the file's export ordering;
+  (4) a stray `{entry` in an author's draft makes `buildTenantPreview` throw
+  `Invalid entry placeholder`: show a friendly preview message instead.
 
 ### T31 — Close poll, author breaks ties, result draft (F19 part 3, `bot`)
 - Depends on: T30
