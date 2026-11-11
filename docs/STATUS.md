@@ -1,13 +1,14 @@
 # STATUS
 
 - **Active agent:** claude-code
-- **Current task:** T29 — callback v2 with message IDs; implementation ready for review
-- **Branch:** feat/t29-callback-v2
-- **Last commit:** see branch HEAD — feat: persist callback v2 channel message IDs
-- **Next step:** claude-code reviews the T29 PR. Before production publisher runs, ask Volodymyr
-  to apply migration 0014, then deploy the bot accepting v1/v2. Author does not merge.
-- **Blocked on:** review; T28 still waits for H9 (`NAMES_ENDPOINT_SECRET`).
-- **Open questions for Volodymyr:** migration 0014 approval is needed at rollout, not applied here.
+- **Current task:** T29 — callback v2 with message IDs; reviewed, no blocking findings
+- **Branch:** feat/t29-callback-v2 (PR #110)
+- **Last commit:** see branch HEAD — merge main into feat/t29-callback-v2
+- **Next step:** with Volodymyr's OK: merge PR #110, then immediately apply migration 0014 and
+  deploy the bot from clean `main` (the v2 publisher on `main` needs the v1/v2 bot).
+- **Blocked on:** Volodymyr's OK for merge + migration 0014 + deploy. T28 is unblocked (H9 done
+  2026-11-11).
+- **Open questions for Volodymyr:** approve migration 0014 at rollout.
 - **T29 validation:** callback schemas 9/9, bot callback integration 26/26 and full publisher
   249/249 tests pass. D1 tests include repeated v2 upsert and delayed v1 ID preservation;
   publisher tests cover op-kind lookup and completed-ledger reruns. Workspace typecheck/build and
