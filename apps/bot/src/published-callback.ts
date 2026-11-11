@@ -66,8 +66,39 @@ export async function handlePublishedCallback(
   const draft = await store.get(tenantId, postId);
   const kind = parsed.data.kind ?? 'post';
   if (draft && draft.draft.kind !== kind) return new Response('kind mismatch', { status: 409 });
-  if (kind !== 'post' && Object.values(parsed.data.channels).some((status) => status !== 'done')) {
+  if (
+    kind !== 'post' &&
+    Object.values(parsed.data.channels).some(
+      (delivery) => (typeof delivery === 'string' ? delivery : delivery.status) !== 'done',
+    )
+  ) {
     return new Response('work delivery incomplete', { status: 409 });
+  }
+  const deliveries = Object.entries(parsed.data.channels);
+  if (deliveries.length) {
+    await env.DB.batch(
+      deliveries.map(([channel, delivery]) => {
+        const legacy = typeof delivery === 'string';
+        return env.DB.prepare(
+          `
+        INSERT INTO channel_deliveries (tenant_id, post_id, channel, status, message_ids)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (tenant_id, post_id, channel) DO UPDATE SET
+          status = excluded.status,
+          message_ids = CASE WHEN ? THEN channel_deliveries.message_ids ELSE excluded.message_ids END
+        WHERE status != excluded.status OR (NOT ? AND message_ids != excluded.message_ids)
+      `,
+        ).bind(
+          tenantId,
+          postId,
+          channel,
+          legacy ? delivery : delivery.status,
+          JSON.stringify(legacy ? {} : delivery.messageIds),
+          legacy ? 1 : 0,
+          legacy ? 1 : 0,
+        );
+      }),
+    );
   }
   if (kind === 'post') await store.indexPublished({ tenantId, postId, publishedAt: date, photos });
   const moved = await store.markPublished(tenantId, postId, new Date());

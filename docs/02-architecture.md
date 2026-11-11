@@ -174,7 +174,10 @@ analytics). The Git repo stays the source of truth; the D1 index can be rebuilt 
 Callback v2 (review B1): each channel entry becomes `{ status, messageIds: { main?, poll? } }`, where
 the publisher finds the IDs by op kind at deliver time (`main` = first album or text op, `poll` = the
 poll op). The Worker stores them in D1 (`channel_deliveries`: tenantId, postId, channel, status,
-messageIds JSON). The poll close and the withdrawal edit read them from there; nothing re-renders.
+messageIds JSON). Apply migration `0014_channel_deliveries.sql` and deploy the bot before
+enabling the v2 publisher from `main`. The bot accepts v1 status-only callbacks for one release;
+a delayed v1 callback preserves any v2 IDs already stored. Repeating an identical callback
+does not update its delivery row. The poll close and the withdrawal edit read them from there; nothing re-renders.
 
 ### 4.4 Work of the week (F19, ADR 008 + 010)
 

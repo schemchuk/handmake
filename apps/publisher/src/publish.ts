@@ -25,6 +25,7 @@ import type {
   Post,
   PublishLedger,
   SecretResolver,
+  SendOperation,
   TenantConfig,
   Work,
   Show,
@@ -232,13 +233,9 @@ export async function runPublish(
   // puts Instagram before Facebook): the first opted-in preparation pushes,
   // later ones skip the no-op second push (PR #96 review note 4).
   let contentPushed = false;
+  const channelOperations = new Map<string, SendOperation[]>();
   for (const channel of post.channels) {
     const entry = ledger.channels[channel];
-    if (entry?.status === 'done') {
-      skipped.push(channel);
-      log(`channel ${channel}: already done, skipping`);
-      continue;
-    }
     const adapter = registry.get(channel);
     const settings = (tenant.channels as Record<string, unknown>)[channel];
     // T40: the canonical footer rides the render settings; delivery keeps the
@@ -248,6 +245,12 @@ export async function runPublish(
       post,
       canonical ? { ...(settings as Record<string, unknown>), canonical } : settings,
     );
+    channelOperations.set(channel, ops);
+    if (entry?.status === 'done') {
+      skipped.push(channel);
+      log(`channel ${channel}: already done, skipping`);
+      continue;
+    }
     const startAt = nextOpIndex(ledger, channel);
     log(`channel ${channel}: ${ops.length} op(s), resuming at op ${startAt}`);
     try {
@@ -353,7 +356,23 @@ export async function runPublish(
     log('published callback skipped: not every channel is done');
   } else if (callbackUrl) {
     const channels = Object.fromEntries(
-      ledgerEntries.map(([channel]) => [channel, 'done' as const]),
+      ledgerEntries.map(([channel, entry]) => {
+        const ops = channelOperations.get(channel) ?? [];
+        const mainIndex = ops.findIndex((op) => op.kind === 'mediaGroup' || op.kind === 'message');
+        const pollIndex = ops.findIndex((op) => op.kind === 'poll');
+        const main = entry.remoteIds[mainIndex];
+        const poll = entry.remoteIds[pollIndex];
+        return [
+          channel,
+          {
+            status: 'done' as const,
+            messageIds: {
+              ...(main !== undefined ? { main } : {}),
+              ...(poll !== undefined ? { poll } : {}),
+            },
+          },
+        ];
+      }),
     );
     const sender =
       deps.callback ??

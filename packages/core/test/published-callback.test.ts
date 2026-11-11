@@ -76,3 +76,18 @@ describe('publishedCallbackBodySchema', () => {
     expect(publishedCallbackBodySchema.safeParse({ ...valid, photos: [42] }).success).toBe(false);
   });
 });
+
+it('accepts strict v2 deliveries and rejects malformed or mixed versions', () => {
+  const body = { tenantId: 't', postId: 'p', date: '2026-11-11', photos: [] };
+  const delivery = { status: 'done', messageIds: { main: 'remote', poll: 42 } };
+  expect(
+    publishedCallbackBodySchema.parse({ ...body, channels: { telegram: delivery } }).channels,
+  ).toEqual({ telegram: delivery });
+  for (const channels of [
+    { telegram: { status: 'done' } },
+    { telegram: { ...delivery, messageIds: { poll: null } } },
+    { telegram: { ...delivery, messageIds: { other: 42 } } },
+    { telegram: delivery, instagram: 'done' },
+  ])
+    expect(publishedCallbackBodySchema.safeParse({ ...body, channels }).success).toBe(false);
+});
