@@ -23,6 +23,7 @@ export interface CreateBotOptions {
   comments?: CommentSessionOptions;
   work?: WorkSessionOptions;
   show?: ShowSessionOptions;
+  entryNames?: (tenant: string, ids: string[]) => Promise<import('@handmake/core').EntryNames>;
   tenantConfigs?: TenantConfigSource;
   costs?: { ledger: AiCostLedger; tenantConfigs: TenantConfigSource };
   drafts: D1DraftStore;
@@ -478,6 +479,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         texts,
         options.tenantConfigs,
         options.publishesLive,
+        options.entryNames,
       );
       await bot.api
         .sendMessage(
@@ -517,6 +519,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       texts,
       options.tenantConfigs,
       options.publishesLive,
+      options.entryNames,
     );
     await ctx.reply(preview.text, preview.keyboard ? { reply_markup: preview.keyboard } : {});
   }

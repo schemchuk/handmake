@@ -14,6 +14,9 @@ import {
   ThreadsRenderError,
 } from '@handmake/channels';
 import {
+  postEntryReferences,
+  resolvePostEntryNames,
+  entryNamesAllowed,
   buildApprovedWorkJob,
   canonicalLinkSettings,
   canonicalUrl,
@@ -114,6 +117,7 @@ export async function buildTenantPreview(
    * the projected post is site-excluded, so no canonical footer and no
    * Instagram copy — exactly what the publisher will do. Defaults to live. */
   publishesLive = true,
+  lookupNames?: (tenant: string, ids: string[]) => Promise<import('@handmake/core').EntryNames>,
 ): Promise<PreviewMessage> {
   let config: TenantConfig | undefined;
   try {
@@ -131,6 +135,9 @@ export async function buildTenantPreview(
       ? canonicalLinkSettings(config, draft.kind === 'work' ? 'works' : 'posts')
       : undefined
     : undefined;
+  const ids = postEntryReferences(draftAsPost(draft, new Date()));
+  if (ids.length && !lookupNames) throw new Error('Contest names unavailable');
+  const names = ids.length ? await lookupNames!(draft.tenantId, ids) : {};
   return buildPreview(
     draft,
     texts,
@@ -157,6 +164,8 @@ export async function buildTenantPreview(
     config?.channels.threads
       ? { ...config.channels.threads, ...(canonical ? { canonical } : {}) }
       : undefined,
+    names,
+    config ? entryNamesAllowed(config, 'telegram') : false,
   );
 }
 
@@ -173,10 +182,14 @@ export function buildPreview(
   /** Projects a site-excluded (test) publish. */
   siteExcluded = false,
   threads?: TenantConfig['channels']['threads'] & { canonical?: CanonicalLinkSettings },
+  names: import('@handmake/core').EntryNames = {},
+  allowNames = false,
 ): PreviewMessage {
-  const post = draftAsPost(draft, now, siteExcluded);
-  const uk = draft.texts['uk'];
-  const de = draft.texts['de'];
+  const rawPost = draftAsPost(draft, now, siteExcluded);
+  const post = resolvePostEntryNames(rawPost, names, allowNames);
+  const anonymousPost = resolvePostEntryNames(rawPost, names, false);
+  const uk = post.texts['uk'];
+  const de = post.texts['de'];
   const primaryLanguage =
     telegram?.languages?.find((lang) => post.texts[lang] !== undefined) ??
     Object.keys(post.texts)[0];
@@ -196,7 +209,7 @@ export function buildPreview(
       draft.kind === 'work' ? readWorkDraftData(draft).config.channels : undefined;
     if (draft.kind !== 'work' || (workChannels?.length ?? 0) > 0) renderTelegram(post, telegram);
     if (threads && (workChannels?.includes('threads') ?? true)) {
-      const op = renderThreads(post, threads)[0];
+      const op = renderThreads(anonymousPost, threads)[0];
       const text =
         op?.kind === 'message' ? op.text : op?.kind === 'mediaGroup' ? op.caption : undefined;
       threadsPreview =
@@ -209,7 +222,7 @@ export function buildPreview(
     // site-excluded/test post never renders.
     instagramApplies = instagram !== undefined && (workChannels?.includes('instagram') ?? true);
     if (instagramApplies && post.texts[instagram!.language] !== undefined) {
-      const ops = renderInstagram(post, instagram);
+      const ops = renderInstagram(anonymousPost, instagram);
       if (ops.length === 0) {
         instagramSkip = instagramSkipReason(post);
       } else {
@@ -224,7 +237,7 @@ export function buildPreview(
     // Instagram; its captions carry the clickable canonical site link.
     facebookApplies = facebook !== undefined && (workChannels?.includes('facebook') ?? true);
     if (facebookApplies && post.texts[facebook!.language] !== undefined) {
-      const ops = renderFacebook(post, facebook);
+      const ops = renderFacebook(anonymousPost, facebook);
       if (ops.length === 0) {
         facebookSkip = facebookSkipReason(post);
       } else {

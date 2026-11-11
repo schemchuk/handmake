@@ -8,6 +8,9 @@ import {
   createThreadsAdapter,
 } from '@handmake/channels';
 import {
+  postEntryReferences,
+  resolvePostEntryNames,
+  entryNamesAllowed,
   canonicalLinkSettings,
   ChannelRegistry,
   idempotencyBase,
@@ -33,6 +36,7 @@ import type {
 } from '@handmake/core';
 import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
+import { fetchEntryNames } from './entry-names';
 import { buildPostFromPayload } from './build-post';
 import { createGitCommitter } from './git';
 import type { GitCommitter } from './git';
@@ -170,6 +174,15 @@ export async function runPublish(
       : undefined;
   const publication = workPublication ?? showPublication;
   const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
+  const entryIds = postEntryReferences(post);
+  const entryNames = await fetchEntryNames(post.tenant, entryIds, {
+    env,
+    logger: log,
+    fetchImpl: deps.fetchImpl,
+    now,
+  });
+  const errorMessage = (error: unknown) =>
+    entryIds.length ? 'Contest publication failed' : safeErrorMessage(error);
   const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
   if (showPublication) {
     await store.saveShow(showPublication.show, showPublication.media);
@@ -200,7 +213,7 @@ export async function runPublish(
     try {
       await notifier.notify(target, message);
     } catch (error) {
-      log(`notify ${target} failed: ${safeErrorMessage(error)}`);
+      log(`notify ${target} failed: ${errorMessage(error)}`);
     }
   };
 
@@ -241,10 +254,15 @@ export async function runPublish(
     // T40: the canonical footer rides the render settings; delivery keeps the
     // raw tenant section (adapters read channelId only).
     const canonical = canonicalLinkSettings(tenant, payload.kind === 'work' ? 'works' : 'posts');
-    const ops = adapter.render(
-      post,
-      canonical ? { ...(settings as Record<string, unknown>), canonical } : settings,
-    );
+    let ops: SendOperation[];
+    try {
+      ops = adapter.render(
+        resolvePostEntryNames(post, entryNames, entryNamesAllowed(tenant, channel)),
+        canonical ? { ...(settings as Record<string, unknown>), canonical } : settings,
+      );
+    } catch (error) {
+      throw new Error(errorMessage(error));
+    }
     channelOperations.set(channel, ops);
     if (entry?.status === 'done') {
       skipped.push(channel);
@@ -319,7 +337,7 @@ export async function runPublish(
       delivered[channel] = ledger.channels[channel]!.remoteIds;
       log(`channel ${channel}: delivered ${delivered[channel]!.length} remote id(s)`);
     } catch (error) {
-      const message = safeErrorMessage(error);
+      const message = errorMessage(error);
       ledger = markFailed(ledger, channel, message, now);
       await persistLedger();
       await notify(
@@ -397,7 +415,7 @@ export async function runPublish(
       // operator re-fires it by re-running the publish workflow (runbook).
       await notify(
         'operator',
-        `publish callback for ${post.tenant}/${post.id} failed: ${safeErrorMessage(error)}`,
+        `publish callback for ${post.tenant}/${post.id} failed: ${errorMessage(error)}`,
       );
     }
   }

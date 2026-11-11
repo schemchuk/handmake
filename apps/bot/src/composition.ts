@@ -23,6 +23,8 @@ import { createGitHubActionsRunner } from './publish-runner';
 import { handlePublishedCallback, publishedCallbackPath } from './published-callback';
 import { createGitHubCollectionReader } from './collection-reader';
 import { createGitHubWorkReader } from './work-reader';
+import { handleContestNames, readEntryNames } from './contest-names';
+import { contestNamesPath } from '@handmake/core';
 import { createGitHubTenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
 import { createShowRuntime } from './show-runtime';
@@ -176,6 +178,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        entryNames: (tenant, ids) => readEntryNames(env.DB, tenant, ids),
         entries: createEntrySessionStore(env.DB),
         comments: {
           store: createCommentStore(env.DB),
@@ -239,6 +242,8 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     },
 
     async handle(request) {
+      if (new URL(request.url).pathname === contestNamesPath)
+        return handleContestNames(env, request);
       if (new URL(request.url).pathname.startsWith(showTransportPath)) {
         const shows = createShowRuntime(env);
         return shows ? shows.handle(request) : new Response('shows disabled', { status: 503 });
