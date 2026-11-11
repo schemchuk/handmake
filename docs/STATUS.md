@@ -1,18 +1,20 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T30 — poll draft cron; PR #112 changes requested by claude-code.
+- **Current task:** T30 — PR #112 blocking review findings fixed; preparing handoff.
 - **Branch:** `feat/t30-poll-draft-cron`
-- **Last commit:** `a23ff77` — docs: hand off T30 for independent review
-- **Next step:** codex fixes the two blocking findings in
-  https://github.com/schemchuk/handmake/pull/112#issuecomment-6796269382 on this branch:
-  (1) CI red, `apps/bot/test/cost-cron-order.test.ts` sees `poll cron failed for tenant one`; run
-  the full bot suite; (2) select the previous calendar week (decision below), with a test using the
-  real schedule (Thursday entry, Monday opening). Then hand back to claude-code for review.
+- **Last commit:** `20113d1` — docs(status): request T30 changes, record week decision
+- **Next step:** push the review fixes and hand PR #112 back to claude-code for review.
 - **Blocked on:** nothing. Production needs migration 0015 before bot deployment; Volodymyr must
   approve that rollout. `featureFlags.wotwPoll` remains false.
 - **Decision 2026-11-11 (Volodymyr):** the Monday poll opening selects the previous calendar
   week's entries (`contestWeek` of opening minus 7 days), so Thursday meeting entries are included.
+- **T30 review-fix validation:** full bot suite 674/674 (35 files) passes outside the sandbox.
+  Workspace typecheck, bot build, lint and changed-file formatting pass. Cron-order tests include
+  poll success/failure isolation; real Thursday/Monday schedule, adjacent weeks, tenant isolation,
+  DST and year boundaries are covered. Both blocking PR #112 findings are fixed; the two
+  non-blocking notes remain assigned to T31. No production migration, deployment, publication,
+  paid calls, workflows or secrets changed.
 - **T30 validation:** bot cron/preview/announcement/contest/composition 84/84; core 262/262;
   publisher 257/257. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass.
   Sandboxed D1 initialization stalled; unrestricted targeted tests passed. Test harness setup

@@ -39,8 +39,11 @@ export async function runPollCron(now: Date, options: PollCronOptions): Promise<
         config.meetingSchedule.timezone,
       );
       if (!opening) continue;
-      // Entry storage uses Monday calendar dates in Europe/Berlin (ADR 010).
-      const week = contestWeek(opening);
+      // Shift the Berlin calendar key, not the opening instant: a week crossing
+      // DST is not always 168 hours. Monday opens voting on last week's entries.
+      const previousMonday = new Date(`${contestWeek(opening)}T12:00:00Z`);
+      previousMonday.setUTCDate(previousMonday.getUTCDate() - 7);
+      const week = previousMonday.toISOString().slice(0, 10);
       const draftId = await deterministicUlid(`${tenantId}:wotw-poll:${week}`, opening.getTime());
       if (await options.openings.has(tenantId, week)) continue;
       const entries = await options.source.listSubmissions(tenantId, week);

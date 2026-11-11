@@ -130,7 +130,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   - **Names outside Git.** The display name is stored only in the bot database, never in the content
     repo; posts and the site get it at render/build time. If a participant withdraws consent, the name
     is deleted there and the published posts are edited, without rewriting Git history.
-  - **Candidates.** The week's approved entries, max 10, numbered 1..N in submission order.
+  - **Candidates.** The previous calendar week's approved entries, max 10, numbered 1..N in
+    submission order (Monday opening includes the preceding Thursday's meeting entries).
   - **Poll.** At the configured opening time the bot drafts the poll post (album of candidates plus a
     Telegram poll "No 1".."No N" replying to it). The author publishes it. Channel polls are anonymous;
     no voter data is collected. (Poll capability: T21, done.)

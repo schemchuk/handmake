@@ -3,6 +3,7 @@ import { contestWeek, newUlid, parseTenantConfig } from '@handmake/core';
 import { Bot } from 'grammy';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AppContext } from '../src/context';
+import { nextMeetingAfter } from '../src/announcements';
 import { createApp } from '../src/composition';
 import { AuthorEntrySource, createContestEntryStore } from '../src/contest-store';
 import { readEntryNames } from '../src/contest-names';
@@ -31,7 +32,13 @@ async function fixture(now = tick, count = 2) {
   for (let i = 0; i < count; i++) {
     const entryId = newUlid();
     ids.push(entryId);
-    const createdAt = new Date(now.getTime() - 60_000 + i);
+    // The real tenant meets Thursday 14:00; voting opens the following Monday.
+    const meeting = nextMeetingAfter(
+      config.meetingSchedule,
+      new Date(now.getTime() - 7 * 24 * 60 * 60_000),
+      config.meetingSchedule.timezone,
+    );
+    const createdAt = new Date(meeting.getTime() + i);
     await entries.submit({
       tenantId: tenant,
       entryId,
@@ -71,7 +78,7 @@ it('creates an ordered bilingual poll with private preview names and publishes o
     kind: 'post',
     type: 'wotw-poll',
     photoRefs: ['photo-0', 'photo-1'],
-    extras: { week: '2026-11-09', entryRefs: fx.ids, poll: { options: ['No 1', 'No 2'] } },
+    extras: { week: '2026-11-02', entryRefs: fx.ids, poll: { options: ['No 1', 'No 2'] } },
   });
   for (const text of Object.values(draft.texts)) {
     expect(text).toContain(`1. {entry:${fx.ids[0]}}\n2. {entry:${fx.ids[1]}}`);
@@ -157,10 +164,11 @@ it('does no source or names lookup with the flag off or outside the opening wind
 });
 
 it.each([
-  ['2026-03-23T09:00:00Z', '2026-03-23'],
-  ['2026-03-30T08:00:00Z', '2026-03-30'],
-  ['2026-10-19T08:00:00Z', '2026-10-19'],
-  ['2026-10-26T09:00:00Z', '2026-10-26'],
+  ['2026-03-23T09:00:00Z', '2026-03-16'],
+  ['2026-03-30T08:00:00Z', '2026-03-23'],
+  ['2026-10-19T08:00:00Z', '2026-10-12'],
+  ['2026-10-26T09:00:00Z', '2026-10-19'],
+  ['2027-01-04T09:00:00Z', '2026-12-28'],
 ])('uses local Monday 10:00 across DST: %s', async (instant, week) => {
   const now = new Date(instant);
   const fx = await fixture(now);
@@ -170,7 +178,7 @@ it.each([
   const rows = await fx.drafts.listByState(tenant, 'ready');
   expect(rows).toHaveLength(1);
   expect(rows[0]!.draft.extras['week']).toBe(week);
-  expect(contestWeek(now)).toBe(week);
+  expect(contestWeek(new Date(now.getTime() - 4 * 24 * 60 * 60_000))).toBe(week);
 });
 
 it('allows a retry after names lookup failure without leaking diagnostics or creating a draft', async () => {
@@ -232,4 +240,35 @@ it('limits the real source to ten submitted entries of the selected tenant and w
   const [row] = await fx.drafts.listByState(tenant, 'ready');
   expect(row!.draft.photoRefs).toEqual(Array.from({ length: 10 }, (_, i) => `photo-${i + 1}`));
   expect(row!.draft.extras['entryRefs']).toEqual(fx.ids.slice(1, 11));
+});
+
+it('selects Thursday meeting entries for Monday voting, excluding adjacent weeks and other tenants', async () => {
+  const fx = await fixture();
+  const entries = createContestEntryStore(fx.db);
+  const submitted = await entries.listSubmissions(tenant, '2026-11-02');
+  expect(submitted[0]!.createdAt).toBe('2026-11-05T13:00:00.000Z');
+  expect(config.meetingSchedule).toMatchObject({ weekday: 'thursday', time: '14:00' });
+  expect(config.workOfWeek.opens).toEqual({ weekday: 'monday', time: '10:00' });
+  for (const [tenantId, date] of [
+    [tenant, '2026-11-01T22:59:59Z'],
+    [tenant, '2026-11-08T23:00:00Z'],
+    ['other', '2026-11-05T13:00:00Z'],
+  ] as const) {
+    for (let i = 0; i < 2; i++) {
+      const createdAt = new Date(date);
+      await entries.submit({
+        tenantId,
+        entryId: newUlid(),
+        photoRef: 'excluded',
+        consent: true,
+        consentAt: createdAt,
+        createdAt,
+      });
+    }
+  }
+  await fx.run();
+  const [stored] = await fx.drafts.listByState(tenant, 'ready');
+  expect(stored!.draft.extras['week']).toBe('2026-11-02');
+  expect(stored!.draft.extras['entryRefs']).toEqual(fx.ids);
+  expect(stored!.draft.photoRefs).toEqual(['photo-0', 'photo-1']);
 });
