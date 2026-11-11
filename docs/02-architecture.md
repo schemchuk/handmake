@@ -218,7 +218,10 @@ does not update its delivery row. The poll close and the withdrawal edit read th
    (`editMessage` capability: caption or text, the adapter decides; IDs from `channel_deliveries`) and,
    from phase 2, a site rebuild. Retention: see ADR 010.
 
-Channel polls are anonymous: no voter data reaches us.
+Channel polls are anonymous: no Telegram voter data reaches us. T31c collects
+Meta numeric comment votes transiently and stores anonymous per-network aggregates
+and completeness only; see [collection rules](contest-vote-collection.md). Its
+optional sources are supplied by T31d, with no live caller before that task.
 
 ### 4.6 Works and collections (F24, phase 2)
 

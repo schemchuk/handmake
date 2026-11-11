@@ -77,6 +77,8 @@ export interface ChannelPostRef {
  * caller (T49c) keeps them out of Git.
  */
 export interface ChannelComment {
+  /** Network account identity, when available; transient vote collection only. */
+  accountId?: string;
   /** The comment's id at the network. */
   id: string;
   /** Commenter's handle at the network (Instagram username, Facebook name). */

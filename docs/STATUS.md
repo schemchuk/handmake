@@ -1,11 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T31c — transient Meta vote totals.
-- **Branch:** main (T31c not started).
+- **Current task:** T31c — implemented, completing validation and PR handoff.
+- **Branch:** feat/t31c-meta-vote-totals.
 - **Last commit:** `2729560` — feat: persist contest poll closing and validated tallies (#115)
-- **Next step:** codex starts T31c in a fresh session on `feat/t31c-…`, including the two
-  "Review notes from PR #115" in docs/03-tasks.md.
+- **Next step:** codex pushes T31c and opens its PR, then hands off to claude-code for review.
 - **Blocked on:** nothing for T31c. `featureFlags.wotwPoll` remains false; closing has no cron caller.
 - **Open questions for Volodymyr:** none.
 - **T31b rollout:** PR #115 merged 2026-11-11 by Volodymyr after claude-code review (no blocking

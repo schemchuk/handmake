@@ -448,6 +448,10 @@ of this proposal.
 
 ##### T31c — Transient Meta vote totals
 
+- Implemented 2026-11-11; awaiting claude-code review. Deterministic collection rules:
+  [contest-vote-collection.md](contest-vote-collection.md). Includes both PR #115 notes:
+  30-second `stopPoll` deadline and an explicit skipped-opening receipt regression
+  (delivery status supports only `done`/`failed`; skipped publication has no delivery).
 - Depends on: T31b, T49b and T49d.
 - Change: use the existing comment-reader capability on the published contest posts for
   Instagram, Facebook and Threads; accept digits 1..N only, count one vote per account per

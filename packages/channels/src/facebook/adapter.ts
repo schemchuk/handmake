@@ -324,6 +324,7 @@ function facebookComment(raw: Record<string, unknown>, pageId: string): ChannelC
     typeof from === 'object' && from !== null ? (from as Record<string, unknown>).name : undefined;
   return {
     id: raw.id,
+    accountId: typeof fromId === 'string' ? fromId : undefined,
     handle: typeof handle === 'string' ? handle : '',
     text: typeof raw.message === 'string' ? raw.message : '',
     createdAt: typeof raw.created_time === 'string' ? raw.created_time : '',

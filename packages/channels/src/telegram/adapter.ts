@@ -398,6 +398,7 @@ export class TelegramAdapter implements ChannelAdapter {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           };
+    if (method === 'stopPoll') init.signal = AbortSignal.timeout(30_000);
 
     let response: Response;
     try {
