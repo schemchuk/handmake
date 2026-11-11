@@ -1,14 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T27b — implementation complete; PR #109 awaiting review
+- **Active agent:** codex
+- **Current task:** T27b — fix PR #109 review findings
 - **Branch:** `feat/t27b-contest-session`
-- **Last commit:** `2039c30` — feat(bot): add consented author contest-entry session
-- **Next step:** claude-code reviews PR #109 and checks CI (run 43010550767). Obtain Volodymyr's
-  approval of the consent wording and sensitive merge; obtain approval before remote migration
-  0013 and bot deployment. Lifecycle/rollout: docs/contest-entry-session.md.
+- **Last commit:** `de7879c` (PR head before review)
+- **Next step:** codex fixes the blocking finding in the PR #109 review comment: a foreign button
+  or command must also end entry routing (chat session stays `entry`, so post-preview and comment
+  edits after `/entry` are swallowed). Add regression tests; also fix non-blocking notes 1-2. Then
+  hand back to claude-code for re-review.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Open questions for Volodymyr:** consent wording in `entryConsentText` (feminine-only form;
+  promises 90-day name deletion that T32 has not implemented yet), see PR #109 review.
 - **T27b implementation:** isolated `/entry` session, revision-bound consent and atomic D1
   insertion; migration 0013, 24-hour transient input retention and routing isolation. Lifecycle:
   docs/contest-entry-session.md. PR #108 DST/mapping notes addressed. No remote changes.
