@@ -9,8 +9,10 @@
   edits after `/entry` are swallowed). Add regression tests; also fix non-blocking notes 1-2. Then
   hand back to claude-code for re-review.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** consent wording in `entryConsentText` (feminine-only form;
-  promises 90-day name deletion that T32 has not implemented yet), see PR #109 review.
+- **Open questions for Volodymyr:** consent wording in `entryConsentText` is feminine-only
+  ("учасниця", "переможниці"), see PR #109 review.
+- **Decision 2026-11-11 (Volodymyr):** the 90-day name-deletion promise in the consent text stays;
+  until T32 ships, names are deleted manually in D1.
 - **T27b implementation:** isolated `/entry` session, revision-bound consent and atomic D1
   insertion; migration 0013, 24-hour transient input retention and routing isolation. Lifecycle:
   docs/contest-entry-session.md. PR #108 DST/mapping notes addressed. No remote changes.
