@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** claude-code (T48 independent review)
-- **Current task:** T48 — implementation complete; draft PR on `feat/t48-newsletter`
+- **Current task:** T48 — implementation complete; draft PR #107 on `feat/t48-newsletter`
 - **Branch:** `feat/t48-newsletter`
-- **Last commit:** T48 implementation commit (see branch HEAD) — feat(site): add newsletter sign-up and pattern download
+- **Last commit:** `49c23f2` — feat(site): add newsletter sign-up and pattern download
 - **Next step:** Claude Code reviews T48; record browser non-JS POST, double-opt-in, PDF redirect and
   unsubscribe acceptance in the PR without addresses or unique links. Confirm the German DOI mail
   for both UI languages with Volodymyr. Volodymyr and the author confirm the merged newsletter

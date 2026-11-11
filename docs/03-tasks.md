@@ -1438,7 +1438,7 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   Operator steps and live-check caveats: docs/threads-runbook.md. No live publishing or deploy.
 
 ### T48 — Email sign-up and lead magnet (F27, `site`, ADR 013) · Sensitive: personal data
-- Implementation complete 2026-11-11 on `feat/t48-newsletter`; independent review, Volodymyr's
+- Implementation complete 2026-11-11 in draft PR #107 (`feat/t48-newsletter`); independent review, Volodymyr's
   sensitive merge approval and live non-JS double-opt-in/PDF/unsubscribe acceptance pending.
   Both languages currently use the configured German confirmation email (language decision pending).
   Provider inspection: GET 200; empty URL-encoded non-JS POST 400 JSON with German EMAIL validation.
