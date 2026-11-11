@@ -427,7 +427,7 @@ of this proposal.
 
 ##### T31b — Durable closing state and Telegram tally
 
-- Implemented 2026-11-11 on `feat/t31b-durable-poll-closing`; awaiting independent review.
+- Implemented 2026-11-11 in PR #115; awaiting independent review.
 
 - Depends on: T31a.
 - Change: add tenant/week closing persistence and a network-independent tally model; resolve
