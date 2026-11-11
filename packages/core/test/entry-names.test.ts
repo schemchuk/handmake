@@ -67,3 +67,10 @@ it.each(['uk', 'de'])('localizes missing and hidden names for %s', (language) =>
     );
   }
 });
+
+it.each(['en', 'fr', 'constructor', 'toString'])(
+  'uses English for unknown language %s',
+  (language) => {
+    expect(resolveEntryNames(`{entry:${a}}`, {}, false, [a], language)).toBe('Work No 1');
+  },
+);

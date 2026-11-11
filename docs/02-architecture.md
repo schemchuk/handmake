@@ -196,6 +196,20 @@ does not update its delivery row. The poll close and the withdrawal edit read th
    always "Work No N" otherwise (Instagram). Committed texts keep the placeholders.
 4. **Close.** Worker cron at the closing time reads the poll message ID from `channel_deliveries`
    (callback v2, 4.3) and calls `closePoll` (`stopPoll`) to get the counts.
+   T31b adds an unwired closing service and local/test migration 0016. It selects exactly one
+   published `wotw-poll` draft for the tenant/week and a successful delivery with a poll ID.
+   Ordered entry refs must be unique and belong to that tenant/week; withdrawn entries remain
+   in the immutable ballot. Missing/skipped/unpublished openings do nothing. Before the remote
+   call, an insert-if-absent tenant/week claim snapshots the post, channel, poll ID and ordered refs.
+   Counts must be nonnegative safe integers, match the candidate count and sum to total voters
+   (single-choice polls). Completed tallies are immutable. Zero is a valid counted result.
+   Failed or malformed closes become `unreadable`, with no invented counts or stored diagnostics.
+   A five-minute expired claim without counts also becomes unreadable, whether interruption happened
+   before the stop or after it. No second stop is attempted: the Bot API documents a Poll response
+   on success, but does not guarantee replay of final counts from an already stopped poll
+   ([stopPoll](https://core.telegram.org/bots/api#stoppoll)). A late writer cannot replace recovery.
+   Persistence errors propagate for later recovery. T31d will schedule this service and route
+   unreadable/zero/tied results to author selection; there is no live caller before that task.
 5. **Winner.** Most votes; zero votes, unreadable result or tie → the bot asks the author to pick
    among the tied candidates with inline buttons (decided 2026-10-28; no `WinnerPicker`, no Worker-side
    photo download).
@@ -315,6 +329,8 @@ Channel polls are anonymous: no voter data reaches us.
   The publisher derives the endpoint origin from `PUBLISH_CALLBACK_URL`. Tenant config
   `entryNamePolicy.telegram: true` opts into names; all other channels always use `Work No N`.
   Numbers follow first occurrence across post texts and poll fields, shared by every projection.
+  Unkeyed poll question/options use the first `texts` key in YAML insertion order as their language;
+  captions use their own language key. Unknown languages use the English numbered fallback.
   Dry-run accepts synthetic `entryNamesFixture` data and never calls the endpoint.
   Deploy the updated Worker before publishing contest placeholders; no migration is needed.
   Callers: the publisher and the site job; both mask every name with `::add-mask::` on receipt,

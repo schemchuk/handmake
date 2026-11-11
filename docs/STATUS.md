@@ -1,13 +1,21 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31b — durable closing state and Telegram tally.
-- **Branch:** main (T31b not started).
-- **Last commit:** `95a9afd` — fix: share draft inserts and localize contest fallbacks (T31a) (#113)
-- **Next step:** codex starts T31b in a fresh session on `feat/t31b-…`, including the two
-  "Review notes from PR #113" in docs/03-tasks.md.
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** claude-code
+- **Current task:** Review T31b — durable closing state and Telegram tally (PR #115).
+- **Branch:** feat/t31b-durable-poll-closing.
+- **Last commit:** `5839049` — fix: preserve English fallback for unknown language keys
+- **Next step:** claude-code reviews PR #115 in a fresh session; check CI before any merge.
+  Migration 0016 is local/test-only: ask Volodymyr before applying it or deploying.
+- **Blocked on:** independent review and CI. `featureFlags.wotwPoll` remains false; closing has no cron caller.
+- **Open questions for Volodymyr:** none. Migration 0016 is local/test-only; no deploy authorized.
+- **T31b validation:** closing/opening 29/29 before additional regressions; final closing
+  15/15, core 279/279 and channels 260/260 pass. Workspace typecheck/build, lint and changed-file
+  formatting pass. Full bot suite 694/694 (36 files) passes. Unknown-language fallback also
+  rejects inherited object keys (final core suite/typecheck/lint pass; full bot run preceded this guard).
+  Staged gitleaks passes. Sandbox D1 initialization stalled; targeted
+  unrestricted runs passed. Recovery stores unreadable after interrupted stops, never fabricated
+  zero counts; completed tallies are immutable. No production migration, deployment, publication,
+  paid calls, workflows or secrets changed.
 - **T31a rollout:** PR #113 merged 2026-11-11 by claude-code after review (no blocking findings,
   CI green). No migration or config change. Bot deployed by Volodymyr from clean `main`,
   Worker `4755988b-3c35-4e92-9f8c-8423e613e625` (wrangler needed `--dns-result-order=ipv4first`:

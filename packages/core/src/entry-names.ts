@@ -34,10 +34,10 @@ export function resolveEntryNames(
 ): string {
   const references = entryReferences(text);
   const numbered = order ?? references;
+  const labels: Record<string, string> = { uk: 'Робота №', de: 'Werk Nr.' };
+  const label = Object.hasOwn(labels, language) ? labels[language] : 'Work No';
   return text.replace(/\{entry:([^{}]*)\}/g, (_, id: string) =>
-    policy && names[id]
-      ? names[id]!
-      : `${language === 'uk' ? 'Робота №' : language === 'de' ? 'Werk Nr.' : 'Work No'} ${numbered.indexOf(id) + 1}`,
+    policy && names[id] ? names[id]! : `${label} ${numbered.indexOf(id) + 1}`,
   );
 }
 

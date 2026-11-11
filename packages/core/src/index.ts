@@ -20,3 +20,4 @@ export * from './show-draft';
 export * from './show-verification';
 export * from './show-diagnostic';
 export * from './contest';
+export * from './contest-tally';
