@@ -414,7 +414,7 @@ of this proposal.
 
 ##### T31a — Shared draft insertion and localized entry fallback
 
-- Implemented 2026-11-11 in PR #113; awaiting claude-code review. The shared statement also serves
+- Done 2026-11-11: PR #113 reviewed by claude-code and merged (`95a9afd`). The shared statement also serves
   collecting drafts. UA/DE captions resolve in their own language; unkeyed poll fields use
   the first post language. Unknown languages retain the English fallback.
 - Depends on: T30 and approval of this split.
@@ -438,6 +438,10 @@ of this proposal.
   close is distinguished from zero votes. Any migration is local/test-only in this task.
 - Tests: delivery lookup, option/count validation, zero/tie/unique-leader rules, tenant isolation,
   concurrent claims and interruption before/after closing the remote poll.
+- Review notes from PR #113: (1) replace the nested ternary for fallback labels in
+  `packages/core/src/entry-names.ts` with a `Record<string, string>` lookup; (2) unkeyed poll
+  fields take the first `texts` key (YAML order): document this in the content format docs or
+  add an explicit poll language.
 
 ##### T31c — Transient Meta vote totals
 

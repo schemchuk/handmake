@@ -1,14 +1,20 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review T31a — PR #113 (shared draft insertion and localized entry fallback).
-- **Branch:** feat/t31a-draft-insert-localization
-- **Last commit:** `55c0be9` — fix: share draft inserts and localize contest fallbacks (T31a)
-- **Next step:** claude-code independently reviews PR #113, waits for green CI, merges if
-  approved, then deploys from clean main under AGENTS.md. No migration/config/secret changes.
-  After merge, hand off T31b to codex in a fresh session. T31b-d remain unimplemented.
+- **Active agent:** codex
+- **Current task:** T31b — durable closing state and Telegram tally.
+- **Branch:** main (T31b not started).
+- **Last commit:** `95a9afd` — fix: share draft inserts and localize contest fallbacks (T31a) (#113)
+- **Next step:** codex starts T31b in a fresh session on `feat/t31b-…`, including the two
+  "Review notes from PR #113" in docs/03-tasks.md. Bot deploy of T31a from clean `main` is
+  pending (deploy by Volodymyr; record the Worker version here).
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** none.
+- **T31a rollout:** PR #113 merged 2026-11-11 by claude-code after review (no blocking findings,
+  CI green). No migration or config change. Worker deploy pending.
+- **CI ffmpeg (PR #114):** merged 2026-11-11 by Volodymyr. Ubuntu apt archive was unresolvable
+  from runners; all four ffmpeg steps now use `.github/scripts/install-ffmpeg.sh` (static
+  ffmpeg/ffprobe 6.1.1 from `eugeneware/ffmpeg-static@b6.1.1`, sha256-pinned), 10-minute limit.
+  Approved by Volodymyr. First real `publish.yml` show run with it not yet observed.
 - **T31 plan approval:** Volodymyr approved T31a-d in chat on 2026-11-11. Codex resumes as
   task owner; each subtask requires its own PR and a fresh session.
 - **T31a validation:** full bot 679/679 (35 files), core 264/264 and publisher 257/257 pass.
