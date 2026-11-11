@@ -1,14 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T30 — PR #112 blocking findings fixed; awaiting re-review.
-- **Branch:** `feat/t30-poll-draft-cron`
-- **Last commit:** `8cc4fa1` — fix: select previous contest week and cover poll cron order
-- **Next step:** claude-code re-reviews https://github.com/schemchuk/handmake/pull/112 and checks CI.
-  Both blocking findings are fixed; the two non-blocking notes stay in T31. Migration 0015
-  and deployment still need Volodymyr's approval.
-- **Blocked on:** nothing. Production needs migration 0015 before bot deployment; Volodymyr must
-  approve that rollout. `featureFlags.wotwPoll` remains false.
+- **Active agent:** codex
+- **Current task:** T31 — close poll, author breaks ties, result draft.
+- **Branch:** none yet (`feat/t31-...` from `main`).
+- **Last commit:** `696e610` — feat: draft weekly contest polls from author entries (T30) (#112)
+- **Next step:** codex starts T31 in a fresh session, including the two PR #112 review notes listed
+  in T31 of docs/03-tasks.md.
+- **Blocked on:** T30 rollout: Volodymyr applies migration 0015 to remote D1, then the bot is
+  deployed from clean `main` (not yet deployed). `featureFlags.wotwPoll` remains false.
+- **T30 rollout:** PR #112 merged 2026-11-11 with Volodymyr's OK. Migration 0015 and deploy pending.
 - **Decision 2026-11-11 (Volodymyr):** the Monday poll opening selects the previous calendar
   week's entries (`contestWeek` of opening minus 7 days), so Thursday meeting entries are included.
 - **T30 review-fix validation:** full bot suite 674/674 (35 files) passes outside the sandbox.
