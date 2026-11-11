@@ -4,11 +4,12 @@
 - **Current task:** T28 — names endpoint and placeholder resolution
 - **Branch:** none (codex creates `feat/t28-names-endpoint`)
 - **Last commit:** `168615f` — feat: persist callback v2 channel message IDs (T29) (#110)
-- **Next step:** Volodymyr applies migration 0014 to remote D1 and deploys the bot from clean
-  `main` (the v2 publisher on `main` needs the v1/v2 bot); then codex starts T28 in a fresh
-  session. T28 is sensitive (touches `publish.yml`): merge needs Volodymyr's OK.
-- **Blocked on:** migration 0014 + bot deploy (manual, Volodymyr). Until then published callbacks
-  from `main` are rejected by the deployed bot; rerun publish after deploy if one fails.
+- **Next step:** codex starts T28 in a fresh session. T28 is sensitive (touches `publish.yml`):
+  merge needs Volodymyr's OK.
+- **Blocked on:** nothing.
+- **T29 rollout:** migration 0014 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
+  pending migrations); bot deployed by Volodymyr from clean `main`, Worker
+  `468958bb-f60a-4544-8a9e-ef8c8c1a7b65`. First live v2 callback not yet observed.
 - **T29 review notes (non-blocking):** done channels are now rendered on reruns to find IDs, so
   removing a done channel's tenant settings can fail a rerun; IDs map by op index, so a changed
   adapter op list between runs could mismatch IDs.

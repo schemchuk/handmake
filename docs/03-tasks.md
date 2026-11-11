@@ -354,8 +354,8 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Tests: resolver table tests, signature/replay cases, publisher with mocked endpoint, masking call.
 
 ### T29 — Callback v2 with message IDs (`publisher`, `bot`, `core`)
-- Done: PR #110 merged 2026-11-11 (`168615f`) with Volodymyr's OK. Migration 0014 and bot deploy
-  pending (Volodymyr).
+- Done: PR #110 merged 2026-11-11 (`168615f`) with Volodymyr's OK. Migration 0014 applied and bot
+  deployed (Worker `468958bb`) by Volodymyr 2026-11-11.
 - Depends on: T25
 - Change: callback body `channels: { <channel>: { status, messageIds: { main?, poll? } } }`, IDs found
   by op kind at deliver time. Migration: `channel_deliveries` (tenant_id, post_id, channel, status,
