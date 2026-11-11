@@ -1445,6 +1445,10 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   (Cloudflare Email Routing forwards replies), empty list `Newsletter` (id 3), approved pattern PDF
   kept locally. Not yet done (Volodymyr, in the Brevo UI): the double opt-in sign-up form, the
   post-confirmation PDF delivery and the confirmed Brevo privacy text.
+- PDF hosting decided 2026-11-11 by Volodymyr: the lead-magnet PDF is served from the site (for example
+  `/geschenk/rosenbluete.pdf`) and committed to the public repo (Brevo Media accepts images only). The
+  Brevo post-confirmation email links to it. Volodymyr gives codex the local file path in chat;
+  file `Rosenbluete_Kreuzstichvorlage_v2.pdf`, author-approved.
 - Change: ADR 013 email part accepted with the chosen provider (EU hosting, DPA). Sign-up form on the
   site (German and Ukrainian) posting to the provider's double opt-in form; the provider sends the
   pattern PDF after confirmation. No addresses touch our storage or logs. Datenschutzerklärung gets
