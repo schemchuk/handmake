@@ -1447,8 +1447,9 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   post-confirmation PDF delivery and the confirmed Brevo privacy text.
 - PDF hosting decided 2026-11-11 by Volodymyr: the lead-magnet PDF is served from the site (for example
   `/geschenk/rosenbluete.pdf`) and committed to the public repo (Brevo Media accepts images only). The
-  Brevo post-confirmation email links to it. Volodymyr gives codex the local file path in chat;
-  file `Rosenbluete_Kreuzstichvorlage_v2.pdf`, author-approved.
+  Brevo confirmation flow redirects to the page that links it. Source file (author-approved, outside
+  the repo): `~/handmake-inputs/rosenbluete.pdf`; copy it into the site so it is served at
+  `/geschenk/rosenbluete.pdf`.
 - Brevo form ready 2026-11-11 (public config, no secret): form `Newsletter DE`, list `Newsletter` (id 3),
   double opt-in with template #1 `Default Template Double opt-in confirmation` (German text, sender
   `Faden und Stimmung <hallo@fadenundstimmung.de>`, subject `Bitte bestätige deine Anmeldung`, no Google
