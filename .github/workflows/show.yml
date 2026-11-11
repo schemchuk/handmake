@@ -29,9 +29,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Install marking tools
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends ffmpeg
       - name: Write job coordinates
         env:
           SHOW_JOB: ${{ inputs.payload }}
