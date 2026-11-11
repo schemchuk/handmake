@@ -182,8 +182,8 @@ export class TelegramAdapter implements ChannelAdapter {
   /**
    * Close a poll via `stopPoll` and return its counts (T21, ADR 008: the
    * Worker closes the work-of-the-week poll; results are anonymous voter
-   * counts only). `stopPoll` on an already closed poll returns the same
-   * final counts, so a retry is harmless.
+   * counts only). Repeated stops are not guaranteed to return counts; callers
+   * must persist the result and treat interrupted stops as unreadable.
    */
   async closePoll(pollId: RemoteId, ctx: DeliverContext): Promise<PollResult> {
     const settings = parseTelegramChannelSettings(ctx.settings);
