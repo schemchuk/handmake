@@ -1,21 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T31b — durable closing state and Telegram tally (PR #115).
-- **Branch:** feat/t31b-durable-poll-closing.
-- **Last commit:** `5839049` — fix: preserve English fallback for unknown language keys
-- **Next step:** claude-code reviews PR #115 in a fresh session; check CI before any merge.
-  Migration 0016 is local/test-only: ask Volodymyr before applying it or deploying.
-- **Blocked on:** independent review and CI. `featureFlags.wotwPoll` remains false; closing has no cron caller.
-- **Open questions for Volodymyr:** none. Migration 0016 is local/test-only; no deploy authorized.
-- **T31b validation:** closing/opening 29/29 before additional regressions; final closing
-  15/15, core 279/279 and channels 260/260 pass. Workspace typecheck/build, lint and changed-file
-  formatting pass. Full bot suite 694/694 (36 files) passes. Unknown-language fallback also
-  rejects inherited object keys (final core suite/typecheck/lint pass; full bot run preceded this guard).
-  Staged gitleaks passes. Sandbox D1 initialization stalled; targeted
-  unrestricted runs passed. Recovery stores unreadable after interrupted stops, never fabricated
-  zero counts; completed tallies are immutable. No production migration, deployment, publication,
-  paid calls, workflows or secrets changed.
+- **Active agent:** codex
+- **Current task:** T31c — transient Meta vote totals.
+- **Branch:** main (T31c not started).
+- **Last commit:** `2729560` — feat: persist contest poll closing and validated tallies (#115)
+- **Next step:** codex starts T31c in a fresh session on `feat/t31c-…`, including the two
+  "Review notes from PR #115" in docs/03-tasks.md.
+- **Blocked on:** nothing for T31c. `featureFlags.wotwPoll` remains false; closing has no cron caller.
+- **Open questions for Volodymyr:** apply D1 migration 0016 remotely and deploy the bot from clean
+  `main` (PR #115 changes `apps/bot` and `packages/`; AGENTS.md requires your OK for migrations).
+- **T31b rollout:** PR #115 merged 2026-11-11 by Volodymyr after claude-code review (no blocking
+  findings, CI green). Migration 0016 (`poll_closings`) is not applied remotely; bot not deployed.
 - **T31a rollout:** PR #113 merged 2026-11-11 by claude-code after review (no blocking findings,
   CI green). No migration or config change. Bot deployed by Volodymyr from clean `main`,
   Worker `4755988b-3c35-4e92-9f8c-8423e613e625` (wrangler needed `--dns-result-order=ipv4first`:

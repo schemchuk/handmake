@@ -427,7 +427,8 @@ of this proposal.
 
 ##### T31b — Durable closing state and Telegram tally
 
-- Implemented 2026-11-11 in PR #115; awaiting independent review.
+- Done 2026-11-11: PR #115 reviewed by claude-code and merged (`2729560`). Migration 0016 not yet
+  applied remotely; the closing service has no caller until T31d.
 
 - Depends on: T31a.
 - Change: add tenant/week closing persistence and a network-independent tally model; resolve
@@ -459,6 +460,10 @@ of this proposal.
   final reader result; no voter identifiers enter D1, drafts, Git or logs.
 - Tests: pagination, duplicate accounts, invalid/out-of-range votes, cross-network identity,
   missing/unpublished posts, reader failures and aggregate persistence without voter data.
+- Review notes from PR #115: (1) `closePoll` (`stopPoll`) has no request timeout; a call that
+  outlives the 5-minute closing lease loses real counts to `unreadable` recovery. Bound the call
+  well below the lease (e.g. `AbortSignal.timeout`). (2) `apps/bot/test/poll-closing.test.ts`
+  "ignores skipped, failed and legacy deliveries" lacks an explicit `skipped` delivery case.
 
 ##### T31d — Author selection, result draft and cron integration
 
