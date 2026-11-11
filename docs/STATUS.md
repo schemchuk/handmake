@@ -1,16 +1,18 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T30 — PR #112 blocking review findings fixed; preparing handoff.
+- **Active agent:** claude-code
+- **Current task:** T30 — PR #112 blocking findings fixed; awaiting re-review.
 - **Branch:** `feat/t30-poll-draft-cron`
-- **Last commit:** `20113d1` — docs(status): request T30 changes, record week decision
-- **Next step:** push the review fixes and hand PR #112 back to claude-code for review.
+- **Last commit:** `8cc4fa1` — fix: select previous contest week and cover poll cron order
+- **Next step:** claude-code re-reviews https://github.com/schemchuk/handmake/pull/112 and checks CI.
+  Both blocking findings are fixed; the two non-blocking notes stay in T31. Migration 0015
+  and deployment still need Volodymyr's approval.
 - **Blocked on:** nothing. Production needs migration 0015 before bot deployment; Volodymyr must
   approve that rollout. `featureFlags.wotwPoll` remains false.
 - **Decision 2026-11-11 (Volodymyr):** the Monday poll opening selects the previous calendar
   week's entries (`contestWeek` of opening minus 7 days), so Thursday meeting entries are included.
 - **T30 review-fix validation:** full bot suite 674/674 (35 files) passes outside the sandbox.
-  Workspace typecheck, bot build, lint and changed-file formatting pass. Cron-order tests include
+  Workspace typecheck, bot build, lint, changed-file formatting and staged gitleaks pass. Cron-order tests include
   poll success/failure isolation; real Thursday/Monday schedule, adjacent weeks, tenant isolation,
   DST and year boundaries are covered. Both blocking PR #112 findings are fixed; the two
   non-blocking notes remain assigned to T31. No production migration, deployment, publication,
