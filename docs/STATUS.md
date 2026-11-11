@@ -10,9 +10,8 @@
 - **Open questions for Volodymyr:** none.
 - **T48 rollout:** PR #107 merged 2026-11-11 with Volodymyr's OK (one German DOI mail for both
   languages, Datenschutz and Brevo entity checked against the DPA, live test declined). Site run
-  dispatched 2026-11-11 (run 43004941233). Bot deploy (packages/core changed) was blocked for
-  claude-code by the auto-mode classifier; Volodymyr deploys manually
-  (`pnpm -C apps/bot run deploy` from clean `main`) and the Worker version goes here.
+  dispatched 2026-11-11 (run 43004941233). Bot deployed by Volodymyr from clean `main` 2026-11-11, Worker
+  `3c5ba950-d013-44a0-b456-bf9f26d65cc8`.
 - **T48 validation:** site 52/52 and core 234/234; workspace typecheck/build, changed-file ESLint and
   formatting pass. Initial sandbox site run lost malformed-document child diagnostics; unrestricted
   full rerun passed. Provider GET 200; empty non-JS POST 400 JSON with German EMAIL validation.
