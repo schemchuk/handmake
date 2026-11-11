@@ -448,7 +448,7 @@ of this proposal.
 
 ##### T31c — Transient Meta vote totals
 
-- Implemented 2026-11-11; awaiting claude-code review. Deterministic collection rules:
+- Done 2026-11-11: PR #116 merged after claude-code review (no blocking findings). Deterministic collection rules:
   [contest-vote-collection.md](contest-vote-collection.md). Includes both PR #115 notes:
   30-second `stopPoll` deadline and an explicit skipped-opening receipt regression
   (delivery status supports only `done`/`failed`; skipped publication has no delivery).
@@ -485,6 +485,14 @@ of this proposal.
 - Tests: full closing-to-preview cases, source wording, callback authorization and tenant
   isolation, stale/concurrent choices, atomic winner/draft rollback, DST/year boundaries,
   flag-off behaviour and cron failure isolation. Run affected suites plus workspace checks.
+- Review notes from PR #116: (1) Instagram `mapComment` does not skip the owner account, so an
+  author comment like "1" under the ballot counts as a vote; skip owner comments in the contest
+  path. (2) Meta collection has no overall deadline inside the 5-minute closing lease; bound it
+  well below the lease or log when `finish` returns false. (3) Skip Meta sources when the
+  Telegram tally is already `unreadable`. (4) Only ASCII `1..N` count (keycap emoji ignored):
+  the ballot text must say "reply with a plain digit". Before going live, check on a real Page
+  post that Facebook returns `from.id` for reader comments; without it any digit comment makes
+  the whole result unreadable (fail-closed, accepted for now).
 
 ### T32 — Withdrawal and retention (`bot`, `channels`)
 - Depends on: T29, T31

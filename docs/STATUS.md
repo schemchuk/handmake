@@ -1,15 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T31c — review PR #116.
-- **Branch:** feat/t31c-meta-vote-totals.
-- **Last commit:** `74aeced` — feat: collect transient contest votes across Meta channels
-- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/116 in a fresh
-  session. Check transient identities, deterministic duplicates and completeness. T31d follows
-  after merge. Sensitive merge requires Volodymyr's OK (reader identity handling).
-- **Blocked on:** independent review and green CI. `featureFlags.wotwPoll` remains false;
-  closing has no cron caller until T31d.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** codex
+- **Current task:** T31d — author selection, result draft and cron integration.
+- **Branch:** none yet (`feat/t31d-<slug>` from `main`).
+- **Last commit:** `b64b334` — feat: collect transient contest votes across Meta channels (#116)
+- **Next step:** codex starts T31d in a fresh session; include the PR #116 review notes listed
+  under T31d in docs/03-tasks.md (IG owner comments, collection deadline, skip Meta when Telegram
+  is unreadable, plain-digit ballot wording).
+- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Open questions for Volodymyr:** before T31d goes live, check on a real Facebook Page post
+  that reader comments come with `from.id`; otherwise every contest result will be unreadable.
+- **T31c rollout:** PR #116 merged 2026-11-11 by Volodymyr after claude-code review (no blocking
+  findings, CI green). No migration or config change; no deploy needed (no live caller until T31d).
 - **T31c validation:** full bot 706/706 (36 files), channels 261/261 and core 279/279 pass.
   Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass.
   CI passed on implementation commit `74aeced` (run 43074690272). D1 tests cover combined
