@@ -8,9 +8,8 @@
   privacy text are available. Inspect the provider form before implementing its direct POST;
   allow only that exact endpoint in the site build policy. Record manual double-opt-in/PDF
   acceptance in the task PR. No subscriber address may reach our storage or logs.
-- **Blocked on:** Brevo public form URL and HTML (action and required fields), configured
-  double opt-in and post-confirmation PDF delivery, and Volodymyr-confirmed Brevo privacy text.
-  H15 records the account/domain/list and author-approved local PDF, but explicitly no form yet.
+- **Blocked on:** only the Volodymyr-confirmed Brevo privacy text (H11 generator) for the
+  Datenschutzerklärung. Brevo form, double opt-in mail and redirect are ready (2026-11-11, details in T48).
 - **Open questions for Volodymyr:** Which provider form/delivery inputs are ready? Supply only
   public form configuration and confirmed legal text, never API keys or subscriber addresses.
 - **Carry-forward review note (PR #106):** The next task touching the comment drafter must bump

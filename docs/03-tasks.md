@@ -1449,6 +1449,17 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   `/geschenk/rosenbluete.pdf`) and committed to the public repo (Brevo Media accepts images only). The
   Brevo post-confirmation email links to it. Volodymyr gives codex the local file path in chat;
   file `Rosenbluete_Kreuzstichvorlage_v2.pdf`, author-approved.
+- Brevo form ready 2026-11-11 (public config, no secret): form `Newsletter DE`, list `Newsletter` (id 3),
+  double opt-in with template #1 `Default Template Double opt-in confirmation` (German text, sender
+  `Faden und Stimmung <hallo@fadenundstimmung.de>`, subject `Bitte bestätige deine Anmeldung`, no Google
+  Fonts), redirect after the confirmation click to `https://fadenundstimmung.de/geschenk/` (T48 builds
+  that page with the download of `/geschenk/rosenbluete.pdf`); no final confirmation email; German
+  success/error messages. Simple-HTML form: `method="POST"` `action="https://d2c04417.sibforms.com/serve/MUIFANZ2KTD7DrH6FXtIYdhL5lv5Olz9vYwkGcbbejUlT3kvUGgNAa1blz-Ef3XyHWmKhmMuREDoIiIxKbgOTvs-gUrwVf4OBvzgEqt-xkWV9qe7STw7XoOD6a1U35HlsyDKyfJtw42ynwHCwVgJZ-06SGnjWR8KPPuufg3f7xh8hHSFOUXChnorbAdKAWgqFsU3NtEuLHAubfFHew=="`;
+  fields `EMAIL` (required), honeypot `email_address_check` (hidden, must stay empty), hidden
+  `locale` (Brevo gave `en`; send `de`/`uk` per page), hidden `html_type=simple`. No reCAPTCHA, no Brevo
+  JS. Do NOT load Brevo's `sib-styles.css` or `assets.brevo.com` fonts; only the form POST leaves the site.
+  Check what Brevo returns to a plain (non-JS) POST and record it in the PR. Ukrainian sign-up: either
+  this form (German DOI mail) or a second Brevo form for a Ukrainian mail; decide in the PR, ask Volodymyr.
 - Change: ADR 013 email part accepted with the chosen provider (EU hosting, DPA). Sign-up form on the
   site (German and Ukrainian) posting to the provider's double opt-in form; the provider sends the
   pattern PDF after confirmation. No addresses touch our storage or logs. Datenschutzerklärung gets
