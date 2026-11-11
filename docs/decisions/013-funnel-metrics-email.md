@@ -1,6 +1,6 @@
 # 013 — Funnel: anonymous audience metrics now, email via a ready service later
 
-Status: accepted for metrics; email part proposed (needs Volodymyr's approval, spec F27) · Date: 2026-10-28
+Status: accepted for metrics; email part accepted by Volodymyr for T48 (2026-11-11, spec F27) · Date: 2026-10-28
 
 ## Context
 Spec v5 F25-F27: the lead base starts as channel followers (no personal data on our side), with weekly
@@ -32,3 +32,16 @@ provider chosen at that time (EU hosting and a DPA required).
 - Cross-promotion (F26) is template work: channel and site links come from tenant config.
 - The funnel threshold for monetization is a number in tenant config, read against these metrics;
   the switch itself stays a manual operator decision (F28).
+
+## T48 provider decision (2026-11-11)
+
+Brevo is selected by Volodymyr (H15): EU database hosting and a DPA included in its terms.
+The optional tenant `site.newsletter.formAction` is the public integration boundary. A static HTML
+POST goes straight from the visitor's browser to the approved provider endpoint; no subscriber API,
+server handler or unused `EmailList` interface is introduced. Other providers require an adapter and
+an explicit build-policy review. No provider scripts, styles, fonts, tracking or credentials are used.
+The provider owns double opt-in, consent records and unsubscribe. Its German confirmation template
+redirects to `/geschenk/`; the author-approved PDF is public in the repo and at
+`/geschenk/rosenbluete.pdf`, as explicitly chosen by Volodymyr. This is a delivery flow, not access
+control: anyone with the URL can download it. Both UI languages currently use the same German mail;
+Volodymyr's language confirmation remains in the T48 PR checklist.

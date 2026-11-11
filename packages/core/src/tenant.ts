@@ -155,6 +155,8 @@ export const siteSchema = z
     // channel's linked Telegram group. Optional: without it the circle page
     // shows no group link. Channel posts never carry it.
     groupUrl: httpsUrlSchema.optional(),
+    // Public provider form configuration; subscriber data never passes through our services.
+    newsletter: z.object({ formAction: httpsUrlSchema }).strict().optional(),
   })
   .strict();
 

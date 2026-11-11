@@ -148,3 +148,33 @@ Channel copies carry a canonical link to their site page from the moment they ar
 delivered (T40), but this workflow deploys only after the publish job, so the link can
 briefly point to a page that does not exist yet. Recovery is a manual Site run (above);
 the publish run itself never needs a re-run for this.
+
+
+T48 newsletter integration uses optional tenant `site.newsletter.formAction`. The localized form on
+work/show detail pages posts directly to Brevo with `EMAIL`, an empty `email_address_check`, `locale`
+and `html_type=simple`. It has no JavaScript, provider assets, server endpoint or subscriber logging.
+The build policy allows only the exact approved form action with POST. Tenants without newsletter
+configuration keep their channel CTA. The PDF in `public/geschenk/rosenbluete.pdf` is the approved
+original, copied without changes; it is publicly downloadable, not protected by confirmation.
+
+Before the sensitive T48 merge, record these checks in the PR (no addresses or confirmation URLs):
+
+1. Confirm the new German Datenschutz newsletter section and draft Brevo provider details with
+   Volodymyr and the author; verify the entity/address against the account DPA.
+2. Confirm one German DOI email for both site languages, or provide a separate Ukrainian form.
+3. Submit the form in a browser using an operator-controlled test address. Verify the non-JS success
+   response in both languages, exactly one confirmation email, and no subscription before the click.
+4. Follow the email link, verify `/geschenk/` and the two-page German PDF, then test unsubscribe.
+   Direct PDF access remains public by design. Do not record the address or unique links.
+
+Provider inspection on 2026-11-11: GET with browser User-Agent returned HTTP 200 and matching form
+fields/action. Plain URL-encoded empty POST (`html_type=simple`, `locale=de`) returned HTTP 400,
+`application/json`, with the configured German EMAIL validation message. Thus server validation
+errors can appear as JSON after navigation; native required/email validation prevents the common
+empty/malformed cases. Successful non-JS POST and mail delivery are still manual acceptance gates.
+No live subscriber was created during automated inspection. Default urllib GET returned HTTP 403.
+
+Provider sources: [EU storage](https://help.brevo.com/hc/en-us/articles/360001005510-Data-storage-location),
+[DPA location](https://help.brevo.com/hc/en-us/articles/15403782599570-Where-can-I-find-the-Data-Processing-Agreement-DPA).
+The legal pages themselves blocked automated retrieval; the draft entity/address needs account-DPA
+confirmation before go-live. Legal additions are review inputs, not final legal advice.

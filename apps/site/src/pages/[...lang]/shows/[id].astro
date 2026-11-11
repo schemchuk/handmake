@@ -1,5 +1,6 @@
 ---
 import JoinChannel from '../../../components/JoinChannel.astro';
+import Newsletter from '../../../components/Newsletter.astro';
 import type { Show } from '@handmake/core';
 import Base from '../../../layouts/Base.astro';
 import Provenance from '../../../components/Provenance.astro';
@@ -47,6 +48,6 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
       </figure>
     </div>
     <a class="back" href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a>
-    <JoinChannel lang={lang} />
+    {data.site.newsletter ? <Newsletter lang={lang} /> : <JoinChannel lang={lang} />}
   </article>
 </Base>

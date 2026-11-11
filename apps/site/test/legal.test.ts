@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkResources, finalizeSite } from '../src/lib/build-policy';
+import { newsletterFormAction } from '../src/lib/newsletter';
 import { legalFields, renderLegal } from '../src/lib/legal';
 
 const env = Object.fromEntries(legalFields.map((key) => [key, `Fixture<&" ${key}`]));
@@ -111,4 +112,31 @@ it('loads legal templates from SITE_REPO_ROOT', async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+it('allows only the exact newsletter POST action, never provider assets or overrides', () => {
+  checkResources(
+    `<form method="POST" action="${newsletterFormAction}"></form>`,
+    'https://example.invalid',
+  );
+  for (const html of [
+    `<form method="GET" action="${newsletterFormAction}"></form>`,
+    `<form method="POST" action="${newsletterFormAction}?other=1"></form>`,
+    `<form method="POST" action="${newsletterFormAction}/other"></form>`,
+    `<img src="${newsletterFormAction}">`,
+    `<button formaction="${newsletterFormAction}">Send</button>`,
+    '<link rel="stylesheet" href="https://sibforms.com/forms/end-form/build/sib-styles.css">',
+    '<link rel="stylesheet" href="https://assets.brevo.com/font.css">',
+  ])
+    expect(() => checkResources(html, 'https://example.invalid')).toThrow();
+});
+
+it('merges the supplied newsletter text and legal overview without duplicate consent grounds', () => {
+  const privacy = renderLegal('datenschutz', env);
+  expect(privacy).toContain('id="m17"');
+  expect(privacy).toContain('href="#m17"');
+  expect(privacy).toContain('Voraussetzung der Inanspruchnahme kostenloser Leistungen');
+  expect(privacy).toContain('T48 DRAFT');
+  expect(privacy).toContain('Sendinblue SAS');
+  expect(privacy).toContain('Vertragserfüllung und vorvertragliche Anfragen');
 });
