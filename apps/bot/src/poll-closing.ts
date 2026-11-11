@@ -1,6 +1,7 @@
 import { validateContestTally } from '@handmake/core';
 import type { ChannelAdapter, ContestTally, DeliverContext } from '@handmake/core';
 import { createPollClosingStore, findClosingPoll } from './poll-closing-store';
+import { collectContestVotes, type ContestVoteSource } from './contest-votes';
 
 /** T31d will wire scheduling and author selection. This module has no cron caller yet. */
 export async function closeContestPoll(
@@ -10,6 +11,7 @@ export async function closeContestPoll(
   adapter: ChannelAdapter,
   context: DeliverContext,
   now: number,
+  sources: readonly ContestVoteSource[] = [],
 ): Promise<void> {
   if (!adapter.capabilities.polls || !adapter.closePoll) return;
   const store = createPollClosingStore(db);
@@ -32,5 +34,6 @@ export async function closeContestPoll(
     tally = { status: 'unreadable' };
   }
   // Persistence errors must escape: a later invocation recovers the durable claim.
+  if (sources.length) tally = await collectContestVotes(db, poll, tally, sources);
   await store.finish(tenant, week, claim, tally);
 }

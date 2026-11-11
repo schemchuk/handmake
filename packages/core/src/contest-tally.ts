@@ -1,8 +1,13 @@
 import type { PollResult } from './ports/channel';
 
 /** Anonymous counts only; unreadable is deliberately distinct from zero votes. */
-export type ContestTally =
-  { status: 'counted'; counts: number[]; total: number } | { status: 'unreadable' };
+export type SourceTally =
+  | { status: 'counted'; counts: number[]; total: number }
+  | { status: 'unreadable' }
+  | { status: 'skipped' };
+export type ContestTally = (
+  { status: 'counted'; counts: number[]; total: number } | { status: 'unreadable' }
+) & { sources?: Record<string, SourceTally> };
 
 export function validateContestTally(result: PollResult, candidates: number): ContestTally {
   if (

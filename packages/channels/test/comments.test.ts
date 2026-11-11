@@ -583,6 +583,7 @@ describe('comments capability: Facebook', () => {
     expect(comments).toEqual([
       {
         id: 'post-1_c2',
+        accountId: 'reader-1',
         handle: READER_HANDLE,
         text: READER_TEXT,
         createdAt: '2026-11-09T10:05:00+0000',

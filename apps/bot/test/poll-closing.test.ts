@@ -1,6 +1,8 @@
 import { expect, it, vi } from 'vitest';
 import { newUlid } from '@handmake/core';
-import type { ChannelAdapter, DeliverContext } from '@handmake/core';
+import { InstagramAdapter } from '@handmake/channels';
+import type { ChannelAdapter, ChannelComment, DeliverContext } from '@handmake/core';
+import { countCommentVotes, type ContestVoteSource } from '../src/contest-votes';
 import { closeContestPoll } from '../src/poll-closing';
 import { createPollClosingStore, findClosingPoll } from '../src/poll-closing-store';
 import { makeD1 } from './helpers';
@@ -44,7 +46,7 @@ async function fixture() {
   } as unknown as ChannelAdapter;
   const context = {} as DeliverContext;
   const run = (now = 0) => closeContestPoll(db, tenant, week, adapter, context, now);
-  return { db, refs, id, close, run, store: createPollClosingStore(db) };
+  return { db, refs, id, close, run, adapter, context, store: createPollClosingStore(db) };
 }
 
 it('resolves delivery poll ID and original order and saves counts exactly once', async () => {
@@ -65,6 +67,178 @@ it('resolves delivery poll ID and original order and saves counts exactly once',
   expect(await fx.store.get('other', week)).toBeUndefined();
 });
 
+function comment(id: string, handle: string, text: string, createdAt = ''): ChannelComment {
+  return { id, handle, text, createdAt };
+}
+
+it('counts earliest valid votes deterministically, including repeated pages and case variants', () => {
+  const votes = [
+    comment('z', 'Alice', '2', '2026-11-02T12:00:00Z'),
+    comment('b', 'ALICE', '1', '2026-11-02T11:00:00Z'),
+    comment('a', 'alice', 'not a vote', '2026-11-02T10:00:00Z'),
+    comment('c', 'Bob', ' 2 '),
+    comment('c', 'Bob', ' 2 '),
+  ];
+  for (const input of [votes, [...votes].reverse()])
+    expect(countCommentVotes(input, 2, 'instagram')).toEqual({
+      status: 'counted',
+      counts: [1, 1],
+      total: 2,
+    });
+  expect(
+    countCommentVotes([comment('z', 'a', '2'), comment('a', 'a', '1')], 2, 'threads'),
+  ).toMatchObject({ counts: [1, 0] });
+});
+
+it('rejects invalid votes without consuming the account and accepts candidate ten', () => {
+  const votes = ['0', '11', '01', '+1', '1.0', '1 2', '１', 'vote 1', '2\n1'].map((text, i) =>
+    comment(String(i), 'same', text),
+  );
+  expect(countCommentVotes(votes, 2, 'threads')).toMatchObject({ counts: [0, 0] });
+  expect(
+    countCommentVotes([...votes, comment('valid', 'same', '10')], 10, 'threads'),
+  ).toMatchObject({ counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1], total: 1 });
+});
+
+it('uses Facebook IDs rather than shared display names and fails closed without identity', () => {
+  const votes = [
+    { ...comment('a', 'same name', '1'), accountId: 'account-one' },
+    { ...comment('b', 'same name', '2'), accountId: 'account-two' },
+  ];
+  expect(countCommentVotes(votes, 2, 'facebook')).toMatchObject({ counts: [1, 1] });
+  expect(countCommentVotes([comment('c', 'same name', '1')], 2, 'facebook')).toEqual({
+    status: 'unreadable',
+  });
+  expect(countCommentVotes([comment('a', '', '1')], 2, 'instagram')).toEqual({
+    status: 'unreadable',
+  });
+  expect(countCommentVotes([votes[0]!, { ...votes[0]!, text: '2' }], 2, 'facebook')).toEqual({
+    status: 'unreadable',
+  });
+});
+
+async function metaSource(fx: Awaited<ReturnType<typeof fixture>>, key: string, status = 'done') {
+  await fx.db
+    .prepare('INSERT INTO channel_deliveries VALUES (?, ?, ?, ?, ?)')
+    .bind(tenant, fx.id, key, status, JSON.stringify({ main: `${key}-post` }))
+    .run();
+  const listComments = vi.fn(async () => [comment('private-comment', 'private-account', '1')]);
+  const source: ContestVoteSource = {
+    adapter: { key, comments: { listComments } } as unknown as ChannelAdapter,
+    context: {} as DeliverContext,
+  };
+  return { source, listComments };
+}
+
+it('combines independent networks once and persists anonymous aggregates only', async () => {
+  const fx = await fixture();
+  const ig = await metaSource(fx, 'instagram');
+  const fb = await metaSource(fx, 'facebook');
+  const th = await metaSource(fx, 'threads');
+  fb.listComments.mockResolvedValue([
+    { ...comment('private-comment', 'private-account', '2'), accountId: 'private-facebook-id' },
+  ]);
+  const run = () =>
+    closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [
+      ig.source,
+      fb.source,
+      th.source,
+    ]);
+  await Promise.all([run(), run()]);
+  await run();
+  const tally = (await fx.store.get(tenant, week))?.tally;
+  expect(tally).toMatchObject({
+    status: 'counted',
+    counts: [3, 3],
+    total: 6,
+    sources: {
+      instagram: { status: 'counted' },
+      facebook: { counts: [0, 1] },
+      threads: { status: 'counted' },
+    },
+  });
+  for (const reader of [ig, fb, th]) {
+    expect(reader.listComments).toHaveBeenCalledTimes(1);
+    expect(reader.listComments).toHaveBeenCalledWith(
+      `${reader.source.adapter.key}-post`,
+      undefined,
+      reader.source.context,
+    );
+  }
+  const stored = JSON.stringify(await fx.db.prepare('SELECT * FROM poll_closings').all());
+  expect(stored).not.toMatch(/private-|accountId|handle|createdAt/);
+});
+
+it.each(['failed', 'missing', 'legacy', 'api', 'capability'])(
+  'records %s source completeness without silently adding partial counts',
+  async (mode) => {
+    const fx = await fixture();
+    const ig = await metaSource(fx, 'instagram', mode === 'failed' ? mode : 'done');
+    if (mode === 'missing')
+      await fx.db.prepare("DELETE FROM channel_deliveries WHERE channel = 'instagram'").run();
+    if (mode === 'legacy')
+      await fx.db
+        .prepare("UPDATE channel_deliveries SET message_ids = '{}' WHERE channel = 'instagram'")
+        .run();
+    if (mode === 'api') ig.listComments.mockRejectedValue(new Error('private-partial-data'));
+    if (mode === 'capability') ig.source.adapter = { key: 'instagram' } as ChannelAdapter;
+    await closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [ig.source]);
+    const skipped = ['failed', 'missing'].includes(mode);
+    expect((await fx.store.get(tenant, week))?.tally).toMatchObject({
+      status: skipped ? 'counted' : 'unreadable',
+      sources: { instagram: { status: skipped ? 'skipped' : 'unreadable' } },
+    });
+    if (mode !== 'api') expect(ig.listComments).not.toHaveBeenCalled();
+    expect(JSON.stringify(await fx.store.get(tenant, week))).not.toContain('private-');
+  },
+);
+
+it('never reads Meta sources for an unpublished ballot or another tenant', async () => {
+  const fx = await fixture();
+  const ig = await metaSource(fx, 'instagram');
+  await closeContestPoll(fx.db, 'other', week, fx.adapter, fx.context, 0, [ig.source]);
+  await fx.db.prepare("UPDATE drafts SET status = 'ready'").run();
+  await closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [ig.source]);
+  expect(ig.listComments).not.toHaveBeenCalled();
+});
+
+it.each([1, 2])('requires complete real-reader pagination with page limit %s', async (maxPages) => {
+  const fx = await fixture();
+  const ig = await metaSource(fx, 'instagram');
+  const fetchImpl = vi.fn(async (input: unknown) => {
+    const next = String(input).includes('after=next');
+    return new Response(
+      JSON.stringify({
+        data: [
+          {
+            id: next ? 'c2' : 'c1',
+            username: next ? 'reader-b' : 'reader-a',
+            text: next ? '2' : '1',
+            timestamp: '2026-11-02T12:00:00Z',
+          },
+        ],
+        ...(next
+          ? {}
+          : {
+              paging: {
+                next: 'https://graph.facebook.com/v21.0/instagram-post/comments?after=next',
+              },
+            }),
+      }),
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+  }) as unknown as typeof fetch;
+  ig.source.adapter = new InstagramAdapter({ fetchImpl, commentsMaxPages: maxPages });
+  ig.source.context = { secrets: { resolve: async () => 'test-value' } };
+  await closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [ig.source]);
+  expect((await fx.store.get(tenant, week))?.tally).toMatchObject(
+    maxPages === 1
+      ? { status: 'unreadable', sources: { instagram: { status: 'unreadable' } } }
+      : { status: 'counted', counts: [2, 3], sources: { instagram: { counts: [1, 1] } } },
+  );
+  expect(fetchImpl).toHaveBeenCalledTimes(maxPages);
+});
+
 it.each(['ready', 'discarded'])('ignores %s openings', async (state) => {
   const fx = await fixture();
   await fx.db.prepare('UPDATE drafts SET status = ?').bind(state).run();
@@ -72,9 +246,13 @@ it.each(['ready', 'discarded'])('ignores %s openings', async (state) => {
   expect(fx.close).not.toHaveBeenCalled();
   expect(await fx.store.get(tenant, week)).toBeUndefined();
 });
-it('ignores skipped, failed and legacy deliveries', async () => {
+it('ignores a skipped opening receipt, failed and legacy deliveries', async () => {
   const fx = await fixture();
   expect(await findClosingPoll(fx.db, tenant, '2026-10-26', 'telegram')).toBeUndefined();
+  const skippedWeek = '2026-10-26';
+  await fx.db.prepare('INSERT INTO poll_openings VALUES (?, ?)').bind(tenant, skippedWeek).run();
+  await closeContestPoll(fx.db, tenant, skippedWeek, fx.adapter, fx.context, 0);
+  expect(await fx.store.get(tenant, skippedWeek)).toBeUndefined();
   await fx.db.prepare("UPDATE channel_deliveries SET status = 'failed'").run();
   await fx.run();
   await fx.db.prepare("UPDATE channel_deliveries SET status = 'done', message_ids = '{}'").run();

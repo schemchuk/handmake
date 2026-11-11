@@ -440,6 +440,22 @@ describe('TelegramAdapter: polls (T21)', () => {
     expect(result).toEqual({ optionVotes: [7, 3], totalVotes: 10 });
   });
 
+  it('bounds stopPoll transport with a 30-second abort deadline', async () => {
+    const signal = new AbortController().signal;
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(signal);
+    const fetchImpl = vi.fn(async (_input: unknown, init?: RequestInit) => {
+      expect(init?.signal).toBe(signal);
+      throw new Error('aborted');
+    }) as unknown as typeof fetch;
+    try {
+      const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl });
+      await expect(adapter.closePoll(42, makeCtx())).rejects.toThrow('request failed');
+      expect(timeout).toHaveBeenCalledWith(30_000);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
   it('closePoll parses a zero-vote poll', async () => {
     const { fetchImpl } = fakeFetch(() =>
       jsonResponse({
