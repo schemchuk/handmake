@@ -1,13 +1,14 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T27 — pre-implementation split proposed (T27a → T27b)
-- **Branch:** main (documentation only)
-- **Last commit:** `0d03573` — docs(status): record T48 bot Worker version (before this handoff).
-- **Next step:** Volodymyr reviews the T27a/T27b split in docs/03-tasks.md; then sets Active agent
-  to codex for T27a in a fresh session. PR #107 review fixes belong to T27a.
-- **Blocked on:** approval of the task split (workflow task-planning gate).
-- **Open questions for Volodymyr:** approve T27a → T27b split.
+- **Active agent:** codex
+- **Current task:** T27a — Contest persistence and submission source
+- **Branch:** feat/t27a-contest-store
+- **Last commit:** `4e00178` — docs: split contest entries into reviewable tasks
+- **Next step:** finish PR #107 site review fixes and open T27a for claude-code review.
+- **Blocked on:** nothing; Volodymyr approved the split in chat 2026-11-11.
+- **Open questions for Volodymyr:** none.
+- **T27a persistence validation:** local D1 6/6, core 246/246, workspace typecheck and changed-file
+  ESLint pass. Sandboxed Miniflare could not bind localhost; unrestricted rerun passed.
 - **T27 scope approval:** Volodymyr confirmed in chat 2026-11-11: optional consented names in D1,
   no participants' works on the website. No remote migration or deployment performed.
 - **T48 rollout:** PR #107 merged 2026-11-11 with Volodymyr's OK (one German DOI mail for both
