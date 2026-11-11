@@ -6,9 +6,11 @@
 - **Last commit:** `f346d5a` — feat(bot): add consented contest entry persistence (T27a) (#108)
 - **Next step:** codex starts T27b in a fresh session, including the PR #108 review notes in
   docs/03-tasks.md (DST Monday-boundary tests; `photoRef`/`file_id` naming).
-- **Blocked on:** Volodymyr manually: `pnpm -C apps/bot run db:migrate` (remote migration 0012,
-  approved 2026-11-11) and `pnpm -C apps/bot run deploy` from clean `main`; record Worker version.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+- **T27a rollout:** migration 0012 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
+  pending migrations); bot deployed by Volodymyr from clean `main`, Worker
+  `8b18b4da-9d81-4382-8577-c36939da0e84`.
 - **T27a persistence validation:** local D1 6/6, core 246/246, workspace typecheck and changed-file
   ESLint pass. Sandboxed Miniflare could not bind localhost; unrestricted rerun passed.
 - **T27a site validation:** site 53/53; final synthetic-endpoint fixture builds 4/4 and legal
