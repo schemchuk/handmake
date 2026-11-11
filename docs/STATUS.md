@@ -1,14 +1,21 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** none — T49e merged as PR #106 (`d679fe3`, merged by Volodymyr)
+- **Active agent:** none — Volodymyr assigned T48 to Codex on 2026-11-11; awaiting provider inputs
+- **Current task:** T48 — email sign-up and lead magnet; implementation not started
 - **Branch:** `main`
 - **Last commit:** `d679fe3` — fix: address Threads comment reply review notes (T49e) (#106)
-- **Next step:** Volodymyr names the next task. Carry the PR #106 review note into the next
-  implementer task: bump `COMMENT_REPLY_PROMPT_VERSION` (or record a Threads variant id) since
-  the Threads drafter appends a 500-byte instruction to `commentReplyPromptV1`.
-  Live checks pending: one real Threads comment answered once; next `threads-token.yml` run
-  (Mon 07:23 UTC) writes both GitHub and Worker copies.
+- **Next step:** Resume T48 with Codex after the Brevo form inputs and confirmed H11 provider
+  privacy text are available. Inspect the provider form before implementing its direct POST;
+  allow only that exact endpoint in the site build policy. Record manual double-opt-in/PDF
+  acceptance in the task PR. No subscriber address may reach our storage or logs.
+- **Blocked on:** Brevo public form URL and HTML (action and required fields), configured
+  double opt-in and post-confirmation PDF delivery, and Volodymyr-confirmed Brevo privacy text.
+  H15 records the account/domain/list and author-approved local PDF, but explicitly no form yet.
+- **Open questions for Volodymyr:** Which provider form/delivery inputs are ready? Supply only
+  public form configuration and confirmed legal text, never API keys or subscriber addresses.
+- **Carry-forward review note (PR #106):** The next task touching the comment drafter must bump
+  `COMMENT_REPLY_PROMPT_VERSION` (or record a Threads variant id), since the Threads drafter
+  appends a 500-byte instruction to `commentReplyPromptV1`.
 - **T49e rollout:** bot deployed by claude-code 2026-11-10, Worker
   `c5010485-4881-48c8-a06f-75bb3f24c024`.
 - **T49e validation:** channels 260/260; AI drafter 19/19; bot collect/session 47/47 across
