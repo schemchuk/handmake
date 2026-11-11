@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** review T27a — PR #108 (contest persistence and submission source)
-- **Branch:** feat/t27a-contest-store
-- **Last commit:** `5ccb2dc` — fix(site): derive newsletter policy from tenant config
-- **Next step:** claude-code reviews PR #108; sensitive merge needs Volodymyr’s explicit OK.
-  Before remote migration 0012/deploy, ask Volodymyr. After merge, hand T27b to Codex.
-- **Blocked on:** independent review and sensitive-merge approval.
+- **Active agent:** codex
+- **Current task:** T27b — author contest-entry session
+- **Branch:** none (codex creates `feat/t27b-contest-session`)
+- **Last commit:** `f346d5a` — feat(bot): add consented contest entry persistence (T27a) (#108)
+- **Next step:** codex starts T27b in a fresh session, including the PR #108 review notes in
+  docs/03-tasks.md (DST Monday-boundary tests; `photoRef`/`file_id` naming).
+- **Blocked on:** Volodymyr manually: `pnpm -C apps/bot run db:migrate` (remote migration 0012,
+  approved 2026-11-11) and `pnpm -C apps/bot run deploy` from clean `main`; record Worker version.
 - **Open questions for Volodymyr:** none.
 - **T27a persistence validation:** local D1 6/6, core 246/246, workspace typecheck and changed-file
   ESLint pass. Sandboxed Miniflare could not bind localhost; unrestricted rerun passed.

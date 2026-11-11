@@ -296,7 +296,8 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   remote migration is authorized by this scope confirmation.
 
 ### T27a — Contest persistence and submission source (`bot`, `core`)
-- Implemented in PR #108; independent review pending.
+- Done: PR #108 merged 2026-11-11 (`f346d5a`) with Volodymyr's OK. Remote migration 0012 and bot
+  deploy pending (Volodymyr runs them manually).
 - Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T25
 - Change: add the network-independent `SubmissionSource` port and contest entry types; add a D1
   migration and tenant-scoped store for `contest_entries` (entry_id, tenant_id, week, file_id,
@@ -332,6 +333,10 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Tests: full session flow, anonymous entry, consent required, 30-character boundary, second photo,
   cancellation, stale/repeated/concurrent callbacks, flow switching and no name-bearing diagnostics.
 - Rollout: reviewer requests Volodymyr's approval before applying the new remote D1 migration.
+- Review notes from PR #108 (T27a, fix in this PR): (1) `packages/core/test/contest.test.ts` DST cases
+  hit Sunday transition instants; add the Monday-midnight boundaries `2026-03-29T21:59:59Z→2026-03-23`,
+  `2026-03-29T22:00:00Z→2026-03-30`, `2026-10-25T22:59:59Z→2026-10-19`, `2026-10-25T23:00:00Z→2026-10-26`;
+  (2) `NewContestEntry.photoRef` is stored as `file_id`: align the names or document the mapping.
 
 ### T28 — Names endpoint and placeholder resolution (`bot`, `publisher`, `core`)
 - Depends on: T27, H9 · Sensitive: touches `.github/workflows/publish.yml` (passes the secret)
