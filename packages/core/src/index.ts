@@ -1,3 +1,5 @@
+export * from './entry-names';
+
 export const packageName = '@handmake/core';
 
 export * from './canonical-url';

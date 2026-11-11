@@ -168,6 +168,8 @@ export const tenantConfigSchema = z
     name: z.string().min(1),
     languages: z.array(languageCodeSchema).min(1),
     channels: channelsSchema,
+    // Opt-in only; personal names are forbidden on every other network.
+    entryNamePolicy: z.object({ telegram: z.boolean().optional() }).strict().optional(),
     contentStore: z
       .object({
         type: z.enum(['git-repo']),

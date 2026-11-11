@@ -192,3 +192,23 @@ describe('runDryRun', () => {
     ).rejects.toThrow(TenantConfigError);
   });
 });
+
+it('uses synthetic fixture names in dry-run operations and stores placeholders only', async () => {
+  const root = await makeRepoDir();
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+  const payloadPath = path.join(root, 'payload.json');
+  await writeFile(
+    payloadPath,
+    JSON.stringify({ ...basePayload, fileIds: [], texts: { uk: `{entry:${id}}` } }),
+  );
+  const result = await runDryRun(payloadPath, {
+    root,
+    newId: () => postId,
+    entryNamesFixture: { [id]: 'Synthetic name' },
+    logger: () => {},
+  });
+  expect(JSON.stringify(result.ops)).toContain('Synthetic name');
+  const content = await readFile(path.join(result.postDir, 'index.md'), 'utf8');
+  expect(content).toContain(`{entry:${id}}`);
+  expect(content).not.toContain('Synthetic name');
+});

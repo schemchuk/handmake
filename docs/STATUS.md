@@ -1,12 +1,18 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T28 — names endpoint and placeholder resolution
-- **Branch:** none (codex creates `feat/t28-names-endpoint`)
-- **Last commit:** `168615f` — feat: persist callback v2 channel message IDs (T29) (#110)
-- **Next step:** codex starts T28 in a fresh session. T28 is sensitive (touches `publish.yml`):
-  merge needs Volodymyr's OK.
-- **Blocked on:** nothing.
+- **Active agent:** claude-code
+- **Current task:** T28 — review PR #111 (names endpoint and placeholder resolution).
+- **Branch:** `feat/t28-names-endpoint`
+- **Last commit:** `d1250eb` — feat: resolve private contest names during rendering
+- **Next step:** claude-code reviews PR #111 in a fresh session. Merge only after green CI, no blocking
+  findings and Volodymyr's explicit OK; deploy the bot from clean main after merge.
+- **Blocked on:** nothing. Sensitive merge requires Volodymyr's explicit OK.
+- **T28 validation:** core 262/262; bot names endpoint/preview 37/37; full publisher 257/257.
+  Workspace typecheck/build, lint, changed-file formatting, actionlint and staged gitleaks pass.
+  Sandbox Miniflare bind failed (EPERM); unrestricted D1 rerun passed. Two duplicate YAML test
+  fixtures were corrected. No migration, deployment, production publishing or secret changes.
+- **T28 rollout:** deploy updated Worker before contest-placeholder publishing. H9 already set;
+  endpoint derives from `PUBLISH_CALLBACK_URL`. Protocol and tenant policy: architecture section 5.
 - **T29 rollout:** migration 0014 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `468958bb-f60a-4544-8a9e-ef8c8c1a7b65`. First live v2 callback not yet observed.

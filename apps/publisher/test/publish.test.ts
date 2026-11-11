@@ -584,3 +584,44 @@ describe('runPublish', () => {
     });
   });
 });
+
+it('resolves private names only for delivery while committed content and reruns keep placeholders', async () => {
+  const { repoDir, payloadPath } = await makeRepo();
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+  const text = `Contest {entry:${id}}`;
+  await writeFile(
+    payloadPath,
+    JSON.stringify({ ...basePayload, fileIds: [], texts: { uk: text, de: text } }),
+  );
+  const seen: Post[] = [];
+  const adapter = new FakeChannelAdapter({
+    key: 'telegram',
+    renderImpl: (post) => {
+      seen.push(post);
+      return renderImpl(post, {});
+    },
+  });
+  const lines: string[] = [];
+  const deps = {
+    root: repoDir,
+    now,
+    registry: makeRegistry(adapter),
+    env: {
+      PUBLISH_CALLBACK_URL: 'https://fixture.test/callbacks/published',
+      NAMES_ENDPOINT_SECRET: 'fixture-key',
+    },
+    logger: (line: string) => lines.push(line),
+    fetchImpl: (async () => Response.json({ [id]: 'Private fixture' })) as typeof fetch,
+  };
+  const result = await runPublish(payloadPath, deps);
+  expect(result.post.texts.uk).toBe(text);
+  expect(seen[0]!.texts.uk).toBe('Contest Private fixture');
+  const store = new GitRepoContentStore({ rootDir: repoDir });
+  expect((await store.readPost(tenantId, draftId))!.texts.uk).toBe(text);
+  expect(lines.filter((line) => line.includes('Private fixture'))).toEqual([
+    '::add-mask::Private fixture',
+  ]);
+  const rerun = await runPublish(payloadPath, deps);
+  expect(rerun.skipped).toEqual(['telegram']);
+  expect((await git(repoDir, ['show', 'HEAD'])).includes('Private fixture')).toBe(false);
+});

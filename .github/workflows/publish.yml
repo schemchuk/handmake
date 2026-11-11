@@ -112,6 +112,7 @@ jobs:
           # a repo variable (the Worker URL), the secret a GitHub Secret; the
           # same secret is a Worker secret. A callback failure never fails the
           # publish — the publisher alerts the operator instead.
+          NAMES_ENDPOINT_SECRET: ${{ secrets.NAMES_ENDPOINT_SECRET }}
           PUBLISH_CALLBACK_URL: ${{ vars.PUBLISH_CALLBACK_URL }}
           PUBLISH_CALLBACK_SECRET: ${{ secrets.PUBLISH_CALLBACK_SECRET }}
           # Instagram (T26a3): Meta Graph API secrets, resolved by fixed name

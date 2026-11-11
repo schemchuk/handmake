@@ -19,6 +19,8 @@ channels:
   threads:
     language: de
 
+entryNamePolicy:
+  telegram: true
 contentStore:
   type: git-repo
 

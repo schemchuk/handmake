@@ -3,7 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { renderTelegram } from '@handmake/channels';
-import { canonicalLinkSettings, parsePost } from '@handmake/core';
+import {
+  resolvePostEntryNames,
+  entryNamesAllowed,
+  canonicalLinkSettings,
+  parsePost,
+} from '@handmake/core';
 import type { MediaSource, Post, SendOperation, Work } from '@handmake/core';
 import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
@@ -14,6 +19,8 @@ import { loadTenantConfig } from './tenant-config';
 import { prepareWorkPublication } from './work-publication';
 
 export interface DryRunDeps {
+  /** Synthetic names only; never reads the production endpoint. */
+  entryNamesFixture?: import('@handmake/core').EntryNames;
   cwd?: string;
   root?: string;
   tempDir?: string;
@@ -75,12 +82,19 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
   const ops =
     publication && !post.channels.includes('telegram')
       ? []
-      : renderTelegram(post, {
-          ...tenant.channels.telegram,
-          channelId: tenant.channels.telegram?.channelId ?? '',
-          languages: tenant.languages,
-          ...(canonical ? { canonical } : {}),
-        });
+      : renderTelegram(
+          resolvePostEntryNames(
+            post,
+            deps.entryNamesFixture ?? {},
+            entryNamesAllowed(tenant, 'telegram'),
+          ),
+          {
+            ...tenant.channels.telegram,
+            channelId: tenant.channels.telegram?.channelId ?? '',
+            languages: tenant.languages,
+            ...(canonical ? { canonical } : {}),
+          },
+        );
 
   log(`post id: ${post.id}`);
   log(`tenant: ${post.tenant}`);

@@ -469,3 +469,35 @@ describe('Threads author preview (T26c)', () => {
     expect((await buildTenantPreview(draft, botTexts)).text).not.toContain('🧵 Threads');
   });
 });
+
+it('resolves preview names directly, keeps the draft immutable and anonymizes Meta projections', async () => {
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+  const draft = {
+    ...createDraft('tenant', 'draft', now),
+    state: 'ready' as const,
+    texts: { uk: `{entry:${id}}`, de: `{entry:${id}}` },
+    photoRefs: ['photo'],
+  };
+  const lookup = vi.fn(async () => ({ [id]: 'Private fixture' }));
+  const preview = await buildTenantPreview(
+    draft,
+    botTexts,
+    {
+      load: async () =>
+        ({
+          id: 'tenant',
+          languages: ['uk', 'de'],
+          channels: { telegram: { channelId: 'CHANNEL' }, threads: { language: 'de' } },
+          entryNamePolicy: { telegram: true },
+          featureFlags: {},
+        }) as never,
+    },
+    true,
+    lookup,
+  );
+  expect(lookup).toHaveBeenCalledWith('tenant', [id]);
+  expect(preview.text).toContain('Private fixture');
+  expect(preview.text).toContain('Work No 1');
+  expect(draft.texts.uk).toBe(`{entry:${id}}`);
+  await expect(buildTenantPreview(draft, botTexts)).rejects.toThrow('Contest names unavailable');
+});

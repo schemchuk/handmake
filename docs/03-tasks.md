@@ -342,6 +342,7 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   (2) `NewContestEntry.photoRef` is stored as `file_id`: align the names or document the mapping.
 
 ### T28 — Names endpoint and placeholder resolution (`bot`, `publisher`, `core`)
+- Implementation: ready for Claude Code review on `feat/t28-names-endpoint`; sensitive merge needs Volodymyr's OK.
 - Depends on: T27, H9 · Sensitive: touches `.github/workflows/publish.yml` (passes the secret)
 - Change: `resolveEntryNames(text, names, policy)` in `core` (`{entry:<id>}` → name or "Work No N";
   malformed token → error). Worker `GET /internal/contest-names?ids=…`: HMAC-SHA256 over

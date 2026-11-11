@@ -306,6 +306,17 @@ Channel polls are anonymous: no voter data reaches us.
   D1 only, never in Git, dispatch payloads or logs; retention in ADR 010.
 - `GET /internal/contest-names` (Worker): HMAC-SHA256 over `method + path + timestamp` with
   `NAMES_ENDPOINT_SECRET`, timestamp header valid for 5 minutes (replay window), constant-time compare.
+  T28 wire format: `X-Handmake-Timestamp` is decimal epoch seconds;
+  `X-Handmake-Signature` is lowercase hex HMAC of `GET\n<pathname+query>\n<timestamp>`.
+  Query: `tenant=<tenantId>&ids=<comma-separated ULIDs>` (1–10 IDs); the exact encoded query
+  is signed. Response: an ID-to-name-or-null object, `Cache-Control: no-store`.
+  Missing, deleted or withdrawn names resolve anonymously. Replays inside the five-minute
+  window are allowed for this read-only request; older/future timestamps outside it are rejected.
+  The publisher derives the endpoint origin from `PUBLISH_CALLBACK_URL`. Tenant config
+  `entryNamePolicy.telegram: true` opts into names; all other channels always use `Work No N`.
+  Numbers follow first occurrence across post texts and poll fields, shared by every projection.
+  Dry-run accepts synthetic `entryNamesFixture` data and never calls the endpoint.
+  Deploy the updated Worker before publishing contest placeholders; no migration is needed.
   Callers: the publisher and the site job; both mask every name with `::add-mask::` on receipt,
   because Actions logs of this public repo are world-readable.
 - New secrets (v3): `NAMES_ENDPOINT_SECRET` (Worker + GitHub), `CLOUDFLARE_API_TOKEN` (scoped to Pages
