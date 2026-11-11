@@ -1,10 +1,9 @@
 import { readFile, readdir, writeFile, copyFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { newsletterFormAction } from './newsletter';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 
 /** Inspect parsed HTML, including CSS in attributes and style elements. Never echo input. */
-export function checkResources(html: string, baseUrl: string): void {
+export function checkResources(html: string, baseUrl: string, newsletterFormAction?: string): void {
   const own = new URL(baseUrl).origin;
   const check = (value: string) => {
     const url = new URL(value.trim(), baseUrl);
@@ -57,6 +56,7 @@ export async function finalizeSite(
   directory: string,
   baseUrl: string,
   indexable: boolean,
+  newsletterFormAction?: string,
 ): Promise<void> {
   const pages: string[] = [];
   async function visit(dir: string) {
@@ -69,6 +69,7 @@ export async function finalizeSite(
           checkResources(
             entry.name.endsWith('.css') ? `<style>${source}</style>` : source,
             baseUrl,
+            newsletterFormAction,
           );
         } catch (error) {
           throw new Error(`${path.relative(directory, file)}: ${(error as Error).message}`);

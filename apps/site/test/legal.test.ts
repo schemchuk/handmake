@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkResources, finalizeSite } from '../src/lib/build-policy';
-import { newsletterFormAction } from '../src/lib/newsletter';
+import { newsletterFormAction } from './fixtures/newsletter';
 import { legalFields, renderLegal } from '../src/lib/legal';
 
 const env = Object.fromEntries(legalFields.map((key) => [key, `Fixture<&" ${key}`]));
@@ -118,6 +118,7 @@ it('allows only the exact newsletter POST action, never provider assets or overr
   checkResources(
     `<form method="POST" action="${newsletterFormAction}"></form>`,
     'https://example.invalid',
+    newsletterFormAction,
   );
   for (const html of [
     `<form method="GET" action="${newsletterFormAction}"></form>`,
@@ -128,7 +129,7 @@ it('allows only the exact newsletter POST action, never provider assets or overr
     '<link rel="stylesheet" href="https://sibforms.com/forms/end-form/build/sib-styles.css">',
     '<link rel="stylesheet" href="https://assets.brevo.com/font.css">',
   ])
-    expect(() => checkResources(html, 'https://example.invalid')).toThrow();
+    expect(() => checkResources(html, 'https://example.invalid', newsletterFormAction)).toThrow();
 });
 
 it('merges the supplied newsletter text and legal overview without duplicate consent grounds', () => {
@@ -136,7 +137,14 @@ it('merges the supplied newsletter text and legal overview without duplicate con
   expect(privacy).toContain('id="m17"');
   expect(privacy).toContain('href="#m17"');
   expect(privacy).toContain('Voraussetzung der Inanspruchnahme kostenloser Leistungen');
-  expect(privacy).toContain('T48 DRAFT');
   expect(privacy).toContain('Sendinblue SAS');
   expect(privacy).toContain('Vertragserfüllung und vorvertragliche Anfragen');
+});
+
+it('derives external form approval from the configured endpoint and disables it when absent', () => {
+  const action = 'https://forms.example.invalid/tenant-specific';
+  const html = `<form method="POST" action="${action}"></form>`;
+  expect(() => checkResources(html, 'https://example.invalid')).toThrow();
+  checkResources(html, 'https://example.invalid', action);
+  expect(() => checkResources(html, 'https://example.invalid', newsletterFormAction)).toThrow();
 });

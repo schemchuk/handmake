@@ -13,7 +13,12 @@ export default defineConfig({
       hooks: {
         'astro:build:done': async ({ dir }) => {
           const data = await loadSiteData();
-          await finalizeSite(fileURLToPath(dir), data.site.baseUrl, data.indexable);
+          await finalizeSite(
+            fileURLToPath(dir),
+            data.site.baseUrl,
+            data.indexable,
+            data.site.newsletter?.formAction,
+          );
         },
       },
     },

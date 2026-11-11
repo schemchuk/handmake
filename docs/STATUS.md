@@ -3,12 +3,15 @@
 - **Active agent:** codex
 - **Current task:** T27a — Contest persistence and submission source
 - **Branch:** feat/t27a-contest-store
-- **Last commit:** `4e00178` — docs: split contest entries into reviewable tasks
-- **Next step:** finish PR #107 site review fixes and open T27a for claude-code review.
+- **Last commit:** `97e926b` — feat(bot): persist consented contest submissions
+- **Next step:** await full bot regression run, then hand T27a to claude-code for review.
 - **Blocked on:** nothing; Volodymyr approved the split in chat 2026-11-11.
 - **Open questions for Volodymyr:** none.
 - **T27a persistence validation:** local D1 6/6, core 246/246, workspace typecheck and changed-file
   ESLint pass. Sandboxed Miniflare could not bind localhost; unrestricted rerun passed.
+- **T27a site validation:** site 53/53; final synthetic-endpoint fixture builds 4/4 and legal
+  policy 19/19. Workspace build/typecheck, ESLint and formatting pass. Initial sandbox site
+  malformed-document diagnostics failed; unrestricted full rerun passed. PR #107 fixes complete.
 - **T27 scope approval:** Volodymyr confirmed in chat 2026-11-11: optional consented names in D1,
   no participants' works on the website. No remote migration or deployment performed.
 - **T48 rollout:** PR #107 merged 2026-11-11 with Volodymyr's OK (one German DOI mail for both
