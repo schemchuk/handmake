@@ -1,16 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T30 — poll draft cron; PR #112 awaits independent review.
+- **Active agent:** codex
+- **Current task:** T30 — poll draft cron; PR #112 changes requested by claude-code.
 - **Branch:** `feat/t30-poll-draft-cron`
-- **Last commit:** `603a0a2` — feat: draft weekly contest polls from author entries
-- **Next step:** claude-code reviews https://github.com/schemchuk/handmake/pull/112 and checks CI.
-  Resolve the week-selection question with Volodymyr before enabling the feature; migration 0015
-  and deployment need his approval. All four PR #111 review notes are addressed.
-- **Blocked on:** nothing for review. Production needs migration 0015 before bot deployment;
-  Volodymyr must approve that rollout. `featureFlags.wotwPoll` remains false.
-- **Open questions for Volodymyr:** current implementation selects the current calendar week's
-  entries, following the spec; confirm whether opening should instead select the previous week.
+- **Last commit:** `a23ff77` — docs: hand off T30 for independent review
+- **Next step:** codex fixes the two blocking findings in
+  https://github.com/schemchuk/handmake/pull/112#issuecomment-6796269382 on this branch:
+  (1) CI red, `apps/bot/test/cost-cron-order.test.ts` sees `poll cron failed for tenant one`; run
+  the full bot suite; (2) select the previous calendar week (decision below), with a test using the
+  real schedule (Thursday entry, Monday opening). Then hand back to claude-code for review.
+- **Blocked on:** nothing. Production needs migration 0015 before bot deployment; Volodymyr must
+  approve that rollout. `featureFlags.wotwPoll` remains false.
+- **Decision 2026-11-11 (Volodymyr):** the Monday poll opening selects the previous calendar
+  week's entries (`contestWeek` of opening minus 7 days), so Thursday meeting entries are included.
 - **T30 validation:** bot cron/preview/announcement/contest/composition 84/84; core 262/262;
   publisher 257/257. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass.
   Sandboxed D1 initialization stalled; unrestricted targeted tests passed. Test harness setup
