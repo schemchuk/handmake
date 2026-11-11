@@ -1,15 +1,16 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T31b — durable closing state and Telegram tally implemented; validation in progress.
+- **Current task:** T31b — durable closing state and Telegram tally implemented; validation passed.
 - **Branch:** feat/t31b-durable-poll-closing.
-- **Last commit:** `95a9afd` — fix: share draft inserts and localize contest fallbacks (T31a) (#113)
-- **Next step:** codex finishes validation and opens the T31b PR for claude-code review.
+- **Last commit:** `a67b529` — feat: persist contest poll closing and validated tallies
+- **Next step:** codex records final validation and hands PR #115 to claude-code.
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false; closing has no cron caller.
 - **Open questions for Volodymyr:** none. Migration 0016 is local/test-only; no deploy authorized.
-- **T31b validation so far:** closing/opening 29/29 before additional regressions; final closing
-  15/15, core 275/275 and channels 260/260 pass. Workspace typecheck/build, lint and changed-file
-  formatting pass. Full bot suite is still running. Sandbox D1 initialization stalled; targeted
+- **T31b validation:** closing/opening 29/29 before additional regressions; final closing
+  15/15, core 279/279 and channels 260/260 pass. Workspace typecheck/build, lint and changed-file
+  formatting pass. Full bot suite 694/694 (36 files) passes. Unknown-language fallback also
+  rejects inherited object keys. Sandbox D1 initialization stalled; targeted
   unrestricted runs passed. Recovery stores unreadable after interrupted stops, never fabricated
   zero counts; completed tallies are immutable. No production migration, deployment, publication,
   paid calls, workflows or secrets changed.
