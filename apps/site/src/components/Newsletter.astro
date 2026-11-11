@@ -1,0 +1,33 @@
+---
+import { loadSiteData } from '../lib/site-data';
+import { newsletterFormAction, newsletterStrings } from '../lib/newsletter';
+import { pagePath } from '../lib/paths';
+const { lang } = Astro.props;
+const { site } = await loadSiteData();
+const text = newsletterStrings(lang);
+if (site.newsletter && site.newsletter.formAction !== newsletterFormAction) {
+  throw new Error('Newsletter form endpoint is not approved by the site build policy');
+}
+---
+{site.newsletter && <section class="newsletter" aria-labelledby="newsletter-title">
+  <h2 id="newsletter-title">{text.title}</h2>
+  <p>{text.intro}</p>
+  <p>{text.contents}</p>
+  <form method="POST" action={site.newsletter.formAction}>
+    <label for="newsletter-email">{text.email}</label>
+    <input id="newsletter-email" type="email" name="EMAIL" autocomplete="email" required aria-describedby="newsletter-consent newsletter-delivery" />
+    <div hidden aria-hidden="true"><label for="newsletter-check">Leave empty</label><input id="newsletter-check" type="text" name="email_address_check" value="" tabindex="-1" autocomplete="off" /></div>
+    <input type="hidden" name="locale" value={lang} />
+    <input type="hidden" name="html_type" value="simple" />
+    <p id="newsletter-consent">{text.consent} <a href={pagePath(lang, site.defaultLanguage, 'datenschutz')}>{text.privacy}</a></p>
+    <p id="newsletter-delivery">{text.delivery}</p>
+    <button type="submit">{text.submit}</button>
+  </form>
+</section>}
+<style>
+  .newsletter { margin-block: 3rem; padding-block: 2rem; border-block: 1px solid var(--rule); max-width: 42rem; }
+  label { display: block; margin-bottom: .5rem; }
+  input[type="email"] { box-sizing: border-box; width: 100%; padding: .8rem; border: 1px solid var(--muted); background: var(--paper); color: var(--ink); font: inherit; }
+  button { padding: .8rem 1rem; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); font: inherit; cursor: pointer; }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+</style>

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import type { Post, Show } from '@handmake/core';
 
+import { newsletterFormAction } from '../src/lib/newsletter';
 import { createPortfolioFixture, ids } from './fixtures/portfolio';
 
 const exec = promisify(execFile);
@@ -123,7 +124,19 @@ describe('portfolio fixture build', () => {
         const page = await readFile(path.join(dist, file), 'utf8');
         expect(page).toContain('href="https://t.me/fixture_join"');
         if (/^(uk\/)?(posts|works|shows)\/[^/]+\/index.html$/.test(file)) {
-          expect(page.match(/class="join-channel"/g)).toHaveLength(2);
+          const detail = /^(uk\/)?(works|shows)\//.test(file);
+          expect(page.match(/class="join-channel"/g)).toHaveLength(detail ? 1 : 2);
+          if (detail) {
+            expect(page.match(/<form /g)).toHaveLength(1);
+            expect(page).toContain(`method="POST" action="${newsletterFormAction}"`);
+            expect(page).toContain('type="email" name="EMAIL"');
+            expect(page).toContain('name="html_type" value="simple"');
+            expect(page).toContain(`name="locale" value="${file.startsWith('uk/') ? 'uk' : 'de'}"`);
+            expect(page).toContain('name="email_address_check" value=""');
+            expect(page).not.toContain('sib-styles.css');
+            expect(page).not.toContain('end-form/build/main.js');
+            expect(page).not.toContain('recaptcha');
+          }
           expect(page).toContain(
             file.startsWith('uk/') ? 'Підписатися на Telegram-канал' : 'Telegram-Kanal abonnieren',
           );
@@ -151,6 +164,12 @@ describe('portfolio fixture build', () => {
       }
       await expect(access(path.join(dist, 'sitemap.xml'))).rejects.toThrow();
       expect(await readFile(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /');
+      for (const route of ['geschenk', 'uk/geschenk']) {
+        expect(await html(dist, route)).toContain('href="/geschenk/rosenbluete.pdf" download');
+      }
+      expect(await readFile(path.join(dist, 'geschenk/rosenbluete.pdf'))).toEqual(
+        await readFile(path.join(siteDir, 'public/geschenk/rosenbluete.pdf')),
+      );
       const showUrl = `shows/${show.id.toLowerCase()}`;
       const showHtml = await html(dist, showUrl);
       expect(showHtml.match(/<figcaption>KI-generiertes Model<\/figcaption>/g)).toHaveLength(4);
@@ -257,11 +276,16 @@ describe('portfolio fixture build', () => {
         },
       };
       fixture.tenant.site!.groupUrl = 'https://t.me/fixture_group';
+      delete fixture.tenant.site!.newsletter;
       await writeFile(
         path.join(root, 'config/tenants/fixture.yaml'),
         JSON.stringify(fixture.tenant),
       );
       await build(root, dist);
+      await expect(access(path.join(dist, 'geschenk/index.html'))).rejects.toThrow();
+      const workPage = await html(dist, `works/${ids.a.toLowerCase()}`);
+      expect(workPage).not.toContain('<form ');
+      expect(workPage.match(/class="join-channel"/g)).toHaveLength(2);
       const de = await html(dist, 'kreis');
       const uk = await html(dist, 'uk/kreis');
       for (const [page, button] of [

@@ -1,5 +1,6 @@
 import { readFile, readdir, writeFile, copyFile, rm } from 'node:fs/promises';
 import path from 'node:path';
+import { newsletterFormAction } from './newsletter';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 
 /** Inspect parsed HTML, including CSS in attributes and style elements. Never echo input. */
@@ -24,7 +25,14 @@ export function checkResources(html: string, baseUrl: string): void {
       for (const [key, value] of Object.entries(attrs)) {
         if (key.startsWith('on') || key === 'srcdoc') throw new Error('Unsupported active content');
         if (key === 'style') css(value);
-        if (['src', 'poster', 'background', 'action'].includes(key)) check(value);
+        if (['src', 'poster', 'background', 'action', 'formaction'].includes(key)) {
+          const approvedForm =
+            key === 'action' &&
+            node.tagName === 'form' &&
+            attrs.method?.toLowerCase() === 'post' &&
+            value === newsletterFormAction;
+          if (!approvedForm) check(value);
+        }
         if (key === 'srcset')
           for (const entry of value.split(',')) check(entry.trim().split(/\s+/)[0]!);
         if (

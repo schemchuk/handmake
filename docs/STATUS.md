@@ -1,17 +1,22 @@
 # STATUS
 
-- **Active agent:** codex (T48, assigned by Volodymyr 2026-11-11; Owner in docs/03-tasks.md updated)
-- **Current task:** T48 — email sign-up and lead magnet; implementation not started
-- **Branch:** `main`
-- **Last commit:** `4008d33` — docs(tasks): mark H15 done with the lead-magnet PDF
-- **Next step:** Resume T48 with Codex after the Brevo form inputs and confirmed H11 provider
-  privacy text are available. Inspect the provider form before implementing its direct POST;
-  allow only that exact endpoint in the site build policy. Record manual double-opt-in/PDF
-  acceptance in the task PR. No subscriber address may reach our storage or logs.
-- **Blocked on:** nothing to start T48. Generator newsletter text is in `docs/legal/newsletter.de.html`;
-  Volodymyr confirms the merged Datenschutz page (with the Brevo bullet) in the T48 PR before go-live.
-- **Open questions for Volodymyr:** Which provider form/delivery inputs are ready? Supply only
-  public form configuration and confirmed legal text, never API keys or subscriber addresses.
+- **Active agent:** claude-code (T48 independent review)
+- **Current task:** T48 — implementation complete; draft PR #107 on `feat/t48-newsletter`
+- **Branch:** `feat/t48-newsletter`
+- **Last commit:** `49c23f2` — feat(site): add newsletter sign-up and pattern download
+- **Next step:** Claude Code reviews T48; record browser non-JS POST, double-opt-in, PDF redirect and
+  unsubscribe acceptance in the PR without addresses or unique links. Confirm the German DOI mail
+  for both UI languages with Volodymyr. Volodymyr and the author confirm the merged newsletter
+  Datenschutz text and draft Brevo entity/address against the account DPA; obtain explicit sensitive
+  merge approval. Reviewer deploys bot after merge because packages/core changes (AGENTS.md).
+- **Blocked on:** live acceptance and legal/language confirmation before merge/go-live, not implementation.
+- **Open questions for Volodymyr:** German confirmation mail for both languages? Confirm the new
+  Datenschutz newsletter/Brevo section in the PR; never share subscriber addresses or unique links.
+- **T48 validation:** site 52/52 and core 234/234; workspace typecheck/build, changed-file ESLint and
+  formatting pass. Initial sandbox site run lost malformed-document child diagnostics; unrestricted
+  full rerun passed. Provider GET 200; empty non-JS POST 400 JSON with German EMAIL validation.
+  No live subscribers, deploy, workflow, production publishing or secret changes. Public PDF copied
+  byte-for-byte from the approved local source; two pages, author/creator Faden und Stimmung.
 - **Carry-forward review note (PR #106):** The next task touching the comment drafter must bump
   `COMMENT_REPLY_PROMPT_VERSION` (or record a Threads variant id), since the Threads drafter
   appends a 500-byte instruction to `commentReplyPromptV1`.

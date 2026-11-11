@@ -1,5 +1,6 @@
 ---
 import JoinChannel from '../../../components/JoinChannel.astro';
+import Newsletter from '../../../components/Newsletter.astro';
 import Base from '../../../layouts/Base.astro';
 import WorkImage from '../../../components/WorkImage.astro';
 import PortfolioFeed from '../../../components/PortfolioFeed.astro';
@@ -58,7 +59,7 @@ const [lead, ...rest] = paragraphs(version.description);
       {collection && <p><a href={pagePath(lang, def, portfolioPage('collections', collection))}>{collection.versions[lang]!.title}</a></p>}
       <a class="back" href={pagePath(lang, def, section)}>{section === 'works' ? ui.worksHeading : ui.collectionsHeading}</a>
     </div>
-    <JoinChannel lang={lang} />
+    {work && data.site.newsletter ? <Newsletter lang={lang} /> : <JoinChannel lang={lang} />}
   </article>
   {work ? (
     <div class="wrap work-gallery">
