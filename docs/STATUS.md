@@ -6,9 +6,10 @@
 - **Last commit:** `696e610` — feat: draft weekly contest polls from author entries (T30) (#112)
 - **Next step:** codex starts T31 in a fresh session, including the two PR #112 review notes listed
   in T31 of docs/03-tasks.md.
-- **Blocked on:** T30 rollout: Volodymyr applies migration 0015 to remote D1, then the bot is
-  deployed from clean `main` (not yet deployed). `featureFlags.wotwPoll` remains false.
-- **T30 rollout:** PR #112 merged 2026-11-11 with Volodymyr's OK. Migration 0015 and deploy pending.
+- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **T30 rollout:** PR #112 merged 2026-11-11 with Volodymyr's OK. Migration 0015 applied to remote
+  D1 by Volodymyr (verified: no pending migrations); bot deployed by claude-code from clean `main`,
+  Worker `0f645813-aeb5-4b0f-853f-e5d95fafabe6`. First live poll draft not yet observed.
 - **Decision 2026-11-11 (Volodymyr):** the Monday poll opening selects the previous calendar
   week's entries (`contestWeek` of opening minus 7 days), so Thursday meeting entries are included.
 - **T30 review-fix validation:** full bot suite 674/674 (35 files) passes outside the sandbox.

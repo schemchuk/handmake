@@ -366,7 +366,7 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Tests: schema v1/v2, op-kind lookup, idempotent upsert.
 
 ### T30 — Poll draft cron (F19 part 2b, `bot`)
-- Done: PR #112 merged 2026-11-11 (`696e610`) with Volodymyr's OK. Migration 0015 and bot deploy pending.
+- Done: PR #112 merged 2026-11-11 (`696e610`) with Volodymyr's OK. Migration 0015 applied remotely; bot deployed (Worker `0f645813`).
 - Depends on: T27, T28, T29
 - Change: Monday-open cron (`workOfWeek.opens`) builds a `wotw-poll` draft (kind `post`, extras: poll
   spec + entry refs) from `AuthorEntrySource`: album 1..N, poll "No 1".."No N", captions with
