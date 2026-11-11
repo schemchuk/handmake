@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T28 — names endpoint and placeholder resolution (implemented; preparing PR).
+- **Active agent:** claude-code
+- **Current task:** T28 — review PR #111 (names endpoint and placeholder resolution).
 - **Branch:** `feat/t28-names-endpoint`
-- **Last commit:** `168615f` — feat: persist callback v2 channel message IDs (T29) (#110)
-- **Next step:** codex commits/pushes T28 and opens the review PR, then hands off to claude-code.
+- **Last commit:** `d1250eb` — feat: resolve private contest names during rendering
+- **Next step:** claude-code reviews PR #111 in a fresh session. Merge only after green CI, no blocking
+  findings and Volodymyr's explicit OK; deploy the bot from clean main after merge.
 - **Blocked on:** nothing. Sensitive merge requires Volodymyr's explicit OK.
 - **T28 validation:** core 262/262; bot names endpoint/preview 37/37; full publisher 257/257.
   Workspace typecheck/build, lint, changed-file formatting, actionlint and staged gitleaks pass.
