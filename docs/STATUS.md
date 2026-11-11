@@ -1,13 +1,15 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T27 — Contest entries (next in the v5 order after T48)
-- **Branch:** none (codex creates `feat/t27-<slug>`)
-- **Last commit:** `0c1f942` — feat(site): add newsletter sign-up and pattern download (#107)
-- **Next step:** Codex starts T27 in a fresh session and also fixes the "Review notes from PR #107"
-  listed under T27 in docs/03-tasks.md.
-- **Blocked on:** nothing for T27.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** none
+- **Current task:** T27 — pre-implementation split proposed (T27a → T27b)
+- **Branch:** main (documentation only)
+- **Last commit:** `0d03573` — docs(status): record T48 bot Worker version (before this handoff).
+- **Next step:** Volodymyr reviews the T27a/T27b split in docs/03-tasks.md; then sets Active agent
+  to codex for T27a in a fresh session. PR #107 review fixes belong to T27a.
+- **Blocked on:** approval of the task split (workflow task-planning gate).
+- **Open questions for Volodymyr:** approve T27a → T27b split.
+- **T27 scope approval:** Volodymyr confirmed in chat 2026-11-11: optional consented names in D1,
+  no participants' works on the website. No remote migration or deployment performed.
 - **T48 rollout:** PR #107 merged 2026-11-11 with Volodymyr's OK (one German DOI mail for both
   languages, Datenschutz and Brevo entity checked against the DPA, live test declined). Site run
   dispatched 2026-11-11 (run 43004941233). Bot deployed by Volodymyr from clean `main` 2026-11-11, Worker

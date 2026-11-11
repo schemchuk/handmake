@@ -288,21 +288,48 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
 - Tests: mocked Graph API, carousel vs single photo, container status polling, limit errors.
 
 ### T27 — Contest entries (F19 part 2a, `bot`, `core`)
-- Depends on: T25
+- Split proposed 2026-11-11 before coding (ADR 009): T27a → T27b keeps each PR below
+  approximately 400 changed non-test lines. T28 and T30 depend on completion of both parts.
+- Scope confirmed by Volodymyr in chat 2026-11-11: optional consented first names/nicknames may
+  be stored in D1; participants' works are not published on the website. This is the explicit
+  contest exception to the Phase 1 participant-data prohibition in AGENTS.md. No deployment or
+  remote migration is authorized by this scope confirmation.
+
+### T27a — Contest persistence and submission source (`bot`, `core`)
+- Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T25
+- Change: add the network-independent `SubmissionSource` port and contest entry types; add a D1
+  migration and tenant-scoped store for `contest_entries` (entry_id, tenant_id, week, file_id,
+  display_name?, consent_at, status `submitted` | `withdrawn`, created_at). Persist submitted
+  entries only with explicit consent. Add `AuthorEntrySource`: submitted entries for the requested
+  week, in stable submission order, max 10; names stay outside Git and source payloads.
+- Define contest week bucketing in `Europe/Berlin`, shared with T27b. No participant Telegram IDs.
+- Acceptance: missing consent is rejected; tenant isolation holds; repeat insertion is idempotent;
+  source ordering is deterministic and limited to 10; errors never contain display names.
+- Tests: real local D1 migration/store, consent validation, tenant isolation, duplicate insertion,
+  withdrawn filtering, equal-timestamp ordering, source limit, Berlin week/year and DST boundaries.
 - Review notes from PR #107 (T48, `site`, fix in this PR): (1) remove the stale `<!-- T48 DRAFT ... -->`
   comment from `docs/legal/datenschutz.de.html` and the test expecting it; (2) `site.newsletter.formAction`
   is duplicated by the hard-coded `newsletterFormAction` (Newsletter.astro throws on mismatch): derive the
   build-policy allow-list from tenant config or reduce the field to a flag; (3) delete or mark archived
   `docs/legal/newsletter.de.html`; (4) drop the double blank line before the T48 section in `apps/site/README.md`.
-- Change: migration: `contest_entries` (entry_id, tenant_id, week, file_id, display_name?, consent_at,
-  status `submitted` | `withdrawn`, created_at). `/entry` session: exactly one photo, optional name
-  (≤ 30 chars, first name or nickname), mandatory consent button. Consent text (UA) states what is shown
-  (the photo and, if given, the name), where (Telegram, Instagram, website) and how to withdraw (tell
-  the author); Instagram never shows names. `AuthorEntrySource` implements `SubmissionSource`: the
-  week's `submitted` entries in submission order, max 10.
-- Acceptance: an entry without consent is never stored; a second photo is refused; names never appear
-  in logs.
-- Tests: session flow, consent required, name length, week bucketing in `Europe/Berlin`, source order.
+- Validation for carried-forward fixes: site legal/build-policy tests and fixture builds.
+
+### T27b — Author contest-entry session (`bot`)
+- Owner: kimi-code (Codex per AGENTS.md) · Reviewer: claude-code · Depends on: T27a
+- Change: wire an explicit `/entry` session, isolated from post/work/show drafts: exactly one photo,
+  optional first name/nickname (≤ 30 characters), anonymous option and mandatory consent button.
+  Use a session-specific callback identity and atomic persistence so stale/repeated/concurrent
+  confirmations cannot submit changed content or duplicate entries. Unconfirmed input must not be
+  stored as a submitted entry; document the transient input lifecycle and cancellation behavior.
+- Consent text (UA) states that the photo may appear on Telegram, Instagram, Facebook and Threads;
+  an optional name may appear on Telegram only. No website publication. It explains withdrawal via
+  the author and the ADR 010 retention policy. It also requires no identifiable faces without written
+  consent. Legal wording remains subject to Volodymyr's review before sensitive merge.
+- Acceptance: no submitted entry without consent; second photos are refused; names never appear in
+  logs, post drafts or dispatch payloads; switching flows cannot route entry input into post drafts.
+- Tests: full session flow, anonymous entry, consent required, 30-character boundary, second photo,
+  cancellation, stale/repeated/concurrent callbacks, flow switching and no name-bearing diagnostics.
+- Rollout: reviewer requests Volodymyr's approval before applying the new remote D1 migration.
 
 ### T28 — Names endpoint and placeholder resolution (`bot`, `publisher`, `core`)
 - Depends on: T27, H9 · Sensitive: touches `.github/workflows/publish.yml` (passes the secret)
