@@ -244,13 +244,46 @@ describe('runPublish published callback', () => {
         postId: draftId,
         date: result.post.date,
         photos: result.post.photos,
-        channels: { telegram: 'done' },
+        channels: { telegram: { status: 'done', messageIds: { main: expect.anything() } } },
       });
       expect(
         await verifyCallbackSignature(callbackSecret, calls[0]!.body, calls[0]!.signature!),
       ).toBe(true);
     },
   );
+
+  it('maps poll IDs by operation kind and preserves them on a completed rerun', async () => {
+    const { repoDir, payloadPath } = await makeRepo();
+    const { fetchImpl, calls } = capturingFetch();
+    const adapter = new FakeChannelAdapter({
+      key: 'telegram',
+      renderImpl: () => [
+        { kind: 'message', text: 'Intro', lang: 'uk' },
+        { kind: 'message', text: 'Translation', lang: 'de' },
+        { kind: 'poll', question: 'Choose', options: ['A', 'B'] },
+      ],
+    });
+    const deps = {
+      cwd: repoDir,
+      root: repoDir,
+      env: callbackEnv,
+      now,
+      mediaSource: await mediaSourceWithFixture(),
+      registry: makeRegistry(adapter),
+      notifier: new FakeNotifier(),
+      fetchImpl,
+      logger: () => {},
+    };
+    const result = await runPublish(payloadPath, deps);
+    await runPublish(payloadPath, deps);
+    const ids = result.ledger.channels['telegram']!.remoteIds;
+    expect(JSON.parse(calls[0]!.body).channels.telegram).toEqual({
+      status: 'done',
+      messageIds: { main: ids[0], poll: ids[2] },
+    });
+    expect(ids[2]).toBeDefined();
+    expect(JSON.parse(calls[1]!.body)).toEqual(JSON.parse(calls[0]!.body));
+  });
 
   it('re-fires the callback on a re-run (the bot’s endpoint is idempotent)', async () => {
     const { repoDir, payloadPath } = await makeRepo();
@@ -271,6 +304,7 @@ describe('runPublish published callback', () => {
     await runPublish(payloadPath, deps);
 
     expect(calls).toHaveLength(2);
+    expect(JSON.parse(calls[1]!.body)).toEqual(JSON.parse(calls[0]!.body));
   });
 
   it('never fails the publish when the callback is rejected; the operator is alerted', async () => {

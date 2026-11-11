@@ -1,11 +1,17 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T29 — callback v2 with message IDs
-- **Branch:** none (codex creates `feat/t29-callback-v2`)
-- **Last commit:** `3f76758` — feat(bot): add author contest-entry session (T27b) (#109)
-- **Next step:** codex starts T29 in a fresh session. T28 waits for H9 (`NAMES_ENDPOINT_SECRET`).
-- **Blocked on:** nothing. T28 waits for H9 (`NAMES_ENDPOINT_SECRET`).
+- **Active agent:** claude-code
+- **Current task:** T29 — callback v2 with message IDs; implementation ready for review
+- **Branch:** feat/t29-callback-v2
+- **Last commit:** see branch HEAD — feat: persist callback v2 channel message IDs
+- **Next step:** claude-code reviews the T29 PR. Before production publisher runs, ask Volodymyr
+  to apply migration 0014, then deploy the bot accepting v1/v2. Author does not merge.
+- **Blocked on:** review; T28 still waits for H9 (`NAMES_ENDPOINT_SECRET`).
+- **Open questions for Volodymyr:** migration 0014 approval is needed at rollout, not applied here.
+- **T29 validation:** callback schemas 9/9, bot callback integration 26/26 and full publisher
+  249/249 tests pass. D1 tests include repeated v2 upsert and delayed v1 ID preservation;
+  publisher tests cover op-kind lookup and completed-ledger reruns. Workspace typecheck/build and
+  changed-file ESLint pass. No remote migration or deploy.
 - **T27b rollout:** migration 0013 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `7d463a14-6b3a-439e-8dc1-552e0354bc89`. Live `/entry` not yet tried.

@@ -401,3 +401,35 @@ it('logs only the rejected Telegram status and never retries the notice', async 
     log.mockRestore();
   }
 });
+
+it('upserts v2 poll delivery idempotently and keeps IDs on a delayed v1 callback', async () => {
+  const db = await makeD1();
+  const body = callbackBody('poll-post', {
+    channels: {
+      telegram: { status: 'done', messageIds: { main: 101, poll: 104 } },
+    },
+  });
+  const app = createApp(makeEnv(db), botTexts);
+  for (const input of [body, body, callbackBody('poll-post')]) {
+    expect((await app.handle(await signedRequest(input))).status).toBe(200);
+  }
+  const result = await db.prepare('SELECT * FROM channel_deliveries').all();
+  expect(result.results).toEqual([
+    {
+      tenant_id: tenant,
+      post_id: 'poll-post',
+      channel: 'telegram',
+      status: 'done',
+      message_ids: JSON.stringify({ main: 101, poll: 104 }),
+    },
+  ]);
+  const updated = callbackBody('poll-post', {
+    channels: {
+      telegram: { status: 'done', messageIds: { main: 101, poll: 105 } },
+    },
+  });
+  expect((await app.handle(await signedRequest(updated))).status).toBe(200);
+  expect(
+    (await db.prepare('SELECT message_ids FROM channel_deliveries').first())?.message_ids,
+  ).toBe(JSON.stringify({ main: 101, poll: 105 }));
+});

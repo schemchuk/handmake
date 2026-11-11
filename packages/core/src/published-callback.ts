@@ -12,6 +12,18 @@ import { z } from 'zod';
  * round-trip difference between sender and receiver cannot break the match.
  */
 
+export const channelDeliverySchema = z
+  .object({
+    status: z.enum(['done', 'failed']),
+    messageIds: z
+      .object({
+        main: z.union([z.string().min(1), z.number().int()]).optional(),
+        poll: z.union([z.string().min(1), z.number().int()]).optional(),
+      })
+      .strict(),
+  })
+  .strict();
+
 export const publishedCallbackBodySchema = z
   .object({
     tenantId: z.string().min(1),
@@ -25,7 +37,11 @@ export const publishedCallbackBodySchema = z
     /** Repo-relative photo paths, as written into the ledger. */
     photos: z.array(z.string()),
     /** Per-channel outcome of the publish run. */
-    channels: z.record(z.string(), z.enum(['done', 'failed'])),
+    channels: z.union([
+      z.record(z.string(), channelDeliverySchema),
+      // Accept v1 for one release during the publisher/bot rollout.
+      z.record(z.string(), z.enum(['done', 'failed'])),
+    ]),
   })
   .strict();
 
