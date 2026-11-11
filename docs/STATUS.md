@@ -1,12 +1,21 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T30 — poll draft cron
-- **Branch:** none (codex creates `feat/t30-poll-draft-cron`)
+- **Current task:** T30 — poll draft cron implemented; preparing review handoff.
+- **Branch:** `feat/t30-poll-draft-cron`
 - **Last commit:** `2aea875` — feat: resolve private contest names during rendering (T28) (#111)
-- **Next step:** codex starts T30 in a fresh session and also fixes the four "Review notes from
-  PR #111" listed under T30 in docs/03-tasks.md.
-- **Blocked on:** nothing.
+- **Next step:** commit and push T30, open its PR, then hand off to claude-code for review.
+- **Blocked on:** nothing for review. Production needs migration 0015 before bot deployment;
+  Volodymyr must approve that rollout. `featureFlags.wotwPoll` remains false.
+- **Open questions for Volodymyr:** current implementation selects the current calendar week's
+  entries, following the spec; confirm whether opening should instead select the previous week.
+- **T30 validation:** bot cron/preview/announcement/contest/composition 84/84; core 262/262;
+  publisher 257/257. Workspace typecheck/build, lint and changed-file formatting pass.
+  Sandboxed D1 initialization stalled; unrestricted targeted tests passed. Test harness setup
+  (allow-list, bot initialization and publish confirmation) was corrected before the final run.
+  Migration 0015 adds anonymous tenant/week receipts so concurrent ticks, skipped weeks and
+  discarded drafts stay idempotent. Notifications are best effort after the receipt. No remote
+  migration, deployment, publishing, paid calls, workflow or secret changes.
 - **T28 rollout:** PR #111 merged 2026-11-11 with Volodymyr's OK; bot deployed by claude-code from
   clean `main`, Worker `48923756-675f-4b23-9447-20d3e998e429`; unsigned `/internal/contest-names`
   request returns 401. No migration. First live name lookup not yet observed.

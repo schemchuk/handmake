@@ -9,6 +9,9 @@ import type { Bot } from 'grammy';
 import { createAiCostLedger } from './ai-costs';
 import { createAiCostRuntime } from './ai-cost-runtime';
 import { runAnnouncementCron } from './announcement-cron';
+import { runPollCron } from './poll-cron';
+import { createPollOpeningStore } from './poll-opening-store';
+import { AuthorEntrySource, createContestEntryStore } from './contest-store';
 import { createTenantLookup, parseAllowList } from './allow-list';
 import type { TenantLookup } from './allow-list';
 import { createBot } from './bot';
@@ -323,6 +326,20 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         });
       } catch (error) {
         logError('announcement cron failed', error, tenantId);
+      }
+      try {
+        await runPollCron(new Date(event.scheduledTime), {
+          openings: createPollOpeningStore(env.DB),
+          source: new AuthorEntrySource(createContestEntryStore(env.DB)),
+          bot: this.bot,
+          tenantConfigs,
+          allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+          texts,
+          lookupNames: (tenant, ids) => readEntryNames(env.DB, tenant, ids),
+          publishesLive: env.PUBLISH_LIVE === 'true',
+        });
+      } catch (error) {
+        logError('poll cron failed', error, tenantId);
       }
       try {
         await aiRuntime().notices(new Date(event.scheduledTime));

@@ -1,10 +1,9 @@
-export * from './entry-names';
-
 export const packageName = '@handmake/core';
 
 export * from './canonical-url';
 export * from './channel-registry';
 export * from './draft';
+export * from './entry-names';
 export * from './error-message';
 export * from './ledger';
 export * from './post';

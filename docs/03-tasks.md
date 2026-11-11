@@ -373,7 +373,14 @@ claude-code unless stated. Order here is superseded by "Order of work (v4)" belo
   insert-or-ignore, flag `featureFlags.wotwPoll`.
 - Acceptance: one poll draft per week; flag off → nothing; the author sees names in the preview.
 - Tests: window math incl. DST, `< 2` rule, idempotent cron, flag.
-- Review notes from PR #111 (fix in this PR): (1) replace inline `import('@handmake/core').EntryNames`
+- Implementation notes: opening uses the current `contestWeek(opening)` (Monday date in
+  Europe/Berlin), matching entry storage. The 45-minute catch-up window uses the tenant timezone.
+  `poll_openings` receipts (migration 0015) atomically record a draft or a skipped week, so retries,
+  concurrent ticks and discarding a draft cannot reopen the same week. Fixed UA/DE starter texts
+  remain editable before Publish; cron makes no paid calls. Delivery of the private preview or
+  skipped-week notice is best effort after the receipt: failed/ambiguous notification is not retried.
+  Production flag remains off; migration and deployment require Volodymyr's approval.
+- Review notes from PR #111 (addressed in T30): (1) replace inline `import('@handmake/core').EntryNames`
   types in `apps/bot/src/bot.ts` and `apps/bot/src/preview.ts` with `import type`; (2)
   `resolveEntryNames` parses the text twice when `order` is defaulted; (3) move
   `export * from './entry-names'` in `packages/core/src/index.ts` into the file's export ordering;

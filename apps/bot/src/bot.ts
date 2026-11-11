@@ -1,7 +1,14 @@
 import { registerEntrySession, type EntrySessionStore } from './entry-session';
 import { registerCommentSession, type CommentSessionOptions } from './comment-session';
 import { buildApprovedWorkJob, isUlid, maxDraftPhotos, pollSchema } from '@handmake/core';
-import type { Draft, PostPoll, PublishJob, PublishRunner, Translator } from '@handmake/core';
+import type {
+  Draft,
+  EntryNames,
+  PostPoll,
+  PublishJob,
+  PublishRunner,
+  Translator,
+} from '@handmake/core';
 import { Bot } from 'grammy';
 
 import type { TenantLookup } from './allow-list';
@@ -23,7 +30,7 @@ export interface CreateBotOptions {
   comments?: CommentSessionOptions;
   work?: WorkSessionOptions;
   show?: ShowSessionOptions;
-  entryNames?: (tenant: string, ids: string[]) => Promise<import('@handmake/core').EntryNames>;
+  entryNames?: (tenant: string, ids: string[]) => Promise<EntryNames>;
   tenantConfigs?: TenantConfigSource;
   costs?: { ledger: AiCostLedger; tenantConfigs: TenantConfigSource };
   drafts: D1DraftStore;
