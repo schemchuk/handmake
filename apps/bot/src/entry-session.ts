@@ -9,7 +9,7 @@ export const entryConsentText =
   'Ім’я переможниці зберігається до відкликання; інші імена видаляються через 90 днів після публікації результату.';
 const prompt =
   'Надішли одне фото роботи, потім ім’я або псевдонім (до 30 символів), або обери «Анонімно». /discard — скасувати.';
-const stale = 'Ця сесія завершена або змінилася. Почни з /entry.';
+const stale = 'Ця сесія завершена або змінилася. /entry — конкурсна робота, /new — новий допис.';
 interface Input {
   entry_id: string;
   revision: string;
@@ -116,14 +116,17 @@ export function registerEntrySession(bot: Bot<AppContext>, store?: EntrySessionS
     const command = text?.match(/^\/(\w+)(?:@\w+)?(?:\s|$)/)?.[1];
     const data = ctx.callbackQuery?.data;
     try {
-      await store.cleanup(new Date());
       if (command === 'entry') {
+        await store.cleanup(new Date());
         await ctx.drafts.setChatSession(tenant, chat, { kind: 'entry', draftId: null }, new Date());
         await store.start(tenant, chat);
         await ctx.reply(prompt);
         return;
       }
       const input = await store.get(tenant, chat);
+      const session = await ctx.drafts.getChatSession(tenant, chat);
+      const entryMode = Boolean(input) || session?.kind === 'entry';
+      if (entryMode || data?.startsWith('entry:')) await store.cleanup(new Date());
       if (data?.startsWith('entry:')) {
         await ctx.answerCallbackQuery();
         const [, revision, action] = data.split(':');
@@ -141,15 +144,27 @@ export function registerEntrySession(bot: Bot<AppContext>, store?: EntrySessionS
       }
       // A command or a foreign flow button explicitly leaves entry mode before routing.
       if (command || data) {
-        if (input) await store.cancel(tenant, chat);
-        if (input && (command === 'discard' || command === 'cancel')) {
+        if (entryMode) {
+          await store.cancel(tenant, chat);
+          // Entry completion/expiry can leave only a routing marker. Clear that too:
+          // preview and comment edit buttons rely on the next plain text reaching them.
+          if (session?.kind === 'entry') {
+            await ctx.drafts.setChatSession(
+              tenant,
+              chat,
+              { kind: 'post', draftId: null },
+              new Date(),
+            );
+          }
+        }
+        if (entryMode && (command === 'discard' || command === 'cancel')) {
           await ctx.reply('Участь скасовано. Непідтверджені дані видалено.');
           return;
         }
         return next();
       }
       if (!input) {
-        if ((await ctx.drafts.getChatSession(tenant, chat))?.kind === 'entry') {
+        if (session?.kind === 'entry') {
           await ctx.reply(stale);
           return;
         }

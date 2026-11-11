@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { createBot } from '../src/bot';
+import { createCommentStore } from '../src/comment-store';
 import { createD1DraftStore } from '../src/draft-store';
 import { createEntrySessionStore, entryConsentText } from '../src/entry-session';
 import { botTexts } from '../src/texts';
@@ -31,6 +32,11 @@ beforeEach(async () => {
   bot = createBot({
     token: 'TEST_TOKEN',
     entries: store,
+    comments: {
+      store: createCommentStore(db),
+      capabilities: {},
+      context: { secrets: { resolve: async () => '' } },
+    },
     drafts: createD1DraftStore(db),
     texts: botTexts,
     resolveTenant: (id) => (id === 11 ? 'fixture' : id === 22 ? 'other' : undefined),
@@ -140,6 +146,7 @@ it('purges expired input while retaining entry routing until an explicit flow sw
   await db.prepare("UPDATE contest_sessions SET expires_at = '2000-01-01'").run();
   await press(confirm);
   await text('Never a post');
+  expect(sentTexts(calls).at(-1)).toContain('/new');
   expect(await row()).toBeNull();
   expect(await db.prepare('SELECT * FROM contest_sessions').first()).toBeNull();
   expect(await db.prepare('SELECT * FROM drafts').first()).toBeNull();
@@ -180,4 +187,95 @@ it('orders a racing name edit against confirmation and refuses its obsolete revi
     expect(await store.confirm('fixture', '11', input.revision)).toBe(false);
     expect(await store.get('fixture', '11')).not.toBeNull();
   }
+});
+
+it.each(['active', 'completed', 'expired'])(
+  'leaves %s entry routing for a post-preview edit',
+  async (state) => {
+    await text('/new');
+    await text('Original post');
+    const drafts = createD1DraftStore(db);
+    const post = (await drafts.findCollectingForChat('fixture', '11', 'post'))!;
+    await text('/entry');
+    await photo();
+    await text('Private fixture');
+    const confirm = button();
+    if (state === 'completed') await press(confirm);
+    if (state === 'expired') {
+      await db.prepare("UPDATE contest_sessions SET expires_at = '2000-01-01'").run();
+      await store.cleanup(new Date());
+    }
+    await press(`draft:${post.draft.draftId}:edit:uk`);
+    await text('Edited post');
+    expect((await drafts.get('fixture', post.draft.draftId))!.draft.texts.uk).toBe('Edited post');
+    expect(await store.get('fixture', '11')).toBeNull();
+    expect((await drafts.getChatSession('fixture', '11'))?.kind).toBe('post');
+    await press(confirm);
+    expect((await db.prepare('SELECT * FROM contest_entries').all()).results).toHaveLength(
+      state === 'completed' ? 1 : 0,
+    );
+  },
+);
+it('leaves entry routing for a comment edit, while protecting an armed comment during entry input', async () => {
+  const comments = createCommentStore(db);
+  const now = new Date();
+  await comments.collect({
+    tenantId: 'fixture',
+    network: 'instagram',
+    id: 'c1',
+    postId: 'p1',
+    handle: 'fixture-reader',
+    text: 'Comment fixture',
+    commentCreatedAt: now.toISOString(),
+    createdAt: now,
+    updatedAt: now,
+  });
+  await comments.claimDrafting('fixture', 'instagram', 'c1', now);
+  await comments.storeDraft(
+    'fixture',
+    'instagram',
+    'c1',
+    {
+      translationUk: 'Translation fixture',
+      replyDe: 'Original reply',
+      notesUk: '',
+    },
+    now,
+  );
+  await press('comment:instagram:c1:edit');
+  await text('/entry');
+  await photo();
+  await text('Private fixture');
+  expect((await comments.get('fixture', 'instagram', 'c1'))!.replyDe).toBe('Original reply');
+  await press('comment:instagram:c1:edit');
+  await text('Edited reply');
+  expect((await comments.get('fixture', 'instagram', 'c1'))!.replyDe).toBe('Edited reply');
+  expect(await store.get('fixture', '11')).toBeNull();
+  expect(await row()).toBeNull();
+  expect(await db.prepare('SELECT * FROM drafts').first()).toBeNull();
+});
+it('leaves entry routing on a foreign command without creating a draft until new input', async () => {
+  await text('/entry');
+  await photo();
+  await text('Private fixture');
+  await text('/start');
+  expect(await store.get('fixture', '11')).toBeNull();
+  expect(await db.prepare('SELECT * FROM drafts').first()).toBeNull();
+  await text('New post');
+  const post = await createD1DraftStore(db).findCollectingForChat('fixture', '11', 'post');
+  expect(post!.draft.texts.uk).toBe('New post');
+});
+it('cleans expired input in entry mode but does not issue cleanup writes for other flows', async () => {
+  const cleanup = vi.spyOn(store, 'cleanup');
+  await text('/start');
+  await text('/new');
+  await text('Post fixture');
+  expect(cleanup).not.toHaveBeenCalled();
+  await text('/entry');
+  expect(cleanup).toHaveBeenCalled();
+  cleanup.mockClear();
+  await text('/new');
+  cleanup.mockClear();
+  await text('More post text');
+  expect(cleanup).not.toHaveBeenCalled();
 });

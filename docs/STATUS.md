@@ -1,13 +1,10 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T27b — fix PR #109 review findings
+- **Current task:** T27b — PR #109 review fixes implemented
 - **Branch:** `feat/t27b-contest-session`
-- **Last commit:** `de7879c` (PR head before review)
-- **Next step:** codex fixes the blocking finding in the PR #109 review comment: a foreign button
-  or command must also end entry routing (chat session stays `entry`, so post-preview and comment
-  edits after `/entry` are swallowed). Add regression tests; also fix non-blocking notes 1-2. Then
-  hand back to claude-code for re-review.
+- **Last commit:** `b2b1a4e` — docs(status): keep feminine consent wording for T27b
+- **Next step:** codex commits/pushes the review fixes and hands PR #109 back to claude-code.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Decision 2026-11-11 (Volodymyr):** `entryConsentText` keeps the feminine form; no rewording.
@@ -16,10 +13,14 @@
 - **T27b implementation:** isolated `/entry` session, revision-bound consent and atomic D1
   insertion; migration 0013, 24-hour transient input retention and routing isolation. Lifecycle:
   docs/contest-entry-session.md. PR #108 DST/mapping notes addressed. No remote changes.
-- **T27b validation:** full bot 642/642, core 250/250; workspace typecheck/build, lint, formatting
-  and staged secret scan pass. Final new session tests 8/8; existing contest store 6/6. Initial
-  sandbox Miniflare run was interrupted; unrestricted runs passed. GitHub CI still running at
-  handoff. No remote migration, deployment, production publishing or secret changes.
+- **T27b review fixes:** foreign commands/buttons clear both transient input and entry routing,
+  including completion/expiry markers; post-preview and comment edits receive subsequent text.
+  The stale hint includes `/new`; per-update cleanup runs only for entry-related updates.
+  Six added regressions failed before the fix; entry/comment/post suites now pass 97/97.
+  Bot typecheck/build, changed-file ESLint and formatting pass. Consent wording unchanged.
+- **T27b original validation:** full bot 642/642 and core 250/250; workspace typecheck/build, lint,
+  formatting and staged secret scan passed before review. No remote migration, deployment,
+  production publishing, paid calls or secret changes in implementation or review fixes.
 - **T27a rollout:** migration 0012 applied to remote D1 by Volodymyr 2026-11-11 (verified: no
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `8b18b4da-9d81-4382-8577-c36939da0e84`.

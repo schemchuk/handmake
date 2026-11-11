@@ -17,13 +17,16 @@ confirmation wins, it stores the previously confirmed version; if the edit/cance
 the old confirmation is refused. A new `/entry` also invalidates previous buttons.
 
 `/discard` or `/cancel` deletes unconfirmed input. Other commands and other flow buttons cancel
-it before continuing to the selected handler. Existing post/work/show drafts are preserved.
-After completion, cancellation or expiration, plain messages remain in entry mode until an
-explicit flow switch such as `/new`, `/work` or `/show`; they never implicitly create a post.
+it and reset entry routing to the default post session before continuing to the selected handler,
+even when only a routing marker remains after completion or expiration. This lets post-preview
+and comment edit buttons receive the next text. Existing post/work/show drafts are preserved.
+After completion or expiration, plain messages remain in entry mode until an explicit command or
+foreign flow button; they never implicitly create a post. `/discard` and `/cancel` also reset routing.
 
 Unconfirmed input expires 24 hours after `/entry`, without renewal by edits. Expired input is
-ineligible for submission immediately and is physically deleted at the next bot update or daily
-cleanup cron. Successfully submitted sessions are deleted; the existing entry record remains.
+ineligible for submission immediately and is physically deleted at the next entry-related update or daily
+cleanup cron. Update-triggered cleanup runs only for entry-related updates; other flows do not
+issue cleanup writes. Successfully submitted sessions are deleted; the existing entry record remains.
 The session routing marker contains no name or photo. Submitted-name retention remains ADR 010;
 this task does not implement the future results/withdrawal cleanup workflow.
 
