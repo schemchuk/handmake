@@ -1,13 +1,14 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31d — author selection, result draft and cron integration.
-- **Branch:** none yet (`feat/t31d-<slug>` from `main`).
-- **Last commit:** `b64b334` — feat: collect transient contest votes across Meta channels (#116)
-- **Next step:** codex starts T31d in a fresh session; include the PR #116 review notes listed
-  under T31d in docs/03-tasks.md (IG owner comments, collection deadline, skip Meta when Telegram
-  is unreadable, plain-digit ballot wording).
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Active agent:** none
+- **Current task:** T31d — implementation split proposed; no code changed.
+- **Branch:** `main` (planning only).
+- **Last commit:** this handoff commit — docs: propose smaller T31d implementation tasks
+  (resolve its hash with `git log -1 -- docs/STATUS.md`).
+- **Next step:** Volodymyr reviews the proposed T31d1–T31d3 split in docs/03-tasks.md.
+  After approval, set Active agent to codex and start T31d1 in a fresh session.
+- **Blocked on:** split approval under AGENTS.md workflow step 4 and ADR 009.
+  `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before T31d goes live, check on a real Facebook Page post
   that reader comments come with `from.id`; otherwise every contest result will be unreadable.
 - **T31c rollout:** PR #116 merged 2026-11-11 by Volodymyr after claude-code review (no blocking

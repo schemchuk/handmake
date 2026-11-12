@@ -494,6 +494,42 @@ of this proposal.
   post that Facebook returns `from.id` for reader comments; without it any digit comment makes
   the whole result unreadable (fail-closed, accepted for now).
 
+###### Proposed T31d split — awaiting Volodymyr approval, 2026-11-12
+
+Inspection of the existing closing store and cron shows three distinct remaining units:
+collection hardening, atomic result persistence, and bot/cron integration. Implementing them
+together would exceed the ADR 009 budget of roughly 400 changed non-test lines. The parent
+acceptance criteria above remain unchanged. Proposed order: T31d1 → T31d2 → T31d3, each in a
+fresh session with its own PR. Owner: codex. Reviewer: claude-code. Do not implement this split
+until Volodymyr approves it (AGENTS.md workflow step 4).
+
+- **T31d1 — Closing collection hardening.** Address all four PR #116 notes above: exclude
+  Instagram owner comments in contest counting, bound total collection below the closing lease,
+  skip Meta reads after an unreadable Telegram tally, and make the generated ballot explicitly
+  request a plain digit. Keep other comment inbox behaviour intact. Acceptance: no owner vote,
+  no partial counts on timeout, durable unreadable recovery, and no unnecessary Meta calls.
+  Tests: owner/reader fixtures, stalled collection and late completion, unreadable Telegram,
+  and generated UA/DE ballot instructions. No live caller or flag change.
+- **T31d2 — Atomic result persistence and winner rules.** Derive allowed choices from the stored
+  immutable tally: Telegram-only positive unique leader uses reader wording; ties allow tied
+  candidates; zero/unreadable allows all; combined counted sources require an author choice
+  from all candidates and expose totals. Persist one deterministic ready `wotw-result` draft
+  with name placeholders and the chosen entry's photo, atomically with its winner flag for T32.
+  Use the existing closing snapshot and draft insertion helper; no stored display names or
+  commenter identities. Acceptance: tenant/week isolation, no overwrite by stale or competing
+  decisions, and rollback of both draft and winner on failure. Tests: decision table, real D1
+  concurrency/retries/rollback and placeholder-only persisted content. No live caller yet.
+- **T31d3 — Author callbacks, preview and cron.** Wire configured closing windows, channel
+  adapters and the durable result service into the existing scheduler. Route author choices
+  through the allow-list and the closing's candidate restrictions, show combined totals, and
+  send the existing tenant preview/Publish flow after result creation. Acceptance: full
+  closing-to-preview flow; callbacks check tenant, author and current feature flag; stale
+  buttons cannot change results; failed notification cannot undo state or duplicate drafts;
+  failed tenant/cron work does not prevent other scheduled work. Tests: authorized/unauthorized
+  and cross-tenant callbacks, competing cron/callback execution, notification failure,
+  DST/year boundaries, flag-off behaviour and cron failure isolation. Run affected suites
+  and workspace checks. No automatic publication or flag enablement.
+
 ### T32 — Withdrawal and retention (`bot`, `channels`)
 - Depends on: T29, T31
 - Until T32 ships (Volodymyr, 2026-11-11): the T27b consent text keeps the 90-day name-deletion
