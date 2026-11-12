@@ -624,7 +624,7 @@ name deletion, migration application or flag enablement is authorized by this pr
 ##### T32c split — approved by Volodymyr (2026-11-12)
 
 Keep the parent acceptance criteria above; complete these sequentially in separate sessions/PRs,
-targeting at most ~400 changed non-test lines each. T32c1 is merged and deployed; T32c2 implementation awaits independent review.
+targeting at most ~400 changed non-test lines each. T32c1 is merged and deployed; T32c2 is merged (PR #123, migration 0020 applied); T32c3 is next.
 
 - **T32c1 — Receipt safety and atomic withdrawal queue**
   - Owner: codex · Reviewer: claude-code · Depends on: T32b
@@ -634,7 +634,7 @@ targeting at most ~400 changed non-test lines each. T32c1 is merged and deployed
     receipts explicitly. Expose an internal withdrawal boundary; no author command yet.
   - Tests: real D1 atomicity, tenant isolation, repeated/competing withdrawals, missing receipts,
     receipt size boundary, publication timestamp, language parity and non-editable poll safety.
-- **T32c2 — Recoverable message reconciliation** (implemented; awaiting review)
+- **T32c2 — Recoverable message reconciliation** (done, PR #123)
   - Owner: codex · Reviewer: claude-code · Depends on: T32c1
   - Render durable anonymous plans with current D1 names, edit every supported Telegram operation,
     and persist progress/errors for cron retries independently of the creation flag. Serialize edits
@@ -656,6 +656,14 @@ defaults to a no-op after verifying blog, portfolio and show paths.
     expose missing legacy receipts. Wire the internal boundary without changing authored content.
   - Tests: allow-list, forged/cross-tenant and repeated callbacks, bounded listing, winner withdrawal,
     localized status and end-to-end recovery after draft cleanup. Recheck all parent acceptance criteria.
+  - Review notes from PR #123: (1) permanent 4xx edit rejections (deleted message, lost chat
+    permission) stay `failed` forever and `tick()` orders `tenant_id, post_id LIMIT 10`, so ≥10 such
+    jobs starve later publications; use fair ordering (least-recently-attempted/attempt counter) and
+    surface persistently rejected jobs as a distinct author-visible state. (2) Reconciliation runs
+    inline before announcement/closing crons and 429 sleeps (≤300 s each) can delay them or exceed
+    wall time leaving `running / remote_inflight`; bound total retry time per tick or run it after
+    the other crons. (3) Add an operator runbook (exact `wrangler d1 execute` steps or internal
+    script) for `recoverQuiescent` to docs/name-reconciliation.md.
 
 For each subtask run affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap and
 workspace checks. T32d depends on completion of all three. Site inspection: the current
