@@ -1,14 +1,29 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32c3 — author entries and withdrawal actions (docs/03-tasks.md).
-- **Branch:** `main` (start `feat/t32c3-author-entries`).
-- **Last commit:** `ed560d8 feat: reconcile withdrawn names with durable progress (T32c2) (#123)`.
-- **Next step:** codex starts T32c3 in a fresh session and also fixes the three
-  `Review notes from PR #123` listed under T32c3 (queue starvation by permanent rejections,
-  inline 429 sleeps before notifier crons, operator runbook for `recoverQuiescent`).
-- **Blocked on:** nothing for T32c3.
+- **Active agent:** claude-code
+- **Current task:** T32c3 — re-review PR #124 after author fixes.
+- **Branch:** `feat/t32c3-author-entries`.
+- **Last commit:** `70ecef2 docs(status): return T32c3 review blocker to codex` (review handoff).
+- **Next step:** claude-code re-reviews PR #124 and checks CI. The blocker and three review
+  notes are addressed: identified photo/name/poll-number rows; explicit confirm/cancel; no
+  false missing-receipt warning before recorded publication; retained retry counts documented.
+  Check that refreshed/withdrawn rows omit the deleted name, including legacy text buttons.
+  Sensitive merge, production migration 0021 and deployment still need Volodymyr approval.
+- **Blocked on:** nothing for implementation. Production migration 0021 and deploy require Volodymyr approval.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
+  bounded localized public progress, missing-receipt/unknown/rejected states; winner, work and
+  consent retained. PR #123 notes addressed: durable fair retry attempts (migration 0021),
+  reconciliation after other crons, exact operator recovery runbook.
+- **PR #124 review-fix validation:** real D1 52/52 across four files, two workers, two CPU
+  affinity and 1536 MiB Node heap; final author-command/no-change rerun 7/7. Workspace typecheck/build, lint and changed-file formatting pass. One old missing-receipt assertion updated to the
+  unpublished state; a callback test exceeded five seconds, so the final run uses 30 seconds.
+  No deployment, production SQL, publishing, dispatch, workflow, secret or flag changes.
+- **T32c3 validation:** targeted real D1/composition/cron suites 98/98 across eight files,
+  two workers, two CPU affinity, 1536 MiB Node heap. Workspace typecheck/build and lint pass;
+  final tenant-scope rerun 4/4, changed-file lint/format pass. Initial sandbox D1 run stalled and was interrupted;
+  unrestricted tests pass. Migration 0021 applied only in test DBs. No production SQL,
+  dispatch, public edits, workflow/secret/flag change or deploy.
 - **T32c2 rollout:** PR #123 merged 2026-11-12 by claude-code with Volodymyr's OK (no blocking
   findings, CI green). Migration 0020 applied to prod D1 by Volodymyr before merge. Bot deployed from clean `main`
   by Volodymyr, Worker `4a9d743b-0ccb-42bf-ab80-b23efa3b750e`.

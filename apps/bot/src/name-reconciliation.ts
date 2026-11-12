@@ -37,7 +37,8 @@ export function createNameReconciler(options: NameReconciliationOptions) {
     const token = crypto.randomUUID();
     const claim = await db
       .prepare(
-        `UPDATE name_reconciliations SET lock_token = ?, state = 'running', error_code = NULL
+        `UPDATE name_reconciliations SET lock_token = ?, state = 'running', error_code = NULL,
+          attempts = attempts + 1
          WHERE tenant_id = ? AND post_id = ? AND channel = ? AND lock_token IS NULL
          AND state IN ('pending', 'failed') RETURNING *`,
       )
@@ -115,7 +116,9 @@ export function createNameReconciler(options: NameReconciliationOptions) {
       if (remoteInFlight && !(error instanceof ChannelEditRejectedError)) {
         await update("state = 'blocked', error_code = 'remote_unknown'");
       } else {
-        await update("state = 'failed', error_code = 'retry_required', lock_token = NULL");
+        await update("state = 'failed', error_code = ?, lock_token = NULL", [
+          error instanceof ChannelEditRejectedError ? 'edit_rejected' : 'retry_required',
+        ]);
       }
     }
   }
@@ -124,7 +127,7 @@ export function createNameReconciler(options: NameReconciliationOptions) {
       const jobs = await db
         .prepare(
           `SELECT * FROM name_reconciliations WHERE channel = ? AND lock_token IS NULL
-           AND state IN ('pending', 'failed') ORDER BY tenant_id, post_id LIMIT 10`,
+           AND state IN ('pending', 'failed') ORDER BY attempts, tenant_id, post_id LIMIT 10`,
         )
         .bind(adapter.key)
         .all<Job>();

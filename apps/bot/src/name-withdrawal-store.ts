@@ -97,7 +97,8 @@ export function createNameWithdrawalStore(db: D1Database) {
       return {
         requestedAt: marker.requested_at,
         // Absence is explicit, never reconstructed from a draft or treated as success.
-        missingReceipt: receipts.length === 0 || !!legacy,
+        missingReceipt: !!legacy,
+        notPublished: receipts.length === 0 && !legacy,
         publications: await Promise.all(
           receipts.map(async ({ postId, channel, receipt }) => ({
             postId,

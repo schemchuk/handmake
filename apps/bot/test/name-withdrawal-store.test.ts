@@ -124,7 +124,10 @@ it('rolls back the private deletion and marker if queue insertion fails', async 
 
 it('reports absent legacy receipts, late delivery and name-bearing non-editable polls explicitly', async () => {
   const { db, store } = await fixture();
-  expect((await store.withdraw('fixture', a))?.missingReceipt).toBe(true);
+  expect(await store.withdraw('fixture', a)).toMatchObject({
+    missingReceipt: false,
+    notPublished: true,
+  });
   await receipt(db, 'late', true);
   await db.batch([queueNameReconciliations(db, 'fixture')]);
   expect((await store.status('fixture', a))?.publications[0]).toMatchObject({

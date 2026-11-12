@@ -10,6 +10,31 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  entriesRecentText:
+    'Останні 10 конкурсних робіт. Можна відкликати лише ім’я; робота та результат залишаються.',
+  entriesEmptyText: 'Конкурсних робіт ще немає.',
+  entriesPrivateOnlyText: 'Перегляд робіт доступний лише в приватному чаті.',
+  entriesNoWithdrawalText: 'Відкликання імені ще не запитано.',
+  entriesPrivateDeletedText: 'Ім’я видалено з приватної бази.',
+  entriesMissingReceiptText:
+    'Немає квитанцій для всіх публікацій: публічне видалення не підтверджено. Потрібна перевірка оператора.',
+  entriesPendingText: 'публічні виправлення очікують виконання',
+  entriesOperatorText: 'публічний стан невизначений або виправлення неможливе; потрібен оператор',
+  entriesCompleteText: 'публічні виправлення підтверджено',
+  entriesRejectedText:
+    'платформа відхилила виправлення; повторюємо, за тривалої помилки звернися до оператора',
+  entriesFailedText: 'помилка виправлення; повторимо автоматично',
+  entriesPollNumber: (number: number) => `Робота № ${number}`,
+  entriesNameRemovedText: 'Ім’я відсутнє або вже видалене.',
+  entriesNotPublishedText: 'Ще немає зафіксованої публікації, що потребує виправлення.',
+  entriesConfirmText:
+    'Відкликати ім’я саме цієї роботи? Ім’я буде видалено з бази; публічні виправлення виконаються окремо. Повернути ім’я цією кнопкою неможливо.',
+  entriesConfirmButton: 'Так, відкликати ім’я',
+  entriesCancelButton: 'Скасувати',
+  entriesWithdrawButton: 'Відкликати ім’я',
+  entriesRefreshButton: 'Перевірити стан',
+  entriesInvalidText: 'Роботу або дію не знайдено. Відкрий /entries.',
+
   pollVoteTotals: (total: number, counts: number[]) =>
     `Усього голосів: ${total}\n${counts.map((n, i) => `No ${i + 1}: ${n}`).join('\n')}`,
   pollUnreadableText: 'Результат голосування недоступний.',

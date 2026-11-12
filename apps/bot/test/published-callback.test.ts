@@ -471,7 +471,10 @@ it('keeps anonymous receipts through cleanup, duplicates and legacy callbacks wi
     .run();
   const { createNameWithdrawalStore } = await import('../src/name-withdrawal-store');
   const withdrawals = createNameWithdrawalStore(db);
-  expect((await withdrawals.withdraw(tenant, entry))?.missingReceipt).toBe(true);
+  expect(await withdrawals.withdraw(tenant, entry)).toMatchObject({
+    missingReceipt: false,
+    notPublished: true,
+  });
   const body = callbackBody(postId, {
     channels: { telegram: { status: 'done', messageIds: { main: 100 }, editReceipt } },
   });

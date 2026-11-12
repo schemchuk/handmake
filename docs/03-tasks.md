@@ -624,7 +624,7 @@ name deletion, migration application or flag enablement is authorized by this pr
 ##### T32c split — approved by Volodymyr (2026-11-12)
 
 Keep the parent acceptance criteria above; complete these sequentially in separate sessions/PRs,
-targeting at most ~400 changed non-test lines each. T32c1 is merged and deployed; T32c2 is merged (PR #123, migration 0020 applied); T32c3 is next.
+targeting at most ~400 changed non-test lines each. T32c1 is merged and deployed; T32c2 is merged (PR #123, migration 0020 applied); T32c3 is implemented and awaiting independent review.
 
 - **T32c1 — Receipt safety and atomic withdrawal queue**
   - Owner: codex · Reviewer: claude-code · Depends on: T32b
@@ -649,13 +649,18 @@ quiescence and a full reconciliation. No timed takeover can safely fence Telegra
 Creation flags never gate recovery; `PUBLISH_LIVE` still gates public edits. The site hook
 defaults to a no-op after verifying blog, portfolio and show paths.
 
-- **T32c3 — Author entries and withdrawal actions**
+- **T32c3 — Author entries and withdrawal actions** (implemented; review pending)
   - Owner: codex · Reviewer: claude-code · Depends on: T32c2
   - Add allow-listed `/entries` with bounded recent entries and tenant-bound withdrawal actions.
     Report immediate private deletion separately from pending/failed/complete public edits;
     expose missing legacy receipts. Wire the internal boundary without changing authored content.
+  - Rollout: apply migration `0021_name_reconciliation_attempts.sql` before bot deploy; production
+    migration/deploy require Volodymyr approval. Recovery runbook: `docs/name-reconciliation.md`.
   - Tests: allow-list, forged/cross-tenant and repeated callbacks, bounded listing, winner withdrawal,
     localized status and end-to-end recovery after draft cleanup. Recheck all parent acceptance criteria.
+  - Review notes from PR #124 addressed: identifiable private photo/name rows with poll number
+    when available; confirm/cancel before withdrawal; unpublished versus missing legacy receipts;
+    re-queued attempt counts documented. Awaiting independent re-review.
   - Review notes from PR #123: (1) permanent 4xx edit rejections (deleted message, lost chat
     permission) stay `failed` forever and `tick()` orders `tenant_id, post_id LIMIT 10`, so ≥10 such
     jobs starve later publications; use fair ordering (least-recently-attempted/attempt counter) and

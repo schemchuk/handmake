@@ -1,3 +1,4 @@
+import { registerAuthorEntries, type AuthorEntriesStore } from './author-entries';
 import {
   registerPollResultCallbacks,
   type PollClosingRuntimeOptions,
@@ -31,6 +32,7 @@ import type { ShowSessionOptions } from './show-session';
 export interface CreateBotOptions {
   token: string;
   entries?: EntrySessionStore;
+  authorEntries?: AuthorEntriesStore;
   pollResults?: PollClosingRuntimeOptions;
   comments?: CommentSessionOptions;
   work?: WorkSessionOptions;
@@ -88,6 +90,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
 
   registerPollResultCallbacks(bot, options.pollResults);
   registerEntrySession(bot, options.entries);
+  registerAuthorEntries(bot, options.authorEntries, texts);
   registerCommentSession(bot, options);
   const workSession = registerWorkSession(bot, options);
   registerShowSession(bot, options, workSession.start);
