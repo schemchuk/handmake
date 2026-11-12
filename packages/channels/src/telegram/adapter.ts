@@ -1,3 +1,4 @@
+import { ChannelEditRejectedError } from '@handmake/core';
 import type {
   ChannelAdapter,
   DeliverContext,
@@ -207,7 +208,13 @@ export class TelegramAdapter implements ChannelAdapter {
         ? { text: op.text, link_preview_options: { is_disabled: true } }
         : { caption: op.caption ?? '' }),
     };
-    await this.#withRetry(() => this.#call(method, body, true));
+    try {
+      await this.#withRetry(() => this.#call(method, body, true));
+    } catch (error) {
+      if (error instanceof TelegramRateLimitError)
+        throw new ChannelEditRejectedError(error.message);
+      throw error;
+    }
   }
 
   /**
@@ -484,6 +491,8 @@ export class TelegramAdapter implements ChannelAdapter {
         retryAfter * 1000,
       );
     }
+    if (editing && parsed.ok === false && response.status >= 400 && response.status < 500)
+      throw new ChannelEditRejectedError(`Telegram ${method} failed: HTTP ${response.status}`);
     throw new TelegramAdapterError(
       `Telegram ${method} failed: ${editing ? `HTTP ${response.status}` : (description ?? `HTTP ${response.status}`)}`,
     );

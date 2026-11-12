@@ -274,3 +274,10 @@ export class CommentReplyRejectedError extends Error {
     super('comment reply rejected');
   }
 }
+
+/** Explicit edit rejection, with no remote side effect; safe to retry later. */
+export class ChannelEditRejectedError extends Error {
+  constructor(message = 'channel edit rejected') {
+    super(message);
+  }
+}
