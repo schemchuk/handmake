@@ -6,8 +6,7 @@
 - **Last commit:** `d0b9a08 feat: add optional message editing capability (#120)`.
 - **Next step:** codex starts T32b in a fresh session; also fix the PR #120 review note
   (tests for out-of-range `retry_after` on send and edit paths).
-- **Blocked on:** bot deploy of `d0b9a08` pending: claude-code's deploy was blocked by the
-  permission classifier; Volodymyr deploys with `pnpm -C apps/bot run deploy` from clean `main`.
+- **Blocked on:** nothing.
   `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
@@ -19,6 +18,7 @@
   No production publishing, deployment, name deletion, migrations or flag changes.
 - **T32a rollout:** PR #120 merged 2026-11-12 by Volodymyr after claude-code review (no blocking
   findings, CI green). No migration, wrangler or secret change; no live caller of `editMessage` yet.
+  Bot deployed by Volodymyr from clean `main`, Worker `d6f6016f-de37-4cdf-8ce1-e2aa4f57cd0d`.
 - **T31d3 rollout:** PR #119 merged 2026-11-12 by claude-code with Volodymyr's OK after one
   review round (both blocking findings fixed, CI green, affected suites 19/19 locally).
   No migration or wrangler change; the new secret is optional while the flag is off.
