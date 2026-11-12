@@ -1,12 +1,14 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T31d2 — atomic result persistence and winner rules.
-- **Branch:** none yet; create `feat/t31d2-result-persistence` from `main`.
-- **Last commit:** `aa17036` fix: harden contest closing collection (#117).
-- **Next step:** codex implements T31d2 in a fresh session, including the "Review notes from
-  PR #117" line in docs/03-tasks.md (Instagram owner `from.id` vs IG User ID).
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Current task:** T31d2 — implementation complete; validation and PR handoff in progress.
+- **Branch:** `feat/t31d2-result-persistence`.
+- **Last commit:** `41b8867` docs(status): record T31d1 Worker version (session base).
+- **Next step:** finish full bot validation, push T31d2 and open its PR for claude-code review.
+- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false; no live result caller.
+- **T31d2 rollout:** migration 0017 adds winner flags and result receipts. Local/test only;
+  reviewer must ask Volodymyr before production migration/deploy. PR #117 Instagram owner-ID
+  verification remains a pre-live requirement; see docs/contest-vote-collection.md.
 - **Bot deploy:** `aa17036` deployed by Volodymyr 2026-11-12, Worker version
   `5ca2f939-1f5e-483a-a3e0-9344209f25c4`.
 - **T31d1 rollout:** PR #117 merged 2026-11-12 by Volodymyr after claude-code review (no blocking
