@@ -39,6 +39,7 @@ export async function handlePublishedCallback(
   // The signature covers the exact bytes, so the body is read as text and
   // the very same string is what gets parsed and verified.
   const rawBody = await request.text();
+  if (rawBody.length > 262144) return new Response('payload too large', { status: 413 });
   const provided = request.headers.get(signatureHeader);
   if (
     !env.PUBLISH_CALLBACK_SECRET ||
@@ -75,6 +76,28 @@ export async function handlePublishedCallback(
     return new Response('work delivery incomplete', { status: 409 });
   }
   const deliveries = Object.entries(parsed.data.channels);
+  const receiptStatements = deliveries.flatMap(([channel, delivery]) => {
+    if (typeof delivery === 'string' || !delivery.editReceipt) return [];
+    if (delivery.status !== 'done') return [];
+    const receipt = delivery.editReceipt;
+    return [
+      env.DB.prepare(
+        `INSERT OR IGNORE INTO anonymous_edit_receipts
+      (tenant_id, post_id, channel, receipt, published_at) VALUES (?, ?, ?, ?, ?)`,
+      ).bind(tenantId, postId, channel, JSON.stringify(receipt), receipt.publishedAt),
+      ...(receipt.plan.type === 'wotw-result'
+        ? [
+            env.DB.prepare(
+              `UPDATE poll_results
+        SET published_at = (SELECT published_at FROM anonymous_edit_receipts WHERE tenant_id = ? AND post_id = ? AND channel = ?)
+        WHERE tenant_id = ? AND draft_id = ? AND published_at IS NULL`,
+            ).bind(tenantId, postId, channel, tenantId, postId),
+          ]
+        : []),
+    ];
+  });
+  // Commit durable source and retention time together, before draft transition/cleanup.
+  if (receiptStatements.length) await env.DB.batch(receiptStatements);
   if (deliveries.length) {
     await env.DB.batch(
       deliveries.map(([channel, delivery]) => {

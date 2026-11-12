@@ -635,3 +635,22 @@ describe('TelegramAdapter: existing message edits (T32a)', () => {
     expect(requests).toHaveLength(0);
   });
 });
+
+it.each([-1, 301, Infinity, NaN, null, '2'])(
+  'rejects out-of-range retry_after %s on send and edit',
+  async (retry_after) => {
+    for (const edit of [false, true]) {
+      const { fetchImpl, requests } = fakeFetch(() =>
+        jsonResponse({ ok: false, parameters: { retry_after } }, 429),
+      );
+      const sleep = vi.fn(sleepNoop);
+      const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep });
+      const op: SendOperation = { kind: 'message', text: 'Fixture', lang: 'uk' };
+      await expect(
+        edit ? adapter.editMessage(123, op, makeCtx()) : adapter.deliver([op], makeCtx()),
+      ).rejects.toThrow();
+      expect(requests).toHaveLength(1);
+      expect(sleep).not.toHaveBeenCalled();
+    }
+  },
+);

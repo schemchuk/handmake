@@ -8,6 +8,8 @@ import {
   createThreadsAdapter,
 } from '@handmake/channels';
 import {
+  anonymousEditPlanSchema,
+  resolveEditPlan,
   postEntryReferences,
   resolvePostEntryNames,
   entryNamesAllowed,
@@ -248,18 +250,72 @@ export async function runPublish(
   let contentPushed = false;
   const channelOperations = new Map<string, SendOperation[]>();
   for (const channel of post.channels) {
-    const entry = ledger.channels[channel];
+    let entry = ledger.channels[channel];
     const adapter = registry.get(channel);
-    const settings = (tenant.channels as Record<string, unknown>)[channel];
+    let settings = (tenant.channels as Record<string, unknown>)[channel];
     // T40: the canonical footer rides the render settings; delivery keeps the
     // raw tenant section (adapters read channelId only).
     const canonical = canonicalLinkSettings(tenant, payload.kind === 'work' ? 'works' : 'posts');
     let ops: SendOperation[];
     try {
-      ops = adapter.render(
-        resolvePostEntryNames(post, entryNames, entryNamesAllowed(tenant, channel)),
-        canonical ? { ...(settings as Record<string, unknown>), canonical } : settings,
-      );
+      const renderSettings = canonical
+        ? { ...(settings as Record<string, unknown>), canonical }
+        : settings;
+      // Freeze anonymous layout before the first send. Never retrofit a legacy partial run:
+      // its original operation mapping cannot be reconstructed safely.
+      if (
+        !entry?.editPlan &&
+        !entry?.remoteIds.length &&
+        entry?.status !== 'done' &&
+        adapter.editMessage &&
+        entryIds.length &&
+        (post.type === 'wotw-poll' || post.type === 'wotw-result')
+      ) {
+        const editPlan = anonymousEditPlanSchema.parse({
+          version: 1,
+          type: post.type,
+          entryRefs: entryIds,
+          allowNames: entryNamesAllowed(tenant, channel),
+          settings: renderSettings,
+          operations: adapter.render(post, renderSettings),
+        });
+        ledger = {
+          ...ledger,
+          channels: {
+            ...ledger.channels,
+            [channel]: {
+              status: 'pending',
+              remoteIds: [],
+              updatedAt: now.toISOString(),
+              editPlan,
+            },
+          },
+        };
+        await persistLedger();
+        entry = ledger.channels[channel];
+      }
+      if (entry?.editPlan) {
+        settings = entry.editPlan.settings;
+        ops = resolveEditPlan(entry.editPlan, entryNames);
+        // Name expansion may exceed the fixed layout; never silently reshape delivered IDs.
+        for (const op of ops) {
+          if (
+            (op.kind === 'message' && op.text.length > adapter.capabilities.messageLimit) ||
+            (op.kind === 'mediaGroup' &&
+              (op.caption?.length ?? 0) > adapter.capabilities.captionLimit) ||
+            (op.kind === 'poll' &&
+              (op.question.length > adapter.capabilities.pollQuestionLimit ||
+                op.options.some((value) => value.length > adapter.capabilities.pollOptionLimit)))
+          ) {
+            throw new Error('Contest publication exceeds fixed layout limits');
+          }
+        }
+      } else {
+        ops = adapter.render(
+          resolvePostEntryNames(post, entryNames, entryNamesAllowed(tenant, channel)),
+          renderSettings,
+        );
+      }
     } catch (error) {
       throw new Error(errorMessage(error));
     }
@@ -333,7 +389,7 @@ export async function runPublish(
           },
         },
       );
-      ledger = markDone(ledger, channel, now);
+      ledger = markDone(ledger, channel, deps.now ?? new Date());
       delivered[channel] = ledger.channels[channel]!.remoteIds;
       log(`channel ${channel}: delivered ${delivered[channel]!.length} remote id(s)`);
     } catch (error) {
@@ -384,6 +440,15 @@ export async function runPublish(
           channel,
           {
             status: 'done' as const,
+            ...(entry.editPlan
+              ? {
+                  editReceipt: {
+                    plan: entry.editPlan,
+                    remoteIds: entry.remoteIds,
+                    publishedAt: entry.updatedAt,
+                  },
+                }
+              : {}),
             messageIds: {
               ...(main !== undefined ? { main } : {}),
               ...(poll !== undefined ? { poll } : {}),

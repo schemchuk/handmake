@@ -587,6 +587,15 @@ name deletion, migration application or flag enablement is authorized by this pr
   also applies to the send path, so an out-of-range value is now a permanent error, not a retry.
   Add tests for out-of-range `retry_after` on both send and edit.
 
+- Implementation contract (T32b): optional per-channel `editReceipt` carries the anonymous
+  operation plan, all ordered remote IDs and channel completion time. The ledger freezes the plan
+  before sending; subsequent runs resolve current names into that fixed layout and reuse its secret
+  names/settings. Name expansion beyond the fixed layout fails safely. Legacy/partial ledgers are
+  not retrofitted: absence of a receipt means reconciliation is incomplete.
+  D1 `anonymous_edit_receipts` is independent of draft cleanup; `poll_results.published_at` records
+  the first successful result delivery, never the callback arrival time. Apply migration 0018 before
+  deploying the receiving bot, with Volodymyr's approval; leave `wotwPoll` disabled through T32d.
+
 #### T32c — Author withdrawal and recoverable message reconciliation (`bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T32b
 - Change: allow-listed `/entries` lists bounded recent entries with a withdraw-name action. Clear only

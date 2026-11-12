@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { Post } from './post';
+import { anonymousEditPlanSchema } from './edit-receipt';
 import type { PublishLedger } from './ports/store';
 
 const remoteIdSchema = z.union([z.number(), z.string()]);
@@ -22,6 +23,7 @@ export const ledgerEntrySchema = z.object({
   remoteIds: z.array(remoteIdSchema),
   error: z.string().optional(),
   updatedAt: z.string(),
+  editPlan: anonymousEditPlanSchema.optional(),
 });
 export type LedgerEntryParsed = z.infer<typeof ledgerEntrySchema>;
 
@@ -145,6 +147,7 @@ export function markOpDelivered(
     );
   }
   return updateEntry(ledger, channel, {
+    ...(previous.editPlan ? { editPlan: previous.editPlan } : {}),
     status: 'pending',
     remoteIds: [...previous.remoteIds, remoteId],
     updatedAt: now.toISOString(),
@@ -162,6 +165,7 @@ export function markDone(ledger: PublishLedger, channel: string, now: Date): Pub
     throw new LedgerTransitionError(`channel "${channel}" has no ledger entry`);
   }
   return updateEntry(ledger, channel, {
+    ...(previous.editPlan ? { editPlan: previous.editPlan } : {}),
     status: 'done',
     remoteIds: previous.remoteIds,
     updatedAt: now.toISOString(),
@@ -185,6 +189,7 @@ export function markFailed(
     updatedAt: now.toISOString(),
   };
   return updateEntry(ledger, channel, {
+    ...(previous.editPlan ? { editPlan: previous.editPlan } : {}),
     status: 'failed',
     remoteIds: previous.remoteIds,
     error,

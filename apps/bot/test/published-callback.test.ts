@@ -433,3 +433,84 @@ it('upserts v2 poll delivery idempotently and keeps IDs on a delayed v1 callback
     (await db.prepare('SELECT message_ids FROM channel_deliveries').first())?.message_ids,
   ).toBe(JSON.stringify({ main: 101, poll: 105 }));
 });
+
+it('keeps anonymous receipts through cleanup, duplicates and legacy callbacks with tenant isolation', async () => {
+  const { createEditReceiptStore } = await import('../src/edit-receipt-store');
+  const db = await makeD1();
+  const env = makeEnv(db);
+  const postId = '01JBCA1B2C3D4E5F6G7H8J9K0M';
+  const entry = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+  const editReceipt = {
+    plan: {
+      version: 1,
+      type: 'wotw-result',
+      entryRefs: [entry],
+      allowNames: true,
+      settings: { channelId: 'CHANNEL_SECRET', languages: ['uk', 'de'] },
+      operations: [
+        { kind: 'mediaGroup', photoIndexes: [0], caption: `{entry:${entry}}`, captionLang: 'uk' },
+        { kind: 'message', text: `{entry:${entry}}`, lang: 'de', replyToOp: 0 },
+      ],
+    },
+    remoteIds: [100, 101],
+    publishedAt: '2026-11-12T12:34:00Z',
+  };
+  await makePublishingDraft(db, postId);
+  // Result link exists independently of drafts, as it does after cleanup.
+  await db
+    .prepare(
+      `INSERT INTO contest_entries (tenant_id, entry_id, week, file_id, consent_at, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(tenant, entry, '2026-11-09', 'file', '2026-11-10', '2026-11-10')
+    .run();
+  await db
+    .prepare(
+      `INSERT INTO poll_results (tenant_id, week, draft_id, entry_id, source) VALUES (?, ?, ?, ?, ?)`,
+    )
+    .bind(tenant, '2026-11-09', postId, entry, 'readers')
+    .run();
+  const body = callbackBody(postId, {
+    channels: { telegram: { status: 'done', messageIds: { main: 100 }, editReceipt } },
+  });
+  expect((await handlePublishedCallback(env, await signedRequest(body))).status).toBe(200);
+  await db.prepare('DELETE FROM drafts WHERE tenant_id = ?').bind(tenant).run();
+  const receipts = createEditReceiptStore(db);
+  expect(await receipts.get(tenant, postId, 'telegram')).toEqual(editReceipt);
+  expect((await receipts.forEntry(tenant, entry))[0]?.receipt.remoteIds).toEqual([100, 101]);
+  expect(await receipts.forEntry('other', entry)).toEqual([]);
+  expect(await receipts.get('other', postId, 'telegram')).toBeUndefined();
+  const changed = { ...editReceipt, publishedAt: '2026-11-14T00:00:00Z', remoteIds: [999, 1000] };
+  expect(
+    (
+      await handlePublishedCallback(
+        env,
+        await signedRequest(
+          callbackBody(postId, {
+            channels: { telegram: { status: 'done', messageIds: {}, editReceipt: changed } },
+          }),
+        ),
+      )
+    ).status,
+  ).toBe(200);
+  expect(
+    (await handlePublishedCallback(env, await signedRequest(callbackBody(postId)))).status,
+  ).toBe(200);
+  expect(await receipts.get(tenant, postId, 'telegram')).toEqual(editReceipt);
+  expect(
+    await db
+      .prepare('SELECT published_at FROM poll_results WHERE tenant_id = ?')
+      .bind(tenant)
+      .first(),
+  ).toEqual({ published_at: editReceipt.publishedAt });
+  expect(
+    (await handlePublishedCallback(env, await signedRequest(callbackBody('legacy')))).status,
+  ).toBe(200);
+  expect(await receipts.get(tenant, 'legacy', 'telegram')).toBeUndefined();
+  const broken = {
+    ...body,
+    channels: {
+      telegram: { status: 'done', messageIds: {}, editReceipt: { ...editReceipt, remoteIds: [1] } },
+    },
+  };
+  expect((await handlePublishedCallback(env, await signedRequest(broken))).status).toBe(400);
+});

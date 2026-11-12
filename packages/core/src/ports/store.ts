@@ -1,3 +1,4 @@
+import type { AnonymousEditPlan } from '../edit-receipt';
 import type { ShowCopyPlan } from '../ledger';
 import type { Show } from '../show';
 import type { Post, PostType } from '../post';
@@ -19,6 +20,7 @@ export interface LedgerEntry {
   error?: string;
   /** ISO timestamp of the last transition. */
   updatedAt: string;
+  editPlan?: AnonymousEditPlan;
 }
 
 export interface PublishLedger {
