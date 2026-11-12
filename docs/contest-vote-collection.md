@@ -26,4 +26,9 @@ and prevents collecting again after completion. Interruption uses T31b recovery.
 Only aggregate counts leave memory: no comment IDs, account IDs, handles, text or
 API diagnostics enter closing persistence, logs, drafts or Git. This service performs
 no comment writes. Telegram stop requests have a 30-second transport deadline,
-well below the five-minute claim lease.
+well below the five-minute claim lease. The closing service bounds the entire stop and
+collection sequence to two minutes. Timeout persists only an unreadable tally; late
+completion cannot overwrite it or start another source. In-flight reads may finish in
+memory. An unreadable Telegram tally skips all Meta reads. Contest reads omit Instagram
+owner comments by account ID; ordinary comment inbox reads retain them. Generated UA/DE
+ballots request plain numeric comments without emoji.

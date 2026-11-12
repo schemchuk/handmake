@@ -65,9 +65,12 @@ export async function collectContestVotes(
   poll: ClosingPoll,
   telegram: ContestTally,
   sources: readonly ContestVoteSource[],
+  signal?: AbortSignal,
 ): Promise<ContestTally> {
+  if (telegram.status === 'unreadable') return telegram;
   const tallies: Record<string, SourceTally> = { [poll.channel]: telegram };
   for (const { adapter, context } of sources) {
+    signal?.throwIfAborted();
     const key = adapter.key;
     if (!['instagram', 'facebook', 'threads'].includes(key) || key in tallies)
       throw new Error('Invalid contest vote source configuration');
@@ -82,6 +85,7 @@ export async function collectContestVotes(
       tallies[key] = { status: 'skipped' };
       continue;
     }
+    signal?.throwIfAborted();
     try {
       const id = (JSON.parse(delivery.message_ids) as { main?: unknown }).main;
       if (
@@ -93,7 +97,10 @@ export async function collectContestVotes(
       )
         throw new Error('Unreadable contest source');
       tallies[key] = countCommentVotes(
-        await adapter.comments.listComments(id, undefined, context),
+        await adapter.comments.listComments(id, undefined, {
+          ...context,
+          excludeOwnerComments: true,
+        }),
         poll.entryRefs.length,
         key,
       );

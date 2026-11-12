@@ -66,7 +66,11 @@ interface MetaCommentsBaseConfig {
    * excluded but kept anyway (Instagram may ignore `since`) are dropped by
    * the shared client-side watermark filter after mapping.
    */
-  mapComment: (raw: Record<string, unknown>, ownerId: string) => ChannelComment | undefined;
+  mapComment: (
+    raw: Record<string, unknown>,
+    ownerId: string,
+    excludeOwner?: boolean,
+  ) => ChannelComment | undefined;
   /** Bound on followed pages per operation; default DEFAULT_COMMENTS_MAX_PAGES. */
   maxPages?: number;
 }
@@ -183,7 +187,7 @@ class MetaCommentsCapability implements ChannelCommentsCapability {
       this.config.commentsPath(id, since, COMMENTS_PAGE_LIMIT),
       (items) => {
         for (const raw of items) {
-          const mapped = this.config.mapComment(raw, ownerId);
+          const mapped = this.config.mapComment(raw, ownerId, ctx.excludeOwnerComments);
           if (mapped && isNewerThanWatermark(mapped, since)) comments.push(mapped);
         }
         // No total bound: the page count bounds one operation.

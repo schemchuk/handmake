@@ -125,7 +125,7 @@ export class InstagramAdapter implements ChannelAdapter {
       refreshToken: (auth, ctx) => this.#refreshToken(auth, ctx),
       postsPath: (ownerId, pageLimit) => `/${ownerId}/media?fields=id,timestamp&limit=${pageLimit}`,
       commentsPath: (postId, since, pageLimit) =>
-        `/${postId}/comments?fields=id,text,username,timestamp&limit=${pageLimit}${unixSinceQuery(since)}`,
+        `/${postId}/comments?fields=id,text,username,timestamp,from&limit=${pageLimit}${unixSinceQuery(since)}`,
       replyPath: (commentId) => `/${commentId}/replies`,
       mapPost: instagramPostRef,
       mapComment: instagramComment,
@@ -368,7 +368,13 @@ function instagramPostRef(raw: Record<string, unknown>): ChannelPostRef | undefi
   };
 }
 
-function instagramComment(raw: Record<string, unknown>): ChannelComment | undefined {
+function instagramComment(
+  raw: Record<string, unknown>,
+  ownerId: string,
+  excludeOwner = false,
+): ChannelComment | undefined {
+  const from = raw.from as { id?: unknown } | undefined;
+  if (excludeOwner && from?.id === ownerId) return undefined;
   if (typeof raw.id !== 'string' || !raw.id) return undefined;
   return {
     id: raw.id,

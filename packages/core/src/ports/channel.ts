@@ -59,6 +59,8 @@ export interface PollResult {
  * itself is stateless.
  */
 export interface ChannelCommentsContext {
+  /** Contest collection only: omit the publishing account’s own comments. */
+  excludeOwnerComments?: boolean;
   /** Resolves secret names from tenant config to values. */
   secrets: SecretResolver;
 }

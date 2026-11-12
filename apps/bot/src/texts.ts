@@ -13,9 +13,9 @@ export const botTexts = {
   pollTooFewEntriesText: 'Цього тижня менше двох конкурсних робіт. Опитування не створено.',
   pollQuestionText: 'Яка робота тижня вам найбільше подобається?',
   pollDraftUkText:
-    'Роботи тижня. Голосуйте за номер у Telegram або напишіть номер роботи в коментарі.',
+    'Роботи тижня. Голосуйте за номер у Telegram або напишіть у коментарі лише номер роботи звичайними цифрами (1, 2, …), без емодзі.',
   pollDraftDeText:
-    'Werke der Woche. Stimmt in Telegram ab oder schreibt die Nummer in einen Kommentar.',
+    'Werke der Woche. Stimmt in Telegram ab oder schreibt nur die Nummer mit normalen Ziffern (1, 2, …) in einen Kommentar, ohne Emojis.',
   previewInvalidEntryText:
     'Некоректне посилання на конкурсну роботу. Виправ текст через редагування: посилання має вигляд {entry:ID}.',
 
