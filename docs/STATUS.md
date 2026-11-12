@@ -1,12 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T32c3 — PR #124.
+- **Active agent:** codex
+- **Current task:** T32c3 — fix review blocker on PR #124.
 - **Branch:** `feat/t32c3-author-entries`.
 - **Last commit:** `d428793 feat: add author entry name withdrawal actions (T32c3)`.
-- **Next step:** claude-code reviews PR #124 in a fresh session and checks CI. Sensitive merge
-  needs Volodymyr approval; migration 0021 must precede deployment. Do not deploy or apply
-  production SQL without his approval. After merge, hand off T32d to its task owner.
+- **Next step:** codex fixes the PR #124 review blocker on `feat/t32c3-author-entries`:
+  `/entries` rows show only `week · ULID`, so the author cannot tell whose entry a row is before
+  the one-tap irreversible withdrawal. Make each row identifiable in her private chat (entry photo
+  via `file_id` and/or current `display_name` or "name already removed", plus poll number if any);
+  test that a row carries the identifier and a withdrawn row no longer shows the name.
+  Review notes from PR #124 (non-blocking, fix in the same PR): (1) add a confirm step before
+  withdrawal; (2) `missingReceipt` is true for never-published entries — distinguish "not
+  published yet" from "published without receipt"; (3) document in docs/name-reconciliation.md
+  that re-queued jobs keep their `attempts` count. Then hand back to claude-code for re-review.
 - **Blocked on:** nothing for implementation. Production migration 0021 and deploy require Volodymyr approval.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
