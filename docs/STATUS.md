@@ -1,10 +1,13 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32c2 — implementation complete; prepare PR for claude-code review.
+- **Active agent:** claude-code
+- **Current task:** T32c2 — review PR #123.
 - **Branch:** `feat/t32c2-reconciliation`.
-- **Last commit:** `6884501 feat: queue atomic author name withdrawals (T32c1) (#122)`.
-- **Next step:** commit/push T32c2 and open its PR; then hand off to claude-code.
+- **Last commit:** `bfc7157 feat: reconcile withdrawn names with durable progress (T32c2)`.
+- **Next step:** claude-code reviews PR #123 in a fresh session; assess the non-expiring
+  lock/unknown-outcome recovery contract. CI must pass; obtain sensitive-merge approval.
+  After merge, migration 0020 needs approval before bot deployment. Then hand off T32c3
+  to codex in a fresh session.
 - **Blocked on:** independent review and Volodymyr's sensitive-merge approval.
 - **Open questions for Volodymyr:** rollout needs migration 0020 before deployment;
   do not apply it remotely without approval. Instagram owner identity remains unverified.
