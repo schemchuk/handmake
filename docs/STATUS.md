@@ -6,8 +6,9 @@
 - **Last commit:** `aa17036` fix: harden contest closing collection (#117).
 - **Next step:** codex implements T31d2 in a fresh session, including the "Review notes from
   PR #117" line in docs/03-tasks.md (Instagram owner `from.id` vs IG User ID).
-- **Blocked on:** bot deploy of `aa17036` by Volodymyr (auto mode denied the agent deploy);
-  record the Worker version here. `featureFlags.wotwPoll` remains false.
+- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Bot deploy:** `aa17036` deployed by Volodymyr 2026-11-12, Worker version
+  `5ca2f939-1f5e-483a-a3e0-9344209f25c4`.
 - **T31d1 rollout:** PR #117 merged 2026-11-12 by Volodymyr after claude-code review (no blocking
   findings, CI green). Changes `apps/bot` and `packages/`; no migration, wrangler or secret change.
 - **Open questions for Volodymyr:** before T31d goes live, check on real posts that Facebook
