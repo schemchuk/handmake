@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T31d2 — implementation complete; PR #118 awaits independent review.
-- **Branch:** `feat/t31d2-result-persistence`.
-- **Last commit:** `c400281` feat: persist contest results and winner decisions atomically.
-- **Next step:** claude-code reviews PR #118, checks CI and merges only after a non-blocking
-  review. Ask Volodymyr before production migration 0017/deploy; then hand off T31d3 to codex
-  for a fresh session. Keep the PR #117 Instagram owner-identity rollout check.
+- **Active agent:** codex
+- **Current task:** T31d3 — not started.
+- **Branch:** `main` (codex creates the T31d3 branch).
+- **Last commit:** `4b32d7c` feat: persist contest results and winner decisions atomically (#118).
+- **Next step:** codex starts T31d3 from docs/03-tasks.md in a fresh session. Keep the PR #117
+  Instagram owner-identity rollout check. Reviewers: run bot D1 tests only on changed files with
+  `--maxWorkers=2` under a memory/CPU cap (full local runs saturated all cores and RAM three times).
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false; no live result caller.
 - **T31d2 validation:** bot 726/726 (37 files), including 17 new result tests; workspace
   typecheck/build, lint, changed-file formatting and staged gitleaks pass. Real D1 covers
@@ -14,11 +14,11 @@
   placeholder-only content and rollback at each transaction write. Initial new isolation
   fixture reused an entry ID across weeks; corrected fixture and full rerun pass. Sandboxed
   D1 run stalled and was interrupted; unrestricted targeted and full suites pass.
-- **T31d2 rollout:** migration 0017 adds winner flags and result receipts. Local/test only;
-  reviewer must ask Volodymyr before production migration/deploy. PR #117 Instagram owner-ID
+- **T31d2 rollout:** PR #118 merged 2026-11-12 by claude-code with Volodymyr's OK (no blocking
+  findings, CI green). Remote D1 migration 0017 applied by Volodymyr. PR #117 Instagram owner-ID
   verification remains a pre-live requirement; see docs/contest-vote-collection.md.
-- **Bot deploy:** `aa17036` deployed by Volodymyr 2026-11-12, Worker version
-  `5ca2f939-1f5e-483a-a3e0-9344209f25c4`.
+- **Bot deploy:** `4b32d7c` deployed by Volodymyr 2026-11-12, Worker version
+  `2ead6d29-f799-45fc-a620-8f7cc933878a`.
 - **T31d1 rollout:** PR #117 merged 2026-11-12 by Volodymyr after claude-code review (no blocking
   findings, CI green). Changes `apps/bot` and `packages/`; no migration, wrangler or secret change.
 - **Open questions for Volodymyr:** before T31d goes live, check on real posts that Facebook

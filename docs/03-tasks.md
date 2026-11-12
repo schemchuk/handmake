@@ -519,8 +519,8 @@ split in chat on 2026-11-12 (AGENTS.md workflow step 4).
   commenter identities. Acceptance: tenant/week isolation, no overwrite by stale or competing
   decisions, and rollback of both draft and winner on failure. Tests: decision table, real D1
   concurrency/retries/rollback and placeholder-only persisted content. No live caller yet.
-  Implementation: ready for claude-code review on `feat/t31d2-result-persistence`; migration
-  0017 is local/test only until Volodymyr approves production application.
+  Done: PR #118 merged 2026-11-12; remote migration 0017 applied, Worker
+  `2ead6d29-f799-45fc-a620-8f7cc933878a`.
   Review notes from PR #117: Instagram comment `from.id` is documented as an Instagram-scoped
   ID and may never equal the IG User ID secret, and the owner filter fails open without `from`.
   Before T31d goes live, verify on a real owner comment; if the IDs differ, also match
