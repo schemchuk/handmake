@@ -519,6 +519,10 @@ split in chat on 2026-11-12 (AGENTS.md workflow step 4).
   commenter identities. Acceptance: tenant/week isolation, no overwrite by stale or competing
   decisions, and rollback of both draft and winner on failure. Tests: decision table, real D1
   concurrency/retries/rollback and placeholder-only persisted content. No live caller yet.
+  Review notes from PR #117: Instagram comment `from.id` is documented as an Instagram-scoped
+  ID and may never equal the IG User ID secret, and the owner filter fails open without `from`.
+  Before T31d goes live, verify on a real owner comment; if the IDs differ, also match
+  `from.username` against the account username fetched once per contest read.
 - **T31d3 — Author callbacks, preview and cron.** Wire configured closing windows, channel
   adapters and the durable result service into the existing scheduler. Route author choices
   through the allow-list and the closing's candidate restrictions, show combined totals, and

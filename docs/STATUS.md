@@ -1,23 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T31d1 — closing collection hardening implemented; awaiting review.
-- **Branch:** `feat/t31d1-closing-hardening`.
-- **Last commit:** this implementation commit — fix: harden contest closing collection
-  (resolve its hash with `git log -1 -- docs/STATUS.md`).
-- **Next step:** claude-code reviews the T31d1 PR, waits for green CI and merges if clear.
-  After merge, hand off T31d2 to codex in a fresh session; follow the bot deploy gate in AGENTS.md.
-- **Blocked on:** independent review. `featureFlags.wotwPoll` remains false.
-- **T31d1 validation:** closing/opening D1 suites 48/48; channels 261/261 pass.
-  Workspace typecheck/build, lint and changed-file formatting pass. Tests cover transient
-  Instagram owner filtering with unchanged ordinary inbox reads, unreadable Telegram skipping
-  Meta, stalled collection with late completion and no subsequent reads, and generated UA/DE
-  plain-number instructions. Initial channels run found the old expected fields list; updated
-  it for the owner identity field and the full rerun passed. The two-minute total deadline
-  persists unreadable without partial counts; in-flight reads may finish only in memory.
-  No live caller, deployment, migration, publishing, paid call, workflow or secret change.
-- **Open questions for Volodymyr:** before T31d goes live, check on a real Facebook Page post
-  that reader comments come with `from.id`; otherwise every contest result will be unreadable.
+- **Active agent:** codex
+- **Current task:** T31d2 — atomic result persistence and winner rules.
+- **Branch:** none yet; create `feat/t31d2-result-persistence` from `main`.
+- **Last commit:** `aa17036` fix: harden contest closing collection (#117).
+- **Next step:** codex implements T31d2 in a fresh session, including the "Review notes from
+  PR #117" line in docs/03-tasks.md (Instagram owner `from.id` vs IG User ID).
+- **Blocked on:** bot deploy of `aa17036` by Volodymyr (auto mode denied the agent deploy);
+  record the Worker version here. `featureFlags.wotwPoll` remains false.
+- **T31d1 rollout:** PR #117 merged 2026-11-12 by Volodymyr after claude-code review (no blocking
+  findings, CI green). Changes `apps/bot` and `packages/`; no migration, wrangler or secret change.
+- **Open questions for Volodymyr:** before T31d goes live, check on real posts that Facebook
+  reader comments come with `from.id` (otherwise every result is unreadable) and that an
+  Instagram owner comment's `from.id` equals the IG User ID (otherwise owner votes count).
 - **T31c rollout:** PR #116 merged 2026-11-11 by Volodymyr after claude-code review (no blocking
   findings, CI green). No migration or config change; no deploy needed (no live caller until T31d).
 - **T31c validation:** full bot 706/706 (36 files), channels 261/261 and core 279/279 pass.
