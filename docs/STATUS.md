@@ -4,15 +4,14 @@
 - **Current task:** none. T32d merged (PR #125, squash `918f8bb`); T32 complete.
 - **Branch:** `main`.
 - **Last commit:** `918f8bb feat: expire non-winner names after publication (T32d) (#125)`.
-- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`)
-  BEFORE the next publisher run (it now sends `completedAt`); record the Worker version here.
-  Then Volodymyr names the next task (T33 has no Owner yet). Review note from PR #125
-  (non-blocking, for the next bot task): `expireNonWinnerNames` swallows every tenant error,
-  so a full D1 outage still reports a successful cron; rethrow/report after the loop.
-- **Blocked on:** bot deploy (classifier denies agent deploys; manual by Volodymyr).
+- **Next step:** Volodymyr names the next task (T33 has no Owner yet). Review note from
+  PR #125 (non-blocking, for the next bot task): `expireNonWinnerNames` swallows every tenant
+  error, so a full D1 outage still reports a successful cron; rethrow/report after the loop.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32d rollout:** PR #125 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
-  after blocker fix, CI green: bot 780, publisher 259, site 53). No new migration.
+  after blocker fix, CI green: bot 780, publisher 259, site 53). No new migration. Bot deployed
+  from clean `main` by Volodymyr, Worker `d0e03dce-2ddc-4a66-bbf1-5a752b13cb31`.
 - **PR #125 review-fix validation:** publisher callback 11/11, real D1 retention/composition
   22/22; workspace typecheck, lint and changed-file formatting pass. No deployment,
   production publishing/SQL, workflows, secrets or flags changed.
