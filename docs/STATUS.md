@@ -5,11 +5,11 @@
 - **Branch:** `feat/t32d-name-retention` (to create).
 - **Last commit:** `b82c6a2 feat: add author entry name withdrawal actions (T32c3) (#124)`.
 - **Next step:** codex implements T32d in a fresh session (see docs/03-tasks.md, including the
-  review note from PR #124). Bot deploy of T32c3 from clean `main` is pending; record the
-  Worker version here once deployed.
+  review note from PR #124). T32c3 is deployed.
 - **Blocked on:** nothing for implementation.
 - **T32c3 rollout:** PR #124 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
-  after blocker fix, CI green). Migration 0021 applied to prod D1 by Volodymyr before merge.
+  after blocker fix, CI green). Migration 0021 applied to prod D1 by Volodymyr before merge. Bot deployed from clean `main`
+  by Volodymyr, Worker `b488fdad-5ca1-4f04-8982-fb896557f479`.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
   bounded localized public progress, missing-receipt/unknown/rejected states; winner, work and
