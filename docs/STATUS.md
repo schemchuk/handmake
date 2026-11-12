@@ -1,29 +1,19 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T31d3 — PR #119 review fixes ready for independent re-review.
-- **Branch:** `feat/T31d3-author-closing`.
-- **Last commit:** `7524fe9` fix: bound contest reminders and avoid duplicate previews.
-- **Next step:** claude-code re-reviews PR #119 in a fresh session and checks CI.
-  Both blocking findings and all three non-blocking findings are addressed.
-  Merge still needs Volodymyr's explicit OK (optional `TELEGRAM_CHANNEL_ID` Worker secret).
-  Keep the PR #117 Instagram owner-identity rollout check.
+- **Active agent:** codex
+- **Current task:** T32 — not started.
+- **Branch:** `main` (codex creates the T32 branch).
+- **Last commit:** `94d1ab4` feat: wire contest closing and author result previews (#119).
+- **Next step:** codex starts T32 from docs/03-tasks.md in a fresh session.
   Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
-- **T31d3 review-fix validation:** 150/150 tests in seven affected suites; workspace
-  typecheck/build, lint and changed-file formatting pass. Real D1 covers atomic prompt
-  claims across competing ticks, no second-tick prompt/preview, 24-hour reminder boundaries,
-  bounded cutoff and deterministic draft owner. Reuse the completed closing's unused lease
-  column as a negative prompt-attempt timestamp; no migration or production changes.
-- **Blocked on:** nothing for implementation. `featureFlags.wotwPoll` remains false.
-- **Open questions for Volodymyr:** before live closing, provision the existing publisher
-  `TELEGRAM_CHANNEL_ID` as a Worker secret and complete the Instagram owner-identity check.
-- **T31d3 validation:** 148/148 tests across closing runtime, closing, result, opening cron,
-  cron ordering, bot and composition; includes 13 new runtime cases and 2 added cron-order
-  combinations. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial
-  sandbox D1 run stalled and was interrupted; unrestricted targeted suites pass. No deploy,
-  production reads/publishing, paid calls, migrations, flag enablement or secret provisioning.
-  Scheduling, authorized/forged/stale/cross-tenant choices, competing cron/callback writes,
-  notification retry, expired-claim recovery, DST/year boundaries and failure isolation covered.
+- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Open questions for Volodymyr:** before enabling `wotwPoll`, provision the publisher's
+  existing `TELEGRAM_CHANNEL_ID` as a Worker secret and complete the Instagram owner-identity
+  check (docs/contest-vote-collection.md).
+- **T31d3 rollout:** PR #119 merged 2026-11-12 by claude-code with Volodymyr's OK after one
+  review round (both blocking findings fixed, CI green, affected suites 19/19 locally).
+  No migration or wrangler change; the new secret is optional while the flag is off.
+  Bot deployed by claude-code from clean `main`, Worker `45accbdd-6840-4ffa-863b-33ed8d2e342e`.
 - **T31d2 validation:** bot 726/726 (37 files), including 17 new result tests; workspace
   typecheck/build, lint, changed-file formatting and staged gitleaks pass. Real D1 covers
   competing choices, retries after draft cleanup, tenant/week isolation, claim restrictions,
