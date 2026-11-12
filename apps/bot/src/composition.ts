@@ -1,6 +1,12 @@
+import { runPollClosingCron } from './poll-closing-runtime';
 import { createEntrySessionStore } from './entry-session';
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
-import { FacebookAdapter, InstagramAdapter, ThreadsAdapter } from '@handmake/channels';
+import {
+  FacebookAdapter,
+  InstagramAdapter,
+  ThreadsAdapter,
+  TelegramAdapter,
+} from '@handmake/channels';
 import { draftRetentionDays, safeErrorMessage } from '@handmake/core';
 import type { ChannelCommentsCapability, ChannelCommentsContext } from '@handmake/core';
 import { webhookCallback } from 'grammy';
@@ -109,6 +115,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       message: safeErrorMessage(error, [
         env.ANTHROPIC_API_KEY,
         env.TELEGRAM_BOT_TOKEN,
+        env.TELEGRAM_CHANNEL_ID ?? '',
         env.TELEGRAM_WEBHOOK_SECRET,
         env.TELEGRAM_ALLOWED_USER_IDS,
         env.GITHUB_DISPATCH_TOKEN,
@@ -181,6 +188,15 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        pollResults: {
+          logError,
+          db: env.DB,
+          drafts: createD1DraftStore(env.DB),
+          tenantConfigs,
+          texts,
+          lookupNames: (tenant, ids) => readEntryNames(env.DB, tenant, ids),
+          publishesLive: env.PUBLISH_LIVE === 'true',
+        },
         entryNames: (tenant, ids) => readEntryNames(env.DB, tenant, ids),
         entries: createEntrySessionStore(env.DB),
         comments: {
@@ -340,6 +356,35 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         });
       } catch (error) {
         logError('poll cron failed', error, tenantId);
+      }
+      try {
+        await runPollClosingCron(new Date(event.scheduledTime), {
+          logError,
+          db: env.DB,
+          drafts,
+          bot: this.bot,
+          tenantConfigs,
+          texts,
+          allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+          lookupNames: (tenant, ids) => readEntryNames(env.DB, tenant, ids),
+          publishesLive: env.PUBLISH_LIVE === 'true',
+          adapter: new TelegramAdapter({ token: env.TELEGRAM_BOT_TOKEN }),
+          context: (config) => ({
+            settings: config.channels.telegram,
+            secrets: {
+              resolve: async (name) =>
+                name === 'TELEGRAM_CHANNEL_ID' ? (env.TELEGRAM_CHANNEL_ID ?? '') : '',
+            },
+            idempotencyBase: `${config.id}:poll-close`,
+            photos: [],
+          }),
+          sources: (config) =>
+            [new InstagramAdapter(), new FacebookAdapter(), new ThreadsAdapter()]
+              .filter((adapter) => adapter.key in config.channels)
+              .map((adapter) => ({ adapter, context: commentsContext })),
+        });
+      } catch (error) {
+        logError('poll closing cron failed', error, tenantId);
       }
       try {
         await aiRuntime().notices(new Date(event.scheduledTime));

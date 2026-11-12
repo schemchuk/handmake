@@ -196,7 +196,7 @@ does not update its delivery row. The poll close and the withdrawal edit read th
    always "Work No N" otherwise (Instagram). Committed texts keep the placeholders.
 4. **Close.** Worker cron at the closing time reads the poll message ID from `channel_deliveries`
    (callback v2, 4.3) and calls `closePoll` (`stopPoll`) to get the counts.
-   T31b adds an unwired closing service and local/test migration 0016. It selects exactly one
+   T31b adds the closing service and migration 0016. It selects exactly one
    published `wotw-poll` draft for the tenant/week and a successful delivery with a poll ID.
    Ordered entry refs must be unique and belong to that tenant/week; withdrawn entries remain
    in the immutable ballot. Missing/skipped/unpublished openings do nothing. Before the remote
@@ -208,19 +208,22 @@ does not update its delivery row. The poll close and the withdrawal edit read th
    before the stop or after it. No second stop is attempted: the Bot API documents a Poll response
    on success, but does not guarantee replay of final counts from an already stopped poll
    ([stopPoll](https://core.telegram.org/bots/api#stoppoll)). A late writer cannot replace recovery.
-   Persistence errors propagate for later recovery. T31d will schedule this service and route
-   unreadable/zero/tied results to author selection; there is no live caller before that task.
+   Persistence errors propagate for later recovery. T31d3 schedules this service and routes
+   unreadable/zero/tied results to authorized author selection. Unfinished closings retry
+   outside the configured window; tenants and later scheduled work remain isolated.
 5. **Winner.** Most votes; zero votes, unreadable result or tie → the bot asks the author to pick
    among the tied candidates with inline buttons (decided 2026-10-28; no `WinnerPicker`, no Worker-side
    photo download).
 6. **Result.** A `wotw-result` draft goes to the author for Publish, resolved the same way as step 3.
-   T31d2 adds an unwired result store and local/test migration 0017. Counted non-Telegram
+   T31d2 adds the result store and migration 0017. Counted non-Telegram
    sources require explicit author choice from all original candidates and expose aggregate
    totals; skipped sources keep Telegram-only rules. A deterministic tenant/week ready draft,
    the selected entry's `winner` flag, and a durable `poll_results` receipt are written in one
    D1 batch. Receipt guards serialize competing decisions and survive draft cleanup. Stale
    closing claims cannot write. Draft texts contain entry placeholders and reader/author
-   wording, with only the chosen photo. T31d3 supplies authorization, callbacks and preview.
+   wording, with only the chosen photo. T31d3 supplies tenant/author/flag authorization,
+   claim-bound candidate callbacks and the existing preview/Publish flow. Notification retries
+   never recreate a result; details and rollout prerequisites: docs/contest-vote-collection.md.
 7. **Withdrawal.** Deleting a display name in D1 triggers an edit of the affected Telegram messages
    (`editMessage` capability: caption or text, the adapter decides; IDs from `channel_deliveries`) and,
    from phase 2, a site rebuild. Retention: see ADR 010.

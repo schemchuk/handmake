@@ -535,6 +535,8 @@ split in chat on 2026-11-12 (AGENTS.md workflow step 4).
   and cross-tenant callbacks, competing cron/callback execution, notification failure,
   DST/year boundaries, flag-off behaviour and cron failure isolation. Run affected suites
   and workspace checks. No automatic publication or flag enablement.
+  Implementation ready for review: scheduler and claim-bound author callbacks use the existing
+  tenant preview/Publish flow. Rollout prerequisites: docs/contest-vote-collection.md.
 
 ### T32 — Withdrawal and retention (`bot`, `channels`)
 - Depends on: T29, T31

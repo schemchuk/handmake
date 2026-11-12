@@ -11,6 +11,8 @@ export interface Env {
   NAMES_ENDPOINT_SECRET?: string;
   DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
+  /** Optional until contest closing is enabled; same live channel as the publisher. */
+  TELEGRAM_CHANNEL_ID?: string;
   TELEGRAM_WEBHOOK_SECRET: string;
   /** JSON object mapping Telegram user ID (string) to tenant ID, e.g.
    * `{"123456789":"faden-und-stimmung"}`. Parsed by createTenantLookup. */
