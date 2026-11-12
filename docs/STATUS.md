@@ -20,8 +20,8 @@
   duplicate callbacks and draft cleanup; retention uses channel completion time.
   Migration 0018 added locally only; no deployment, production publishing, name deletion or flag change.
 - **T32b rollout:** PR #121 merged 2026-11-12 by claude-code with Volodymyr's OK (no blocking
-  findings, CI green). Migration 0018 applied to prod D1 by Volodymyr; bot deploy from clean `main`
-  by Volodymyr pending, Worker version to be recorded.
+  findings, CI green). Migration 0018 applied to prod D1 by Volodymyr; bot deployed from clean `main`
+  by Volodymyr, Worker `9b2f4a8a-7493-4d55-9419-5a77e08f580e`.
 - **T32a validation:** channels 281/281 and core 279/279 pass; workspace typecheck/build,
   lint, changed-file formatting and staged secret scan pass. Telegram edits only existing IDs,
   resolves tenant secrets, reconciles unchanged messages and retries bounded 429 responses.
