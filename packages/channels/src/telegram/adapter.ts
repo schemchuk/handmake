@@ -179,6 +179,37 @@ export class TelegramAdapter implements ChannelAdapter {
     return ids;
   }
 
+  /** Edit only the recorded target; media bytes and reply links are never sent again. */
+  async editMessage(
+    messageId: RemoteId,
+    op: SendOperation,
+    ctx: Pick<DeliverContext, 'settings' | 'secrets'>,
+  ): Promise<void> {
+    if (op.kind !== 'message' && op.kind !== 'mediaGroup') {
+      throw new TelegramAdapterError('Telegram edit does not support this operation kind');
+    }
+    if (!/^[1-9]\d*$/.test(String(messageId)) || !Number.isSafeInteger(Number(messageId))) {
+      throw new TelegramAdapterError('Telegram edit requires a valid message id');
+    }
+    let chatId: string;
+    try {
+      const settings = parseTelegramChannelSettings(ctx.settings);
+      chatId = await ctx.secrets.resolve(settings.channelId);
+      if (!chatId.length) throw new Error();
+    } catch {
+      throw new TelegramAdapterError('Telegram edit destination resolution failed');
+    }
+    const method = op.kind === 'message' ? 'editMessageText' : 'editMessageCaption';
+    const body = {
+      chat_id: chatId,
+      message_id: messageId,
+      ...(op.kind === 'message'
+        ? { text: op.text, link_preview_options: { is_disabled: true } }
+        : { caption: op.caption ?? '' }),
+    };
+    await this.#withRetry(() => this.#call(method, body, true));
+  }
+
   /**
    * Close a poll via `stopPoll` and return its counts (T21, ADR 008: the
    * Worker closes the work-of-the-week poll; results are anonymous voter
@@ -230,9 +261,13 @@ export class TelegramAdapter implements ChannelAdapter {
     deliveredIds: RemoteId[],
     video?: Uint8Array,
   ): Promise<RemoteId> {
+    return this.#withRetry(() => this.#sendOnce(op, chatId, photos, deliveredIds, video));
+  }
+
+  async #withRetry<T>(action: () => Promise<T>): Promise<T> {
     for (let attempt = 1; ; attempt++) {
       try {
-        return await this.#sendOnce(op, chatId, photos, deliveredIds, video);
+        return await action();
       } catch (error) {
         if (error instanceof TelegramRateLimitError && attempt < this.#maxAttempts) {
           await this.#sleep(error.retryAfterMs);
@@ -388,7 +423,11 @@ export class TelegramAdapter implements ChannelAdapter {
    * `retry_after`), TelegramAdapterError otherwise. The request URL embeds
    * the token, so it is never included in error messages.
    */
-  async #call(method: string, body: FormData | Record<string, unknown>): Promise<unknown> {
+  async #call(
+    method: string,
+    body: FormData | Record<string, unknown>,
+    editing = false,
+  ): Promise<unknown> {
     const url = `${this.#apiBase}/bot${this.#token}/${method}`;
     const init: RequestInit =
       body instanceof FormData
@@ -398,14 +437,16 @@ export class TelegramAdapter implements ChannelAdapter {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           };
-    if (method === 'stopPoll') init.signal = AbortSignal.timeout(30_000);
+    if (method === 'stopPoll' || editing) init.signal = AbortSignal.timeout(30_000);
 
     let response: Response;
     try {
       response = await this.#fetch(url, init);
     } catch (cause) {
       throw new TelegramAdapterError(
-        `Telegram ${method} request failed: ${(cause as Error).message}`,
+        editing
+          ? `Telegram ${method} request failed`
+          : `Telegram ${method} request failed: ${(cause as Error).message}`,
       );
     }
 
@@ -424,15 +465,27 @@ export class TelegramAdapter implements ChannelAdapter {
     }
 
     const description = typeof parsed.description === 'string' ? parsed.description : undefined;
+    if (
+      editing &&
+      (response.status === 400 || parsed.error_code === 400) &&
+      description?.startsWith('Bad Request: message is not modified')
+    )
+      return {};
     const retryAfter = parsed.parameters?.retry_after;
-    if ((response.status === 429 || parsed.error_code === 429) && typeof retryAfter === 'number') {
+    if (
+      (response.status === 429 || parsed.error_code === 429) &&
+      typeof retryAfter === 'number' &&
+      Number.isFinite(retryAfter) &&
+      retryAfter >= 0 &&
+      retryAfter <= 300
+    ) {
       throw new TelegramRateLimitError(
-        `Telegram ${method} rate limited: ${description ?? 'Too Many Requests'}`,
+        `Telegram ${method} rate limited: ${editing ? 'Too Many Requests' : (description ?? 'Too Many Requests')}`,
         retryAfter * 1000,
       );
     }
     throw new TelegramAdapterError(
-      `Telegram ${method} failed: ${description ?? `HTTP ${response.status}`}`,
+      `Telegram ${method} failed: ${editing ? `HTTP ${response.status}` : (description ?? `HTTP ${response.status}`)}`,
     );
   }
 }

@@ -1,15 +1,20 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32a — not started; T32a-d split approved by Volodymyr 2026-11-12.
-- **Branch:** `main` (codex creates the T32a branch).
-- **Last commit:** `09b3003` docs: split T32 withdrawal and retention implementation.
-- **Next step:** codex starts T32a in a fresh session, following docs/03-tasks.md.
-  Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
+- **Active agent:** claude-code
+- **Current task:** T32a — implemented; awaiting independent review.
+- **Branch:** `feat/t32a-message-editing`.
+- **Last commit:** implementation commit on this branch (`feat: add optional message editing capability`).
+- **Next step:** claude-code reviews T32a and merges after green CI, then deploys the bot
+  from clean `main` per AGENTS.md and hands T32b to codex in a fresh session.
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
   provisioned by Volodymyr 2026-11-12 from `.env`.
+- **T32a validation:** channels 281/281 and core 279/279 pass; workspace typecheck/build,
+  lint, changed-file formatting and staged secret scan pass. Telegram edits only existing IDs,
+  resolves tenant secrets, reconciles unchanged messages and retries bounded 429 responses.
+  Transport/API/destination errors on the edit path omit private text and token-bearing URLs.
+  No production publishing, deployment, name deletion, migrations or flag changes.
 - **T31d3 rollout:** PR #119 merged 2026-11-12 by claude-code with Volodymyr's OK after one
   review round (both blocking findings fixed, CI green, affected suites 19/19 locally).
   No migration or wrangler change; the new secret is optional while the flag is off.

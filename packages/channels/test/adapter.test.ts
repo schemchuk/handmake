@@ -493,3 +493,145 @@ describe('TelegramAdapter: polls (T21)', () => {
     await expect(attempt).rejects.not.toThrowError(new RegExp(TOKEN));
   });
 });
+
+describe('TelegramAdapter: existing message edits (T32a)', () => {
+  const text: SendOperation = { kind: 'message', text: 'Work No 1', lang: 'de' };
+
+  it.each<SendOperation>([
+    text,
+    { kind: 'mediaGroup', photoIndexes: [0, 1], caption: 'Work No 1' },
+    { kind: 'mediaGroup', photoIndexes: [] },
+  ])('edits $kind using the tenant destination and existing target', async (op) => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    const resolve = vi.fn(async () => 'tenant-chat');
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl });
+    await adapter.editMessage(123, op, makeCtx({ secrets: { resolve } }));
+    expect(resolve).toHaveBeenCalledExactlyOnceWith('TEST_CHANNEL');
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.url).toMatch(
+      op.kind === 'message' ? /\/editMessageText$/ : /\/editMessageCaption$/,
+    );
+    expect(requests[0]!.json).toEqual({
+      chat_id: 'tenant-chat',
+      message_id: 123,
+      ...(op.kind === 'message'
+        ? { text: op.text, link_preview_options: { is_disabled: true } }
+        : { caption: op.kind === 'mediaGroup' ? (op.caption ?? '') : '' }),
+    });
+  });
+
+  it('treats an unchanged message as successful reconciliation', async () => {
+    const { fetchImpl, requests } = fakeFetch(() =>
+      jsonResponse(
+        {
+          ok: false,
+          error_code: 400,
+          description:
+            'Bad Request: message is not modified: specified new message content is the same',
+        },
+        400,
+      ),
+    );
+    await expect(
+      new TelegramAdapter({ token: TOKEN, fetchImpl }).editMessage(123, text, makeCtx()),
+    ).resolves.toBeUndefined();
+    expect(requests).toHaveLength(1);
+  });
+
+  it('retries rate limits within the attempt budget', async () => {
+    const { fetchImpl, requests } = fakeFetch(() =>
+      jsonResponse(
+        { ok: false, error_code: 429, description: 'private name', parameters: { retry_after: 2 } },
+        429,
+      ),
+    );
+    const sleep = vi.fn(sleepNoop);
+    const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep, maxAttempts: 3 });
+    await expect(adapter.editMessage(123, text, makeCtx())).rejects.toThrow('Too Many Requests');
+    expect(requests).toHaveLength(3);
+    expect(sleep.mock.calls).toEqual([[2000], [2000]]);
+  });
+
+  it('recovers from a rate limit without sending a new message', async () => {
+    const { fetchImpl, requests } = fakeFetch((req, n) =>
+      n === 1
+        ? jsonResponse({ ok: false, parameters: { retry_after: 0 } }, 429)
+        : okHandler()(req, n),
+    );
+    await new TelegramAdapter({ token: TOKEN, fetchImpl, sleep: sleepNoop }).editMessage(
+      '123',
+      text,
+      makeCtx(),
+    );
+    expect(requests).toHaveLength(2);
+    expect(requests.every((req) => req.url.endsWith('/editMessageText'))).toBe(true);
+  });
+
+  it.each([400, 403, 500])('sanitizes permanent/API rejection %s without retry', async (status) => {
+    const { fetchImpl, requests } = fakeFetch(() =>
+      jsonResponse({ ok: false, description: `private name ${TOKEN}` }, status),
+    );
+    const attempt = new TelegramAdapter({ token: TOKEN, fetchImpl }).editMessage(
+      123,
+      text,
+      makeCtx(),
+    );
+    await expect(attempt).rejects.toThrow(`HTTP ${status}`);
+    await expect(attempt).rejects.not.toThrow('private name');
+    await expect(attempt).rejects.not.toThrow(TOKEN);
+    expect(requests).toHaveLength(1);
+  });
+
+  it('sanitizes transport failures and sets a deadline', async () => {
+    const fetchImpl = vi.fn(async (_input: unknown, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      throw new Error(`https://api.telegram.org/bot${TOKEN}/editMessageText private name`);
+    }) as unknown as typeof fetch;
+    const attempt = new TelegramAdapter({ token: TOKEN, fetchImpl }).editMessage(
+      123,
+      text,
+      makeCtx(),
+    );
+    await expect(attempt).rejects.toThrow('request failed');
+    await expect(attempt).rejects.not.toThrow(TOKEN);
+    await expect(attempt).rejects.not.toThrow('private name');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it.each<SendOperation>([{ kind: 'video' }, { kind: 'poll', question: 'q', options: ['a', 'b'] }])(
+    'rejects unsupported $kind without fetch',
+    async (op) => {
+      const { fetchImpl, requests } = fakeFetch(okHandler());
+      await expect(
+        new TelegramAdapter({ token: TOKEN, fetchImpl }).editMessage(123, op, makeCtx()),
+      ).rejects.toThrow('operation kind');
+      expect(requests).toHaveLength(0);
+    },
+  );
+
+  it.each([0, -1, '', '123/other', 1.5])('rejects invalid target %s', async (id) => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    await expect(
+      new TelegramAdapter({ token: TOKEN, fetchImpl }).editMessage(id, text, makeCtx()),
+    ).rejects.toThrow('valid message id');
+    expect(requests).toHaveLength(0);
+  });
+
+  it.each([
+    makeCtx({ settings: {} }),
+    makeCtx({ secrets: { resolve: async () => '' } }),
+    makeCtx({
+      secrets: {
+        resolve: async () => {
+          throw new Error('private name');
+        },
+      },
+    }),
+  ])('sanitizes destination failures without fetch', async (ctx) => {
+    const { fetchImpl, requests } = fakeFetch(okHandler());
+    await expect(
+      new TelegramAdapter({ token: TOKEN, fetchImpl }).editMessage(123, text, ctx),
+    ).rejects.toThrow('destination resolution failed');
+    expect(requests).toHaveLength(0);
+  });
+});
