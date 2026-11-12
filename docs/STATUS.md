@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31d3 — implemented, preparing PR for claude-code review.
+- **Active agent:** claude-code
+- **Current task:** T31d3 — PR #119 ready for claude-code review.
 - **Branch:** `feat/T31d3-author-closing`.
-- **Last commit:** `4b32d7c` feat: persist contest results and winner decisions atomically (#118).
-- **Next step:** codex opens the T31d3 PR and hands off to claude-code. Review requires
+- **Last commit:** `1926edf` feat: wire contest closing and author result previews.
+- **Next step:** claude-code reviews PR #119 in a fresh session; check GitHub CI. Merge requires
   Volodymyr's explicit merge approval because Worker secret handling adds optional
   `TELEGRAM_CHANNEL_ID`. Keep the PR #117 Instagram owner-identity rollout check.
   Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
@@ -13,7 +13,7 @@
   `TELEGRAM_CHANNEL_ID` as a Worker secret and complete the Instagram owner-identity check.
 - **T31d3 validation:** 148/148 tests across closing runtime, closing, result, opening cron,
   cron ordering, bot and composition; includes 13 new runtime cases and 2 added cron-order
-  combinations. Workspace typecheck/build, lint and changed-file formatting pass. Initial
+  combinations. Workspace typecheck/build, lint, changed-file formatting and staged gitleaks pass. Initial
   sandbox D1 run stalled and was interrupted; unrestricted targeted suites pass. No deploy,
   production reads/publishing, paid calls, migrations, flag enablement or secret provisioning.
   Scheduling, authorized/forged/stale/cross-tenant choices, competing cron/callback writes,
