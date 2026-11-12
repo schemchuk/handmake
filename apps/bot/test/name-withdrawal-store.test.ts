@@ -153,3 +153,34 @@ it('rejects invalid identifiers before SQL', async () => {
     'Invalid name withdrawal',
   );
 });
+
+it.each(['instagram', 'facebook', 'threads'])(
+  'does not require a receipt for anonymous %s delivery alongside a Telegram result',
+  async (channel) => {
+    const { db, store } = await fixture();
+    await receipt(db, 'result');
+    await db
+      .prepare(
+        `INSERT INTO poll_results (tenant_id, week, draft_id, entry_id, source)
+      VALUES ('fixture', '2026-11-09', 'result', ?, 'author')`,
+      )
+      .bind(a)
+      .run();
+    for (const target of ['telegram', channel]) {
+      await db
+        .prepare(`INSERT INTO channel_deliveries VALUES ('fixture', 'result', ?, 'done', '{}')`)
+        .bind(target)
+        .run();
+    }
+    const result = await store.withdraw('fixture', a);
+    expect(result?.missingReceipt).toBe(false);
+    expect(result?.publications).toHaveLength(1);
+    expect(result?.publications[0]).toMatchObject({
+      channel: 'telegram',
+      progress: { generation: 1 },
+    });
+    // The same result must still report a genuinely missing Telegram receipt.
+    await db.prepare("DELETE FROM anonymous_edit_receipts WHERE tenant_id = 'fixture'").run();
+    expect((await store.status('fixture', a))?.missingReceipt).toBe(true);
+  },
+);

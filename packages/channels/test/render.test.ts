@@ -392,7 +392,7 @@ describe('canonical footer (T40, F31)', () => {
 });
 
 it('keeps edit-plan poll language equal to post resolution when tenant language order differs', async () => {
-  const { anonymousEditPlanSchema, resolveEditPlan, resolvePostEntryNames } =
+  const { anonymousEditPlanSchema, resolveEditPlan, resolvePostEntryNames, postPollLanguage } =
     await import('@handmake/core');
   const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
   const post = makePost({
@@ -406,7 +406,7 @@ it('keeps edit-plan poll language equal to post resolution when tenant language 
     type: post.type,
     entryRefs: [id],
     allowNames: true,
-    pollLanguage: Object.keys(post.texts)[0],
+    pollLanguage: postPollLanguage(post),
     settings,
     operations: renderTelegram(post, settings),
   });

@@ -76,10 +76,11 @@ export function createNameWithdrawalStore(db: D1Database) {
       const receipts = await createEditReceiptStore(db).forEntry(tenant, entry);
       // A known receipt does not prove every legacy publication is covered. Check the
       // independent result/closing indexes after drafts have been cleaned up as well.
+      // Only Telegram can carry names under entryNamesAllowed; other deliveries need no receipt.
       const legacy = await db
         .prepare(
           `SELECT 1 FROM channel_deliveries d
-        WHERE d.tenant_id = ? AND d.status = 'done'
+        WHERE d.tenant_id = ? AND d.status = 'done' AND d.channel = 'telegram'
         AND NOT EXISTS (SELECT 1 FROM anonymous_edit_receipts r
           WHERE r.tenant_id = d.tenant_id AND r.post_id = d.post_id AND r.channel = d.channel)
         AND (EXISTS (SELECT 1 FROM poll_results p JOIN contest_entries e
