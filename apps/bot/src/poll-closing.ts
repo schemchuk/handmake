@@ -23,17 +23,36 @@ export async function closeContestPoll(
   if (!poll) return;
   const claim = await store.claim(poll, now);
   if (!claim) return;
-  let tally: ContestTally;
+  // One deadline covers stopPoll and all sequential comment reads, below the
+  // five-minute lease. Late readers have no persistence path.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const controller = new AbortController();
+  const deadline = new Promise<ContestTally>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve({ status: 'unreadable' });
+    }, 120_000);
+  });
+  const collect = async (): Promise<ContestTally> => {
+    let tally: ContestTally;
+    try {
+      tally = validateContestTally(
+        await adapter.closePoll!(poll.pollId, context),
+        poll.entryRefs.length,
+      );
+    } catch {
+      // A transport failure may mean the stop succeeded. Never fabricate zero votes.
+      return { status: 'unreadable' };
+    }
+    if (tally.status === 'unreadable' || !sources.length) return tally;
+    controller.signal.throwIfAborted();
+    return collectContestVotes(db, poll, tally, sources, controller.signal);
+  };
   try {
-    tally = validateContestTally(
-      await adapter.closePoll(poll.pollId, context),
-      poll.entryRefs.length,
-    );
-  } catch {
-    // A transport failure may mean the stop succeeded. Never fabricate zero votes.
-    tally = { status: 'unreadable' };
+    const tally = await Promise.race([collect(), deadline]);
+    // Persistence errors must escape: a later invocation recovers the durable claim.
+    await store.finish(tenant, week, claim, tally);
+  } finally {
+    clearTimeout(timer);
   }
-  // Persistence errors must escape: a later invocation recovers the durable claim.
-  if (sources.length) tally = await collectContestVotes(db, poll, tally, sources);
-  await store.finish(tenant, week, claim, tally);
 }

@@ -305,7 +305,7 @@ describe('comments capability: Instagram', () => {
     ]);
     const url = new URL(requests[0]!.url);
     expect(url.pathname).toBe('/v21.0/media-1/comments');
-    expect(url.searchParams.get('fields')).toBe('id,text,username,timestamp');
+    expect(url.searchParams.get('fields')).toBe('id,text,username,timestamp,from');
     expect(url.searchParams.get('since')).toBe(String(Math.floor(since.getTime() / 1000)));
   });
 

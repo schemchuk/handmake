@@ -83,6 +83,8 @@ it('creates an ordered bilingual poll with private preview names and publishes o
   for (const text of Object.values(draft.texts)) {
     expect(text).toContain(`1. {entry:${fx.ids[0]}}\n2. {entry:${fx.ids[1]}}`);
   }
+  expect(draft.texts.uk).toContain('звичайними цифрами (1, 2, …), без емодзі');
+  expect(draft.texts.de).toContain('normalen Ziffern (1, 2, …)');
   expect(JSON.stringify(draft)).not.toContain('Private fixture');
   expect(sentTexts(fx.calls)).toHaveLength(2);
   expect(sentTexts(fx.calls)[0]).toContain('Private fixture 0');

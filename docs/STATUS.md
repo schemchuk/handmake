@@ -1,14 +1,21 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31d1 — closing collection hardening; ready to start.
-- **Branch:** `main` (planning only).
-- **Last commit:** this handoff commit — docs: record approval of T31d implementation split
+- **Active agent:** claude-code
+- **Current task:** T31d1 — closing collection hardening implemented; awaiting review.
+- **Branch:** `feat/t31d1-closing-hardening`.
+- **Last commit:** this implementation commit — fix: harden contest closing collection
   (resolve its hash with `git log -1 -- docs/STATUS.md`).
-- **Next step:** codex starts T31d1 in a fresh session on `feat/t31d1-<slug>` from `main`.
-  Implement the four PR #116 review fixes listed under T31d1 in docs/03-tasks.md.
-- **Blocked on:** nothing. Volodymyr approved T31d1–T31d3 in chat on 2026-11-12.
-  `featureFlags.wotwPoll` remains false.
+- **Next step:** claude-code reviews the T31d1 PR, waits for green CI and merges if clear.
+  After merge, hand off T31d2 to codex in a fresh session; follow the bot deploy gate in AGENTS.md.
+- **Blocked on:** independent review. `featureFlags.wotwPoll` remains false.
+- **T31d1 validation:** closing/opening D1 suites 48/48; channels 261/261 pass.
+  Workspace typecheck/build, lint and changed-file formatting pass. Tests cover transient
+  Instagram owner filtering with unchanged ordinary inbox reads, unreadable Telegram skipping
+  Meta, stalled collection with late completion and no subsequent reads, and generated UA/DE
+  plain-number instructions. Initial channels run found the old expected fields list; updated
+  it for the owner identity field and the full rerun passed. The two-minute total deadline
+  persists unreadable without partial counts; in-flight reads may finish only in memory.
+  No live caller, deployment, migration, publishing, paid call, workflow or secret change.
 - **Open questions for Volodymyr:** before T31d goes live, check on a real Facebook Page post
   that reader comments come with `from.id`; otherwise every contest result will be unreadable.
 - **T31c rollout:** PR #116 merged 2026-11-11 by Volodymyr after claude-code review (no blocking

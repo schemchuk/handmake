@@ -162,7 +162,7 @@ it('combines independent networks once and persists anonymous aggregates only', 
     expect(reader.listComments).toHaveBeenCalledWith(
       `${reader.source.adapter.key}-post`,
       undefined,
-      reader.source.context,
+      { ...reader.source.context, excludeOwnerComments: true },
     );
   }
   const stored = JSON.stringify(await fx.db.prepare('SELECT * FROM poll_closings').all());
@@ -354,4 +354,76 @@ it('preserves reversed ballot order and isolates simultaneous tenant/week claims
     fx.store.finish(tenant, week, claims[0]!, { status: 'counted', counts: [-1, 2], total: 1 }),
   ).rejects.toThrow();
   expect((await fx.store.get(tenant, week))?.tally).toBeUndefined();
+});
+
+it('skips every Meta reader when Telegram cannot be read', async () => {
+  const fx = await fixture();
+  const ig = await metaSource(fx, 'instagram');
+  fx.close.mockRejectedValue(new Error('transport'));
+  await closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [ig.source]);
+  expect(ig.listComments).not.toHaveBeenCalled();
+  expect((await fx.store.get(tenant, week))?.tally).toEqual({ status: 'unreadable' });
+});
+
+it('bounds collection and ignores late counts and subsequent sources', async () => {
+  const fx = await fixture();
+  const ig = await metaSource(fx, 'instagram');
+  const th = await metaSource(fx, 'threads');
+  let complete!: (comments: ChannelComment[]) => void;
+  let started!: () => void;
+  const reading = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  ig.listComments.mockImplementation(() => {
+    started();
+    return new Promise((resolve) => {
+      complete = resolve;
+    });
+  });
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  try {
+    const closing = closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [
+      ig.source,
+      th.source,
+    ]);
+    await reading;
+    await vi.advanceTimersByTimeAsync(120_000);
+    await closing;
+    expect((await fx.store.get(tenant, week))?.tally).toEqual({ status: 'unreadable' });
+    complete([comment('late', 'reader', '1')]);
+    await vi.advanceTimersByTimeAsync(0);
+    await fx.run(300_000);
+    expect((await fx.store.get(tenant, week))?.tally).toEqual({ status: 'unreadable' });
+    expect(th.listComments).not.toHaveBeenCalled();
+    expect(fx.close).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('excludes Instagram owner votes only in contest collection', async () => {
+  const fx = await fixture();
+  const ig = await metaSource(fx, 'instagram');
+  const fetchImpl = vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({
+          data: [
+            { id: 'owner', from: { id: 'test-owner' }, username: 'author', text: '1' },
+            { id: 'reader', from: { id: 'reader-id' }, username: 'reader', text: '2' },
+          ],
+        }),
+      ),
+  ) as unknown as typeof fetch;
+  const adapter = new InstagramAdapter({ fetchImpl });
+  ig.source.adapter = adapter;
+  ig.source.context = { secrets: { resolve: async () => 'test-owner' } };
+  expect(await adapter.comments!.listComments('post', undefined, ig.source.context)).toHaveLength(
+    2,
+  );
+  await closeContestPoll(fx.db, tenant, week, fx.adapter, fx.context, 0, [ig.source]);
+  expect((await fx.store.get(tenant, week))?.tally).toMatchObject({
+    status: 'counted',
+    sources: { instagram: { counts: [0, 1], total: 1 } },
+  });
 });
