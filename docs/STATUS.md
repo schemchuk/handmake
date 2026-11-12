@@ -7,9 +7,9 @@
 - **Next step:** codex starts T32 from docs/03-tasks.md in a fresh session.
   Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
-- **Open questions for Volodymyr:** before enabling `wotwPoll`, provision the publisher's
-  existing `TELEGRAM_CHANNEL_ID` as a Worker secret and complete the Instagram owner-identity
-  check (docs/contest-vote-collection.md).
+- **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
+  owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
+  provisioned by Volodymyr 2026-11-12 from `.env`.
 - **T31d3 rollout:** PR #119 merged 2026-11-12 by claude-code with Volodymyr's OK after one
   review round (both blocking findings fixed, CI green, affected suites 19/19 locally).
   No migration or wrangler change; the new secret is optional while the flag is off.
