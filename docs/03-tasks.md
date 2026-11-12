@@ -621,6 +621,42 @@ name deletion, migration application or flag enablement is authorized by this pr
   polls; (4) Telegram cannot edit sent polls: guarantee polls never carry names or report those
   operations as non-reconcilable instead of claiming removal.
 
+##### Proposed T32c split — pending Volodymyr approval (2026-11-12)
+
+Keep the parent acceptance criteria above; complete these sequentially in separate sessions/PRs,
+targeting at most ~400 changed non-test lines each. No implementation starts before approval.
+
+- **T32c1 — Receipt safety and atomic withdrawal queue**
+  - Owner: codex · Reviewer: claude-code · Depends on: T32b
+  - Address all four PR #121 notes above. Add tenant-scoped durable reconciliation jobs and
+    a migration, applied locally only. Clear only `display_name` and queue affected receipts in
+    one transaction; preserve work, consent, numbering and winner state. Record absent legacy
+    receipts explicitly. Expose an internal withdrawal boundary; no author command yet.
+  - Tests: real D1 atomicity, tenant isolation, repeated/competing withdrawals, missing receipts,
+    receipt size boundary, publication timestamp, language parity and non-editable poll safety.
+- **T32c2 — Recoverable message reconciliation**
+  - Owner: codex · Reviewer: claude-code · Depends on: T32c1
+  - Render durable anonymous plans with current D1 names, edit every supported Telegram operation,
+    and persist progress/errors for cron retries independently of the creation flag. Serialize edits
+    per affected publication and fence stale workers so concurrent withdrawals converge without an
+    older render restoring a name. Unknown remote outcomes require reconciliation before completion.
+    Provide an injectable rebuild hook with failure isolation; no workflow or live dispatch.
+  - Tests: real D1 multi-language/multi-message progress, partial failure/retry, draft cleanup,
+    concurrent withdrawals and stale workers, unsupported operations and rebuild-hook failures.
+- **T32c3 — Author entries and withdrawal actions**
+  - Owner: codex · Reviewer: claude-code · Depends on: T32c2
+  - Add allow-listed `/entries` with bounded recent entries and tenant-bound withdrawal actions.
+    Report immediate private deletion separately from pending/failed/complete public edits;
+    expose missing legacy receipts. Wire the internal boundary without changing authored content.
+  - Tests: allow-list, forged/cross-tenant and repeated callbacks, bounded listing, winner withdrawal,
+    localized status and end-to-end recovery after draft cleanup. Recheck all parent acceptance criteria.
+
+For each subtask run affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap and
+workspace checks. T32d depends on completion of all three. Site inspection: the current
+`apps/site/src/lib/site-data.ts` includes only `free` posts and has no D1 entry-name resolver;
+`.github/workflows/site.yml` already supports manual rebuild. Verify portfolio/show paths in T32c2
+before choosing the default hook; do not dispatch a production rebuild in these PRs.
+
 #### T32d — Daily non-winner name retention (`bot`, docs)
 - Owner: codex · Reviewer: claude-code · Depends on: T32c
 - Change: daily cleanup clears non-winner names 90 days after the week's successful result publication,

@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32c — author withdrawal and recoverable message reconciliation.
-- **Branch:** `feat/t32c-author-withdrawal` (to create from `main`).
-- **Last commit:** `0ac22d6 feat: persist durable anonymous edit receipts (T32b) (#121)`.
-- **Next step:** codex starts T32c in a fresh session, including the "Review notes from PR #121"
-  in docs/03-tasks.md (receipt size bounds, non-Telegram result `published_at`, poll language
-  parity test, non-editable Telegram polls). `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
-- **Blocked on:** nothing.
+- **Active agent:** none
+- **Current task:** T32c — proposed split recorded; no implementation started.
+- **Branch:** `main`.
+- **Last commit:** see `git log -1` for the T32c split proposal commit (Agent: codex).
+- **Next step:** Volodymyr reviews the proposed T32c1/T32c2/T32c3 split in docs/03-tasks.md.
+  After approval, assign codex T32c1 in a fresh session; retain all PR #121 review notes.
+  `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
+- **Blocked on:** approval of the proposed task split under ADR 009 before coding.
   `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
   names cannot be withdrawn or expired automatically (manual cleanup only); IG owner `from.id` unverified.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
