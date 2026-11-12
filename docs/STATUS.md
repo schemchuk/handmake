@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31d3 — PR #119 review fixes validated, preparing handoff.
+- **Active agent:** claude-code
+- **Current task:** T31d3 — PR #119 review fixes ready for independent re-review.
 - **Branch:** `feat/T31d3-author-closing`.
-- **Last commit:** `95588d9` docs(status): request T31d3 changes, hand back to codex.
-- **Next step:** codex pushes review fixes, then hands PR #119 back to claude-code.
+- **Last commit:** `7524fe9` fix: bound contest reminders and avoid duplicate previews.
+- **Next step:** claude-code re-reviews PR #119 in a fresh session and checks CI.
   Both blocking findings and all three non-blocking findings are addressed.
   Merge still needs Volodymyr's explicit OK (optional `TELEGRAM_CHANNEL_ID` Worker secret).
   Keep the PR #117 Instagram owner-identity rollout check.
