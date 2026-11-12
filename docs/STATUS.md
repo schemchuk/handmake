@@ -1,20 +1,19 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T31d3 — PR #119 changes requested by claude-code.
+- **Current task:** T31d3 — PR #119 review fixes validated, preparing handoff.
 - **Branch:** `feat/T31d3-author-closing`.
-- **Last commit:** `1926edf` feat: wire contest closing and author result previews.
-- **Next step:** codex fixes the PR #119 review (issuecomment-6817819772) on this branch, in a
-  fresh session. Blocking: (1) decision prompts resend on every `*/15` tick indefinitely; send
-  once per closing claim with a durable marker, re-prompt at most daily, stop after a bounded
-  period; (2) automatic result preview resends on every tick in the closing window; send only
-  when `create()` created the result. Tests: second tick sends nothing, re-prompt after interval.
-  Review notes from PR #119 (non-blocking, fix in this PR): move hard-coded UA prompt texts to
-  `BotTexts`; make the cron result `chatId` deterministic; log cron failures via
-  `logError`/`safeErrorMessage` instead of empty `catch {}`. Then hand back to claude-code.
+- **Last commit:** `95588d9` docs(status): request T31d3 changes, hand back to codex.
+- **Next step:** codex pushes review fixes, then hands PR #119 back to claude-code.
+  Both blocking findings and all three non-blocking findings are addressed.
   Merge still needs Volodymyr's explicit OK (optional `TELEGRAM_CHANNEL_ID` Worker secret).
   Keep the PR #117 Instagram owner-identity rollout check.
   Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
+- **T31d3 review-fix validation:** 150/150 tests in seven affected suites; workspace
+  typecheck/build, lint and changed-file formatting pass. Real D1 covers atomic prompt
+  claims across competing ticks, no second-tick prompt/preview, 24-hour reminder boundaries,
+  bounded cutoff and deterministic draft owner. Reuse the completed closing's unused lease
+  column as a negative prompt-attempt timestamp; no migration or production changes.
 - **Blocked on:** nothing for implementation. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before live closing, provision the existing publisher
   `TELEGRAM_CHANNEL_ID` as a Worker secret and complete the Instagram owner-identity check.

@@ -86,6 +86,7 @@ async function fixture(counts = [1, 2]) {
   }));
   const drafts = createD1DraftStore(db);
   const options = {
+    logError: vi.fn(),
     db,
     drafts,
     bot: app.bot,
@@ -219,7 +220,7 @@ it('checks the current flag in cron and in old callbacks', async () => {
   expect(await f.results.get(tenant, week)).toBeUndefined();
 });
 
-it('preserves a committed result after notification failure and retries a ready preview', async () => {
+it('preserves a committed result after notification failure without automatic preview duplicates', async () => {
   const f = await fixture();
   const send = vi
     .spyOn(f.app.bot.api, 'sendMessage')
@@ -229,7 +230,7 @@ it('preserves a committed result after notification failure and retries a ready 
   expect(receipt).toBeDefined();
   send.mockRestore();
   await f.run();
-  expect(sentTexts(f.calls).some((t) => t.includes('за вибором читачів'))).toBe(true);
+  expect(sentTexts(f.calls)).toHaveLength(0);
   expect(await f.results.get(tenant, week)).toEqual(receipt);
   expect(await f.drafts.listByState(tenant, 'ready')).toHaveLength(1);
   expect(f.close).toHaveBeenCalledTimes(1);
@@ -259,9 +260,13 @@ it('isolates tenant errors so remaining scheduled closing work succeeds', async 
     if (id === 'broken') throw new Error('bad config');
     return structuredClone(f.config);
   };
-  const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  vi.spyOn(console, 'error').mockImplementation(() => undefined);
   await f.run();
-  expect(log).toHaveBeenCalledWith('poll closing cron failed for tenant broken');
+  expect(f.options.logError).toHaveBeenCalledWith(
+    'poll closing cron failed',
+    expect.any(Error),
+    'broken',
+  );
   expect(await f.results.get(tenant, week)).toBeDefined();
 });
 
@@ -321,4 +326,44 @@ it('recovers a callback preview failure by pressing the same old decision button
   expect(await f.results.get(tenant, week)).toEqual(result);
   expect(await f.drafts.listByState(tenant, 'ready')).toHaveLength(1);
   expect(sentTexts(f.calls).some((t) => t.includes('за вибором авторки'))).toBe(true);
+});
+
+it('claims one prompt across concurrent ticks, reminds daily and stops at the bounded cutoff', async () => {
+  const f = await fixture([0, 0]);
+  await Promise.all([f.run(), f.run()]);
+  expect(sentTexts(f.calls)).toHaveLength(2);
+  await f.run(new Date(tick.getTime() + 15 * 60_000));
+  expect(sentTexts(f.calls)).toHaveLength(2);
+  await f.run(new Date(tick.getTime() + 86_400_000 - 1));
+  expect(sentTexts(f.calls)).toHaveLength(2);
+  await Promise.all([
+    f.run(new Date(tick.getTime() + 86_400_000)),
+    f.run(new Date(tick.getTime() + 86_400_000)),
+  ]);
+  expect(sentTexts(f.calls)).toHaveLength(4);
+  await f.run(new Date('2026-11-23T00:00:00Z'));
+  await f.run(new Date('2026-12-23T00:00:00Z'));
+  expect(sentTexts(f.calls)).toHaveLength(4);
+  await f.press(f.choice()[0]!);
+  expect(await f.results.get(tenant, week)).toBeDefined();
+});
+
+it('does not resend an automatic preview on later ticks and picks the lowest author ID', async () => {
+  const f = await fixture();
+  f.options.allowList = new Map([
+    [222, tenant],
+    [111, tenant],
+  ]);
+  await f.run();
+  expect(sentTexts(f.calls)).toHaveLength(2);
+  await f.run(new Date(tick.getTime() + 15 * 60_000));
+  await f.run(new Date(tick.getTime() + 30 * 60_000));
+  expect(sentTexts(f.calls)).toHaveLength(2);
+  const receipt = await f.results.get(tenant, week);
+  expect(
+    await f.db
+      .prepare('SELECT chat_id FROM drafts WHERE tenant_id = ? AND id = ?')
+      .bind(tenant, receipt!.draftId)
+      .first('chat_id'),
+  ).toBe('111');
 });

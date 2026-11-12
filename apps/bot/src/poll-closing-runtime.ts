@@ -20,6 +20,7 @@ export interface PollClosingRuntimeOptions {
   texts: BotTexts;
   lookupNames: (tenant: string, ids: string[]) => Promise<EntryNames>;
   publishesLive: boolean;
+  logError: (operation: string, error: unknown, tenant: string) => void;
 }
 
 /** Resolve the ballot's entry week from the opening preceding this closing.
@@ -107,6 +108,7 @@ export async function runPollClosingCron(
   for (const [author, tenant] of options.allowList)
     tenants.set(tenant, [...(tenants.get(tenant) ?? []), author]);
   for (const [tenant, authors] of tenants) {
+    authors.sort((a, b) => a - b); // Stable owner for cron-created drafts.
     try {
       const config = await options.tenantConfigs.load(tenant);
       if (config.id !== tenant) throw new Error('tenant config mismatch');
@@ -147,8 +149,8 @@ export async function runPollClosingCron(
             now,
           });
           if (outcome.result) {
-            // Repeated ticks may resend a ready preview after a notification failure.
-            // Published/discarded/cleaned drafts cannot be recreated by this path.
+            // Cron sends only the newly created result. Explicit author actions recover previews.
+            if (!outcome.created) continue;
             const preview = await resultPreview(tenant, outcome.result.draftId, options);
             if (preview)
               for (const author of authors)
@@ -159,11 +161,32 @@ export async function runPollClosingCron(
                   .catch(() => undefined);
             continue;
           }
+          // After tally completion the lease is unused: a negative expires_at stores
+          // the last prompt attempt. Claim before sending for at-most-once daily attempts.
+          // Stop reminders three weeks after the entry week started; old buttons still work.
+          if (now.getTime() >= Date.parse(`${week}T00:00:00Z`) + 21 * 86_400_000) continue;
+          const prompt = await options.db
+            .prepare(
+              `UPDATE poll_closings SET expires_at = ? WHERE tenant_id = ? AND week = ?
+             AND claim = ? AND tally IS NOT NULL AND (expires_at >= 0 OR -expires_at <= ?)
+             AND NOT EXISTS (SELECT 1 FROM poll_results WHERE tenant_id = ? AND week = ?)`,
+            )
+            .bind(
+              -now.getTime(),
+              tenant,
+              week,
+              closing.claim,
+              now.getTime() - 86_400_000,
+              tenant,
+              week,
+            )
+            .run();
+          if (prompt.meta.changes !== 1) continue;
           const tally = decision.tally;
           const totals =
             tally.status === 'counted'
-              ? `Усього голосів: ${tally.total}\n${tally.counts.map((n, i) => `No ${i + 1}: ${n}`).join('\n')}`
-              : 'Результат голосування недоступний.';
+              ? options.texts.pollVoteTotals(tally.total, tally.counts)
+              : options.texts.pollUnreadableText;
           const sources = Object.entries(tally.sources ?? {})
             .map(
               ([key, value]) =>
@@ -183,16 +206,20 @@ export async function runPollClosingCron(
           };
           for (const author of authors)
             await options.bot.api
-              .sendMessage(String(author), `${totals}\n${sources}\nОберіть роботу тижня:`, {
-                reply_markup: keyboard,
-              })
+              .sendMessage(
+                String(author),
+                `${totals}\n${sources}\n${options.texts.pollChooseWinnerText}`,
+                {
+                  reply_markup: keyboard,
+                },
+              )
               .catch(() => undefined);
-        } catch {
-          console.error(`poll closing failed for tenant ${tenant}`);
+        } catch (error) {
+          options.logError('poll closing failed', error, tenant);
         }
       }
-    } catch {
-      console.error(`poll closing cron failed for tenant ${tenant}`);
+    } catch (error) {
+      options.logError('poll closing cron failed', error, tenant);
     }
   }
 }

@@ -189,6 +189,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
         pollResults: {
+          logError,
           db: env.DB,
           drafts: createD1DraftStore(env.DB),
           tenantConfigs,
@@ -358,6 +359,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       }
       try {
         await runPollClosingCron(new Date(event.scheduledTime), {
+          logError,
           db: env.DB,
           drafts,
           bot: this.bot,

@@ -10,6 +10,10 @@ import type { AiBudget, AiCostLedger } from './ai-costs';
  * stranger at the door is most likely a German speaker.
  */
 export const botTexts = {
+  pollVoteTotals: (total: number, counts: number[]) =>
+    `Усього голосів: ${total}\n${counts.map((n, i) => `No ${i + 1}: ${n}`).join('\n')}`,
+  pollUnreadableText: 'Результат голосування недоступний.',
+  pollChooseWinnerText: 'Оберіть роботу тижня:',
   pollTooFewEntriesText: 'Цього тижня менше двох конкурсних робіт. Опитування не створено.',
   pollQuestionText: 'Яка робота тижня вам найбільше подобається?',
   pollDraftUkText:

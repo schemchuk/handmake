@@ -89,12 +89,20 @@ own private chat, matching tenant config, enabled flag, matching closing claim a
 allowed candidate. No display name or commenter identity enters callback data.
 
 Incomplete closings and tallied closings without result receipts retry outside the window.
-Expired interrupted claims become unreadable without another remote stop. Decision prompts
-repeat each tick until resolved; overlapping ticks may repeat notifications but cannot
-create multiple results. Within the closing window, an existing ready result preview may
-also be resent to recover a lost notification. Old decision buttons can resend the existing
-winner's ready preview, never change it. Published/discarded/cleaned results are not recreated.
-A preview failure leaves the durable receipt, draft and winner intact; authors can retry the
-old decision button, or use a later closing-window tick for automatic results. Previews use
-the existing name projection and tenant channel rendering/Publish controls. Only the
-author's existing Publish confirmation dispatches delivery.
+Expired interrupted claims become unreadable without another remote stop. After a tally
+is immutable, its lease is no longer used: `expires_at` then stores the negative timestamp
+of the last prompt attempt. An atomic conditional update claims the prompt before sending,
+so concurrent ticks send at most one prompt per tenant/closing every 24 hours. Failed sends
+also consume that daily attempt. Reminders stop 21 days after the entry week's Monday
+00:00 UTC; old decision buttons remain usable. No schema migration is needed, and lease
+recovery only touches rows with no tally, so it never interprets a prompt marker as a lease.
+
+Cron sends a result preview only when it creates the result, never on a later tick. A failed
+preview leaves the durable receipt, draft and winner intact. Old decision buttons can resend
+the existing winner's ready preview without changing it. Automatic preview failures require
+explicit author recovery through the existing draft flow. Published/discarded/cleaned results
+are not recreated. The lowest numeric author ID owns cron-created drafts, independent of
+allow-list order; all configured authors receive the initial notification. Previews use the
+existing name projection and tenant channel rendering/Publish controls. Only the author's
+existing Publish confirmation dispatches delivery. Closing errors use the composition's
+existing secret-redacting logger, with tenant and operation context.
