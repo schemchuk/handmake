@@ -550,7 +550,7 @@ split in chat on 2026-11-12 (AGENTS.md workflow step 4).
 - Acceptance: after withdrawal the channel shows "Work No N"; Git history never contained the name.
 - Tests: edit caption vs text, retention dates, winner exemption.
 
-#### T32 implementation split — proposed 2026-11-12, awaiting Volodymyr's approval
+#### T32 implementation split — approved by Volodymyr 2026-11-12
 
 The original task exceeds the ADR 009 review budget. Callback v2 retains only `main` and `poll`,
 although Telegram also publishes separate language replies. Draft cleanup removes the source needed
