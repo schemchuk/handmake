@@ -625,3 +625,102 @@ it('resolves private names only for delivery while committed content and reruns 
   expect(rerun.skipped).toEqual(['telegram']);
   expect((await git(repoDir, ['show', 'HEAD'])).includes('Private fixture')).toBe(false);
 });
+
+it.each(['wotw-result', 'wotw-poll'] as const)(
+  'persists %s anonymous sources and stable completion time across config drift',
+  async (type) => {
+    const { repoDir, payloadPath } = await makeRepo();
+    const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+    await writeFile(
+      payloadPath,
+      JSON.stringify({
+        ...basePayload,
+        type,
+        ...(type === 'wotw-poll'
+          ? {
+              poll: { question: 'Vote', options: ['Work 1', 'Work 2'] },
+              fileIds: ['file-1', 'file-2'],
+            }
+          : {}),
+        texts: { uk: `Winner {entry:${id}}`, de: `Werk {entry:${id}}` },
+      }),
+    );
+    const callbacks: unknown[] = [];
+    const sent: unknown[] = [];
+    const adapter = new TelegramAdapter({
+      token: 'fixture',
+      fetchImpl: (async (input, init) => {
+        sent.push(init?.body);
+        const result = { message_id: 100 + sent.length };
+        return Response.json({
+          ok: true,
+          result: String(input).endsWith('/sendMediaGroup')
+            ? [result, { message_id: 200 + sent.length }]
+            : result,
+        });
+      }) as typeof fetch,
+    });
+    const mediaSource = await mediaSourceWithFixture();
+    mediaSource.photos.set('file-2', new Uint8Array(await readFile(jpegFixturePath)));
+    const deps = {
+      root: repoDir,
+      now,
+      registry: makeRegistry(adapter),
+      mediaSource,
+      env: {
+        PUBLISH_CALLBACK_URL: 'https://fixture.test/callbacks/published',
+        PUBLISH_CALLBACK_SECRET: 'fixture',
+        NAMES_ENDPOINT_SECRET: 'fixture',
+      },
+      secrets: { resolve: async () => 'destination' },
+      logger: () => {},
+      fetchImpl: (async () => Response.json({ [id]: 'Private fixture' })) as typeof fetch,
+      callback: {
+        send: async (body: unknown) => {
+          callbacks.push(body);
+        },
+      },
+    };
+    await runPublish(payloadPath, deps);
+    const first = callbacks[0] as {
+      channels: {
+        telegram: {
+          editReceipt: {
+            plan: { operations: SendOperation[] };
+            remoteIds: number[];
+            publishedAt: string;
+          };
+        };
+      };
+    };
+    const receipt = first.channels.telegram.editReceipt;
+    expect(receipt.remoteIds).toEqual(type === 'wotw-poll' ? [101, 102, 103] : [101, 102]);
+    expect(receipt.plan.operations.map((op) => op.kind)).toEqual(
+      type === 'wotw-poll' ? ['mediaGroup', 'poll', 'message'] : ['mediaGroup', 'message'],
+    );
+    expect(JSON.stringify(receipt)).toContain(`{entry:${id}}`);
+    expect(JSON.stringify(receipt)).not.toContain('Private fixture');
+    expect(receipt.publishedAt).toBe(now.toISOString());
+    expect(
+      type === 'wotw-poll'
+        ? (sent[0] as FormData).get('media')
+        : (sent[0] as FormData).get('caption'),
+    ).toContain('Private fixture');
+    const configPath = path.join(repoDir, 'config/tenants', `${tenantId}.yaml`);
+    await writeFile(
+      configPath,
+      (await readFile(configPath, 'utf8'))
+        .replace('Kanal', 'Changed')
+        .replaceAll('Faden_und_Stimmung', 'changed_fixture'),
+    );
+    await runPublish(payloadPath, { ...deps, now: new Date('2026-11-12T12:00:00Z') });
+    expect(callbacks[1]).toEqual(callbacks[0]);
+    expect(sent).toHaveLength(type === 'wotw-poll' ? 3 : 2);
+    const ledger = await new GitRepoContentStore({ rootDir: repoDir }).readLedger(
+      tenantId,
+      draftId,
+    );
+    expect(JSON.stringify(ledger)).not.toContain('Private fixture');
+    expect(await git(repoDir, ['log', '-p', '--all'])).not.toContain('Private fixture');
+  },
+);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { anonymousEditReceiptSchema } from './edit-receipt';
 
 /**
  * The publisher → bot "post is published" callback (architecture 4.3,
@@ -15,6 +16,7 @@ import { z } from 'zod';
 export const channelDeliverySchema = z
   .object({
     status: z.enum(['done', 'failed']),
+    editReceipt: z.lazy(() => anonymousEditReceiptSchema).optional(),
     messageIds: z
       .object({
         main: z.union([z.string().min(1), z.number().int()]).optional(),

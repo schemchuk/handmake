@@ -1,16 +1,24 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32b — durable anonymous edit receipts (docs/03-tasks.md).
-- **Branch:** none yet (`feat/t32b-edit-receipts`).
-- **Last commit:** `d0b9a08 feat: add optional message editing capability (#120)`.
-- **Next step:** codex starts T32b in a fresh session; also fix the PR #120 review note
-  (tests for out-of-range `retry_after` on send and edit paths).
+- **Active agent:** claude-code
+- **Current task:** Review T32b — durable anonymous edit receipts (PR #121).
+- **Branch:** `feat/t32b-edit-receipts`.
+- **Last commit:** `c85a381 feat: persist durable anonymous edit receipts`.
+- **Next step:** claude-code reviews PR #121 in a fresh session and checks CI.
+  Migration 0018 requires Volodymyr approval before remote application/deployment.
+  After review/merge, hand off T32c to codex; keep `wotwPoll` disabled.
 - **Blocked on:** nothing.
   `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
   provisioned by Volodymyr 2026-11-12 from `.env`.
+- **T32b validation:** core 282/282, channels 287/287; publisher 259 tests covered across
+  the full run (257 passed, one new config-drift fixture failed) and corrected publish suite
+  (12/12). D1 callback 27/27 and related draft/result/cron 73/73 pass. Workspace typecheck/build,
+  lint, changed-file formatting and staged gitleaks pass. Sandbox D1/publisher runs stalled and were interrupted;
+  unrestricted runs completed. Anonymous plans survive partial delivery, configuration drift,
+  duplicate callbacks and draft cleanup; retention uses channel completion time.
+  Migration 0018 added locally only; no deployment, production publishing, name deletion or flag change.
 - **T32a validation:** channels 281/281 and core 279/279 pass; workspace typecheck/build,
   lint, changed-file formatting and staged secret scan pass. Telegram edits only existing IDs,
   resolves tenant secrets, reconciles unchanged messages and retries bounded 429 responses.
