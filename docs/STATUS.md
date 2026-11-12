@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** Review T32b — durable anonymous edit receipts (PR #121).
-- **Branch:** `feat/t32b-edit-receipts`.
-- **Last commit:** `c85a381 feat: persist durable anonymous edit receipts`.
-- **Next step:** claude-code reviews PR #121 in a fresh session and checks CI.
-  Migration 0018 requires Volodymyr approval before remote application/deployment.
-  After review/merge, hand off T32c to codex; keep `wotwPoll` disabled.
+- **Active agent:** codex
+- **Current task:** T32c — author withdrawal and recoverable message reconciliation.
+- **Branch:** `feat/t32c-author-withdrawal` (to create from `main`).
+- **Last commit:** `0ac22d6 feat: persist durable anonymous edit receipts (T32b) (#121)`.
+- **Next step:** codex starts T32c in a fresh session, including the "Review notes from PR #121"
+  in docs/03-tasks.md (receipt size bounds, non-Telegram result `published_at`, poll language
+  parity test, non-editable Telegram polls). Keep `wotwPoll` disabled.
 - **Blocked on:** nothing.
   `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
@@ -19,6 +19,9 @@
   unrestricted runs completed. Anonymous plans survive partial delivery, configuration drift,
   duplicate callbacks and draft cleanup; retention uses channel completion time.
   Migration 0018 added locally only; no deployment, production publishing, name deletion or flag change.
+- **T32b rollout:** PR #121 merged 2026-11-12 by claude-code with Volodymyr's OK (no blocking
+  findings, CI green). Migration 0018 applied to prod D1 by Volodymyr; bot deploy from clean `main`
+  by Volodymyr pending, Worker version to be recorded.
 - **T32a validation:** channels 281/281 and core 279/279 pass; workspace typecheck/build,
   lint, changed-file formatting and staged secret scan pass. Telegram edits only existing IDs,
   resolves tenant secrets, reconciles unchanged messages and retries bounded 429 responses.

@@ -613,6 +613,13 @@ name deletion, migration application or flag enablement is authorized by this pr
 - Tests: allow-list, forged/cross-tenant actions, repeated/concurrent withdrawal, multi-language and
   multi-post edits, retry after partial failure, absent receipts and rebuild-hook failure isolation.
   Run affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap, plus workspace checks.
+- Review notes from PR #121 (non-blocking): (1) bound the whole serialized receipt in
+  `anonymousEditReceiptSchema` so it can never exceed the D1 `CHECK` (70000), with a test;
+  (2) `poll_results.published_at` is set only from channels carrying `editReceipt` (Telegram):
+  record the first `done` channel or document it as a T32d prerequisite; (3) test that
+  `resolveEditPlan` and `resolvePostEntryNames` pick the same poll language for multi-language
+  polls; (4) Telegram cannot edit sent polls: guarantee polls never carry names or report those
+  operations as non-reconcilable instead of claiming removal.
 
 #### T32d — Daily non-winner name retention (`bot`, docs)
 - Owner: codex · Reviewer: claude-code · Depends on: T32c
