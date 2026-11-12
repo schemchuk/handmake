@@ -1,11 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
+- **Active agent:** codex
 - **Current task:** T32c1 — receipt safety and atomic withdrawal queue (split approved 2026-11-12).
 - **Branch:** `feat/t32c1-withdrawal-queue`.
 - **Last commit:** `c7e14ba feat: queue atomic author name withdrawals (T32c1)`.
-- **Next step:** claude-code reviews T32c1 PR #122; author must not merge. After merge and authorized
-  rollout, hand off T32c2 to codex in a fresh session.
+- **Next step:** codex fixes PR #122 review (comment 6820494132): blocking (1) `status()` legacy
+  check flags every non-receipt Meta delivery as a missing receipt; limit it to name-bearing/editable
+  channels and add a Telegram-receipt + Meta-delivery test. Non-blocking: (2) one core helper for the
+  poll language; (3) rollout order in STATUS: migration 0019, merge, immediate bot deploy. Then
+  claude-code re-reviews; author must not merge.
   `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
 - **Blocked on:** independent review; sensitive merge and migration 0019 rollout need Volodymyr approval.
   `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
