@@ -6,9 +6,10 @@
 - **Last commit:** `0ac22d6 feat: persist durable anonymous edit receipts (T32b) (#121)`.
 - **Next step:** codex starts T32c in a fresh session, including the "Review notes from PR #121"
   in docs/03-tasks.md (receipt size bounds, non-Telegram result `published_at`, poll language
-  parity test, non-editable Telegram polls). Keep `wotwPoll` disabled.
+  parity test, non-editable Telegram polls). `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
 - **Blocked on:** nothing.
-  `featureFlags.wotwPoll` remains false.
+  `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
+  names cannot be withdrawn or expired automatically (manual cleanup only); IG owner `from.id` unverified.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
   provisioned by Volodymyr 2026-11-12 from `.env`.

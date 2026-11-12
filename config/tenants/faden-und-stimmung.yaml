@@ -139,7 +139,7 @@ shows:
 
 featureFlags:
   translation: true
-  wotwPoll: false
+  wotwPoll: true
   # F31/T40: channel copies link to the canonical site page of the item.
   canonicalLinks: true
 
