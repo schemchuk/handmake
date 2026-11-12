@@ -1,10 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32c3 — implemented, preparing review handoff.
+- **Active agent:** claude-code
+- **Current task:** Review T32c3 — PR #124.
 - **Branch:** `feat/t32c3-author-entries`.
-- **Last commit:** `ed560d8 feat: reconcile withdrawn names with durable progress (T32c2) (#123)` (base).
-- **Next step:** finish validation, push T32c3 and open its PR for claude-code.
+- **Last commit:** `d428793 feat: add author entry name withdrawal actions (T32c3)`.
+- **Next step:** claude-code reviews PR #124 in a fresh session and checks CI. Sensitive merge
+  needs Volodymyr approval; migration 0021 must precede deployment. Do not deploy or apply
+  production SQL without his approval. After merge, hand off T32d to its task owner.
 - **Blocked on:** nothing for implementation. Production migration 0021 and deploy require Volodymyr approval.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
