@@ -61,7 +61,7 @@ async function fixture(counts = [1, 2]) {
   const fetchConfig = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
     if (String(url).includes('config/tenants/'))
       return new Response(
-        yaml.replace('wotwPoll: false', `wotwPoll: ${config.featureFlags.wotwPoll}`),
+        yaml.replace(/wotwPoll: (true|false)/, `wotwPoll: ${config.featureFlags.wotwPoll}`),
       );
     throw new Error('Unexpected external request');
   });
@@ -286,7 +286,7 @@ it('uses the production scheduler, Telegram adapter and configured channel to cl
   const stop = vi.fn();
   f.fetchConfig.mockImplementation(async (url, init) => {
     if (String(url).includes('config/tenants/'))
-      return new Response(yaml.replace('wotwPoll: false', 'wotwPoll: true'));
+      return new Response(yaml.replace(/wotwPoll: (true|false)/, 'wotwPoll: true'));
     if (String(url).endsWith('/stopPoll')) {
       stop(JSON.parse(String(init?.body)));
       return Response.json({

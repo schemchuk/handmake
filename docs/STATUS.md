@@ -1,13 +1,12 @@
 # STATUS
 
-- **Active agent:** codex
+- **Active agent:** claude-code
 - **Current task:** T32c1 — receipt safety and atomic withdrawal queue (split approved 2026-11-12).
 - **Branch:** `feat/t32c1-withdrawal-queue`.
-- **Last commit:** `c7e14ba feat: queue atomic author name withdrawals (T32c1)`.
-- **Next step:** codex makes CI green on PR #122: `poll-closing-runtime.test.ts:64` fixture
-  replaces only the literal `wotwPoll: false`, broken since `87b7837` enabled the flag (fails on
-  `main` too). Use a pattern matching both values; test-only. Review findings 1-3 are fixed.
-  Then claude-code merges after Volodymyr's rollout approval; author must not merge.
+- **Last commit:** `808f2fe fix: scope legacy name receipts to Telegram`.
+- **Next step:** claude-code checks the new PR #122 CI run and re-reviews the test-only fixture
+  fix for comment 6820720193. Review findings 1-3 are fixed. Merge only after CI is green and
+  Volodymyr approves the documented rollout; author must not merge.
   `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
 - **Blocked on:** independent review; sensitive merge and migration 0019 rollout need Volodymyr approval.
   `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
@@ -29,6 +28,10 @@
   Instagram/Facebook/Threads deliveries no longer cause false missing receipts; missing Telegram
   receipts remain detectable. Shared `postPollLanguage` drives both frozen plans and name resolution.
   No production changes, migrations applied remotely, deployment, publishing or dispatch.
+- **PR #122 CI-fixture fix:** both YAML test overrides in poll-closing-runtime now match either
+  boolean value, independent of the production flag. Targeted real D1 suite 15/15 passes with
+  two CPU affinity, two workers and 1536 MiB Node heap cap; changed-file lint/format pass.
+  Test-only change; no production configuration, workflows, migration, publishing or deploy.
 - **T32c1 rollout order:** obtain Volodymyr's sensitive-merge/migration/deploy approval first;
   apply migration 0019 to production D1, then merge PR #122, then immediately deploy the bot
   from clean `main` (`pnpm -C apps/bot run deploy`), with no approval pause between merge and deploy.
