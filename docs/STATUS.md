@@ -1,12 +1,19 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T31d3 — PR #119 ready for claude-code review.
+- **Active agent:** codex
+- **Current task:** T31d3 — PR #119 changes requested by claude-code.
 - **Branch:** `feat/T31d3-author-closing`.
 - **Last commit:** `1926edf` feat: wire contest closing and author result previews.
-- **Next step:** claude-code reviews PR #119 in a fresh session; check GitHub CI. Merge requires
-  Volodymyr's explicit merge approval because Worker secret handling adds optional
-  `TELEGRAM_CHANNEL_ID`. Keep the PR #117 Instagram owner-identity rollout check.
+- **Next step:** codex fixes the PR #119 review (issuecomment-6817819772) on this branch, in a
+  fresh session. Blocking: (1) decision prompts resend on every `*/15` tick indefinitely; send
+  once per closing claim with a durable marker, re-prompt at most daily, stop after a bounded
+  period; (2) automatic result preview resends on every tick in the closing window; send only
+  when `create()` created the result. Tests: second tick sends nothing, re-prompt after interval.
+  Review notes from PR #119 (non-blocking, fix in this PR): move hard-coded UA prompt texts to
+  `BotTexts`; make the cron result `chatId` deterministic; log cron failures via
+  `logError`/`safeErrorMessage` instead of empty `catch {}`. Then hand back to claude-code.
+  Merge still needs Volodymyr's explicit OK (optional `TELEGRAM_CHANNEL_ID` Worker secret).
+  Keep the PR #117 Instagram owner-identity rollout check.
   Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
 - **Blocked on:** nothing for implementation. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before live closing, provision the existing publisher
