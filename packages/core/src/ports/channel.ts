@@ -239,6 +239,12 @@ export interface ChannelAdapter {
     ctx: DeliverContext,
     progress?: DeliverProgress,
   ): Promise<RemoteId[]>;
+  /** Reconcile an existing message; unsupported operation kinds must fail without sending. */
+  editMessage?(
+    messageId: RemoteId,
+    op: SendOperation,
+    ctx: Pick<DeliverContext, 'settings' | 'secrets'>,
+  ): Promise<void>;
   closePoll?(pollId: RemoteId, ctx: DeliverContext): Promise<PollResult>;
   /** Optional comment reader/reply capability; undefined where the network has none. */
   readonly comments?: ChannelCommentsCapability;
