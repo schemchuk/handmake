@@ -442,6 +442,7 @@ export async function runPublish(
           channel,
           {
             status: 'done' as const,
+            completedAt: entry.updatedAt,
             ...(entry.editPlan
               ? {
                   editReceipt: {

@@ -16,6 +16,8 @@ import { anonymousEditReceiptSchema } from './edit-receipt';
 export const channelDeliverySchema = z
   .object({
     status: z.enum(['done', 'failed']),
+    /** Durable ledger completion time; absent on legacy callbacks. */
+    completedAt: z.iso.datetime().optional(),
     editReceipt: z.lazy(() => anonymousEditReceiptSchema).optional(),
     messageIds: z
       .object({

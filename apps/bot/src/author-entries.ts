@@ -95,10 +95,18 @@ export function registerAuthorEntries(
     await ctx.reply(entries.length ? texts.entriesRecentText : texts.entriesEmptyText);
     const scope = await actionScope(ctx.tenantId);
     for (const entry of entries) {
-      await ctx.replyWithPhoto(entry.file_id, {
-        caption: `${label(entry)}\n${entryWithdrawalText(await store.status(ctx.tenantId, entry.entry_id), texts)}`,
-        reply_markup: buttons(scope, entry.entry_id),
-      });
+      const text = `${label(entry)}\n${entryWithdrawalText(await store.status(ctx.tenantId, entry.entry_id), texts)}`;
+      const reply_markup = buttons(scope, entry.entry_id);
+      try {
+        await ctx.replyWithPhoto(entry.file_id, { caption: text, reply_markup });
+      } catch {
+        // An expired media reference must not hide the remaining entries.
+        try {
+          await ctx.reply(text, { reply_markup });
+        } catch {
+          console.error('Author entry row delivery failed');
+        }
+      }
     }
   });
   bot.callbackQuery(/^entries:/, async (ctx) => {

@@ -1,12 +1,26 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32d — daily non-winner name retention.
-- **Branch:** `feat/t32d-name-retention` (to create).
-- **Last commit:** `b82c6a2 feat: add author entry name withdrawal actions (T32c3) (#124)`.
-- **Next step:** codex implements T32d in a fresh session (see docs/03-tasks.md, including the
-  review note from PR #124). T32c3 is deployed.
-- **Blocked on:** nothing for implementation.
+- **Active agent:** claude-code
+- **Current task:** T32d — PR #125 review fixes implemented; awaiting re-review.
+- **Branch:** `feat/t32d-name-retention`.
+- **Last commit:** `8ae51b6 fix: address T32d callback and tenant cleanup review`.
+- **Next step:** claude-code re-reviews PR #125 and checks that latest CI is green.
+  Updated all five exact callback expectations to assert ledger completion time; tenant
+  cleanup errors roll back locally and no longer skip later tenants/reconciliation;
+  documented result-draft linkage in the callback.
+- **Blocked on:** independent re-review, green CI and Volodymyr's sensitive merge OK.
+- **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **PR #125 review-fix validation:** publisher callback 11/11, real D1 retention/composition
+  22/22; workspace typecheck, lint and changed-file formatting pass. No deployment,
+  production publishing/SQL, workflows, secrets or flags changed.
+- **T32d validation:** targeted real D1 bot suites 73/73 plus final retention/composition
+  rerun 21/21 (76 distinct bot tests across the runs); publisher publish 12/12; core callback
+  9/9. Workspace typecheck/build, lint and changed-file formatting pass. D1 tests use two
+  workers, two CPU affinity and 1536 MiB Node heap. Initial sandbox D1 run stalled and was
+  interrupted; unrestricted run passed. Covers exact inclusive 90-day UTC/DST cutoff,
+  winners/unpublished results, tenant isolation, concurrent cleanup, rollback, failed-edit
+  recovery, callback completion evidence and author photo fallback. No production SQL,
+  publishing, deployment, workflow, secret or flag changes.
 - **T32c3 rollout:** PR #124 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
   after blocker fix, CI green). Migration 0021 applied to prod D1 by Volodymyr before merge. Bot deployed from clean `main`
   by Volodymyr, Worker `b488fdad-5ca1-4f04-8982-fb896557f479`.

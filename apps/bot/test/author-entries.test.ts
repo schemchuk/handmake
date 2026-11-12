@@ -279,3 +279,18 @@ it('accepts Telegram no-change acknowledgements on repeated refresh', async () =
   await expect(press(`entries:status:${scope}:${id}`)).resolves.toBeUndefined();
   expect(await name()).toEqual({ display_name: 'Private fixture' });
 });
+
+it('falls back to a text row after a rejected photo and continues listing', async () => {
+  await submit();
+  await submit('01JBCA1B2C3D4E5F6G7H8J9K0P');
+  let photos = 0;
+  bot.api.config.use(async (prev, method, payload, signal) => {
+    if (method === 'sendPhoto' && ++photos === 1)
+      return { ok: false, error_code: 400, description: 'Bad Request: invalid file identifier' };
+    return prev(method, payload, signal);
+  });
+  await bot.handleUpdate(textUpdate(11, '/entries'));
+  expect(photos).toBe(2);
+  expect(sentTexts(calls).some((text) => text.includes('01JBCA1B2C3D4E5F6G7H8J9K0P'))).toBe(true);
+  expect(calls.filter((call) => call.method === 'sendPhoto')).toHaveLength(1);
+});

@@ -86,17 +86,26 @@ export async function handlePublishedCallback(
         `INSERT OR IGNORE INTO anonymous_edit_receipts
       (tenant_id, post_id, channel, receipt, published_at) VALUES (?, ?, ?, ?, ?)`,
       ).bind(tenantId, postId, channel, JSON.stringify(receipt), receipt.publishedAt),
-      ...(receipt.plan.type === 'wotw-result'
-        ? [
-            env.DB.prepare(
-              `UPDATE poll_results
-        SET published_at = (SELECT published_at FROM anonymous_edit_receipts WHERE tenant_id = ? AND post_id = ? AND channel = ?)
-        WHERE tenant_id = ? AND draft_id = ? AND published_at IS NULL`,
-            ).bind(tenantId, postId, channel, tenantId, postId),
-          ]
-        : []),
     ];
   });
+  // Only proven channel completion can start retention. Legacy receipt timestamps
+  // remain compatible; arrival time and the content date are never evidence.
+  const completionTimes = deliveries
+    .flatMap(([, delivery]) => {
+      if (typeof delivery === 'string' || delivery.status !== 'done') return [];
+      const time = delivery.completedAt ?? delivery.editReceipt?.publishedAt;
+      return time ? [new Date(time).toISOString()] : [];
+    })
+    .sort();
+  // poll_results.draft_id identifies the result draft, never the poll/selection draft.
+  if (completionTimes[0])
+    receiptStatements.push(
+      env.DB.prepare(
+        `UPDATE poll_results SET published_at = ?
+      WHERE tenant_id = ? AND draft_id = ?
+      AND (published_at IS NULL OR julianday(?) < julianday(published_at))`,
+      ).bind(completionTimes[0], tenantId, postId, completionTimes[0]),
+    );
   // Commit durable source and retention time together, before draft transition/cleanup.
   if (receiptStatements.length)
     await env.DB.batch([...receiptStatements, queueNameReconciliations(env.DB, tenantId)]);

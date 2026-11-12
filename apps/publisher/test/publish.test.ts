@@ -685,6 +685,7 @@ it.each(['wotw-result', 'wotw-poll'] as const)(
     const first = callbacks[0] as {
       channels: {
         telegram: {
+          completedAt: string;
           editReceipt: {
             plan: { operations: SendOperation[] };
             remoteIds: number[];
@@ -693,6 +694,7 @@ it.each(['wotw-result', 'wotw-poll'] as const)(
         };
       };
     };
+    expect(first.channels.telegram.completedAt).toBe(now.toISOString());
     const receipt = first.channels.telegram.editReceipt;
     expect(receipt.remoteIds).toEqual(type === 'wotw-poll' ? [101, 102, 103] : [101, 102]);
     expect(receipt.plan.operations.map((op) => op.kind)).toEqual(
