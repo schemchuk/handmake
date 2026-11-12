@@ -1,13 +1,23 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T31d3 — not started.
-- **Branch:** `main` (codex creates the T31d3 branch).
+- **Current task:** T31d3 — implemented, preparing PR for claude-code review.
+- **Branch:** `feat/T31d3-author-closing`.
 - **Last commit:** `4b32d7c` feat: persist contest results and winner decisions atomically (#118).
-- **Next step:** codex starts T31d3 from docs/03-tasks.md in a fresh session. Keep the PR #117
-  Instagram owner-identity rollout check. Reviewers: run bot D1 tests only on changed files with
-  `--maxWorkers=2` under a memory/CPU cap (full local runs saturated all cores and RAM three times).
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false; no live result caller.
+- **Next step:** codex opens the T31d3 PR and hands off to claude-code. Review requires
+  Volodymyr's explicit merge approval because Worker secret handling adds optional
+  `TELEGRAM_CHANNEL_ID`. Keep the PR #117 Instagram owner-identity rollout check.
+  Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
+- **Blocked on:** nothing for implementation. `featureFlags.wotwPoll` remains false.
+- **Open questions for Volodymyr:** before live closing, provision the existing publisher
+  `TELEGRAM_CHANNEL_ID` as a Worker secret and complete the Instagram owner-identity check.
+- **T31d3 validation:** 148/148 tests across closing runtime, closing, result, opening cron,
+  cron ordering, bot and composition; includes 13 new runtime cases and 2 added cron-order
+  combinations. Workspace typecheck/build, lint and changed-file formatting pass. Initial
+  sandbox D1 run stalled and was interrupted; unrestricted targeted suites pass. No deploy,
+  production reads/publishing, paid calls, migrations, flag enablement or secret provisioning.
+  Scheduling, authorized/forged/stale/cross-tenant choices, competing cron/callback writes,
+  notification retry, expired-claim recovery, DST/year boundaries and failure isolation covered.
 - **T31d2 validation:** bot 726/726 (37 files), including 17 new result tests; workspace
   typecheck/build, lint, changed-file formatting and staged gitleaks pass. Real D1 covers
   competing choices, retries after draft cleanup, tenant/week isolation, claim restrictions,

@@ -7,11 +7,16 @@ import { fakeDb } from './helpers';
 const mocks = vi.hoisted(() => ({
   cron: vi.fn(),
   poll: vi.fn(),
+  closing: vi.fn(),
   notices: vi.fn(),
   collect: vi.fn(),
 }));
 vi.mock('../src/announcement-cron', () => ({ runAnnouncementCron: mocks.cron }));
 vi.mock('../src/poll-cron', () => ({ runPollCron: mocks.poll }));
+vi.mock('../src/poll-closing-runtime', () => ({
+  runPollClosingCron: mocks.closing,
+  registerPollResultCallbacks: vi.fn(),
+}));
 vi.mock('../src/comment-collect', () => ({ runCommentCollect: mocks.collect }));
 vi.mock('../src/ai-cost-runtime', () => ({
   createAiCostRuntime: () => ({
@@ -23,9 +28,14 @@ vi.mock('../src/ai-cost-runtime', () => ({
 }));
 afterEach(() => vi.restoreAllMocks());
 
-it.each([false, true])(
-  'runs all cron steps in order and isolates poll failure (%s) from notice failure',
-  async (pollFails) => {
+it.each([
+  [false, false],
+  [true, false],
+  [false, true],
+  [true, true],
+])(
+  'isolates opening (%s) and closing (%s) failures from later cron work',
+  async (pollFails, closingFails) => {
     const calls: string[] = [];
     mocks.cron.mockImplementation(async () => {
       calls.push('announcement');
@@ -33,6 +43,10 @@ it.each([false, true])(
     mocks.poll.mockImplementation(async () => {
       calls.push('poll');
       if (pollFails) throw new Error('poll offline');
+    });
+    mocks.closing.mockImplementation(async () => {
+      calls.push('closing');
+      if (closingFails) throw new Error('closing offline');
     });
     mocks.notices.mockImplementation(async () => {
       calls.push('notices');
@@ -54,9 +68,9 @@ it.each([false, true])(
     await expect(
       app.scheduled({ cron: '* * * * *', scheduledTime: Date.now() } as ScheduledEvent),
     ).resolves.toBe(0);
-    expect(calls).toEqual(['announcement', 'poll', 'notices', 'collect']);
+    expect(calls).toEqual(['announcement', 'poll', 'closing', 'notices', 'collect']);
     expect(mocks.collect.mock.calls[0]![1].capabilities).toEqual({});
-    expect(error).toHaveBeenCalledTimes(pollFails ? 2 : 1);
+    expect(error).toHaveBeenCalledTimes(1 + Number(pollFails) + Number(closingFails));
     if (pollFails) {
       expect(error).toHaveBeenNthCalledWith(1, 'poll cron failed', {
         tenantId: 'one',
@@ -64,10 +78,14 @@ it.each([false, true])(
         message: 'poll offline',
       });
     }
-    expect(error).toHaveBeenNthCalledWith(pollFails ? 2 : 1, 'AI cost notification failed', {
-      tenantId: 'one',
-      operation: 'AI cost notification failed',
-      message: 'offline',
-    });
+    expect(error).toHaveBeenNthCalledWith(
+      1 + Number(pollFails) + Number(closingFails),
+      'AI cost notification failed',
+      {
+        tenantId: 'one',
+        operation: 'AI cost notification failed',
+        message: 'offline',
+      },
+    );
   },
 );

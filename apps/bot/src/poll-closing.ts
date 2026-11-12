@@ -3,7 +3,7 @@ import type { ChannelAdapter, ContestTally, DeliverContext } from '@handmake/cor
 import { createPollClosingStore, findClosingPoll } from './poll-closing-store';
 import { collectContestVotes, type ContestVoteSource } from './contest-votes';
 
-/** T31d will wire scheduling and author selection. This module has no cron caller yet. */
+/** Snapshot and close a published ballot once; interrupted claims recover unreadable. */
 export async function closeContestPoll(
   db: D1Database,
   tenant: string,

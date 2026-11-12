@@ -1,3 +1,7 @@
+import {
+  registerPollResultCallbacks,
+  type PollClosingRuntimeOptions,
+} from './poll-closing-runtime';
 import { registerEntrySession, type EntrySessionStore } from './entry-session';
 import { registerCommentSession, type CommentSessionOptions } from './comment-session';
 import { buildApprovedWorkJob, isUlid, maxDraftPhotos, pollSchema } from '@handmake/core';
@@ -27,6 +31,7 @@ import type { ShowSessionOptions } from './show-session';
 export interface CreateBotOptions {
   token: string;
   entries?: EntrySessionStore;
+  pollResults?: PollClosingRuntimeOptions;
   comments?: CommentSessionOptions;
   work?: WorkSessionOptions;
   show?: ShowSessionOptions;
@@ -81,6 +86,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     await next();
   });
 
+  registerPollResultCallbacks(bot, options.pollResults);
   registerEntrySession(bot, options.entries);
   registerCommentSession(bot, options);
   const workSession = registerWorkSession(bot, options);
