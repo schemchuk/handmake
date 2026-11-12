@@ -1,14 +1,14 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32d — PR #125 review fixes implemented; checking CI.
+- **Active agent:** claude-code
+- **Current task:** T32d — PR #125 review fixes implemented; awaiting re-review.
 - **Branch:** `feat/t32d-name-retention`.
-- **Last commit:** `afb9ea7 docs(status): request T32d changes, hand back to codex`.
-- **Next step:** codex checks CI for the review-fix commit, then hands back to claude-code.
+- **Last commit:** `8ae51b6 fix: address T32d callback and tenant cleanup review`.
+- **Next step:** claude-code re-reviews PR #125 and checks that latest CI is green.
   Updated all five exact callback expectations to assert ledger completion time; tenant
   cleanup errors roll back locally and no longer skip later tenants/reconciliation;
   documented result-draft linkage in the callback.
-- **Blocked on:** green CI; then independent re-review and Volodymyr's sensitive merge OK.
+- **Blocked on:** independent re-review, green CI and Volodymyr's sensitive merge OK.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **PR #125 review-fix validation:** publisher callback 11/11, real D1 retention/composition
   22/22; workspace typecheck, lint and changed-file formatting pass. No deployment,
