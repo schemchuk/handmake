@@ -1,24 +1,24 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32c3 — fix review blocker on PR #124.
+- **Active agent:** claude-code
+- **Current task:** T32c3 — re-review PR #124 after author fixes.
 - **Branch:** `feat/t32c3-author-entries`.
-- **Last commit:** `d428793 feat: add author entry name withdrawal actions (T32c3)`.
-- **Next step:** codex fixes the PR #124 review blocker on `feat/t32c3-author-entries`:
-  `/entries` rows show only `week · ULID`, so the author cannot tell whose entry a row is before
-  the one-tap irreversible withdrawal. Make each row identifiable in her private chat (entry photo
-  via `file_id` and/or current `display_name` or "name already removed", plus poll number if any);
-  test that a row carries the identifier and a withdrawn row no longer shows the name.
-  Review notes from PR #124 (non-blocking, fix in the same PR): (1) add a confirm step before
-  withdrawal; (2) `missingReceipt` is true for never-published entries — distinguish "not
-  published yet" from "published without receipt"; (3) document in docs/name-reconciliation.md
-  that re-queued jobs keep their `attempts` count. Then hand back to claude-code for re-review.
+- **Last commit:** `70ecef2 docs(status): return T32c3 review blocker to codex` (review handoff).
+- **Next step:** claude-code re-reviews PR #124 and checks CI. The blocker and three review
+  notes are addressed: identified photo/name/poll-number rows; explicit confirm/cancel; no
+  false missing-receipt warning before recorded publication; retained retry counts documented.
+  Check that refreshed/withdrawn rows omit the deleted name, including legacy text buttons.
+  Sensitive merge, production migration 0021 and deployment still need Volodymyr approval.
 - **Blocked on:** nothing for implementation. Production migration 0021 and deploy require Volodymyr approval.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
   bounded localized public progress, missing-receipt/unknown/rejected states; winner, work and
   consent retained. PR #123 notes addressed: durable fair retry attempts (migration 0021),
   reconciliation after other crons, exact operator recovery runbook.
+- **PR #124 review-fix validation:** real D1 52/52 across four files, two workers, two CPU
+  affinity and 1536 MiB Node heap; final author-command/no-change rerun 7/7. Workspace typecheck/build, lint and changed-file formatting pass. One old missing-receipt assertion updated to the
+  unpublished state; a callback test exceeded five seconds, so the final run uses 30 seconds.
+  No deployment, production SQL, publishing, dispatch, workflow, secret or flag changes.
 - **T32c3 validation:** targeted real D1/composition/cron suites 98/98 across eight files,
   two workers, two CPU affinity, 1536 MiB Node heap. Workspace typecheck/build and lint pass;
   final tenant-scope rerun 4/4, changed-file lint/format pass. Initial sandbox D1 run stalled and was interrupted;

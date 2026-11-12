@@ -658,6 +658,9 @@ defaults to a no-op after verifying blog, portfolio and show paths.
     migration/deploy require Volodymyr approval. Recovery runbook: `docs/name-reconciliation.md`.
   - Tests: allow-list, forged/cross-tenant and repeated callbacks, bounded listing, winner withdrawal,
     localized status and end-to-end recovery after draft cleanup. Recheck all parent acceptance criteria.
+  - Review notes from PR #124 addressed: identifiable private photo/name rows with poll number
+    when available; confirm/cancel before withdrawal; unpublished versus missing legacy receipts;
+    re-queued attempt counts documented. Awaiting independent re-review.
   - Review notes from PR #123: (1) permanent 4xx edit rejections (deleted message, lost chat
     permission) stay `failed` forever and `tick()` orders `tenant_id, post_id LIMIT 10`, so ≥10 such
     jobs starve later publications; use fair ordering (least-recently-attempted/attempt counter) and

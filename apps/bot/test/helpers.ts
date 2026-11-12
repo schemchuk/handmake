@@ -139,7 +139,12 @@ export function mockTelegramApi(bot: Bot<AppContext>): SentCall[] {
         result: { id: 1, is_bot: true, first_name: 'TestBot', username: 'handmake_test_bot' },
       };
     }
-    if (method === 'sendMessage') {
+    if (
+      method === 'sendMessage' ||
+      method === 'sendPhoto' ||
+      method === 'editMessageCaption' ||
+      method === 'editMessageText'
+    ) {
       const { chat_id: chatId } = payload as { chat_id: number };
       return {
         ok: true,

@@ -12,7 +12,8 @@ publications when `PUBLISH_LIVE=true`, independently of `wotwPoll` and tenant co
 availability. Successful operations persist their index. Explicit API rejections
 retry on later ticks and appear as `edit_rejected` to the author. Jobs are ordered by
 ascending durable attempt count, then tenant/publication, so ten permanent failures
-cannot monopolize every tick. Claims increment attempts atomically. Raw errors, names
+cannot monopolize every tick. Claims increment attempts atomically. Re-queued generations retain their existing
+attempt count; another withdrawal does not reset retry priority. Raw errors, names
 and credentials are never persisted. Running recovery after the notification/closing
 crons prevents its inline rate-limit waits from delaying those crons; interrupted
 recovery still requires the quiescence procedure below.
@@ -36,7 +37,13 @@ exact tenant/publication/channel/token, resets progress to zero, and queues a fu
 reconciliation before any generation can complete. No public endpoint or author
 button supplies this assertion. `/entries` exposes these unresolved states separately
 from private deletion, pending work, explicit rejection, hook failures and confirmed
-completion. Listings show at most ten recent tenant entries in private author chats;
+completion. Listings show at most ten recent tenant entries with the stored photo and current
+name (or an explicit absence label), plus the latest recorded poll number when available,
+in private author chats. Withdrawal first asks
+for confirmation on that identified row; cancel only refreshes status. The updated
+row reads the current name again after deletion, so it no longer displays the removed
+name. Never-published entries report no recorded publication requiring an edit,
+while known legacy deliveries without receipts still require operator inspection;
 status counts are grouped to bound message length. Withdrawal and status buttons
 resolve the tenant through the allow-list and verify its digest in callback data;
 no callback can select another tenant. Repeated

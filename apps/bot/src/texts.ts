@@ -24,6 +24,13 @@ export const botTexts = {
   entriesRejectedText:
     'платформа відхилила виправлення; повторюємо, за тривалої помилки звернися до оператора',
   entriesFailedText: 'помилка виправлення; повторимо автоматично',
+  entriesPollNumber: (number: number) => `Робота № ${number}`,
+  entriesNameRemovedText: 'Ім’я відсутнє або вже видалене.',
+  entriesNotPublishedText: 'Ще немає зафіксованої публікації, що потребує виправлення.',
+  entriesConfirmText:
+    'Відкликати ім’я саме цієї роботи? Ім’я буде видалено з бази; публічні виправлення виконаються окремо. Повернути ім’я цією кнопкою неможливо.',
+  entriesConfirmButton: 'Так, відкликати ім’я',
+  entriesCancelButton: 'Скасувати',
   entriesWithdrawButton: 'Відкликати ім’я',
   entriesRefreshButton: 'Перевірити стан',
   entriesInvalidText: 'Роботу або дію не знайдено. Відкрий /entries.',
