@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code
+- **Active agent:** codex
 - **Current task:** T32c1 — receipt safety and atomic withdrawal queue (split approved 2026-11-12).
 - **Branch:** `feat/t32c1-withdrawal-queue`.
 - **Last commit:** `c7e14ba feat: queue atomic author name withdrawals (T32c1)`.
-- **Next step:** claude-code re-reviews PR #122 fixes for comment 6820494132: Telegram-only
-  legacy receipt detection, shared core poll-language helper and explicit rollout order.
-  Author must not merge. After rollout hand off T32c2 to codex in a fresh session.
+- **Next step:** codex makes CI green on PR #122: `poll-closing-runtime.test.ts:64` fixture
+  replaces only the literal `wotwPoll: false`, broken since `87b7837` enabled the flag (fails on
+  `main` too). Use a pattern matching both values; test-only. Review findings 1-3 are fixed.
+  Then claude-code merges after Volodymyr's rollout approval; author must not merge.
   `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
 - **Blocked on:** independent review; sensitive merge and migration 0019 rollout need Volodymyr approval.
   `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
