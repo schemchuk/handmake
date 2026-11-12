@@ -16,6 +16,7 @@ export const anonymousEditPlanSchema = z
       .min(1)
       .max(10),
     allowNames: z.boolean(),
+    pollLanguage: z.string().max(8).optional(),
     // Secret names only, exactly as supplied to render/deliver; never resolved credentials.
     settings: z.record(z.string(), z.unknown()),
     operations: z
@@ -83,7 +84,8 @@ export const anonymousEditReceiptSchema = z
   .refine(
     (receipt) => receipt.remoteIds.length === receipt.plan.operations.length,
     'Incomplete operation IDs',
-  );
+  )
+  .refine((receipt) => JSON.stringify(receipt).length <= 70000, 'Anonymous edit receipt too large');
 export type AnonymousEditReceipt = z.infer<typeof anonymousEditReceiptSchema>;
 
 /** Name-bearing projections stay transient; receipt and ledger always retain the source plan. */
@@ -111,8 +113,8 @@ export function resolveEditPlan(plan: AnonymousEditPlan, names: EntryNames): Sen
           }
         : {
             ...op,
-            question: resolve(op.question, language),
-            options: op.options.map((value) => resolve(value, language)),
+            question: resolve(op.question, plan.pollLanguage ?? language),
+            options: op.options.map((value) => resolve(value, plan.pollLanguage ?? language)),
           },
   );
 }

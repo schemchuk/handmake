@@ -13,6 +13,7 @@ import {
   postEntryReferences,
   resolvePostEntryNames,
   entryNamesAllowed,
+  postPollLanguage,
   canonicalLinkSettings,
   ChannelRegistry,
   idempotencyBase,
@@ -276,6 +277,7 @@ export async function runPublish(
           type: post.type,
           entryRefs: entryIds,
           allowNames: entryNamesAllowed(tenant, channel),
+          pollLanguage: postPollLanguage(post),
           settings: renderSettings,
           operations: adapter.render(post, renderSettings),
         });

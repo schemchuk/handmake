@@ -469,6 +469,9 @@ it('keeps anonymous receipts through cleanup, duplicates and legacy callbacks wi
     )
     .bind(tenant, '2026-11-09', postId, entry, 'readers')
     .run();
+  const { createNameWithdrawalStore } = await import('../src/name-withdrawal-store');
+  const withdrawals = createNameWithdrawalStore(db);
+  expect((await withdrawals.withdraw(tenant, entry))?.missingReceipt).toBe(true);
   const body = callbackBody(postId, {
     channels: { telegram: { status: 'done', messageIds: { main: 100 }, editReceipt } },
   });
@@ -476,6 +479,10 @@ it('keeps anonymous receipts through cleanup, duplicates and legacy callbacks wi
   await db.prepare('DELETE FROM drafts WHERE tenant_id = ?').bind(tenant).run();
   const receipts = createEditReceiptStore(db);
   expect(await receipts.get(tenant, postId, 'telegram')).toEqual(editReceipt);
+  expect((await withdrawals.status(tenant, entry))?.publications[0]?.progress).toMatchObject({
+    generation: 1,
+    state: 'pending',
+  });
   expect((await receipts.forEntry(tenant, entry))[0]?.receipt.remoteIds).toEqual([100, 101]);
   expect(await receipts.forEntry('other', entry)).toEqual([]);
   expect(await receipts.get('other', postId, 'telegram')).toBeUndefined();

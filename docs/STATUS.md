@@ -1,18 +1,42 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T32c — proposed split recorded; no implementation started.
-- **Branch:** `main`.
-- **Last commit:** see `git log -1` for the T32c split proposal commit (Agent: codex).
-- **Next step:** Volodymyr reviews the proposed T32c1/T32c2/T32c3 split in docs/03-tasks.md.
-  After approval, assign codex T32c1 in a fresh session; retain all PR #121 review notes.
+- **Active agent:** claude-code
+- **Current task:** T32c1 — receipt safety and atomic withdrawal queue (split approved 2026-11-12).
+- **Branch:** `feat/t32c1-withdrawal-queue`.
+- **Last commit:** `808f2fe fix: scope legacy name receipts to Telegram`.
+- **Next step:** claude-code checks the new PR #122 CI run and re-reviews the test-only fixture
+  fix for comment 6820720193. Review findings 1-3 are fixed. Merge only after CI is green and
+  Volodymyr approves the documented rollout; author must not merge.
   `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
-- **Blocked on:** approval of the proposed task split under ADR 009 before coding.
+- **Blocked on:** independent review; sensitive merge and migration 0019 rollout need Volodymyr approval.
   `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
   names cannot be withdrawn or expired automatically (manual cleanup only); IG owner `from.id` unverified.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
   provisioned by Volodymyr 2026-11-12 from `.env`.
+- **T32c1 validation:** core 283/283, channels 288/288, targeted real D1 55/55 (four files,
+  two workers, two CPU affinity, 1536 MiB Node heap cap), publisher publish 12/12 pass.
+  Workspace typecheck/build, lint, changed-file formatting and diff checks pass; initial language
+  parity fixture type inference corrected. Initial sandbox D1 run interrupted; capped unrestricted
+  run completed. Migration 0019 applied only in test databases. No deployment, public edits,
+  production name deletion, workflow/secret/flag change or dispatch. Retention timestamp prerequisite
+  for non-receipt channels is documented under T32c/T32d. Deploy the updated bot before publisher
+  runs carrying the new strict-plan `pollLanguage` field.
+- **PR #122 review-fix validation:** real D1 withdrawal/callback 35/35 with two workers,
+  two CPU affinity and 1536 MiB Node heap cap; core 283/283, Telegram render 43/43 and publisher
+  publish 12/12 pass. Workspace typecheck/build, lint, changed-file formatting and diff checks pass.
+  Instagram/Facebook/Threads deliveries no longer cause false missing receipts; missing Telegram
+  receipts remain detectable. Shared `postPollLanguage` drives both frozen plans and name resolution.
+  No production changes, migrations applied remotely, deployment, publishing or dispatch.
+- **PR #122 CI-fixture fix:** both YAML test overrides in poll-closing-runtime now match either
+  boolean value, independent of the production flag. Targeted real D1 suite 15/15 passes with
+  two CPU affinity, two workers and 1536 MiB Node heap cap; changed-file lint/format pass.
+  Test-only change; no production configuration, workflows, migration, publishing or deploy.
+- **T32c1 rollout order:** obtain Volodymyr's sensitive-merge/migration/deploy approval first;
+  apply migration 0019 to production D1, then merge PR #122, then immediately deploy the bot
+  from clean `main` (`pnpm -C apps/bot run deploy`), with no approval pause between merge and deploy.
+  Do not approve/dispatch publishing until the new bot is deployed; the old strict receiver rejects
+  callbacks with `pollLanguage`. Record the deployed Worker version in this file.
 - **T32b validation:** core 282/282, channels 287/287; publisher 259 tests covered across
   the full run (257 passed, one new config-drift fixture failed) and corrected publish suite
   (12/12). D1 callback 27/27 and related draft/result/cron 73/73 pass. Workspace typecheck/build,

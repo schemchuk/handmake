@@ -52,13 +52,17 @@ export function postEntryReferences(post: Pick<Post, 'texts' | 'poll'>): string[
   ];
 }
 
+/** Poll fields have no language key; use the post's first language regardless of channel order. */
+export function postPollLanguage(post: Pick<Post, 'texts'>): string {
+  return Object.keys(post.texts)[0] ?? 'en';
+}
+
 /** Resolved projections must never be passed back to a content store. */
 export function resolvePostEntryNames(post: Post, names: EntryNames, allow: boolean): Post {
   const order = postEntryReferences(post);
   const resolve = (text: string, language: string) =>
     resolveEntryNames(text, names, allow, order, language);
-  // Poll fields have no language key; use the post's primary (first) language.
-  const pollLanguage = Object.keys(post.texts)[0] ?? 'en';
+  const pollLanguage = postPollLanguage(post);
   return {
     ...post,
     texts: Object.fromEntries(Object.entries(post.texts).map(([k, v]) => [k, resolve(v, k)])),
