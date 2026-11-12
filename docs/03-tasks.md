@@ -583,6 +583,9 @@ name deletion, migration application or flag enablement is authorized by this pr
 - Tests: real D1 callback round-trips, duplicate/legacy callbacks, tenant isolation, receipt bounds,
   placeholder-only payloads, all operation IDs and stable publication time. Run affected publisher,
   core and bot suites plus workspace checks.
+- Review notes from PR #120 (non-blocking): the Telegram `retry_after` bound (finite, 0..300 s)
+  also applies to the send path, so an out-of-range value is now a permanent error, not a retry.
+  Add tests for out-of-range `retry_after` on both send and edit.
 
 #### T32c — Author withdrawal and recoverable message reconciliation (`bot`)
 - Owner: codex · Reviewer: claude-code · Depends on: T32b

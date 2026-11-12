@@ -1,12 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T32a — implemented; awaiting independent review.
-- **Branch:** `feat/t32a-message-editing`.
-- **Last commit:** implementation commit on this branch (`feat: add optional message editing capability`).
-- **Next step:** claude-code reviews T32a and merges after green CI, then deploys the bot
-  from clean `main` per AGENTS.md and hands T32b to codex in a fresh session.
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Active agent:** codex
+- **Current task:** T32b — durable anonymous edit receipts (docs/03-tasks.md).
+- **Branch:** none yet (`feat/t32b-edit-receipts`).
+- **Last commit:** `d0b9a08 feat: add optional message editing capability (#120)`.
+- **Next step:** codex starts T32b in a fresh session; also fix the PR #120 review note
+  (tests for out-of-range `retry_after` on send and edit paths).
+- **Blocked on:** bot deploy of `d0b9a08` pending: claude-code's deploy was blocked by the
+  permission classifier; Volodymyr deploys with `pnpm -C apps/bot run deploy` from clean `main`.
+  `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
   provisioned by Volodymyr 2026-11-12 from `.env`.
@@ -15,6 +17,8 @@
   resolves tenant secrets, reconciles unchanged messages and retries bounded 429 responses.
   Transport/API/destination errors on the edit path omit private text and token-bearing URLs.
   No production publishing, deployment, name deletion, migrations or flag changes.
+- **T32a rollout:** PR #120 merged 2026-11-12 by Volodymyr after claude-code review (no blocking
+  findings, CI green). No migration, wrangler or secret change; no live caller of `editMessage` yet.
 - **T31d3 rollout:** PR #119 merged 2026-11-12 by claude-code with Volodymyr's OK after one
   review round (both blocking findings fixed, CI green, affected suites 19/19 locally).
   No migration or wrangler change; the new secret is optional while the flag is off.
