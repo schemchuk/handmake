@@ -1,14 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T32c1 — receipt safety and atomic withdrawal queue (split approved 2026-11-12).
-- **Branch:** `feat/t32c1-withdrawal-queue`.
-- **Last commit:** `808f2fe fix: scope legacy name receipts to Telegram`.
-- **Next step:** claude-code checks the new PR #122 CI run and re-reviews the test-only fixture
-  fix for comment 6820720193. Review findings 1-3 are fixed. Merge only after CI is green and
-  Volodymyr approves the documented rollout; author must not merge.
+- **Active agent:** codex
+- **Current task:** T32c2 — recoverable message reconciliation (docs/03-tasks.md).
+- **Branch:** `main` (start `feat/t32c2-reconciliation`).
+- **Last commit:** `6884501 feat: queue atomic author name withdrawals (T32c1) (#122)`.
+- **Next step:** codex starts T32c2 in a fresh session. T32c1 is rolled out: migration 0019
+  applied to production D1 by Volodymyr 2026-11-12, PR #122 merged, bot deployed (Worker
+  `a288c62e-080f-4100-8fbc-d5641951b715`).
   `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
-- **Blocked on:** independent review; sensitive merge and migration 0019 rollout need Volodymyr approval.
+- **Blocked on:** nothing for T32c2.
   `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
   names cannot be withdrawn or expired automatically (manual cleanup only); IG owner `from.id` unverified.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
@@ -32,11 +32,6 @@
   boolean value, independent of the production flag. Targeted real D1 suite 15/15 passes with
   two CPU affinity, two workers and 1536 MiB Node heap cap; changed-file lint/format pass.
   Test-only change; no production configuration, workflows, migration, publishing or deploy.
-- **T32c1 rollout order:** obtain Volodymyr's sensitive-merge/migration/deploy approval first;
-  apply migration 0019 to production D1, then merge PR #122, then immediately deploy the bot
-  from clean `main` (`pnpm -C apps/bot run deploy`), with no approval pause between merge and deploy.
-  Do not approve/dispatch publishing until the new bot is deployed; the old strict receiver rejects
-  callbacks with `pollLanguage`. Record the deployed Worker version in this file.
 - **T32b validation:** core 282/282, channels 287/287; publisher 259 tests covered across
   the full run (257 passed, one new config-drift fixture failed) and corrected publish suite
   (12/12). D1 callback 27/27 and related draft/result/cron 73/73 pass. Workspace typecheck/build,
