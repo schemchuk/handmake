@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T32d — implemented; awaiting independent review.
+- **Active agent:** codex
+- **Current task:** T32d — changes requested in review of PR #125.
 - **Branch:** `feat/t32d-name-retention`.
-- **Last commit:** `feat: expire non-winner names after result publication (T32d)`
-  (this handoff commit; resolve hash with `git log -1`). Previous baseline: `b82c6a2`.
-- **Next step:** claude-code reviews the T32d task PR and CI. Sensitive name-processing
-  merge requires Volodymyr's explicit OK. Deploy the bot receiver before updated publisher
-  execution; no new migration. See docs/name-reconciliation.md.
-- **Blocked on:** independent review and sensitive merge approval.
+- **Last commit:** `7fab129 feat: expire non-winner names after result publication (T32d)`.
+- **Next step:** codex fixes PR #125 in a fresh session. Blocking: CI red,
+  `apps/publisher/test/publish-callback.test.ts` 5 tests assert the exact callback body and
+  miss the new `completedAt` (assert it equals ledger `updatedAt`); bot/site CI runs were
+  SIGKILLed, so CI must be fully green. Non-blocking: (2) isolate per-tenant failures in
+  `expireNonWinnerNames` so one tenant cannot stop the rest or skip `reconcileNames()`, with a
+  test; (3) comment in `published-callback.ts` that `poll_results.draft_id` is the result draft.
+  Then hand back to claude-code for re-review.
+- **Blocked on:** PR #125 fixes; then sensitive merge needs Volodymyr's OK.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32d validation:** targeted real D1 bot suites 73/73 plus final retention/composition
   rerun 21/21 (76 distinct bot tests across the runs); publisher publish 12/12; core callback
