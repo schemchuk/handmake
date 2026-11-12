@@ -106,7 +106,7 @@ it('rolls back erasure if queueing fails', async () => {
   await db.exec(
     "CREATE TRIGGER reject_queue BEFORE INSERT ON name_reconciliations BEGIN SELECT RAISE(ABORT, 'fixture'); END;",
   );
-  await expect(expireNonWinnerNames(db, cutoff)).rejects.toThrow();
+  await expireNonWinnerNames(db, cutoff);
   expect(await rows(db)).toEqual(before);
   expect((await db.prepare('SELECT * FROM name_withdrawals').all()).results).toEqual([]);
 });
@@ -163,4 +163,24 @@ it('retains anonymous records and reconciles other tenants despite a rejected pu
   ]);
   expect(edits).toHaveLength(2);
   expect((await rows(db))[0]).toEqual(before[0]);
+});
+
+it('continues with later tenants after one transaction fails', async () => {
+  const db = await fixture();
+  await db.exec(
+    "CREATE TRIGGER reject_fixture BEFORE INSERT ON name_reconciliations WHEN NEW.tenant_id = 'fixture' BEGIN SELECT RAISE(ABORT, 'fixture'); END;",
+  );
+  await expireNonWinnerNames(db, cutoff);
+  const entries = await rows(db);
+  expect(
+    entries
+      .filter((row) => row.tenant_id === 'fixture')
+      .every((row) => row.display_name === 'Fixture'),
+  ).toBe(true);
+  expect(
+    entries.find((row) => row.tenant_id === 'other' && row.entry_id === b)?.display_name,
+  ).toBeNull();
+  expect((await db.prepare('SELECT tenant_id FROM name_reconciliations').all()).results).toEqual([
+    { tenant_id: 'other' },
+  ]);
 });

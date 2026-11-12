@@ -244,7 +244,13 @@ describe('runPublish published callback', () => {
         postId: draftId,
         date: result.post.date,
         photos: result.post.photos,
-        channels: { telegram: { status: 'done', messageIds: { main: expect.anything() } } },
+        channels: {
+          telegram: {
+            status: 'done',
+            completedAt: result.ledger.channels.telegram!.updatedAt,
+            messageIds: { main: expect.anything() },
+          },
+        },
       });
       expect(
         await verifyCallbackSignature(callbackSecret, calls[0]!.body, calls[0]!.signature!),
@@ -279,6 +285,7 @@ describe('runPublish published callback', () => {
     const ids = result.ledger.channels['telegram']!.remoteIds;
     expect(JSON.parse(calls[0]!.body).channels.telegram).toEqual({
       status: 'done',
+      completedAt: result.ledger.channels.telegram!.updatedAt,
       messageIds: { main: ids[0], poll: ids[2] },
     });
     expect(ids[2]).toBeDefined();

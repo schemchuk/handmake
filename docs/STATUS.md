@@ -1,18 +1,18 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T32d — changes requested in review of PR #125.
+- **Current task:** T32d — PR #125 review fixes implemented; checking CI.
 - **Branch:** `feat/t32d-name-retention`.
-- **Last commit:** `7fab129 feat: expire non-winner names after result publication (T32d)`.
-- **Next step:** codex fixes PR #125 in a fresh session. Blocking: CI red,
-  `apps/publisher/test/publish-callback.test.ts` 5 tests assert the exact callback body and
-  miss the new `completedAt` (assert it equals ledger `updatedAt`); bot/site CI runs were
-  SIGKILLed, so CI must be fully green. Non-blocking: (2) isolate per-tenant failures in
-  `expireNonWinnerNames` so one tenant cannot stop the rest or skip `reconcileNames()`, with a
-  test; (3) comment in `published-callback.ts` that `poll_results.draft_id` is the result draft.
-  Then hand back to claude-code for re-review.
-- **Blocked on:** PR #125 fixes; then sensitive merge needs Volodymyr's OK.
+- **Last commit:** `afb9ea7 docs(status): request T32d changes, hand back to codex`.
+- **Next step:** codex checks CI for the review-fix commit, then hands back to claude-code.
+  Updated all five exact callback expectations to assert ledger completion time; tenant
+  cleanup errors roll back locally and no longer skip later tenants/reconciliation;
+  documented result-draft linkage in the callback.
+- **Blocked on:** green CI; then independent re-review and Volodymyr's sensitive merge OK.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **PR #125 review-fix validation:** publisher callback 11/11, real D1 retention/composition
+  22/22; workspace typecheck, lint and changed-file formatting pass. No deployment,
+  production publishing/SQL, workflows, secrets or flags changed.
 - **T32d validation:** targeted real D1 bot suites 73/73 plus final retention/composition
   rerun 21/21 (76 distinct bot tests across the runs); publisher publish 12/12; core callback
   9/9. Workspace typecheck/build, lint and changed-file formatting pass. D1 tests use two

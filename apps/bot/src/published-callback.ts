@@ -97,6 +97,7 @@ export async function handlePublishedCallback(
       return time ? [new Date(time).toISOString()] : [];
     })
     .sort();
+  // poll_results.draft_id identifies the result draft, never the poll/selection draft.
   if (completionTimes[0])
     receiptStatements.push(
       env.DB.prepare(

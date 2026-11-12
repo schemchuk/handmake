@@ -16,17 +16,22 @@ export async function expireNonWinnerNames(db: D1Database, now: Date): Promise<v
   for (const { tenant_id: tenant } of tenants.results) {
     // Eligibility, erasure and queue generation share a transaction. A concurrent
     // winner selection or manual withdrawal cannot split the private/public state.
-    await db.batch([
-      db
-        .prepare(
-          `INSERT OR IGNORE INTO name_withdrawals (tenant_id, entry_id, requested_at)
+    try {
+      await db.batch([
+        db
+          .prepare(
+            `INSERT OR IGNORE INTO name_withdrawals (tenant_id, entry_id, requested_at)
         SELECT tenant_id, entry_id, ? FROM contest_entries WHERE ${eligible}`,
-        )
-        .bind(now.toISOString(), tenant, cutoff),
-      db
-        .prepare(`UPDATE contest_entries SET display_name = NULL WHERE ${eligible}`)
-        .bind(tenant, cutoff),
-      queueNameReconciliations(db, tenant),
-    ]);
+          )
+          .bind(now.toISOString(), tenant, cutoff),
+        db
+          .prepare(`UPDATE contest_entries SET display_name = NULL WHERE ${eligible}`)
+          .bind(tenant, cutoff),
+        queueNameReconciliations(db, tenant),
+      ]);
+    } catch {
+      // Never log private values from a failed bound statement. Retry next day.
+      console.error('Tenant name retention failed');
+    }
   }
 }
