@@ -3,8 +3,8 @@
 - **Active agent:** claude-code
 - **Current task:** T32c1 — receipt safety and atomic withdrawal queue (split approved 2026-11-12).
 - **Branch:** `feat/t32c1-withdrawal-queue`.
-- **Last commit:** `371fdae docs: propose reviewable T32c implementation split`.
-- **Next step:** claude-code reviews T32c1 PR; author must not merge. After merge and authorized
+- **Last commit:** `c7e14ba feat: queue atomic author name withdrawals (T32c1)`.
+- **Next step:** claude-code reviews T32c1 PR #122; author must not merge. After merge and authorized
   rollout, hand off T32c2 to codex in a fresh session.
   `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
 - **Blocked on:** independent review; sensitive merge and migration 0019 rollout need Volodymyr approval.
@@ -19,7 +19,8 @@
   parity fixture type inference corrected. Initial sandbox D1 run interrupted; capped unrestricted
   run completed. Migration 0019 applied only in test databases. No deployment, public edits,
   production name deletion, workflow/secret/flag change or dispatch. Retention timestamp prerequisite
-  for non-receipt channels is documented under T32c/T32d. Last implementation commit: see branch log.
+  for non-receipt channels is documented under T32c/T32d. Deploy the updated bot before publisher
+  runs carrying the new strict-plan `pollLanguage` field.
 - **T32b validation:** core 282/282, channels 287/287; publisher 259 tests covered across
   the full run (257 passed, one new config-drift fixture failed) and corrected publish suite
   (12/12). D1 callback 27/27 and related draft/result/cron 73/73 pass. Workspace typecheck/build,
