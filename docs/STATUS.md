@@ -1,11 +1,19 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T31d2 — implementation complete; validation and PR handoff in progress.
+- **Active agent:** claude-code
+- **Current task:** T31d2 — implementation complete; PR #118 awaits independent review.
 - **Branch:** `feat/t31d2-result-persistence`.
-- **Last commit:** `41b8867` docs(status): record T31d1 Worker version (session base).
-- **Next step:** finish full bot validation, push T31d2 and open its PR for claude-code review.
+- **Last commit:** `c400281` feat: persist contest results and winner decisions atomically.
+- **Next step:** claude-code reviews PR #118, checks CI and merges only after a non-blocking
+  review. Ask Volodymyr before production migration 0017/deploy; then hand off T31d3 to codex
+  for a fresh session. Keep the PR #117 Instagram owner-identity rollout check.
 - **Blocked on:** nothing. `featureFlags.wotwPoll` remains false; no live result caller.
+- **T31d2 validation:** bot 726/726 (37 files), including 17 new result tests; workspace
+  typecheck/build, lint, changed-file formatting and staged gitleaks pass. Real D1 covers
+  competing choices, retries after draft cleanup, tenant/week isolation, claim restrictions,
+  placeholder-only content and rollback at each transaction write. Initial new isolation
+  fixture reused an entry ID across weeks; corrected fixture and full rerun pass. Sandboxed
+  D1 run stalled and was interrupted; unrestricted targeted and full suites pass.
 - **T31d2 rollout:** migration 0017 adds winner flags and result receipts. Local/test only;
   reviewer must ask Volodymyr before production migration/deploy. PR #117 Instagram owner-ID
   verification remains a pre-live requirement; see docs/contest-vote-collection.md.
