@@ -232,3 +232,57 @@ describe('scheduled draft cleanup', () => {
     expect(await store.get(tenant, 'fresh')).toBeDefined();
   });
 });
+
+it('reconciles receipts on cleanup cron without reading contest creation configuration', async () => {
+  const db = await makeD1();
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+  const { createContestEntryStore } = await import('../src/contest-store');
+  const { createNameWithdrawalStore } = await import('../src/name-withdrawal-store');
+  const { vi } = await import('vitest');
+  const now = new Date('2026-11-12T12:00:00Z');
+  await createContestEntryStore(db).submit({
+    tenantId: 'fixture',
+    entryId: id,
+    displayName: 'First',
+    photoRef: 'photo',
+    consent: true,
+    consentAt: now,
+    createdAt: now,
+  });
+  const receipt = {
+    plan: {
+      version: 1,
+      type: 'wotw-result',
+      entryRefs: [id],
+      allowNames: true,
+      settings: { channelId: 'TELEGRAM_CHANNEL_ID' },
+      operations: [{ kind: 'message', text: `{entry:${id}}`, lang: 'uk' }],
+    },
+    remoteIds: [123],
+    publishedAt: now.toISOString(),
+  };
+  await db
+    .prepare('INSERT INTO anonymous_edit_receipts VALUES (?, ?, ?, ?, ?)')
+    .bind('fixture', 'post', 'telegram', JSON.stringify(receipt), now.toISOString())
+    .run();
+  await createNameWithdrawalStore(db).withdraw('fixture', id);
+  const fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
+    expect(String(_url)).toMatch(/\/editMessageText$/);
+    expect(JSON.parse(String(init?.body))).toMatchObject({ text: 'Робота № 1', message_id: 123 });
+    return Response.json({ ok: true, result: {} });
+  });
+  vi.stubGlobal('fetch', fetch);
+  try {
+    const app = createApp(
+      makeEnv({ DB: db, PUBLISH_LIVE: 'true', TELEGRAM_CHANNEL_ID: 'test-chat' }),
+      botTexts,
+    );
+    await app.scheduled({ scheduledTime: now.getTime() } as ScheduledEvent);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(await db.prepare('SELECT state FROM name_reconciliations').first()).toEqual({
+      state: 'done',
+    });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

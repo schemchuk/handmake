@@ -1,3 +1,4 @@
+import { ChannelEditRejectedError } from '@handmake/core';
 import type { DeliverContext, RemoteId, SendOperation } from '@handmake/core';
 import { describeChannelAdapterContract } from '@handmake/core/testing';
 import { describe, expect, it, vi } from 'vitest';
@@ -547,7 +548,9 @@ describe('TelegramAdapter: existing message edits (T32a)', () => {
     );
     const sleep = vi.fn(sleepNoop);
     const adapter = new TelegramAdapter({ token: TOKEN, fetchImpl, sleep, maxAttempts: 3 });
-    await expect(adapter.editMessage(123, text, makeCtx())).rejects.toThrow('Too Many Requests');
+    const attempt = adapter.editMessage(123, text, makeCtx());
+    await expect(attempt).rejects.toThrow('Too Many Requests');
+    await expect(attempt).rejects.toBeInstanceOf(ChannelEditRejectedError);
     expect(requests).toHaveLength(3);
     expect(sleep.mock.calls).toEqual([[2000], [2000]]);
   });
@@ -577,6 +580,8 @@ describe('TelegramAdapter: existing message edits (T32a)', () => {
       makeCtx(),
     );
     await expect(attempt).rejects.toThrow(`HTTP ${status}`);
+    if (status < 500) await expect(attempt).rejects.toBeInstanceOf(ChannelEditRejectedError);
+    else await expect(attempt).rejects.not.toBeInstanceOf(ChannelEditRejectedError);
     await expect(attempt).rejects.not.toThrow('private name');
     await expect(attempt).rejects.not.toThrow(TOKEN);
     expect(requests).toHaveLength(1);
@@ -593,6 +598,7 @@ describe('TelegramAdapter: existing message edits (T32a)', () => {
       makeCtx(),
     );
     await expect(attempt).rejects.toThrow('request failed');
+    await expect(attempt).rejects.not.toBeInstanceOf(ChannelEditRejectedError);
     await expect(attempt).rejects.not.toThrow(TOKEN);
     await expect(attempt).rejects.not.toThrow('private name');
     expect(fetchImpl).toHaveBeenCalledTimes(1);

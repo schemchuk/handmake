@@ -624,7 +624,7 @@ name deletion, migration application or flag enablement is authorized by this pr
 ##### T32c split — approved by Volodymyr (2026-11-12)
 
 Keep the parent acceptance criteria above; complete these sequentially in separate sessions/PRs,
-targeting at most ~400 changed non-test lines each. T32c1 implementation awaits independent review.
+targeting at most ~400 changed non-test lines each. T32c1 is merged and deployed; T32c2 implementation awaits independent review.
 
 - **T32c1 — Receipt safety and atomic withdrawal queue**
   - Owner: codex · Reviewer: claude-code · Depends on: T32b
@@ -634,7 +634,7 @@ targeting at most ~400 changed non-test lines each. T32c1 implementation awaits 
     receipts explicitly. Expose an internal withdrawal boundary; no author command yet.
   - Tests: real D1 atomicity, tenant isolation, repeated/competing withdrawals, missing receipts,
     receipt size boundary, publication timestamp, language parity and non-editable poll safety.
-- **T32c2 — Recoverable message reconciliation**
+- **T32c2 — Recoverable message reconciliation** (implemented; awaiting review)
   - Owner: codex · Reviewer: claude-code · Depends on: T32c1
   - Render durable anonymous plans with current D1 names, edit every supported Telegram operation,
     and persist progress/errors for cron retries independently of the creation flag. Serialize edits
@@ -643,6 +643,12 @@ targeting at most ~400 changed non-test lines each. T32c1 implementation awaits 
     Provide an injectable rebuild hook with failure isolation; no workflow or live dispatch.
   - Tests: real D1 multi-language/multi-message progress, partial failure/retry, draft cleanup,
     concurrent withdrawals and stale workers, unsupported operations and rebuild-hook failures.
+T32c2 recovery contract: see `docs/name-reconciliation.md`. Migration 0020 adds a durable
+non-expiring owner token; ambiguous remote outcomes retain that token until operator-confirmed
+quiescence and a full reconciliation. No timed takeover can safely fence Telegram requests.
+Creation flags never gate recovery; `PUBLISH_LIVE` still gates public edits. The site hook
+defaults to a no-op after verifying blog, portfolio and show paths.
+
 - **T32c3 — Author entries and withdrawal actions**
   - Owner: codex · Reviewer: claude-code · Depends on: T32c2
   - Add allow-listed `/entries` with bounded recent entries and tenant-bound withdrawal actions.

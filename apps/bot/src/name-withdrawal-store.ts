@@ -16,7 +16,9 @@ export function queueNameReconciliations(db: D1Database, tenant: string): D1Prep
     WHERE r.tenant_id = ?
     GROUP BY r.tenant_id, r.post_id, r.channel
     ON CONFLICT (tenant_id, post_id, channel) DO UPDATE SET
-      generation = excluded.generation, next_operation = 0, state = 'pending', error_code = NULL
+      generation = excluded.generation, next_operation = 0,
+      state = CASE WHEN lock_token IS NULL THEN 'pending' ELSE state END,
+      error_code = CASE WHEN lock_token IS NULL THEN NULL ELSE error_code END
     WHERE name_reconciliations.generation < excluded.generation
   `,
     )

@@ -1,19 +1,24 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T32c2 — recoverable message reconciliation (docs/03-tasks.md).
-- **Branch:** `main` (start `feat/t32c2-reconciliation`).
+- **Current task:** T32c2 — implementation complete; prepare PR for claude-code review.
+- **Branch:** `feat/t32c2-reconciliation`.
 - **Last commit:** `6884501 feat: queue atomic author name withdrawals (T32c1) (#122)`.
-- **Next step:** codex starts T32c2 in a fresh session. T32c1 is rolled out: migration 0019
-  applied to production D1 by Volodymyr 2026-11-12, PR #122 merged, bot deployed (Worker
-  `a288c62e-080f-4100-8fbc-d5641951b715`).
-  `wotwPoll` enabled 2026-11-12 by Volodymyr's decision, before T32c/T32d and the IG owner check.
-- **Blocked on:** nothing for T32c2.
-  `featureFlags.wotwPoll` is true (Volodymyr, 2026-11-12). Accepted risks until T32c/T32d: published
-  names cannot be withdrawn or expired automatically (manual cleanup only); IG owner `from.id` unverified.
-- **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
-  owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
-  provisioned by Volodymyr 2026-11-12 from `.env`.
+- **Next step:** commit/push T32c2 and open its PR; then hand off to claude-code.
+- **Blocked on:** independent review and Volodymyr's sensitive-merge approval.
+- **Open questions for Volodymyr:** rollout needs migration 0020 before deployment;
+  do not apply it remotely without approval. Instagram owner identity remains unverified.
+- **T32c2 validation:** real D1 60/60 (reconciliation, withdrawal, composition, callback),
+  two workers, two CPU affinity and 1536 MiB Node heap cap; core 283/283, channels 288/288
+  plus final adapter 52/52. Workspace typecheck/build, lint and changed-file formatting pass.
+  Initial sandbox D1 invocation stalled and was interrupted; capped unrestricted runs passed.
+  Unknown remote outcomes retain non-expiring locks until proven quiescent operator recovery;
+  no timeout takeover. See docs/name-reconciliation.md. Site paths checked; rebuild defaults
+  to no-op. Migration 0020 applied to test DBs only. No production edits, dispatch, deployment,
+  remote migration, workflow/secret/flag change. T32c3 must expose unresolved lock/error states.
+- **Production baseline:** T32c1 migration 0019 applied by Volodymyr; Worker
+  `a288c62e-080f-4100-8fbc-d5641951b715`. `wotwPoll` enabled by Volodymyr 2026-11-12
+  before withdrawal/retention rollout and the Instagram owner check.
 - **T32c1 validation:** core 283/283, channels 288/288, targeted real D1 55/55 (four files,
   two workers, two CPU affinity, 1536 MiB Node heap cap), publisher publish 12/12 pass.
   Workspace typecheck/build, lint, changed-file formatting and diff checks pass; initial language
