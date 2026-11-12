@@ -1,6 +1,7 @@
 import { publishedCallbackBodySchema, verifyCallbackSignature } from '@handmake/core';
 
 import { createD1DraftStore } from './draft-store';
+import { queueNameReconciliations } from './name-withdrawal-store';
 import type { Env } from './env';
 import type { BotTexts } from './texts';
 import type { TenantConfigSource } from './tenant-config-source';
@@ -97,7 +98,8 @@ export async function handlePublishedCallback(
     ];
   });
   // Commit durable source and retention time together, before draft transition/cleanup.
-  if (receiptStatements.length) await env.DB.batch(receiptStatements);
+  if (receiptStatements.length)
+    await env.DB.batch([...receiptStatements, queueNameReconciliations(env.DB, tenantId)]);
   if (deliveries.length) {
     await env.DB.batch(
       deliveries.map(([channel, delivery]) => {

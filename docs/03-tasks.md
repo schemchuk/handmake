@@ -621,10 +621,10 @@ name deletion, migration application or flag enablement is authorized by this pr
   polls; (4) Telegram cannot edit sent polls: guarantee polls never carry names or report those
   operations as non-reconcilable instead of claiming removal.
 
-##### Proposed T32c split — pending Volodymyr approval (2026-11-12)
+##### T32c split — approved by Volodymyr (2026-11-12)
 
 Keep the parent acceptance criteria above; complete these sequentially in separate sessions/PRs,
-targeting at most ~400 changed non-test lines each. No implementation starts before approval.
+targeting at most ~400 changed non-test lines each. T32c1 implementation awaits independent review.
 
 - **T32c1 — Receipt safety and atomic withdrawal queue**
   - Owner: codex · Reviewer: claude-code · Depends on: T32b
@@ -656,6 +656,23 @@ workspace checks. T32d depends on completion of all three. Site inspection: the 
 `apps/site/src/lib/site-data.ts` includes only `free` posts and has no D1 entry-name resolver;
 `.github/workflows/site.yml` already supports manual rebuild. Verify portfolio/show paths in T32c2
 before choosing the default hook; do not dispatch a production rebuild in these PRs.
+
+T32c1 retention prerequisite (PR #121 note 2): callbacks currently establish
+`poll_results.published_at` only from channels with edit receipts. Before implementing T32d,
+add a compatible per-channel completion timestamp to the callback and publisher for every
+successful channel, preserving the first successful result time. Legacy callbacks without that
+proof must leave retention blocked; neither callback arrival nor draft creation is a substitute.
+T32c1 does not introduce that callback rollout change.
+
+T32c1 implementation contract: migration 0019 must be applied before deploying the updated
+callback receiver (Volodymyr approval required). Withdrawal markers contain IDs/timestamps only;
+queue generations count distinct withdrawn entry refs. Callbacks enqueue late receipts in the same
+transaction as receipt insertion. Repeated requests preserve progress. Status reports missing known
+legacy receipts and name-bearing poll operations as incomplete; it cannot prove coverage for a
+legacy publication missing both its receipt and independent result/closing index. No command,
+cron edits or rebuild dispatch is introduced until T32c2/T32c3. New plans freeze `pollLanguage`;
+legacy plans retain their old fallback. Telegram polls with name placeholders are non-editable
+and must remain visible as unresolved even after supported caption/message edits succeed.
 
 #### T32d — Daily non-winner name retention (`bot`, docs)
 - Owner: codex · Reviewer: claude-code · Depends on: T32c

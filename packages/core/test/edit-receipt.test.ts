@@ -74,3 +74,24 @@ it('preserves the anonymous plan across interrupted delivery and ledger round-tr
   });
   expect(done.channels.channel!.error).toBeUndefined();
 });
+
+it('bounds the whole serialized receipt at the D1 limit, including remote IDs', () => {
+  const plan = {
+    ...receipt.plan,
+    operations: Array.from({ length: 32 }, () => ({
+      kind: 'message',
+      text: 'a'.repeat(1900),
+      lang: 'de',
+    })),
+  };
+  const candidate = { ...receipt, plan, remoteIds: Array(32).fill('x'.repeat(256)) };
+  expect(JSON.stringify(plan).length).toBeLessThan(65536);
+  expect(JSON.stringify(candidate).length).toBeGreaterThan(70000);
+  expect(anonymousEditReceiptSchema.safeParse(candidate).success).toBe(false);
+  const excess = JSON.stringify(candidate).length - 70000;
+  candidate.plan.operations[0]!.text = candidate.plan.operations[0]!.text.slice(excess);
+  expect(JSON.stringify(candidate).length).toBe(70000);
+  expect(anonymousEditReceiptSchema.safeParse(candidate).success).toBe(true);
+  candidate.plan.operations[0]!.text += 'a';
+  expect(anonymousEditReceiptSchema.safeParse(candidate).success).toBe(false);
+});

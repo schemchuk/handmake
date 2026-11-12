@@ -1,4 +1,4 @@
-import type { Post } from '@handmake/core';
+import type { EntryNames, Post } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
 import { renderTelegram, telegramCapabilities, TelegramRenderError } from '../src/telegram/render';
@@ -388,5 +388,34 @@ describe('canonical footer (T40, F31)', () => {
         canonicalSettings,
       ),
     ).toThrow(/message limit/);
+  });
+});
+
+it('keeps edit-plan poll language equal to post resolution when tenant language order differs', async () => {
+  const { anonymousEditPlanSchema, resolveEditPlan, resolvePostEntryNames } =
+    await import('@handmake/core');
+  const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+  const post = makePost({
+    type: 'wotw-poll',
+    texts: { uk: `{entry:${id}}`, de: `{entry:${id}}` },
+    poll: { question: `{entry:${id}}`, options: [`{entry:${id}}`, '2'] },
+  });
+  const settings = { channelId: 'CHANNEL', languages: ['de', 'uk'] };
+  const plan = anonymousEditPlanSchema.parse({
+    version: 1,
+    type: post.type,
+    entryRefs: [id],
+    allowNames: true,
+    pollLanguage: Object.keys(post.texts)[0],
+    settings,
+    operations: renderTelegram(post, settings),
+  });
+  for (const names of [{}, { [id]: 'Private fixture' }] as EntryNames[]) {
+    expect(resolveEditPlan(plan, names)).toEqual(
+      renderTelegram(resolvePostEntryNames(post, names, true), settings),
+    );
+  }
+  expect(resolveEditPlan(plan, {}).find((op) => op.kind === 'poll')).toMatchObject({
+    question: 'Робота № 1',
   });
 });
