@@ -7,11 +7,11 @@
 - **Next step:** codex starts T32c3 in a fresh session and also fixes the three
   `Review notes from PR #123` listed under T32c3 (queue starvation by permanent rejections,
   inline 429 sleeps before notifier crons, operator runbook for `recoverQuiescent`).
-- **Blocked on:** bot deploy of T32c2 from clean `main` (`pnpm -C apps/bot run deploy`) by
-  Volodymyr; record the Worker version here. Migration 0020 applied to prod D1 by Volodymyr.
+- **Blocked on:** nothing for T32c3.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32c2 rollout:** PR #123 merged 2026-11-12 by claude-code with Volodymyr's OK (no blocking
-  findings, CI green). Migration 0020 applied to prod D1 by Volodymyr before merge.
+  findings, CI green). Migration 0020 applied to prod D1 by Volodymyr before merge. Bot deployed from clean `main`
+  by Volodymyr, Worker `4a9d743b-0ccb-42bf-ab80-b23efa3b750e`.
 - **T32c2 validation:** real D1 60/60 (reconciliation, withdrawal, composition, callback),
   two workers, two CPU affinity and 1536 MiB Node heap cap; core 283/283, channels 288/288
   plus final adapter 52/52. Workspace typecheck/build, lint and changed-file formatting pass.
