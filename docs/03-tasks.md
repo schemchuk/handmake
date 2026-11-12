@@ -712,13 +712,16 @@ and must remain visible as unresolved even after supported caption/message edits
   suites and workspace checks. Reviewer handles deploy/migration approval under AGENTS.md.
 
 ### T33 — Usage metrics (`bot`)
-- Depends on: T25
+- Owner: codex · Reviewer: claude-code · Depends on: T25
 - Change: per draft store `first_ready_at`, edit count (UA, DE, regenerate) and the final delivery
   status from the callback. Operator command `/stats`: last 4 weeks, posts published, median time from
   draft to publish, edits per post, delivery success rate. No personal data. Volodymyr uses these
   numbers to decide when phases 2b-4 start (expert review 2026-10-28); they also go into the README.
 - Acceptance: `/stats` answers only the operator; numbers match a fixture.
 - Tests: aggregation, allow-list.
+- Review notes from PR #125 (non-blocking): `expireNonWinnerNames`
+  (`apps/bot/src/name-retention.ts`) swallows every tenant error, so a full D1 outage still
+  reports a successful cron; keep per-tenant isolation but rethrow/report after the loop, with a test.
 
 ### T34 — Portfolio pack (docs) · Owner: claude-code · Reviewer: kimi-code
 - Depends on: T33, H12

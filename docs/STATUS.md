@@ -1,12 +1,11 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** none. T32d merged (PR #125, squash `918f8bb`); T32 complete.
-- **Branch:** `main`.
-- **Last commit:** `918f8bb feat: expire non-winner names after publication (T32d) (#125)`.
-- **Next step:** Volodymyr names the next task (T33 has no Owner yet). Review note from
-  PR #125 (non-blocking, for the next bot task): `expireNonWinnerNames` swallows every tenant
-  error, so a full D1 outage still reports a successful cron; rethrow/report after the loop.
+- **Active agent:** codex
+- **Current task:** T33 — usage metrics (`/stats`).
+- **Branch:** `feat/t33-usage-metrics` (to create).
+- **Last commit:** `d8f3179 docs(status): record T32d bot deploy version`.
+- **Next step:** codex implements T33 in a fresh session (see docs/03-tasks.md, including the
+  review note from PR #125). T32d is deployed.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32d rollout:** PR #125 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
