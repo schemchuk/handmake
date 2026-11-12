@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32 — not started.
-- **Branch:** `main` (codex creates the T32 branch).
+- **Active agent:** none
+- **Current task:** T32 — implementation split proposed; awaiting approval.
+- **Branch:** `main` (planning only; no implementation branch yet).
 - **Last commit:** `94d1ab4` feat: wire contest closing and author result previews (#119).
-- **Next step:** codex starts T32 from docs/03-tasks.md in a fresh session.
+- **Next step:** Volodymyr reviews the T32a-d split in docs/03-tasks.md; after approval,
+  codex starts T32a in a fresh session.
   Reviewers: run only affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap.
-- **Blocked on:** nothing. `featureFlags.wotwPoll` remains false.
+- **Blocked on:** approval of the T32a-d split. `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before enabling `wotwPoll`, complete the Instagram
   owner-identity check (docs/contest-vote-collection.md). Worker secret `TELEGRAM_CHANNEL_ID`
   provisioned by Volodymyr 2026-11-12 from `.env`.

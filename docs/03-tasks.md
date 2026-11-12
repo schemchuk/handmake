@@ -550,6 +550,71 @@ split in chat on 2026-11-12 (AGENTS.md workflow step 4).
 - Acceptance: after withdrawal the channel shows "Work No N"; Git history never contained the name.
 - Tests: edit caption vs text, retention dates, winner exemption.
 
+#### T32 implementation split — proposed 2026-11-12, awaiting Volodymyr's approval
+
+The original task exceeds the ADR 009 review budget. Callback v2 retains only `main` and `poll`,
+although Telegram also publishes separate language replies. Draft cleanup removes the source needed
+for later edits. Implement in order, one fresh session and PR per subtask; keep `wotwPoll` disabled
+until the complete withdrawal/retention path is reviewed and deployed. No production publishing,
+name deletion, migration application or flag enablement is authorized by this proposal.
+
+#### T32a — Optional message editing capability (`core`, `channels`)
+- Owner: codex · Reviewer: claude-code · Depends on: T29
+- Change: define a network-independent optional `editMessage` capability. Telegram selects
+  `editMessageCaption` for a media caption and `editMessageText` for a text operation; resolve the
+  destination through tenant secrets. Reuse bounded retry/error handling without logging names,
+  request bodies or token-bearing URLs. Treat an unchanged message as successful reconciliation.
+- Acceptance: edits target an existing message, never send a new post; unsupported operation kinds
+  fail safely. Other adapters need no implementation.
+- Tests: caption versus text, target/secret resolution, unchanged-message success, rate limiting,
+  permanent rejection and sanitized network failures. Run affected channels tests and workspace checks.
+
+#### T32b — Durable anonymous edit receipts (`core`, `publisher`, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T32a
+- Change: extend the signed callback compatibly to record all editable operation IDs and their
+  anonymous source/render metadata, including language replies. Store a bounded, tenant-scoped D1
+  receipt that survives draft cleanup; source contains entry placeholders only, never resolved names.
+  Preserve publication layout/settings needed to re-render after config changes. Persist the first
+  successful result-publication timestamp for retention; draft creation and callback receipt time are
+  not substitutes for publication time. Add a migration if required, without applying it remotely.
+- Acceptance: retries preserve receipts and the original publication timestamp; legacy callbacks remain
+  accepted but incomplete receipts are detectable. No name enters Git, callback payloads or receipts.
+  Enumerate every affected message after draft cleanup, including both languages and result posts.
+- Tests: real D1 callback round-trips, duplicate/legacy callbacks, tenant isolation, receipt bounds,
+  placeholder-only payloads, all operation IDs and stable publication time. Run affected publisher,
+  core and bot suites plus workspace checks.
+
+#### T32c — Author withdrawal and recoverable message reconciliation (`bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: T32b
+- Change: allow-listed `/entries` lists bounded recent entries with a withdraw-name action. Clear only
+  the name, retaining the submitted work, numbering, consent and winner status. Atomically queue
+  affected receipt reconciliation with deletion; render using current D1 names and the durable source,
+  then edit every affected Telegram message through the capability. Persist retry progress after
+  failures; repeated actions and cron retries converge without restoring a name. Guard tenant access
+  and concurrent withdrawals so an older render cannot leave a withdrawn name visible. Expose missing
+  legacy receipts/edit failures to the author without claiming that public removal succeeded.
+  Provide an injectable site rebuild hook; verify the current site integration before deciding whether
+  the original T39 no-op assumption is still valid. No new workflow or live dispatch in this PR.
+- Acceptance: withdrawal removes the name in D1 immediately; successful reconciliation replaces it
+  with the existing localized anonymous work label in every affected caption/text, including after
+  draft cleanup. Winner names can also be withdrawn. Failures remain recoverable and visible.
+- Tests: allow-list, forged/cross-tenant actions, repeated/concurrent withdrawal, multi-language and
+  multi-post edits, retry after partial failure, absent receipts and rebuild-hook failure isolation.
+  Run affected bot D1 files with `--maxWorkers=2` under a memory/CPU cap, plus workspace checks.
+
+#### T32d — Daily non-winner name retention (`bot`, docs)
+- Owner: codex · Reviewer: claude-code · Depends on: T32c
+- Change: daily cleanup clears non-winner names 90 days after the week's successful result publication,
+  atomically queuing the same reconciliation as manual withdrawal. Keep winner names until explicit
+  withdrawal; do not expire names for unpublished results. Resume pending edits independently of the
+  feature flag, so disabling contest creation cannot interrupt an erasure already requested.
+  Document legacy receipt recovery, failed-edit operations and rollout prerequisites.
+- Acceptance: exact 90-day cutoff, winner exemption, anonymous records retained, no premature deletion
+  from draft/selection dates. Failed edits retry without restoring names or blocking other cleanup.
+- Tests: before/at/after cutoff, UTC/DST boundaries, unpublished results, winner exemption, withdrawn
+  winner, multiple tenants, repeated/concurrent cleanup and partial edit failure. Run affected bot
+  suites and workspace checks. Reviewer handles deploy/migration approval under AGENTS.md.
+
 ### T33 — Usage metrics (`bot`)
 - Depends on: T25
 - Change: per draft store `first_ready_at`, edit count (UA, DE, regenerate) and the final delivery
