@@ -1,15 +1,15 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T32c3 — re-review PR #124 after author fixes.
-- **Branch:** `feat/t32c3-author-entries`.
-- **Last commit:** `70ecef2 docs(status): return T32c3 review blocker to codex` (review handoff).
-- **Next step:** claude-code re-reviews PR #124 and checks CI. The blocker and three review
-  notes are addressed: identified photo/name/poll-number rows; explicit confirm/cancel; no
-  false missing-receipt warning before recorded publication; retained retry counts documented.
-  Check that refreshed/withdrawn rows omit the deleted name, including legacy text buttons.
-  Sensitive merge, production migration 0021 and deployment still need Volodymyr approval.
-- **Blocked on:** nothing for implementation. Production migration 0021 and deploy require Volodymyr approval.
+- **Active agent:** codex
+- **Current task:** T32d — daily non-winner name retention.
+- **Branch:** `feat/t32d-name-retention` (to create).
+- **Last commit:** `b82c6a2 feat: add author entry name withdrawal actions (T32c3) (#124)`.
+- **Next step:** codex implements T32d in a fresh session (see docs/03-tasks.md, including the
+  review note from PR #124). Bot deploy of T32c3 from clean `main` is pending; record the
+  Worker version here once deployed.
+- **Blocked on:** nothing for implementation.
+- **T32c3 rollout:** PR #124 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
+  after blocker fix, CI green). Migration 0021 applied to prod D1 by Volodymyr before merge.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
   bounded localized public progress, missing-receipt/unknown/rejected states; winner, work and

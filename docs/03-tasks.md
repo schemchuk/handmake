@@ -649,7 +649,7 @@ quiescence and a full reconciliation. No timed takeover can safely fence Telegra
 Creation flags never gate recovery; `PUBLISH_LIVE` still gates public edits. The site hook
 defaults to a no-op after verifying blog, portfolio and show paths.
 
-- **T32c3 — Author entries and withdrawal actions** (implemented; review pending)
+- **T32c3 — Author entries and withdrawal actions** (done, PR #124)
   - Owner: codex · Reviewer: claude-code · Depends on: T32c2
   - Add allow-listed `/entries` with bounded recent entries and tenant-bound withdrawal actions.
     Report immediate private deletion separately from pending/failed/complete public edits;
@@ -700,6 +700,9 @@ and must remain visible as unresolved even after supported caption/message edits
   withdrawal; do not expire names for unpublished results. Resume pending edits independently of the
   feature flag, so disabling contest creation cannot interrupt an erasure already requested.
   Document legacy receipt recovery, failed-edit operations and rollout prerequisites.
+- Review notes from PR #124: in `/entries` (`apps/bot/src/author-entries.ts`) one failing
+  `replyWithPhoto` (e.g. an unusable `file_id`) aborts the loop and the remaining rows are never
+  sent; isolate per-row failures (fallback text row) and test it.
 - Acceptance: exact 90-day cutoff, winner exemption, anonymous records retained, no premature deletion
   from draft/selection dates. Failed edits retry without restoring names or blocking other cleanup.
 - Tests: before/at/after cutoff, UTC/DST boundaries, unpublished results, winner exemption, withdrawn
