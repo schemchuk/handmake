@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** none
-- **Current task:** T31d — implementation split proposed; no code changed.
+- **Active agent:** codex
+- **Current task:** T31d1 — closing collection hardening; ready to start.
 - **Branch:** `main` (planning only).
-- **Last commit:** this handoff commit — docs: propose smaller T31d implementation tasks
+- **Last commit:** this handoff commit — docs: record approval of T31d implementation split
   (resolve its hash with `git log -1 -- docs/STATUS.md`).
-- **Next step:** Volodymyr reviews the proposed T31d1–T31d3 split in docs/03-tasks.md.
-  After approval, set Active agent to codex and start T31d1 in a fresh session.
-- **Blocked on:** split approval under AGENTS.md workflow step 4 and ADR 009.
+- **Next step:** codex starts T31d1 in a fresh session on `feat/t31d1-<slug>` from `main`.
+  Implement the four PR #116 review fixes listed under T31d1 in docs/03-tasks.md.
+- **Blocked on:** nothing. Volodymyr approved T31d1–T31d3 in chat on 2026-11-12.
   `featureFlags.wotwPoll` remains false.
 - **Open questions for Volodymyr:** before T31d goes live, check on a real Facebook Page post
   that reader comments come with `from.id`; otherwise every contest result will be unreadable.

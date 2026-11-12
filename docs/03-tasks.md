@@ -494,14 +494,14 @@ of this proposal.
   post that Facebook returns `from.id` for reader comments; without it any digit comment makes
   the whole result unreadable (fail-closed, accepted for now).
 
-###### Proposed T31d split — awaiting Volodymyr approval, 2026-11-12
+###### T31d split — approved by Volodymyr, 2026-11-12
 
 Inspection of the existing closing store and cron shows three distinct remaining units:
 collection hardening, atomic result persistence, and bot/cron integration. Implementing them
 together would exceed the ADR 009 budget of roughly 400 changed non-test lines. The parent
-acceptance criteria above remain unchanged. Proposed order: T31d1 → T31d2 → T31d3, each in a
-fresh session with its own PR. Owner: codex. Reviewer: claude-code. Do not implement this split
-until Volodymyr approves it (AGENTS.md workflow step 4).
+acceptance criteria above remain unchanged. Approved order: T31d1 → T31d2 → T31d3, each in a
+fresh session with its own PR. Owner: codex. Reviewer: claude-code. Volodymyr approved this
+split in chat on 2026-11-12 (AGENTS.md workflow step 4).
 
 - **T31d1 — Closing collection hardening.** Address all four PR #116 notes above: exclude
   Instagram owner comments in contest counting, bound total collection below the closing lease,
