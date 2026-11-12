@@ -694,6 +694,8 @@ legacy plans retain their old fallback. Telegram polls with name placeholders ar
 and must remain visible as unresolved even after supported caption/message edits succeed.
 
 #### T32d — Daily non-winner name retention (`bot`, docs)
+- Implementation: completed by codex; awaiting independent review. Recovery and rollout:
+  `docs/name-reconciliation.md`. No new migration required.
 - Owner: codex · Reviewer: claude-code · Depends on: T32c
 - Change: daily cleanup clears non-winner names 90 days after the week's successful result publication,
   atomically queuing the same reconciliation as manual withdrawal. Keep winner names until explicit

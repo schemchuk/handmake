@@ -237,7 +237,6 @@ it('reconciles receipts on cleanup cron without reading contest creation configu
   const db = await makeD1();
   const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
   const { createContestEntryStore } = await import('../src/contest-store');
-  const { createNameWithdrawalStore } = await import('../src/name-withdrawal-store');
   const { vi } = await import('vitest');
   const now = new Date('2026-11-12T12:00:00Z');
   await createContestEntryStore(db).submit({
@@ -265,7 +264,13 @@ it('reconciles receipts on cleanup cron without reading contest creation configu
     .prepare('INSERT INTO anonymous_edit_receipts VALUES (?, ?, ?, ?, ?)')
     .bind('fixture', 'post', 'telegram', JSON.stringify(receipt), now.toISOString())
     .run();
-  await createNameWithdrawalStore(db).withdraw('fixture', id);
+  await db
+    .prepare(
+      `INSERT INTO poll_results (tenant_id, week, draft_id, entry_id, source, published_at)
+    VALUES ('fixture', '2026-11-09', 'post', ?, 'author', ?)`,
+    )
+    .bind(id, new Date(now.getTime() - 90 * 86400000).toISOString())
+    .run();
   const fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
     expect(String(_url)).toMatch(/\/editMessageText$/);
     expect(JSON.parse(String(init?.body))).toMatchObject({ text: 'Робота № 1', message_id: 123 });

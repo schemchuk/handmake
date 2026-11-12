@@ -1,6 +1,7 @@
 import { runPollClosingCron } from './poll-closing-runtime';
 import { createEntrySessionStore } from './entry-session';
 import { createAuthorEntriesStore } from './author-entries';
+import { expireNonWinnerNames } from './name-retention';
 import { createNameReconciler } from './name-reconciliation';
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
 import {
@@ -341,6 +342,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         );
         await createEntrySessionStore(env.DB).cleanup(new Date(event.scheduledTime));
         const deleted = (await drafts.deleteOlderThan(cutoff)) + commentsDeleted;
+        await expireNonWinnerNames(env.DB, new Date(event.scheduledTime));
         await reconcileNames();
         return deleted;
       }

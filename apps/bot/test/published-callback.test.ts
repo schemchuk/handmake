@@ -511,7 +511,7 @@ it('keeps anonymous receipts through cleanup, duplicates and legacy callbacks wi
       .prepare('SELECT published_at FROM poll_results WHERE tenant_id = ?')
       .bind(tenant)
       .first(),
-  ).toEqual({ published_at: editReceipt.publishedAt });
+  ).toEqual({ published_at: new Date(editReceipt.publishedAt).toISOString() });
   expect(
     (await handlePublishedCallback(env, await signedRequest(callbackBody('legacy')))).status,
   ).toBe(200);
@@ -523,4 +523,51 @@ it('keeps anonymous receipts through cleanup, duplicates and legacy callbacks wi
     },
   };
   expect((await handlePublishedCallback(env, await signedRequest(broken))).status).toBe(400);
+});
+
+it('starts retention from the earliest proven channel completion without a Telegram receipt', async () => {
+  const db = await makeD1();
+  const env = makeEnv(db);
+  const entry = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+  await db
+    .prepare(
+      `INSERT INTO contest_entries (tenant_id, entry_id, week, file_id, consent_at, created_at)
+    VALUES (?, ?, '2026-11-09', 'file', '2026-11-10', '2026-11-10')`,
+    )
+    .bind(tenant, entry)
+    .run();
+  await db
+    .prepare(
+      `INSERT INTO poll_results (tenant_id, week, draft_id, entry_id, source)
+    VALUES (?, '2026-11-09', 'result', ?, 'author')`,
+    )
+    .bind(tenant, entry)
+    .run();
+  const time = () => db.prepare('SELECT published_at FROM poll_results').first();
+  const deliver = async (channels: unknown) => {
+    expect(
+      (
+        await handlePublishedCallback(
+          env,
+          await signedRequest(callbackBody('result', { channels })),
+        )
+      ).status,
+    ).toBe(200);
+  };
+  await deliver({ instagram: 'done' });
+  await deliver({
+    instagram: { status: 'failed', completedAt: '2026-11-01T12:00:00Z', messageIds: {} },
+  });
+  expect(await time()).toEqual({ published_at: null });
+  await deliver({
+    instagram: { status: 'done', completedAt: '2026-11-12T12:00:00Z', messageIds: {} },
+  });
+  await deliver({
+    facebook: { status: 'done', completedAt: '2026-11-11T12:00:00Z', messageIds: {} },
+  });
+  await deliver({
+    instagram: { status: 'done', completedAt: '2026-11-13T12:00:00Z', messageIds: {} },
+  });
+  await deliver({ instagram: 'done' });
+  expect(await time()).toEqual({ published_at: '2026-11-11T12:00:00.000Z' });
 });

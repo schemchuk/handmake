@@ -110,3 +110,37 @@ internal concurrency identifier, not an API credential.
    require `done` with matching generation/completed generation and no missing
    receipt warning before claiming full public reconciliation. A new unknown
    outcome requires new evidence and approval; never automate lock takeover.
+
+## Daily name retention (T32d)
+
+The existing `29 3 * * *` UTC cleanup also clears non-winner display names at
+90 elapsed days (90 × 24 hours) after the week's first proven successful result
+publication. The cutoff is inclusive and independent of local daylight saving
+time. It preserves entries, consent, numbering and winner state. Winner names
+remain until explicit author withdrawal. Unpublished results never start the clock.
+
+Erasure, durable withdrawal markers and reconciliation queue generations commit
+in one transaction per tenant. The cleanup does not read `wotwPoll`; pending edits
+continue on both cron schedules even when contest creation is disabled. `PUBLISH_LIVE`
+still gates remote edits, so a dry runtime can erase D1 names while leaving public
+edits pending. Failed remote edits cannot undo private erasure or stop later cleanup.
+Use the rejected/unknown-outcome procedures above; do not clear a running lock merely
+because the cleanup ran again. `/entries` exposes missing legacy receipts and edit
+progress for retained anonymous entries as well.
+
+Rollout: deploy the callback receiver before running the updated publisher. The
+optional per-channel `completedAt` is copied from the durable successful ledger
+entry; the receiver preserves the earliest proven completion across channels and
+retries. Existing edit-receipt publication times remain accepted. Legacy callbacks
+without either proof leave `poll_results.published_at` unset, blocking expiry.
+No new migration, workflow or secret is required; migrations through 0021 must
+already be applied. The reviewer deploys after the required approval under AGENTS.md.
+
+For legacy results, recover the original successful channel completion from the
+committed ledger and resend the signed callback through the normal publisher path.
+Do not substitute callback arrival, draft creation, selection date or the current
+time. Do not rerun production publishing without separate authorization. Receipt
+recovery still requires the original durable anonymous plan, remote IDs and settings:
+a completion timestamp alone cannot prove public-name removal. Missing originals
+remain an explicit operator issue; never fabricate an edit receipt. The site rebuild
+hook remains the verified no-op described above.

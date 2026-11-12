@@ -1,12 +1,23 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T32d — daily non-winner name retention.
-- **Branch:** `feat/t32d-name-retention` (to create).
-- **Last commit:** `b82c6a2 feat: add author entry name withdrawal actions (T32c3) (#124)`.
-- **Next step:** codex implements T32d in a fresh session (see docs/03-tasks.md, including the
-  review note from PR #124). T32c3 is deployed.
-- **Blocked on:** nothing for implementation.
+- **Active agent:** claude-code
+- **Current task:** T32d — implemented; awaiting independent review.
+- **Branch:** `feat/t32d-name-retention`.
+- **Last commit:** `feat: expire non-winner names after result publication (T32d)`
+  (this handoff commit; resolve hash with `git log -1`). Previous baseline: `b82c6a2`.
+- **Next step:** claude-code reviews the T32d task PR and CI. Sensitive name-processing
+  merge requires Volodymyr's explicit OK. Deploy the bot receiver before updated publisher
+  execution; no new migration. See docs/name-reconciliation.md.
+- **Blocked on:** independent review and sensitive merge approval.
+- **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **T32d validation:** targeted real D1 bot suites 73/73 plus final retention/composition
+  rerun 21/21 (76 distinct bot tests across the runs); publisher publish 12/12; core callback
+  9/9. Workspace typecheck/build, lint and changed-file formatting pass. D1 tests use two
+  workers, two CPU affinity and 1536 MiB Node heap. Initial sandbox D1 run stalled and was
+  interrupted; unrestricted run passed. Covers exact inclusive 90-day UTC/DST cutoff,
+  winners/unpublished results, tenant isolation, concurrent cleanup, rollback, failed-edit
+  recovery, callback completion evidence and author photo fallback. No production SQL,
+  publishing, deployment, workflow, secret or flag changes.
 - **T32c3 rollout:** PR #124 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
   after blocker fix, CI green). Migration 0021 applied to prod D1 by Volodymyr before merge. Bot deployed from clean `main`
   by Volodymyr, Worker `b488fdad-5ca1-4f04-8982-fb896557f479`.
