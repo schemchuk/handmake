@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   closing: vi.fn(),
   notices: vi.fn(),
   collect: vi.fn(),
+  reconcile: vi.fn(),
+}));
+vi.mock('../src/name-reconciliation', () => ({
+  createNameReconciler: () => ({ tick: mocks.reconcile }),
 }));
 vi.mock('../src/announcement-cron', () => ({ runAnnouncementCron: mocks.cron }));
 vi.mock('../src/poll-cron', () => ({ runPollCron: mocks.poll }));
@@ -55,10 +59,14 @@ it.each([
     mocks.collect.mockImplementation(async () => {
       calls.push('collect');
     });
+    mocks.reconcile.mockImplementation(async () => {
+      calls.push('reconcile');
+    });
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const app = createApp(
       {
         DB: fakeDb(),
+        PUBLISH_LIVE: 'true',
         TELEGRAM_BOT_TOKEN: 'fixture',
         TELEGRAM_ALLOWED_USER_IDS: '{"11":"one"}',
         GITHUB_REPO: 'owner/repo',
@@ -68,7 +76,7 @@ it.each([
     await expect(
       app.scheduled({ cron: '* * * * *', scheduledTime: Date.now() } as ScheduledEvent),
     ).resolves.toBe(0);
-    expect(calls).toEqual(['announcement', 'poll', 'closing', 'notices', 'collect']);
+    expect(calls).toEqual(['announcement', 'poll', 'closing', 'notices', 'collect', 'reconcile']);
     expect(mocks.collect.mock.calls[0]![1].capabilities).toEqual({});
     expect(error).toHaveBeenCalledTimes(1 + Number(pollFails) + Number(closingFails));
     if (pollFails) {

@@ -241,3 +241,36 @@ it('fences an old recovery token after a new owner has claimed the publication',
   await f.runner.tick();
   expect(await f.state()).toMatchObject({ state: 'done' });
 });
+
+it('rotates ten permanently rejected jobs so a later publication is attempted', async () => {
+  const f = await setup();
+  const receipt = await f.db
+    .prepare('SELECT receipt FROM anonymous_edit_receipts LIMIT 1')
+    .first<{ receipt: string; received_at: string }>();
+  // Duplicate durable receipts with lexically earlier keys: the old ordering starved post.
+  for (let i = 0; i < 10; i++) {
+    const post = `a${i}`;
+    await f.db
+      .prepare('INSERT INTO anonymous_edit_receipts VALUES (?, ?, ?, ?, ?)')
+      .bind('fixture', post, 'telegram', receipt!.receipt, now.toISOString())
+      .run();
+    await f.db
+      .prepare(
+        'INSERT INTO name_reconciliations (tenant_id, post_id, channel, generation) VALUES (?, ?, ?, 1)',
+      )
+      .bind('fixture', post, 'telegram')
+      .run();
+  }
+  f.edit.mockRejectedValue(new ChannelEditRejectedError());
+  await f.runner.tick();
+  expect(await f.state()).toBeTruthy();
+  expect(
+    await f.db.prepare("SELECT attempts FROM name_reconciliations WHERE post_id = 'post'").first(),
+  ).toEqual({ attempts: 0 });
+  await f.runner.tick();
+  expect(
+    await f.db
+      .prepare("SELECT attempts, error_code FROM name_reconciliations WHERE post_id = 'post'")
+      .first(),
+  ).toEqual({ attempts: 1, error_code: 'edit_rejected' });
+});

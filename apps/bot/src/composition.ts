@@ -1,5 +1,6 @@
 import { runPollClosingCron } from './poll-closing-runtime';
 import { createEntrySessionStore } from './entry-session';
+import { createAuthorEntriesStore } from './author-entries';
 import { createNameReconciler } from './name-reconciliation';
 import { ClaudeTranslator, humanizeDePromptV1 } from '@handmake/ai';
 import {
@@ -200,6 +201,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         },
         entryNames: (tenant, ids) => readEntryNames(env.DB, tenant, ids),
         entries: createEntrySessionStore(env.DB),
+        authorEntries: createAuthorEntriesStore(env.DB),
         comments: {
           store: createCommentStore(env.DB),
           capabilities: commentCapabilities(),
@@ -255,6 +257,23 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
     return handleUpdate;
   }
 
+  async function reconcileNames() {
+    // Recovery runs after notifiers so rate limits cannot delay announcements.
+    if (env.PUBLISH_LIVE === 'true') {
+      try {
+        await createNameReconciler({
+          db: env.DB,
+          adapter: new TelegramAdapter({ token: env.TELEGRAM_BOT_TOKEN }),
+          secrets: {
+            resolve: async (name) =>
+              name === 'TELEGRAM_CHANNEL_ID' ? (env.TELEGRAM_CHANNEL_ID ?? '') : '',
+          },
+        }).tick();
+      } catch {
+        console.error('name reconciliation cron failed');
+      }
+    }
+  }
   return {
     get bot(): Bot<AppContext> {
       build();
@@ -307,21 +326,6 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
 
     async scheduled(event) {
       const drafts = createD1DraftStore(env.DB);
-      // Withdrawal recovery is independent of contest creation and tenant flags.
-      if (env.PUBLISH_LIVE === 'true') {
-        try {
-          await createNameReconciler({
-            db: env.DB,
-            adapter: new TelegramAdapter({ token: env.TELEGRAM_BOT_TOKEN }),
-            secrets: {
-              resolve: async (name) =>
-                name === 'TELEGRAM_CHANNEL_ID' ? (env.TELEGRAM_CHANNEL_ID ?? '') : '',
-            },
-          }).tick();
-        } catch {
-          console.error('name reconciliation cron failed');
-        }
-      }
       // Retention cleanup runs on its own daily cron — an event without a
       // cron (as in tests) counts as the cleanup cron and never fetches
       // tenant config.
@@ -336,7 +340,9 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
           new Date(event.scheduledTime - commentRetentionDays * 24 * 60 * 60 * 1000),
         );
         await createEntrySessionStore(env.DB).cleanup(new Date(event.scheduledTime));
-        return (await drafts.deleteOlderThan(cutoff)) + commentsDeleted;
+        const deleted = (await drafts.deleteOlderThan(cutoff)) + commentsDeleted;
+        await reconcileNames();
+        return deleted;
       }
       // F18: on every other tick, check whether an announcement/reminder
       // moment just fired for some tenant. Failures stay inside the cron:
@@ -423,6 +429,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       } catch (error) {
         logError('comment collect failed', error, tenantId);
       }
+      await reconcileNames();
       return 0;
     },
   };

@@ -1,14 +1,21 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T32c3 — author entries and withdrawal actions (docs/03-tasks.md).
-- **Branch:** `main` (start `feat/t32c3-author-entries`).
-- **Last commit:** `ed560d8 feat: reconcile withdrawn names with durable progress (T32c2) (#123)`.
-- **Next step:** codex starts T32c3 in a fresh session and also fixes the three
-  `Review notes from PR #123` listed under T32c3 (queue starvation by permanent rejections,
-  inline 429 sleeps before notifier crons, operator runbook for `recoverQuiescent`).
-- **Blocked on:** nothing for T32c3.
+- **Current task:** T32c3 — implemented, preparing review handoff.
+- **Branch:** `feat/t32c3-author-entries`.
+- **Last commit:** `ed560d8 feat: reconcile withdrawn names with durable progress (T32c2) (#123)` (base).
+- **Next step:** finish validation, push T32c3 and open its PR for claude-code.
+- **Blocked on:** nothing for implementation. Production migration 0021 and deploy require Volodymyr approval.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **T32c3:** private allow-listed `/entries`, tenant-bound buttons, immediate D1 name deletion,
+  bounded localized public progress, missing-receipt/unknown/rejected states; winner, work and
+  consent retained. PR #123 notes addressed: durable fair retry attempts (migration 0021),
+  reconciliation after other crons, exact operator recovery runbook.
+- **T32c3 validation:** targeted real D1/composition/cron suites 98/98 across eight files,
+  two workers, two CPU affinity, 1536 MiB Node heap. Workspace typecheck/build and lint pass;
+  final tenant-scope rerun 4/4, changed-file lint/format pass. Initial sandbox D1 run stalled and was interrupted;
+  unrestricted tests pass. Migration 0021 applied only in test DBs. No production SQL,
+  dispatch, public edits, workflow/secret/flag change or deploy.
 - **T32c2 rollout:** PR #123 merged 2026-11-12 by claude-code with Volodymyr's OK (no blocking
   findings, CI green). Migration 0020 applied to prod D1 by Volodymyr before merge. Bot deployed from clean `main`
   by Volodymyr, Worker `4a9d743b-0ccb-42bf-ab80-b23efa3b750e`.
