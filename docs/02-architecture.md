@@ -214,6 +214,13 @@ does not update its delivery row. The poll close and the withdrawal edit read th
    among the tied candidates with inline buttons (decided 2026-10-28; no `WinnerPicker`, no Worker-side
    photo download).
 6. **Result.** A `wotw-result` draft goes to the author for Publish, resolved the same way as step 3.
+   T31d2 adds an unwired result store and local/test migration 0017. Counted non-Telegram
+   sources require explicit author choice from all original candidates and expose aggregate
+   totals; skipped sources keep Telegram-only rules. A deterministic tenant/week ready draft,
+   the selected entry's `winner` flag, and a durable `poll_results` receipt are written in one
+   D1 batch. Receipt guards serialize competing decisions and survive draft cleanup. Stale
+   closing claims cannot write. Draft texts contain entry placeholders and reader/author
+   wording, with only the chosen photo. T31d3 supplies authorization, callbacks and preview.
 7. **Withdrawal.** Deleting a display name in D1 triggers an edit of the affected Telegram messages
    (`editMessage` capability: caption or text, the adapter decides; IDs from `channel_deliveries`) and,
    from phase 2, a site rebuild. Retention: see ADR 010.
