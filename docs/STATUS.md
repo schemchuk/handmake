@@ -1,13 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T53f — review PR #134 (authentic-first channel show copies).
-- **Branch:** `feat/t53f-channel-authentic-media`.
-- **Last commit:** `db67a89` — feat: copy authentic show media before generated media (T53f).
-- **Next step:** Claude Code reviews PR #134, checks CI and merges if clear. Then deploy the bot
-  from clean `main` under AGENTS.md (packages changed; no migration or secret changes).
+- **Active agent:** none.
+- **Current task:** none (T53a-f done).
+- **Branch:** `main`.
+- **Last commit:** `ce48870` — feat: copy authentic show media first (T53f) (#134).
+- **Next step:** Volodymyr picks the next task. Open PR #134 review notes are listed under T53f
+  in docs/03-tasks.md (no follow-up task yet).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+
+- **T53f:** PR #134 merged 2026-11-13 after claude-code review (no blocking findings, CI green).
+  No migration or secrets. Bot deployed from clean `main` by claude-code, Worker
+  `e1fa1dcb-2b0e-4ce3-80fa-910a55f5966f`. First real authentic show copy not yet verified live.
 
 - **T53f implementation:** authentic-first photos/URLs on all four channels, generated-image start
   captions, authentic-first Telegram video replies with a persisted selector and hash guards.

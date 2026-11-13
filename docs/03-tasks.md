@@ -2262,7 +2262,10 @@ it becomes a task.
 - Acceptance: build test for a show with and without authentic media, DE and UK.
 
 #### T53f — Channel show rendering (`channels`) · Depends on: T53a
-- Implementation: PR #134 (`db67a89`), completed by Codex; awaiting Claude Code review.
+- Status: done 2026-11-13 (PR #134 merged `ce48870`; bot Worker `e1fa1dcb-2b0e-4ce3-80fa-910a55f5966f`).
+- Open review notes from PR #134 (no follow-up task yet): `instagramFramedFileName` maps `x.jpg`
+  and `x.png` to the same `x.ig.jpg` (bot naming prevents it today; add a guard); a copy plan
+  persisted before this deploy for a show with authentic media now fails `copy media changed`.
 - Change: Telegram/Instagram/Facebook/Threads albums put authentic photos first; caption line
   "KI-generierte Bilder ab Bild N" / «Згенеровані ШІ кадри з кадру N» only when authentic photos
   exist; Telegram replies with authentic video before the generated one; limits rechecked.
