@@ -3,10 +3,9 @@
 - **Active agent:** none.
 - **Current task:** none.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: hand off after T33 rollout.
+- **Last commit:** this commit — docs: drop demo note from handoff.
 - **Next step:** T34 portfolio pack, not started; to be picked up in a fresh session by the agent
-  Volodymyr names. Note for it: the first seconds of the H12 demo (`~/Videos/h12/demo.*`) show the
-  first name from an earlier published post; decide with Volodymyr whether to trim before committing.
+  Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
