@@ -875,6 +875,13 @@ these jobs. Generated-only jobs retain their existing transport. Telegram file i
 to Git. T53d must resolve both private ref kinds before authentic publication can succeed; T53c
 alone does not supply publisher metadata stripping or ref resolution.
 
+Retention of authentic staging objects (Volodymyr, 2026-11-13): `show-authentic/` objects in
+`handmake-show` are deleted by an R2 lifecycle rule 30 days after upload, matching the 30-day
+draft cleanup. They are staging copies only: published media live metadata-stripped in Git, and
+cancelled or abandoned shows need no copy. No application code deletes them. The rule covers only
+this prefix; raw/marked/verified evidence prefixes keep no lifecycle deletion. A show approved but
+not published within 30 days must have its media sent again.
+
 Publisher: resolves refs through `ShowMediaSource`, then strips metadata before the content commit.
 JPEG: lossless removal of APP1 (EXIF/XMP) and APP13 (IPTC) segments, ICC kept, pixels untouched.
 Video: `ffmpeg -map_metadata -1 -c copy -movflags +faststart` remux to MP4; a failed remux or a

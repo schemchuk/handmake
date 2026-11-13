@@ -2242,8 +2242,10 @@ it becomes a task.
   `owncancel` does not clear the chat session like `/discard` and omits the evidence/costs note;
   in `present` a stale `current()` inside the authentic `try` reports a storage failure instead of
   the stale-step message; `approve` checks `confirmed` but not `people`; whole files (≤20 MB) are
-  buffered before R2 `put` (consider `FixedLengthStream`). Open for Volodymyr: retention/deletion
-  of `show-authentic/` objects (personal data), document the decision with this task.
+  buffered before R2 `put` (consider `FixedLengthStream`). Retention decided by Volodymyr
+  (architecture, approval section): 30-day R2 lifecycle rule on `show-authentic/` only. Rollout:
+  the reviewer adds it before the bot deploy with
+  `wrangler r2 bucket lifecycle add handmake-show <name> show-authentic/ --expire-days 30`.
 
 #### T53e — Site show page (`site`) · Depends on: T53a
 - Change: block «Оригінальна робота» / «Originalarbeit» with authentic photos/video before the
