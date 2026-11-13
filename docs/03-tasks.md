@@ -2193,7 +2193,8 @@ it becomes a task.
   Volodymyr's OK in chat before merge.
 
 #### T53a — Authentic media contracts (`core`)
-- Change: optional `authentic` list on `showSchema` (fileName, kind, provenance `human`, people);
+- Change: optional `authentic` list on `showSchema` (fileName, kind, provenance `human`, people
+  `none | author | operator | both`);
   bounds 0-3 photos, 0-1 video, total ≤10; names disjoint from generated and originals;
   `showPublicationSchema` media = generated + authentic (4-10). Serialize/parse round trip.
 - Acceptance: existing show fixtures parse unchanged; invalid bounds, overlaps and a generated file
@@ -2221,6 +2222,9 @@ it becomes a task.
 - Acceptance: fixtures with GPS EXIF and a QuickTime location tag come out clean, pixels/streams
   unchanged; a bad video fails with an author-visible reason and no partial commit.
 - Tests: fixtures above, idempotent retry, dry-run.
+- Review notes from PR #128: until this task, `prepareShowPublication` hits a non-null assertion
+  (TypeError) on an authentic ref; replace it with an explicit authentic branch. Photo names allow
+  only lowercase `.jpg/.jpeg`, so T53b must normalise Telegram file names.
 
 #### T53e — Site show page (`site`) · Depends on: T53a
 - Change: block «Оригінальна робота» / «Originalarbeit» with authentic photos/video before the

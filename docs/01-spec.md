@@ -200,7 +200,7 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     video first); Instagram, Facebook and Threads do not copy show video yet. Generated items keep their visible
     and machine-readable marker (F30), authentic items never get one.
   - **Storage.** Authentic media are stored in the show's content folder as a separate list with
-    `provenance: human`, `kind: photo | video` and `people: none | author | operator`; they never go
+    `provenance: human`, `kind: photo | video` and `people: none | author | operator | both`; they never go
     into the generated `images`/`video` lists, and the schema rejects a file in both. Location and
     camera metadata (EXIF/GPS, video metadata) are removed before storage. They are not resized or
     re-encoded beyond that, the same rule as for marked bytes.
