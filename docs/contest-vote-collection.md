@@ -63,7 +63,14 @@ and does not resolve that rollout check.
 
 Verified 2026-11-13: an owner comment on a real post returned `from.id` equal to the IG User ID
 (and `from.username` equal to the account username), so the `from.id` comparison is sufficient
-for Instagram. The Facebook `from.id` check for reader comments is still open.
+for Instagram.
+
+Facebook, verified 2026-11-13 with a non-expiring Page token holding `pages_read_user_content`:
+a reader comment on a Page post comes back without `from` (also when `from{id,name}` is
+requested explicitly). Meta only exposes the commenter for apps with Advanced Access (App Review)
+or for users with a role on the app. As designed, every Facebook tally is therefore unreadable,
+and an unreadable source makes the combined contest result unreadable. T31d must not go live with
+Facebook as a vote source until Volodymyr decides how to handle this.
 
 
 ## Scheduler and author decisions (T31d3)

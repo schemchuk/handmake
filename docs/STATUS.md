@@ -9,7 +9,9 @@
 - **Open questions for Volodymyr:** none new. Instagram owner `from.id` verified 2026-11-13
   (equals IG User ID). Facebook Page token renewed 2026-11-13 with
   `pages_read_user_content` and `pages_manage_engagement` (`.env`, GitHub Secret, Worker secret);
-  reader-comment `from.id` check pending a real reader comment on a Page post.
+  Reader-comment check done: Facebook returns reader comments WITHOUT `from`, so Facebook
+  tallies are unreadable and would block every contest result (docs/contest-vote-collection.md).
+  Decision needed before T31d goes live: drop Facebook as a vote source, or seek App Review.
 
 - **T53g:** PR #135 merged 2026-11-13 by claude-code after review (no blocking findings, CI
   green). Publisher only: no bot deploy, no migration, no secrets.
