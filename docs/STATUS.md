@@ -1,13 +1,19 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T52 — authenticity label instead of AI note (F36, spec v9 draft).
-- **Branch:** `main`.
-- **Last commit:** see `git log` (`docs: approve spec v9`).
-- **Next step:** spec v9 approved 2026-11-13. Codex implements T52 on
-  `fix/t52-authenticity-label`; then T33 (including the PR #125 review note).
-- **Blocked on:** nothing.
+- **Active agent:** claude-code.
+- **Current task:** T52 — authenticity label; implemented, awaiting review.
+- **Branch:** `fix/t52-authenticity-label`.
+- **Last commit:** see `git log` (`fix: label authentic works across publication surfaces`).
+- **Next step:** Claude Code reviews T52 and merges after green CI, then deploys the bot from
+  clean `main` (no migrations). Hand off T33 to Codex, including the PR #125 review note.
+- **Blocked on:** independent review and CI.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **T52 validation:** bot 781/781 (preview 35/35), channels 304/304, site 53/53; publisher all 259 tests covered
+  across the full run and corrected publish 12/12 + dry-run 4/4 reruns. Workspace typecheck/build,
+  lint, changed-file formatting and secret scan pass. Site sandbox child diagnostics failed;
+  unrestricted site rerun passed. Initial sandbox bot/publisher runs stalled and were stopped.
+  No deployment, production publishing, migrations, workflows, secrets or provenance changes.
+
 - **T51 rollout:** PR #126 merged 2026-11-13 by Volodymyr after claude-code review (no
   blocking findings, CI green). No migration. Bot deployed from clean `main` by
   claude-code, Worker `7f040189-e5b5-4f86-bb84-c13e43b94759`.

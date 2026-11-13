@@ -497,12 +497,12 @@ describe('runPublish', () => {
     const lowerId = draftId.toLowerCase();
     expect(onAdapter.deliveries[0]!.ops[0]).toMatchObject({
       caption:
-        'Тестовий допис (T10).\n\n' +
+        'Тестовий допис (T10).\n\nОригінальна робота\n\n' +
         `Більше на сайті: https://fadenundstimmung.de/uk/posts/${lowerId}/`,
     });
     expect(onAdapter.deliveries[0]!.ops[1]).toMatchObject({
       text:
-        `Testbeitrag (T10).\n\nMehr auf der Website: https://fadenundstimmung.de/posts/${lowerId}/\n` +
+        `Testbeitrag (T10).\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/posts/${lowerId}/\n` +
         'Kanal abonnieren: https://t.me/Faden_und_Stimmung',
     });
 
@@ -518,9 +518,11 @@ describe('runPublish', () => {
       renderImpl: renderWithPassedSettings,
     });
     await publish(offRepo.repoDir, offRepo.payloadPath, offAdapter);
-    expect(offAdapter.deliveries[0]!.ops[0]).toMatchObject({ caption: 'Тестовий допис (T10).' });
+    expect(offAdapter.deliveries[0]!.ops[0]).toMatchObject({
+      caption: 'Тестовий допис (T10).\n\nОригінальна робота',
+    });
     expect(offAdapter.deliveries[0]!.ops[1]).toMatchObject({
-      text: 'Testbeitrag (T10).\n\nKanal abonnieren: https://t.me/Faden_und_Stimmung',
+      text: 'Testbeitrag (T10).\n\nOriginalarbeit\n\nKanal abonnieren: https://t.me/Faden_und_Stimmung',
     });
   });
 
@@ -574,12 +576,12 @@ describe('runPublish', () => {
     const ops = adapter.deliveries[0]!.ops;
     expect(ops[0]).toMatchObject({
       caption:
-        'Тестовий допис (T10).\n\n' +
+        'Тестовий допис (T10).\n\nОригінальна робота\n\n' +
         `Більше на сайті: https://fadenundstimmung.de/uk/works/${lowerId}/`,
     });
     expect(ops[1]).toMatchObject({
       text:
-        `Testbeitrag (T10).\n\nMehr auf der Website: https://fadenundstimmung.de/works/${lowerId}/\n` +
+        `Testbeitrag (T10).\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/works/${lowerId}/\n` +
         'Kanal abonnieren: https://t.me/Faden_und_Stimmung',
     });
   });

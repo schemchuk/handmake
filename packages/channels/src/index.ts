@@ -10,3 +10,5 @@ export * from './telegram/adapter';
 export * from './telegram/render';
 export * from './threads/adapter';
 export * from './threads/render';
+
+export { appendAuthenticity } from './authenticity';

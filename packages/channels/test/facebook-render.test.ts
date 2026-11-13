@@ -100,7 +100,7 @@ describe('renderFacebook: single vs multi photo', () => {
     expect(ops[0]).toEqual({
       kind: 'mediaGroup',
       photoIndexes: photos(n).map((_, i) => i),
-      caption: 'Hallo!',
+      caption: 'Hallo!\n\nOriginalarbeit',
       captionLang: 'de',
     });
   });
@@ -114,7 +114,9 @@ describe('renderFacebook: single vs multi photo', () => {
 
 describe('renderFacebook: caption with the canonical link (F33)', () => {
   it('carries no link without canonical settings', () => {
-    expect(renderFacebook(makePost(), settings)[0]).toMatchObject({ caption: 'Hallo!' });
+    expect(renderFacebook(makePost(), settings)[0]).toMatchObject({
+      caption: 'Hallo!\n\nOriginalarbeit',
+    });
     expect(buildFacebookCaption('Hallo!', 'de', makePost().id)).toBe('Hallo!');
   });
 
@@ -122,7 +124,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
     const ops = renderFacebook(makePost(), { ...settings, canonical });
     expect(ops[0]).toMatchObject({
       caption:
-        'Hallo!\n\nMehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/',
+        'Hallo!\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/',
     });
   });
 
@@ -133,7 +135,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
     });
     expect(ops[0]).toMatchObject({
       caption:
-        'Hallo!\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0w/',
+        'Hallo!\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0w/',
     });
   });
 
@@ -142,7 +144,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
       ...settings,
       canonical: { ...canonical, links: false },
     });
-    expect(ops[0]).toMatchObject({ caption: 'Hallo!' });
+    expect(ops[0]).toMatchObject({ caption: 'Hallo!\n\nOriginalarbeit' });
   });
 
   it('rejects an unsupported footer language', () => {
@@ -151,7 +153,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
         language: 'fr',
         canonical: { ...canonical, defaultLanguage: 'fr' },
       }),
-    ).toThrowError(/unsupported canonical footer language/);
+    ).toThrowError(/unsupported authenticity label language/);
   });
 
   it('rejects a canonical baseUrl that is not an https origin', () => {
@@ -193,7 +195,7 @@ describe('renderFacebookShow', () => {
         photoIndexes: [0, 1, 2],
         captionLang: 'de',
         caption:
-          'Fixture DE\n\nKI-generiertes Model\nhttps://craft.example/shows/01jbca1b2c3d4e5f6g7h8j9k0z/',
+          'Fixture DE\n\nKI-generiertes Model\nOriginalarbeit\nhttps://craft.example/shows/01jbca1b2c3d4e5f6g7h8j9k0z/',
       },
     ]);
   });
@@ -204,7 +206,7 @@ describe('renderFacebookShow', () => {
     expect(ops[0]).toMatchObject({
       captionLang: 'uk',
       caption:
-        'Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nhttps://craft.example/uk/shows/01jbca1b2c3d4e5f6g7h8j9k0z/',
+        'Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота\nhttps://craft.example/uk/shows/01jbca1b2c3d4e5f6g7h8j9k0z/',
     });
   });
 

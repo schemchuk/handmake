@@ -1,3 +1,4 @@
+import { appendAuthenticity } from '../authenticity';
 import { canonicalUrl } from '@handmake/core';
 import type {
   CanonicalLinkSettings,
@@ -157,7 +158,12 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
 
   const ops: SendOperation[] = [];
   const item = footerItem(post);
-  const primaryText = appendFooter(post.texts[primaryLang]!, primaryLang, settings, item);
+  const primaryText = appendFooter(
+    appendAuthenticity(post.texts[primaryLang]!, primaryLang, post.photos.length > 0),
+    primaryLang,
+    settings,
+    item,
+  );
 
   const checkLimit = (lang: string, text: string) => {
     if (text.length > messageLimit) {
@@ -216,7 +222,12 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
   // Further languages reply to the album (op 0), even if the primary text
   // overflowed into a separate message.
   for (const lang of otherLangs) {
-    const text = appendFooter(post.texts[lang]!, lang, settings, item);
+    const text = appendFooter(
+      appendAuthenticity(post.texts[lang]!, lang, post.photos.length > 0),
+      lang,
+      settings,
+      item,
+    );
     checkLimit(lang, text);
     ops.push({ kind: 'message', text, lang, replyToOp: 0 });
   }

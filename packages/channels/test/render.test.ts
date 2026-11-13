@@ -44,10 +44,15 @@ describe('renderTelegram: photos', () => {
 
 describe('renderTelegram: caption and message limits', () => {
   it(`uses the album caption at exactly ${captionLimit} chars`, () => {
-    const ops = renderTelegram(makePost({ texts: { uk: 'x'.repeat(captionLimit), de: 'de' } }));
+    const ops = renderTelegram(
+      makePost({
+        texts: { uk: 'x'.repeat(captionLimit - '\n\nОригінальна робота'.length), de: 'de' },
+      }),
+    );
     expect(ops[0]).toMatchObject({
       kind: 'mediaGroup',
-      caption: 'x'.repeat(captionLimit),
+      caption:
+        'x'.repeat(captionLimit - '\n\nОригінальна робота'.length) + '\n\nОригінальна робота',
       captionLang: 'uk',
     });
     expect(ops).toHaveLength(2);
@@ -58,7 +63,7 @@ describe('renderTelegram: caption and message limits', () => {
     const ops = renderTelegram(makePost({ texts: { uk: long, de: 'de' } }));
     expect(ops[0]).toMatchObject({ kind: 'mediaGroup', photoIndexes: [0, 1] });
     expect(ops[0]).not.toHaveProperty('caption');
-    expect(ops[1]).toEqual({ kind: 'message', text: long, lang: 'uk' });
+    expect(ops[1]).toEqual({ kind: 'message', text: long + '\n\nОригінальна робота', lang: 'uk' });
   });
 
   it(`accepts a message at exactly ${messageLimit} chars`, () => {
@@ -95,10 +100,10 @@ describe('renderTelegram: layout (O1)', () => {
       {
         kind: 'mediaGroup',
         photoIndexes: [0, 1],
-        caption: 'Привіт!',
+        caption: 'Привіт!\n\nОригінальна робота',
         captionLang: 'uk',
       },
-      { kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 },
+      { kind: 'message', text: 'Hallo!\n\nOriginalarbeit', lang: 'de', replyToOp: 0 },
     ]);
   });
 
@@ -107,7 +112,12 @@ describe('renderTelegram: layout (O1)', () => {
       makePost({ texts: { uk: 'x'.repeat(captionLimit + 1), de: 'Hallo!' } }),
     );
     expect(ops).toHaveLength(3);
-    expect(ops[2]).toEqual({ kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 });
+    expect(ops[2]).toEqual({
+      kind: 'message',
+      text: 'Hallo!\n\nOriginalarbeit',
+      lang: 'de',
+      replyToOp: 0,
+    });
   });
 
   it('replies to the primary message when the post has no photos', () => {
@@ -137,10 +147,15 @@ describe('renderTelegram: tenant language order (settings.languages)', () => {
     const ops = renderTelegram(makePost({ texts }), settings);
     expect(ops[0]).toMatchObject({
       kind: 'mediaGroup',
-      caption: 'Привіт!',
+      caption: 'Привіт!\n\nОригінальна робота',
       captionLang: 'uk',
     });
-    expect(ops[1]).toEqual({ kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 });
+    expect(ops[1]).toEqual({
+      kind: 'message',
+      text: 'Hallo!\n\nOriginalarbeit',
+      lang: 'de',
+      replyToOp: 0,
+    });
   });
 
   it('skips a tenant language that has no text in the post', () => {
@@ -188,11 +203,11 @@ describe('renderTelegram: wotw-poll (T21, ADR 008)', () => {
       {
         kind: 'mediaGroup',
         photoIndexes: [0, 1],
-        caption: 'Привіт!',
+        caption: 'Привіт!\n\nОригінальна робота',
         captionLang: 'uk',
       },
       { kind: 'poll', question: poll.question, options: poll.options, replyToOp: 0 },
-      { kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 },
+      { kind: 'message', text: 'Hallo!\n\nOriginalarbeit', lang: 'de', replyToOp: 0 },
     ]);
   });
 
@@ -207,7 +222,12 @@ describe('renderTelegram: wotw-poll (T21, ADR 008)', () => {
       options: poll.options,
       replyToOp: 0,
     });
-    expect(ops[3]).toEqual({ kind: 'message', text: 'Hallo!', lang: 'de', replyToOp: 0 });
+    expect(ops[3]).toEqual({
+      kind: 'message',
+      text: 'Hallo!\n\nOriginalarbeit',
+      lang: 'de',
+      replyToOp: 0,
+    });
   });
 
   it('rejects a wotw-poll synthesized without a poll (schema bypass)', () => {
@@ -248,8 +268,12 @@ describe('subscription footer', () => {
       const post = makePost({ photos: photos(count) });
       const before = structuredClone(post);
       const ops = renderTelegram(post, joinSettings);
-      expect(ops[0]).toMatchObject(count ? { caption: 'Привіт!' } : { text: 'Привіт!' });
-      expect(ops[1]).toMatchObject({ text: `Hallo!\n\n${joinLine}` });
+      expect(ops[0]).toMatchObject(
+        count ? { caption: 'Привіт!\n\nОригінальна робота' } : { text: 'Привіт!' },
+      );
+      expect(ops[1]).toMatchObject({
+        text: `Hallo!${count ? '\n\nOriginalarbeit' : ''}\n\n${joinLine}`,
+      });
       expect(renderTelegram(post, joinSettings)).toEqual(ops);
       expect(post).toEqual(before);
     }
@@ -258,7 +282,7 @@ describe('subscription footer', () => {
     const post = makePost({ texts: { de: 'x'.repeat(captionLimit) } });
     expect(renderTelegram(post, joinSettings)[0]).not.toHaveProperty('caption');
     expect(renderTelegram(post, joinSettings)[1]).toMatchObject({
-      text: `${post.texts.de}\n\n${joinLine}`,
+      text: `${post.texts.de}\n\nOriginalarbeit\n\n${joinLine}`,
     });
     const maxBody = messageLimit - joinLine.length - 2;
     expect(
@@ -289,8 +313,10 @@ const ukCanonicalLine =
 describe('canonical footer (T40, F31)', () => {
   it('appends the per-language line to a free post, linking to its site page', () => {
     const ops = renderTelegram(makePost(), canonicalSettings);
-    expect(ops[0]).toMatchObject({ caption: `Привіт!\n\n${ukCanonicalLine}` });
-    expect(ops[1]).toMatchObject({ text: `Hallo!\n\n${deCanonicalLine}` });
+    expect(ops[0]).toMatchObject({
+      caption: `Привіт!\n\nОригінальна робота\n\n${ukCanonicalLine}`,
+    });
+    expect(ops[1]).toMatchObject({ text: `Hallo!\n\nOriginalarbeit\n\n${deCanonicalLine}` });
     expect(renderTelegram(makePost(), canonicalSettings)).toEqual(ops);
   });
 
@@ -351,6 +377,7 @@ describe('canonical footer (T40, F31)', () => {
     const post = makePost({
       texts: { fr: 'Bonjour !' },
       versions: { fr: { provenance: 'human' } },
+      photos: [],
     });
     expect(() => renderTelegram(post, canonicalSettings)).toThrow(
       /unsupported canonical footer language/,
@@ -373,7 +400,9 @@ describe('canonical footer (T40, F31)', () => {
       canonicalSettings,
     );
     expect(ops[0]).not.toHaveProperty('caption');
-    expect(ops[1]).toMatchObject({ text: `${'x'.repeat(fits)}\n\n${ukCanonicalLine}` });
+    expect(ops[1]).toMatchObject({
+      text: `${'x'.repeat(fits)}\n\nОригінальна робота\n\n${ukCanonicalLine}`,
+    });
 
     const maxBody = messageLimit - deCanonicalLine.length - 2;
     expect(

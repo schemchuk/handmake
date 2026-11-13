@@ -98,7 +98,7 @@ describe('renderInstagram: carousel vs single photo', () => {
     expect(ops[0]).toEqual({
       kind: 'mediaGroup',
       photoIndexes: photos(n).map((_, i) => i),
-      caption: 'Hallo!',
+      caption: 'Hallo!\n\nOriginalarbeit',
       captionLang: 'de',
     });
   });
@@ -113,10 +113,18 @@ describe('renderInstagram: carousel vs single photo', () => {
 describe('renderInstagram: caption rules (F33, ported ig-caption lint)', () => {
   it(`accepts a caption at exactly ${instagramCaptionLimit} chars`, () => {
     const ops = renderInstagram(
-      makePost({ texts: { uk: 'Привіт!', de: 'x'.repeat(instagramCaptionLimit) } }),
+      makePost({
+        texts: {
+          uk: 'Привіт!',
+          de: 'x'.repeat(instagramCaptionLimit - '\n\nOriginalarbeit'.length),
+        },
+      }),
       settings,
     );
-    expect(ops[0]).toMatchObject({ caption: 'x'.repeat(instagramCaptionLimit) });
+    expect(ops[0]).toMatchObject({
+      caption:
+        'x'.repeat(instagramCaptionLimit - '\n\nOriginalarbeit'.length) + '\n\nOriginalarbeit',
+    });
   });
 
   it(`rejects a caption at ${instagramCaptionLimit + 1} chars`, () => {
@@ -129,7 +137,7 @@ describe('renderInstagram: caption rules (F33, ported ig-caption lint)', () => {
   it('accepts at most 5 hashtags (hard limit)', () => {
     const five = 'Nachricht\n#one #two #three #four #five';
     expect(renderInstagram(makePost({ texts: { uk: 'x', de: five } }), settings)[0]).toMatchObject({
-      caption: five,
+      caption: five + '\n\nOriginalarbeit',
     });
     const six = 'Nachricht\n#one #two #three #four #five #six';
     expect(() => renderInstagram(makePost({ texts: { uk: 'x', de: six } }), settings)).toThrowError(
@@ -163,7 +171,9 @@ describe('renderInstagram: caption rules (F33, ported ig-caption lint)', () => {
   });
 
   it('carries no link: the caption is the message only (ported rule)', () => {
-    expect(renderInstagram(makePost(), settings)[0]).toMatchObject({ caption: 'Hallo!' });
+    expect(renderInstagram(makePost(), settings)[0]).toMatchObject({
+      caption: 'Hallo!\n\nOriginalarbeit',
+    });
     expect(buildInstagramCaption('Hallo!')).toBe('Hallo!');
   });
 });
@@ -190,7 +200,7 @@ describe('renderInstagramShow', () => {
         kind: 'mediaGroup',
         photoIndexes: [0, 1, 2],
         captionLang: 'de',
-        caption: 'Fixture DE\n\nKI-generiertes Model',
+        caption: 'Fixture DE\n\nKI-generiertes Model\nOriginalarbeit',
       },
     ]);
   });
@@ -200,7 +210,7 @@ describe('renderInstagramShow', () => {
     const ops = renderInstagramShow(show, { ...showContext, settings: { language: 'uk' } });
     expect(ops[0]).toMatchObject({
       captionLang: 'uk',
-      caption: 'Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)',
+      caption: 'Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота',
     });
   });
 
@@ -216,7 +226,7 @@ describe('renderInstagramShow', () => {
 
   it('enforces the caption limit', () => {
     const show = fixture();
-    show.versions.de!.description = 'x'.repeat(instagramCaptionLimit);
+    show.versions.de!.description = 'x'.repeat(instagramCaptionLimit - '\n\nOriginalarbeit'.length);
     expect(() => renderInstagramShow(show, showContext)).toThrowError(/2200/);
   });
 });

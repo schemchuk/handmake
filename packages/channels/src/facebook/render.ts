@@ -1,3 +1,4 @@
+import { appendAuthenticity } from '../authenticity';
 import { canonicalUrl } from '@handmake/core';
 import type {
   CanonicalLinkSettings,
@@ -149,7 +150,7 @@ export function renderFacebook(post: Post, settings?: unknown): SendOperation[] 
     );
   }
   const caption = buildFacebookCaption(
-    post.texts[parsed.language]!,
+    appendAuthenticity(post.texts[parsed.language]!, parsed.language, true),
     parsed.language,
     post.id,
     settings,
