@@ -1,13 +1,22 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: drop demo note from handoff.
-- **Next step:** T34 portfolio pack, not started; to be picked up in a fresh session by the agent
-  Volodymyr names.
+- **Active agent:** claude-code.
+- **Current task:** T34 portfolio pack — review fixes on PR #140.
+- **Branch:** `feat/t34-portfolio-pack`.
+- **Last commit:** this commit — docs: apply T34 review fixes.
+- **Next step:** claude-code merges PR #140 after green CI.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T34:** reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.
+  README now includes employer-facing architecture/trade-offs and H12 GIF/MP4 from
+  the H12 recording. Operations guide covers isolated test setup and recovery.
+  Local Markdown targets, formatting and sample dry run pass; tsx IPC needed an unrestricted run.
+  No deployment, migrations, paid calls, workflow edits or production publishing performed.
+  Review fixes complete: unattended paid announcement cron warning, source-review acceptance
+  per Volodymyr's 2026-11-13 decision, and real one-publication `/stats` snapshot.
+  Fixes written by codex (sandboxed run); committed and pushed by claude-code. Prettier and
+  `git diff --check` pass.
 
 - **H12:** done 2026-11-13. Demo recorded on the test channel; bot switched to test mode for the
   recording and back to live. Cloudflare returned 500 / code 10013 on three `wrangler deploy`

@@ -1,101 +1,117 @@
 # Faden und Stimmung
 
-Content pipeline for a weekly volunteer handmade circle in Landshut, Germany. The author writes a post
-once in a private Telegram bot; it is translated, previewed, approved and published automatically.
+A publishing platform used by a volunteer handmade circle in Landshut, Germany.
+The author writes Ukrainian text and uploads authentic photos in a private Telegram bot;
+she reviews the German translation and approves publication. One pipeline delivers the
+approved content to Telegram, Instagram, Facebook, Threads and a bilingual static website.
+The project now supports the author's brand and audience growth beyond the local circle.
 
-**Status:** MVP live on Telegram since 2026-10-27 (Ukrainian + German). Instagram, website and the
-work-of-the-week poll come next. Design docs: [docs/](docs/) (spec, architecture, ADRs, tasks).
+[Website](https://fadenundstimmung.de) · [Telegram](https://t.me/Faden_und_Stimmung) ·
+[Operations and test deployment](docs/operations.md) · [Architecture](docs/02-architecture.md)
 
-## How it works
+## See the real workflow
 
+![Telegram bot: photos, preview, approval and test-channel publication](docs/assets/demo.gif)
+
+[Watch the MP4](docs/assets/demo.mp4). Recorded on the private test channel on 2026-11-13:
+three photos → `/done` → bilingual preview → consent → publish → album and German reply.
+The 29-second recording is edited: the file picker and a transient failed attempt were removed.
+It demonstrates the interaction, not end-to-end publication latency.
+
+## Engineering behind the workflow
+
+```mermaid
+flowchart LR
+    A[Author: text and photos] --> B[Telegram bot / Cloudflare Worker]
+    B <--> D[(D1: drafts, claims, metrics)]
+    B --> T[Translation / author preview]
+    T --> B
+    B -->|Approved dispatch| G[GitHub Actions publisher]
+    G <--> C[(Git: content and delivery ledger)]
+    G --> N[Channel adapters: Telegram, Instagram, Facebook, Threads]
+    G -->|Signed outcome callback| B
+    G --> S[Astro build / Cloudflare Pages]
+    C --> S
+    B <--> R[(Private R2: optional show media)]
 ```
-author ──► Telegram bot (Cloudflare Worker + D1) ──repository_dispatch──► GitHub Actions publish.yml
-           collect text + photos                                          download + re-encode photos
-           /done → Claude translates UA→DE                                commit content/ to main
-           preview, edit, regenerate                                      post to the channel, ledger
-           🚀 + consent → claim draft once                                notify author / operator
-```
 
-1. The author opens [@Faden_und_StimmungBot](https://t.me/Faden_und_StimmungBot) and sends Ukrainian
-   text and up to 10 photos (as photos, or JPEG/PNG files). Only allow-listed Telegram users get in.
-2. `/done` translates the text to German (Claude, prompt `packages/ai/prompts/humanize-de@1.md`) and
-   sends a preview rendered exactly as it will be posted. Buttons: edit UA, edit DE, regenerate DE,
-   publish, discard.
-3. 🚀 asks for the face-consent confirmation, then moves the draft `ready → publishing` in one D1
-   statement (a double press dispatches once) and fires `repository_dispatch`.
-4. `publish.yml` builds the post folder under `content/posts/`, strips photo metadata, commits it,
-   publishes to Telegram (Ukrainian album caption, German as a reply) and records every sent message
-   in `content/ledger/`. A re-run never posts twice.
+- **Separate runtimes:** the Worker handles interactive editing and claims; Actions performs
+  image processing, Git commits and network delivery. The author can work without Git or Markdown.
+- **Recoverable publishing:** stable draft IDs and a per-operation ledger let reruns skip saved
+  deliveries. D1 claims prevent double-click dispatches. Remote acceptance followed by a lost
+  ledger write remains an ambiguity window; [recovery](docs/operations.md#failure-and-recovery)
+  requires checking the destination before retrying.
+- **Pluggable channels:** the domain defines ports and capabilities; adapters render and deliver.
+  Core storage and runner interfaces allow future implementations without network dependencies.
+- **Human control:** previews, edits, consent checks and explicit approval precede publication.
+  Content records declare `human`, `ai-assisted` or `ai-generated` provenance.
+- **Shared source:** approved posts, works and disclosed AI shows feed channels and the website.
+  Test posts are excluded from public site pages and Meta deliveries.
 
-Code layout: `packages/core` (domain, ports, state machine), `packages/channels` (Telegram renderer and
-adapter), `packages/stores` (Git content store), `packages/ai` (translator), `apps/bot` (Worker),
-`apps/publisher` (CLI run by the workflow).
+## Evidence and usage
 
-## Setup
+Telegram has been live since 2026-10-27. A live three-photo carousel was verified across
+Instagram, Facebook and Threads on 2026-11-13; its retry skipped the existing Telegram delivery
+([runbook evidence](docs/instagram-runbook.md#first-live-checks-record-outcomes-in-the-prtask)).
+The T33 handoff records a green CI run with 1,971 tests, typechecking, builds, lint, formatting,
+workflow validation, a publisher dry run and secret scanning (run `43446665835`).
+These are verification results, not audience or revenue figures.
 
-Requirements: Node 22 (`.nvmrc`), pnpm, a Cloudflare account, a GitHub repo, an Anthropic API key.
+Tenant usage is available through operator `/stats`: publications in the last 28 days,
+median draft-to-publication time, edits per published draft and eventual delivery success.
+The real operator-chat snapshot from 2026-11-13 at 18:37 EET reports the last 28 days (UTC):
+1 publication; median draft-to-publication time 2.6 min; edits per publication (UA, DE,
+regenerations) 0.0; successful deliveries 100.0%; publications with measured workflow 1.
+The sample is one publication: metrics exist only since the migration, with no backfill.
+Test and live deliveries share the report.
+See [metric definitions and limits](docs/usage-metrics.md).
+
+## Design decisions and trade-offs
+
+| Decision | Benefit | Cost / boundary |
+| --- | --- | --- |
+| [TypeScript monorepo](docs/decisions/001-typescript-monorepo.md) | Shared domain contracts across runtimes | Workspace builds and dependency discipline |
+| [Worker + D1](docs/decisions/002-bot-hosting.md) | Always-on webhook, SQL state, no server maintenance | Runtime limits keep heavy processing elsewhere |
+| [Actions + Git ledger](docs/decisions/003-publish-in-github-actions.md) | Auditable content, visible retries | Queue latency; no atomic transaction with external APIs |
+| [Ports and adapters](docs/decisions/007-ports-and-adapters.md) | Networks and stores have explicit seams | More interfaces than a one-off script |
+| [Tenant-aware data](docs/decisions/006-multi-tenancy.md) | Isolation keys and replaceable stores/runners | One deployed tenant; no SaaS onboarding or billing |
+| [Static Astro site](docs/decisions/011-website.md) | Same content, static delivery | Rebuild after publication; site can lag after a failed deploy |
+
+## Run locally
+
+Use Node 22 (`.nvmrc`) and pnpm 12.14.0 (`packageManager`). From the repository root:
 
 ```sh
-pnpm install
-pnpm lint && pnpm typecheck && pnpm test
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm --filter @handmake/publisher exec tsx src/cli.ts --dry-run "$PWD/fixtures/sample-payload.json" --root "$PWD"
 ```
 
-Secrets (names in `.env.example`; values only in `.env`, GitHub Secrets and Worker secrets):
+The sample has no photos and needs no service credentials; the dry run writes under a temporary
+directory and sends nothing. A payload with file IDs downloads photos and needs bot credentials.
+See [deploy from scratch](docs/operations.md#deploy-a-test-installation-from-scratch) for an isolated test installation.
 
-| Secret | GitHub Secrets | Worker secret |
-|---|---|---|
-| `TELEGRAM_BOT_TOKEN` | yes | yes |
-| `TELEGRAM_CHANNEL_ID`, `TELEGRAM_TEST_CHANNEL_ID` | yes | |
-| `OPERATOR_CHAT_ID`, `AUTHOR_CHAT_ID` | yes | |
-| `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_ALLOWED_USER_IDS` (JSON `{"<user id>":"<tenant>"}`) | | yes |
-| `ANTHROPIC_API_KEY` | | yes |
-| `GITHUB_DISPATCH_TOKEN` (fine-grained, this repo, Contents read/write) | | yes |
+| Path | Responsibility |
+| --- | --- |
+| `packages/core` | Domain schemas, ports, state and tenant config |
+| `packages/channels` | Renderers, network adapters and capabilities |
+| `packages/stores` | Git-backed content and ledger persistence |
+| `packages/ai` | Translation and generation adapters |
+| `apps/bot` | Private author workflow, D1, webhooks and scheduled jobs |
+| `apps/publisher` | Actions CLI: processing, publication and recovery |
+| `apps/site` | Bilingual Astro site built from approved content |
+| `config/tenants`, `content` | Tenant settings and published artifacts |
 
-Bot Worker (`apps/bot`):
+## Operational boundaries
 
-```sh
-cd apps/bot
-pnpm exec wrangler d1 create handmake-bot            # once; put database_id into wrangler.toml
-pnpm exec wrangler d1 migrations apply handmake-bot --remote
-pnpm exec wrangler secret put TELEGRAM_BOT_TOKEN     # and the other Worker secrets above
-pnpm run deploy                                      # not "pnpm deploy" (a pnpm built-in)
-pnpm run webhook:set                                 # registers the webhook with its secret
-```
+Secrets stay in ignored `.env`, GitHub Secrets and Worker secrets. The bot admits allow-listed
+operators; callbacks have a separate HMAC key. Drafts and private media are distinct from public
+Git content. Participant registration is outside this pipeline; later contest/comment features
+have separate consent, retention and private-name handling. This is a single-tenant production
+installation with tenant-aware architecture, not a hosted multi-tenant product.
 
-`apps/bot/wrangler.toml` `[vars]`: `PUBLISH_LIVE = "true"` sends bot posts to the live channel,
-`"false"` to the private test channel. Change it and redeploy.
-
-## Runbook
-
-**A publish failed.** The operator gets a Telegram alert. Open the failed run in GitHub Actions and
-press "Re-run jobs": the ledger skips every message already sent and sends only the rest. Telegram 5xx
-and network errors are not retried inside a run; the re-run covers them.
-
-**Publish a post by hand.** Actions → Publish → Run workflow, paste the payload JSON
-`{"tenantId","draftId","texts","fileIds","provenance"}`. Without the "live" tick it goes to the test
-channel.
-
-**The bot says "Зараз працюю з цією чернеткою" on an old preview.** The draft is stuck `publishing`:
-its "published" callback never reached the Worker (the run log shows an operator alert). Re-run the
-last successful publish workflow: the ledger skips every delivery and only the callback re-fires
-(the bot's endpoint is idempotent). Sending new text or `/new` starts the next post; pressing 🚀 on
-the old draft is harmless either way — the ledger skips it.
-
-**The bot does not answer.** Check the webhook:
-`curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo"` (look at `last_error_message`
-and `pending_update_count`), then `pnpm exec wrangler tail` in `apps/bot` while sending a message.
-
-**Rotate a token.**
-- Bot token: BotFather → revoke, then update `.env`, GitHub Secret and Worker secret
-  `TELEGRAM_BOT_TOKEN`, then `pnpm run webhook:set`.
-- `GITHUB_DISPATCH_TOKEN`: create a new fine-grained token, `wrangler secret put`, delete the old one.
-- `ANTHROPIC_API_KEY`: new key in the console, `wrangler secret put`, revoke the old one.
-- `TELEGRAM_WEBHOOK_SECRET`: `wrangler secret put` a new random value, then `pnpm run webhook:set`.
-
-Known edges: a Telegram retry after a saved-but-unanswered text can append it twice (at-least-once);
-drafts untouched for 30 days are deleted by the daily cron. More in
-[docs/review-notes.md](docs/review-notes.md).
-
-## Acceptance
-
-MVP checklist A1-A9 with results: [docs/e2e-mvp.md](docs/e2e-mvp.md).
+[Operations](docs/operations.md) · [MVP acceptance](docs/e2e-mvp.md) ·
+[Current acceptance](docs/e2e-v7.md) · [Tasks](docs/03-tasks.md) · [ADRs](docs/decisions/)
