@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** codex (T33).
-- **Current task:** T51 — done; live carousel verified 2026-11-13 (run `43389020371`).
+- **Active agent:** codex (T52, once spec v9 is approved).
+- **Current task:** T52 — authenticity label instead of AI note (F36, spec v9 draft).
 - **Branch:** `main`.
-- **Last commit:** see `git log` (`docs: record T51 live carousel verification`).
-- **Next step:** Live-run fixes are done; continue with T33 (including the PR #125
-  review note), owner per docs/03-tasks.md.
-- **Blocked on:** nothing.
+- **Last commit:** see `git log` (`docs: draft spec v9 authenticity label and T52`).
+- **Next step:** Volodymyr reviews spec v9 (F36, Q18). After approval Codex implements T52 on
+  `fix/t52-authenticity-label`; then T33 (including the PR #125 review note).
+- **Blocked on:** spec v9 approval.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T51 rollout:** PR #126 merged 2026-11-13 by Volodymyr after claude-code review (no
   blocking findings, CI green). No migration. Bot deployed from clean `main` by

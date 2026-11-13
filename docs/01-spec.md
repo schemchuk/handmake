@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v8 (2026-11-06).**
-Previous: approved v7 (2026-11-04), v6 (2026-10-30).
+Status: **draft v9 (2026-11-13), awaiting Volodymyr's review.**
+Previous: approved v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v7 (v8) are listed in section 14, from v6 in 14a.
+Changes from v8 (v9) are listed in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -96,6 +96,17 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 - **F5** The German version is produced by an AI model from the UA text, followed by a humanizer step
   driven by a versioned prompt kept in the repo.
 - **F6** Each language version carries `provenance`: `human`, `ai-assisted` or `ai-generated`.
+- **F36** Authenticity label (v9). Every publication whose photos or video show a real work in
+  authentic media (taken by the author or a participant, not generated) carries the label
+  "Оригінальна робота" / "Originalarbeit" on the site and in every channel caption (Telegram,
+  Instagram, Facebook, Threads), and in the bot preview. It applies to posts of any type with at least
+  one photo and to every `/work` work; posts without photos carry no label.
+  - **No public AI note for authentic works.** `provenance` stays in the content files (F6) as an
+    internal record, but `human` and `ai-assisted` are never shown publicly: the AI translation (F5) is
+    reviewed and approved by the author, who keeps editorial responsibility. Only `ai-generated`
+    content keeps a public AI note.
+  - **Shows (F30)** keep "KI-generiertes Model" for the generated images and additionally carry
+    "Originalarbeit" for the real work they present.
 - **F7** If the AI call fails, the author is told and can retry or write the German text herself.
 
 ### Preview, edit, publish
@@ -161,7 +172,7 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     nothing is generated from a description. Before approval the preview shows the original photo next
     to the result, because the author checks that the embroidery pattern is unchanged.
   - **Labelling.** Every generated image carries a visible and machine-readable AI marker (EU AI Act
-    art. 50); captions say "KI-generiertes Model".
+    art. 50); captions say "KI-generiertes Model"; the real work is labelled "Originalarbeit" (F36).
   - **Real people later (Q16).** If the author or Volodymyr ever appear in a show, real photos get
     their own content type so the site and channels always tell generated from real images.
 - **F32** AI cost budget per tenant: a monthly target of 20 EUR with a 5 EUR tolerance. At 20 EUR the
@@ -297,6 +308,9 @@ Presentation: a slide deck built from the author's photos and a guided Q&A, no t
 - **AI transparency (flag, not legal advice):** AI-generated text, images and video are marked by
   `provenance`; whether public labelling is required (EU AI Act transparency duties) is checked before
   phase 2b.
+  v9: AI-assisted translation of an author-approved text is not labelled publicly (author's editorial
+  responsibility; EU AI Act art. 50(4) exception, to be confirmed). Generated images of people stay
+  labelled.
 - **Branding:** only our own names. The host organization is not named anywhere until written permission.
 - **Public repo hygiene:** no personal facts about the author's family, participants or readers in the
   repo, its history, or generated content.
@@ -363,6 +377,8 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
 - **Q10** Resolved again (2026-11-04): audience and the author's business first, portfolio as a
   by-product (section 1).
 - **Q16** Deferred: real people in shows need a separate "real photo" content type (F30).
+- **Q18** Requested (2026-11-13): the author's own photos and video in a show next to the generated
+  images, labelled "Originalarbeit" (F36). Same content type as Q16; scope and UX not yet specified.
 - **Q11** Open (phase P): business model for bloggers (done-for-you setup vs self-service). Decides
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
@@ -439,6 +455,13 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
   that address (required practice in Germany).
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
+
+## 14-v9. Changes from v8 (v9, draft 2026-11-13)
+
+- New F36: "Оригінальна робота" / "Originalarbeit" on every publication with authentic media (site,
+  all channels, bot preview); no public AI note for human or AI-assisted texts; shows keep their AI
+  model note and also carry the label. AI transparency note updated. Q18 added.
+- No architecture change: rendering only; `provenance` data unchanged.
 
 ## 14. Changes from v7 (v8, approved 2026-11-06)
 

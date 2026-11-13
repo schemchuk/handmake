@@ -2159,3 +2159,26 @@ built from authentic photos of the work worn by Volodymyr, the author, or a face
 identifiable face, so no consent paperwork), published without the AI label because nothing is
 generated. Needs a spec decision (show type, how authenticity is recorded in `provenance`) before
 it becomes a task.
+
+### T52 — Authenticity label instead of AI note (F36, `site`, `channels`, `bot`)
+- Owner: codex · Reviewer: claude-code · Depends on: spec v9 approved · Before T33
+- Found 2026-11-13: post `01m79ykb8cdgrx6k29htysnzja` (photos of a participant's work) shows
+  "Створено за допомогою ШІ" on the site, because a German version sets `provenance: ai-assisted`
+  (`apps/bot/src/bot.ts` publishJobOf) and the site renders it.
+- Change:
+  - Site: `components/Provenance.astro`, `posts/[id].astro` and `[section]/[id].astro` stop
+    rendering the `ai-assisted` note; posts with photos and works render "Оригінальна робота" /
+    "Originalarbeit" (reuse `ui.linkedWork` wording, own key). `ai-generated` keeps its note.
+  - Shows: site page and captions keep "KI-generiertes Model" and add "Originalarbeit".
+  - Channels: Telegram, Instagram, Facebook, Threads renderers add the label line to captions of
+    posts with photos and of works, before the site link; one shared constant like
+    `show-disclosures.ts`. Posts without photos unchanged.
+  - Bot preview shows the label exactly as published.
+  - Keep `provenance` values in payloads and content files unchanged (F6).
+- Acceptance: unit tests per renderer (photo post, text-only post, work, show) and a site build test
+  for a post with `ai-assisted` DE version: no AI text, label present in DE and UK. Already published
+  site pages change on the next site build; existing channel posts are not edited.
+
+### T53 — Author's own photos and video in shows (Q18, F30/F36)
+- Owner: claude-code (spec first) · Reviewer: Volodymyr · Status: not started; needs spec detail
+  (Q16/Q18) before an implementation task is cut.
