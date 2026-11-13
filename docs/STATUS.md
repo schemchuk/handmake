@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T53a-f done).
+- **Active agent:** codex.
+- **Current task:** T53g — PR #134 review notes.
 - **Branch:** `main`.
 - **Last commit:** `ce48870` — feat: copy authentic show media first (T53f) (#134).
-- **Next step:** Volodymyr picks the next task. Open PR #134 review notes are listed under T53f
-  in docs/03-tasks.md (no follow-up task yet).
+- **Next step:** Codex implements T53g (docs/03-tasks.md) in a fresh session on
+  `feat/t53g-show-copy-review-notes`, then opens a PR for claude-code review.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 

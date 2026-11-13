@@ -2263,9 +2263,7 @@ it becomes a task.
 
 #### T53f — Channel show rendering (`channels`) · Depends on: T53a
 - Status: done 2026-11-13 (PR #134 merged `ce48870`; bot Worker `e1fa1dcb-2b0e-4ce3-80fa-910a55f5966f`).
-- Open review notes from PR #134 (no follow-up task yet): `instagramFramedFileName` maps `x.jpg`
-  and `x.png` to the same `x.ig.jpg` (bot naming prevents it today; add a guard); a copy plan
-  persisted before this deploy for a show with authentic media now fails `copy media changed`.
+- Review notes from PR #134: moved to T53g.
 - Change: Telegram/Instagram/Facebook/Threads albums put authentic photos first; caption line
   "KI-generierte Bilder ab Bild N" / «Згенеровані ШІ кадри з кадру N» only when authentic photos
   exist; Telegram replies with authentic video before the generated one; limits rechecked.
@@ -2274,3 +2272,21 @@ it becomes a task.
 - Review notes from PR #133 (site, fix in this PR): in `apps/site/src/pages/[...lang]/shows/[id].astro`
   use `ui.authenticityLabel` instead of the three hardcoded `lang === 'uk' ? ...` labels; add a DE
   build assertion that a show without authentic media has no `authentic-heading`.
+
+#### T53g — PR #134 review notes (`publisher`, `core`) · Depends on: T53f
+- Owner: codex · Reviewer: claude-code
+- Review notes from PR #134:
+  1. `instagramFramedFileName` (`apps/publisher/src/instagram-delivery.ts`) maps `x.jpg` and
+     `x.png` to the same `x.ig.jpg`. The show schema only keeps full file names disjoint, so an
+     authentic `foo.jpg` beside a generated `foo.png` would overwrite one framed copy. Bot naming
+     (`authentic-photo-N.jpg`) prevents it today. Add a guard: reject duplicate framed names
+     before writing (in `prepareInstagramDelivery`) or require disjoint name stems for show
+     photos in `showSchema`.
+  2. A `showCopyPlan` persisted before PR #134 for a show that already had authentic media now
+     fails with `copy media changed`, because the hash list gained the authentic files. Keep the
+     fail-safe (no silent re-plan, no double posting), but make the error say that the plan
+     predates authentic media, and document the operator recovery in `docs/show-copies.md`.
+- Acceptance: colliding framed names fail before any file write or network call; existing shows
+  and plans without authentic media behave unchanged; the legacy-plan error is distinct.
+- Tests: framed-name collision case; legacy plan with generated-only hashes for a show with
+  authentic media; existing publisher and core suites (targeted, per limit rules).
