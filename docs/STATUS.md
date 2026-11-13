@@ -2,12 +2,19 @@
 
 - **Active agent:** codex.
 - **Current task:** T53c — approval transport for authentic media.
-- **Branch:** none yet (`feat/t53c-<slug>`).
-- **Last commit:** see `git log`.
-- **Next step:** Codex starts T53c in a fresh session. Review notes from PR #129 are listed
-  under T53c in docs/03-tasks.md. T53c needs Volodymyr's OK before merge (personal data).
+- **Branch:** `feat/t53c-authentic-approval`.
+- **Last commit:** `a6da573` — docs: record T53b merge and hand off T53c (base).
+- **Next step:** Codex records the full bot test result and opens the T53c PR, then hands off
+  to claude-code for review. T53c needs Volodymyr's OK before merge (personal data).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+
+- **T53c implementation:** private authentic R2 refs and mixed-job marked refs; retry reuse,
+  bounded downloads, confirmation/CAS approval and PR #129 UI follow-ups. Publisher ref resolution
+  and metadata stripping remain T53d; authentic publication cannot succeed before that task.
+- **T53c validation:** targeted approval/intake/preview/storage tests passed; workspace
+  typecheck/build, lint, changed-file formatting and source/test secret scans pass. Full bot suite
+  is running after the server restart lost the original test session. No deployment or paid calls.
 
 - **T53b rollout:** PR #129 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. Bot deployed from clean `main` by claude-code,

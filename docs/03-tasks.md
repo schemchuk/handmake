@@ -2219,6 +2219,10 @@ it becomes a task.
   show prefix, add refs to the `kind: show` job; retries reuse stored objects (idempotent).
 - Acceptance: job validates against T53a; no Telegram file id or bytes in Git or job payload.
 - Tests: mocked Telegram/R2, retry without second download, failure message to the author.
+- Implementation: private R2 refs are `show-authentic:v1:<tenant>:<show>:<sha256>`;
+  mixed jobs carry generated `show-marked:v1:...` refs too. T53d must resolve both; the
+  generated-only transport is unchanged. Upload acknowledgements do not resend media/keyboards;
+  `/show` then "Додати свої фото/відео" opens the current confirmation controls.
 - Review notes from PR #129 (non-blocking): intake resends every stored item on each upload
   (a 3-photo album gives 6 photos and 3 keyboards); with authentic items the approval screen
   shows only "Додати свої фото/відео" (no regen/cancel) and no «Оригінальна робота» block;

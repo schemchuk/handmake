@@ -229,3 +229,28 @@ it('logs fixed diagnostics for unavailable media and interrupted delivery withou
     log.mockRestore();
   }
 });
+
+it('shows the authentic block and keeps regeneration and cancellation controls', async () => {
+  stored.draft.extras['showAuthentic'] = {
+    items: [
+      { fileId: 'private-photo', kind: 'photo' },
+      { fileId: 'private-video', kind: 'video' },
+    ],
+    confirmed: true,
+    editing: false,
+    people: 'both',
+  };
+  latest = structuredClone(stored);
+  ctx.replyWithPhoto = vi.fn() as never;
+  ctx.replyWithVideo = vi.fn() as never;
+  await preview(ctx, stored);
+  expect(ctx.replyWithPhoto).toHaveBeenCalledWith('private-photo', {
+    caption: 'Оригінальна робота',
+  });
+  expect(ctx.replyWithVideo).toHaveBeenCalledWith('private-video', {
+    caption: 'Оригінальна робота',
+  });
+  const keyboard = JSON.stringify(reply.mock.calls.at(-1)?.[1]);
+  expect(keyboard).toContain(':regen:');
+  expect(keyboard).toContain(':owncancel:');
+});
