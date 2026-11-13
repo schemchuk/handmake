@@ -115,11 +115,12 @@ export const siteSchema = z
         z
           .object({
             network: z.string().min(1),
-            url: z.string().url(),
+            url: httpsUrlSchema,
             lead: z.array(languageCodeSchema).optional(),
           })
           .strict(),
       )
+      .min(1)
       .optional(),
     // Served at `/`; every other tenant language under `/<lang>/`.
     defaultLanguage: languageCodeSchema,
