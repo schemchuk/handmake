@@ -42,7 +42,14 @@ export function checkResources(html: string, baseUrl: string, newsletterFormActi
       }
       if (node.tagName === 'meta' && attrs['http-equiv'])
         throw new Error('Unsupported HTTP-equivalent metadata');
-      if (node.tagName === 'script' && !attrs.src) throw new Error('Unsupported inline script');
+      if (node.tagName === 'script' && !attrs.src) {
+        if (attrs.type !== 'application/ld+json') throw new Error('Unsupported inline script');
+        try {
+          JSON.parse(node.childNodes.map((n) => ('value' in n ? n.value : '')).join(''));
+        } catch {
+          throw new Error('Invalid JSON-LD script');
+        }
+      }
       if (node.tagName === 'style')
         css(node.childNodes.map((n) => ('value' in n ? n.value : '')).join(''));
       if ('content' in node) walk(node.content);

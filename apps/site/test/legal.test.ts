@@ -148,3 +148,20 @@ it('derives external form approval from the configured endpoint and disables it 
   checkResources(html, 'https://example.invalid', action);
   expect(() => checkResources(html, 'https://example.invalid', newsletterFormAction)).toThrow();
 });
+
+it('permits only valid JSON in inline JSON-LD scripts', () => {
+  expect(() =>
+    checkResources(
+      '<script type="application/ld+json">{"sameAs":["https://example.invalid/profile"]}</script>',
+      'https://example.invalid',
+    ),
+  ).not.toThrow();
+  for (const script of [
+    '<script type="application/ld+json">invalid</script>',
+    '<script type="application/json">{}</script>',
+    '<script type="Application/ld+json">{}</script>',
+    '<script>{}</script>',
+  ]) {
+    expect(() => checkResources(script, 'https://example.invalid')).toThrow();
+  }
+});

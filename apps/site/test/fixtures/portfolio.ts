@@ -22,6 +22,7 @@ export async function createPortfolioFixture() {
   const tenant = readTenantConfig(findRepoRoot(import.meta.dirname), 'faden-und-stimmung');
   tenant.id = 'fixture';
   tenant.site!.baseUrl = 'https://example.invalid';
+  delete tenant.site!.profiles;
   delete tenant.site!.circle;
   delete tenant.site!.groupUrl;
   tenant.site!.newsletter = { formAction: newsletterFormAction };

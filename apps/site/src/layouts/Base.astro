@@ -22,6 +22,16 @@ const data = await loadSiteData();
 const { tenant, site } = data;
 const ui = uiStrings(lang);
 const def = site.defaultLanguage;
+const profiles = site.profiles?.toSorted(
+  (a, b) => Number(b.lead?.includes(lang) ?? false) - Number(a.lead?.includes(lang) ?? false),
+);
+const organization = site.profiles === undefined ? undefined : JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: tenant.name,
+  url: site.baseUrl,
+  sameAs: site.profiles.map(({ url }) => url),
+}).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 const { colors, fonts } = site.theme;
 const style = [
   `--paper:${colors.paper}`,
@@ -54,6 +64,9 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
         <link rel="alternate" hreflang="x-default" href={absoluteUrl(site.baseUrl, alternates[def]!)} />
       )
     }
+    {current === 'home' && organization && (
+      <script is:inline type="application/ld+json" set:html={organization}></script>
+    )}
     <meta property="og:site_name" content={tenant.name} />
     <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
@@ -95,7 +108,13 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <footer class="wrap site-footer">
       <Stitch />
       <span>{tenant.name}</span>
-      <JoinChannel lang={lang} />
+      {profiles ? (
+        <nav class="profiles" aria-label={ui.profiles}>
+          {profiles.map(({ network, url }) => (
+            <a href={url} rel="me">{network.charAt(0).toUpperCase() + network.slice(1)}</a>
+          ))}
+        </nav>
+      ) : <JoinChannel lang={lang} />}
       <a href={pagePath(lang, def, 'impressum')}>Impressum</a>
       <a href={pagePath(lang, def, 'datenschutz')}>Datenschutzerklärung</a>
     </footer>

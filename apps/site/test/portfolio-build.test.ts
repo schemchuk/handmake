@@ -443,3 +443,63 @@ it('excludes flagged posts, works, shows and their media from an indexable build
     await rm(root, { recursive: true, force: true });
   }
 }, 60_000);
+
+describe('profile fixture builds', () => {
+  it.each([false, true])(
+    'builds with profiles configured: %s',
+    async (configured) => {
+      const fixture = await createPortfolioFixture();
+      const { root, dist, tenant } = fixture;
+      try {
+        const profiles = [
+          { network: 'instagram', url: 'https://example.invalid/profile?x=<&y=>', lead: ['de'] },
+          { network: 'telegram', url: 'https://t.me/fixture', lead: ['uk'] },
+          { network: 'custom network', url: 'https://example.invalid/custom' },
+        ];
+        tenant.site!.circle = {
+          joinUrl: tenant.channels.telegram!.joinUrl!,
+          texts: {
+            de: { title: 'Kreis', what: 'Handarbeit', where: 'Landshut' },
+            uk: { title: 'Гурток', what: 'Рукоділля', where: 'Ландсгут' },
+          },
+        };
+        if (configured) tenant.site!.profiles = profiles;
+        await writeFile(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
+        await build(root, dist);
+        for (const lang of ['de', 'uk']) {
+          const page = await html(dist, lang === 'de' ? '' : 'uk');
+          const footer = page.split('<footer')[1]!;
+          if (configured) {
+            expect(footer.indexOf(lang === 'de' ? '>Instagram<' : '>Telegram<')).toBeLessThan(
+              footer.indexOf(lang === 'de' ? '>Telegram<' : '>Instagram<'),
+            );
+            expect(footer.match(/rel="me"/g)).toHaveLength(3);
+            expect(footer).not.toContain('target=');
+            expect(footer).not.toContain('join-channel');
+            expect(footer).toContain('Custom network');
+            const json = page.match(
+              /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
+            )![1]!;
+            expect(json).not.toMatch(/[<>&]/);
+            expect(JSON.parse(json)).toEqual({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: tenant.name,
+              url: tenant.site!.baseUrl,
+              sameAs: profiles.map(({ url }) => url),
+            });
+            expect(await html(dist, lang === 'de' ? 'works' : 'uk/works')).not.toContain(
+              'application/ld+json',
+            );
+          } else {
+            expect(footer).toContain('join-channel');
+            expect(page).not.toContain('application/ld+json');
+          }
+        }
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
+});

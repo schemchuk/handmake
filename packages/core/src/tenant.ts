@@ -110,6 +110,17 @@ const httpsUrlSchema = z.url({ protocol: /^https$/ });
 export const siteSchema = z
   .object({
     baseUrl: baseUrlSchema,
+    profiles: z
+      .array(
+        z
+          .object({
+            network: z.string().min(1),
+            url: z.string().url(),
+            lead: z.array(languageCodeSchema).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
     // Served at `/`; every other tenant language under `/<lang>/`.
     defaultLanguage: languageCodeSchema,
     theme: z

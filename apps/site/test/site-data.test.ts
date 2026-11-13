@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -102,5 +102,20 @@ describe('tenant config lookup', () => {
     writeFileSync(path.join(root, 'config', 'tenants', 'a.yaml'), '');
     writeFileSync(path.join(root, 'config', 'tenants', 'b.yaml'), '');
     expect(() => readTenantConfig(root, undefined)).toThrow(/set SITE_TENANT/);
+  });
+});
+
+describe('profile config validation in the loader', () => {
+  it.each(['http://example.invalid/profile', 'javascript:alert(1)'])('rejects %s', (url) => {
+    const root = mkdtempSync(path.join(tmpdir(), 'site-profiles-'));
+    try {
+      const tenant = readTenantConfig(findRepoRoot(__dirname), 'faden-und-stimmung');
+      tenant.site!.profiles = [{ network: 'custom', url }];
+      mkdirSync(path.join(root, 'config/tenants'), { recursive: true });
+      writeFileSync(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
+      expect(() => readTenantConfig(root, 'fixture')).toThrow(/https/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
