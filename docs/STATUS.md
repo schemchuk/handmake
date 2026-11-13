@@ -3,7 +3,7 @@
 - **Active agent:** claude-code.
 - **Current task:** none (H12 done).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record H12 and T33 bot deploy.
+- **Last commit:** this commit — docs: record current live bot version.
 - **Next step:** T34 portfolio pack (claude-code); H12 demo GIF/MP4 come from Volodymyr.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
@@ -12,7 +12,8 @@
   recording and back to live. Cloudflare returned 500 / code 10013 on three `wrangler deploy`
   attempts (17:18-17:29 EET); a `versions upload` at 17:32 passed, so it was a transient API error.
   Bot redeployed live from clean `main` by Volodymyr 2026-11-13 18:01 EET, Worker
-  `674f193b-01cc-4e95-aa3a-742b993e48ba` (includes T33).
+  `674f193b-01cc-4e95-aa3a-742b993e48ba` (includes T33); redeployed again 18:08 EET, current live
+  Worker `5e256a34-cfe6-4322-8f9f-f3d2b3c71b22` (`PUBLISH_LIVE = "true"`).
 
 - **T33:** PR #139 merged 2026-11-13 by claude-code (squash 3fc144d, CI green) with Volodymyr's
   OK after re-review of 7a32ee4 (hashtag placement, cleanup reconciliation in `finally`).
