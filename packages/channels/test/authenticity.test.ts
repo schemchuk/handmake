@@ -82,3 +82,14 @@ it('skips unsupported languages and places the label before trailing hashtags', 
     'Text\n\nOriginalarbeit\n\n#craft #handmade',
   );
 });
+
+it.each([
+  ['Я вʼяжу для #Landshut', 'Я вʼяжу для #Landshut\n\nОригінальна робота'],
+  ['Текст\n#a\n#b', 'Текст\n\nОригінальна робота\n\n#a\n#b'],
+  ['Текст\n#a #b\n#c', 'Текст\n\nОригінальна робота\n\n#a #b\n#c'],
+  ['Текст\n#a пояснення\n#b', 'Текст\n#a пояснення\n\nОригінальна робота\n\n#b'],
+  ['Текст\n#a\nпояснення', 'Текст\n#a\nпояснення\n\nОригінальна робота'],
+  ['Текст\r\n#a\r\n#b', 'Текст\n\nОригінальна робота\n\n#a\r\n#b'],
+])('preserves author text and complete standalone hashtag blocks: %s', (text, expected) => {
+  expect(appendAuthenticity(text, 'uk', true)).toBe(expected);
+});

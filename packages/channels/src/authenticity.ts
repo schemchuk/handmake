@@ -9,7 +9,7 @@ export function appendAuthenticity(text: string, lang: string, hasPhotos: boolea
   if (!hasPhotos || !text.trim()) return text;
   const label = authenticityLabels[lang];
   if (!label) return text;
-  const hashtags = text.match(/(?:\s+)(#[^\s#]+(?:[ \t]+#[^\s#]+)*)\s*$/u);
+  const hashtags = text.match(/\r?\n([ \t]*#[^\s#]+(?:[ \t\r\n]+#[^\s#]+)*[ \t\r\n]*)$/u);
   if (hashtags?.index !== undefined)
     return `${text.slice(0, hashtags.index).trimEnd()}\n\n${label}\n\n${hashtags[1]}`;
   return `${text}\n\n${label}`;

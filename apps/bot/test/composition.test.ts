@@ -233,61 +233,89 @@ describe('scheduled draft cleanup', () => {
   });
 });
 
-it('reconciles receipts on cleanup cron without reading contest creation configuration', async () => {
-  const db = await makeD1();
-  const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
-  const { createContestEntryStore } = await import('../src/contest-store');
-  const { vi } = await import('vitest');
-  const now = new Date('2026-11-12T12:00:00Z');
-  await createContestEntryStore(db).submit({
-    tenantId: 'fixture',
-    entryId: id,
-    displayName: 'First',
-    photoRef: 'photo',
-    consent: true,
-    consentAt: now,
-    createdAt: now,
-  });
-  const receipt = {
-    plan: {
-      version: 1,
-      type: 'wotw-result',
-      entryRefs: [id],
-      allowNames: true,
-      settings: { channelId: 'TELEGRAM_CHANNEL_ID' },
-      operations: [{ kind: 'message', text: `{entry:${id}}`, lang: 'uk' }],
-    },
-    remoteIds: [123],
-    publishedAt: now.toISOString(),
-  };
-  await db
-    .prepare('INSERT INTO anonymous_edit_receipts VALUES (?, ?, ?, ?, ?)')
-    .bind('fixture', 'post', 'telegram', JSON.stringify(receipt), now.toISOString())
-    .run();
-  await db
-    .prepare(
-      `INSERT INTO poll_results (tenant_id, week, draft_id, entry_id, source, published_at)
-    VALUES ('fixture', '2026-11-09', 'post', ?, 'author', ?)`,
-    )
-    .bind(id, new Date(now.getTime() - 90 * 86400000).toISOString())
-    .run();
-  const fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
-    expect(String(_url)).toMatch(/\/editMessageText$/);
-    expect(JSON.parse(String(init?.body))).toMatchObject({ text: 'Робота № 1', message_id: 123 });
-    return Response.json({ ok: true, result: {} });
-  });
-  vi.stubGlobal('fetch', fetch);
-  try {
-    const app = createApp(
-      makeEnv({ DB: db, PUBLISH_LIVE: 'true', TELEGRAM_CHANNEL_ID: 'test-chat' }),
-      botTexts,
-    );
-    await app.scheduled({ scheduledTime: now.getTime() } as ScheduledEvent);
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(await db.prepare('SELECT state FROM name_reconciliations').first()).toEqual({
-      state: 'done',
+it.each([false, true])(
+  'reconciles receipts on cleanup cron despite retention failure=%s without reading contest creation configuration',
+  async (retentionFails) => {
+    const db = await makeD1();
+    const id = '01JBCA1B2C3D4E5F6G7H8J9K0N';
+    const { createContestEntryStore } = await import('../src/contest-store');
+    const { vi } = await import('vitest');
+    const now = new Date('2026-11-12T12:00:00Z');
+    await createContestEntryStore(db).submit({
+      tenantId: 'fixture',
+      entryId: id,
+      displayName: 'First',
+      photoRef: 'photo',
+      consent: true,
+      consentAt: now,
+      createdAt: now,
     });
-  } finally {
-    vi.unstubAllGlobals();
-  }
-});
+    const receipt = {
+      plan: {
+        version: 1,
+        type: 'wotw-result',
+        entryRefs: [id],
+        allowNames: true,
+        settings: { channelId: 'TELEGRAM_CHANNEL_ID' },
+        operations: [{ kind: 'message', text: `{entry:${id}}`, lang: 'uk' }],
+      },
+      remoteIds: [123],
+      publishedAt: now.toISOString(),
+    };
+    await db
+      .prepare('INSERT INTO anonymous_edit_receipts VALUES (?, ?, ?, ?, ?)')
+      .bind('fixture', 'post', 'telegram', JSON.stringify(receipt), now.toISOString())
+      .run();
+    await db
+      .prepare(
+        `INSERT INTO poll_results (tenant_id, week, draft_id, entry_id, source, published_at)
+    VALUES ('fixture', '2026-11-09', 'post', ?, 'author', ?)`,
+      )
+      .bind(id, new Date(now.getTime() - 90 * 86400000).toISOString())
+      .run();
+    if (retentionFails) {
+      // A different tenant fails its retention transaction while fixture queues an erasure.
+      await createContestEntryStore(db).submit({
+        tenantId: 'blocked',
+        entryId: id,
+        displayName: 'Other',
+        photoRef: 'photo',
+        consent: true,
+        consentAt: now,
+        createdAt: now,
+      });
+      await db
+        .prepare(
+          `INSERT INTO poll_results
+      (tenant_id, week, draft_id, entry_id, source, published_at)
+      SELECT 'blocked', week, draft_id, entry_id, source, published_at
+      FROM poll_results WHERE tenant_id = 'fixture'`,
+        )
+        .run();
+      await db.exec(
+        "CREATE TRIGGER reject_blocked_retention BEFORE INSERT ON name_withdrawals WHEN NEW.tenant_id = 'blocked' BEGIN SELECT RAISE(ABORT, 'fixture failure'); END;",
+      );
+    }
+    const fetch = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      expect(String(_url)).toMatch(/\/editMessageText$/);
+      expect(JSON.parse(String(init?.body))).toMatchObject({ text: 'Робота № 1', message_id: 123 });
+      return Response.json({ ok: true, result: {} });
+    });
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const app = createApp(
+        makeEnv({ DB: db, PUBLISH_LIVE: 'true', TELEGRAM_CHANNEL_ID: 'test-chat' }),
+        botTexts,
+      );
+      const cleanup = app.scheduled({ scheduledTime: now.getTime() } as ScheduledEvent);
+      if (retentionFails) await expect(cleanup).rejects.toThrow('Tenant name retention failed');
+      else await cleanup;
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(await db.prepare('SELECT state FROM name_reconciliations').first()).toEqual({
+        state: 'done',
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  },
+);

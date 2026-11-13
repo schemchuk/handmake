@@ -1,17 +1,21 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T33 review fixes on PR #139 (changes requested by claude-code).
+- **Active agent:** claude-code.
+- **Current task:** T33 review fixes complete; PR #139 awaits re-review.
 - **Branch:** `feat/t33-usage-metrics`.
-- **Last commit:** this commit — docs: request T33 review fixes.
-- **Next step:** codex fixes the review on PR #139 (comment 6856843590): (1) blocking —
-  `appendAuthenticity` moves the label before an inline sentence-ending hashtag and splits
-  multi-line hashtag blocks; only move it before a hashtag-only block on its own line(s), with
-  tests; (2) cleanup cron must still run `reconcileNames()` when `expireNonWinnerNames` throws,
-  then report, with a test. Then hand back to claude-code for re-review.
-- **Blocked on:** review fixes.
+- **Last commit:** this commit — fix: preserve hashtag text and resume cleanup reconciliation.
+- **Next step:** claude-code re-reviews both fixes from PR #139 comment 6856843590, checks CI,
+  then follows the sensitive-merge and migration/deployment approval gates.
+- **Blocked on:** independent re-review; no implementation blockers.
 - **Open questions for Volodymyr:** reviewer needs explicit approval before sensitive merge
   (retention error reporting touches personal-data cleanup) and before applying migration 0022/deploying.
+
+- **T33 review fixes:** authenticity labels move only before a standalone trailing hashtag block,
+  preserving inline hashtags and complete multi-line blocks (including CRLF). Cleanup reconciles
+  pending erasures in `finally` before reporting a retention failure. Regression uses real local D1
+  with a failing tenant and proves another tenant's public erasure completes before cron rejection.
+  Channels 344/344, composition/retention 23/23, workspace typecheck, lint/format and bot/channels
+  builds pass. No production migration, deploy, publishing, paid calls, workflows or secrets changed.
 
 - **T33 validation:** full local bot 809/809, channels 338/338 and site 58/58 pass.
   Workspace typecheck/build, lint, formatting and staged gitleaks pass. CI run 43446665835
