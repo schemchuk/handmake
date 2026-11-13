@@ -257,6 +257,8 @@ export function isUniqueViolation(error: unknown): boolean {
   return error instanceof Error && error.message.includes('UNIQUE constraint failed');
 }
 
+// D1 meta.changes includes usage-trigger writes. Every guarded mutation below
+// targets at most one draft; any positive count proves that mutation won.
 export function createD1DraftStore(db: D1Database): D1DraftStore {
   return {
     async get(tenantId, draftId) {
@@ -273,7 +275,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
 
     async createIfAbsent(draft, chatId) {
       const result = await draftInsertStatement(db, draft, chatId, { ignoreExisting: true }).run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async update(draft, expectedVersion) {
@@ -293,7 +295,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           expectedVersion,
         )
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async updateWork(draft, expectedVersion) {
@@ -319,7 +321,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           expectedVersion,
         )
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async freezeShowApproval(stored, job, approvalChatId) {
@@ -352,7 +354,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           version,
         )
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async updateShow(draft, expectedVersion) {
@@ -380,7 +382,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           expectedVersion,
         )
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async appendPhoto(tenantId, draftId, fileId, limit, now) {
@@ -393,7 +395,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(fileId, now.toISOString(), tenantId, draftId, limit)
         .run();
-      if (result.meta.changes === 1) {
+      if (result.meta.changes > 0) {
         return 'added';
       }
       const stored = await this.get(tenantId, draftId);
@@ -413,7 +415,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(text, text, now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async delete(tenantId, draftId) {
@@ -553,7 +555,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           (staleBefore ?? staleEpoch).toISOString(),
         )
         .run();
-      return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
+      return result.meta.changes > 0 ? this.get(tenantId, draftId) : undefined;
     },
 
     async claimPublishing(tenantId, draftId, now, staleBefore, approvalChatId) {
@@ -575,7 +577,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           (staleBefore ?? staleEpoch).toISOString(),
         )
         .run();
-      return result.meta.changes === 1 ? this.get(tenantId, draftId) : undefined;
+      return result.meta.changes > 0 ? this.get(tenantId, draftId) : undefined;
     },
 
     async revertPublishing(tenantId, draftId, now) {
@@ -587,7 +589,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async markPublished(tenantId, draftId, now) {
@@ -599,7 +601,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async chatIdOf(tenantId, draftId) {
@@ -629,7 +631,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(german, now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async markTranslationFailed(tenantId, draftId, now) {
@@ -641,7 +643,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async writeGermanByHand(tenantId, draftId, german, now) {
@@ -653,7 +655,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(german, now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async setPendingEdit(tenantId, draftId, target, now) {
@@ -665,7 +667,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(target, now.toISOString(), tenantId, draftId)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async replaceText(tenantId, draftId, target, text, now) {
@@ -678,7 +680,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(editJsonPath(target), text, now.toISOString(), tenantId, draftId, target)
         .run();
-      return result.meta.changes === 1;
+      return result.meta.changes > 0;
     },
 
     async deleteOlderThan(cutoff) {

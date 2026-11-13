@@ -137,7 +137,7 @@ describe('renderInstagram: caption rules (F33, ported ig-caption lint)', () => {
   it('accepts at most 5 hashtags (hard limit)', () => {
     const five = 'Nachricht\n#one #two #three #four #five';
     expect(renderInstagram(makePost({ texts: { uk: 'x', de: five } }), settings)[0]).toMatchObject({
-      caption: five + '\n\nOriginalarbeit',
+      caption: 'Nachricht\n\nOriginalarbeit\n\n#one #two #three #four #five',
     });
     const six = 'Nachricht\n#one #two #three #four #five #six';
     expect(() => renderInstagram(makePost({ texts: { uk: 'x', de: six } }), settings)).toThrowError(

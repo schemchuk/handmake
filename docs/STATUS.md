@@ -1,12 +1,29 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T33 (usage metrics, `/stats`).
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: record T54a bot deploy.
-- **Next step:** codex implements T33 in a fresh session.
-- **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** claude-code.
+- **Current task:** T33 review fixes complete; PR #139 awaits re-review.
+- **Branch:** `feat/t33-usage-metrics`.
+- **Last commit:** this commit — fix: preserve hashtag text and resume cleanup reconciliation.
+- **Next step:** claude-code re-reviews both fixes from PR #139 comment 6856843590, checks CI,
+  then follows the sensitive-merge and migration/deployment approval gates.
+- **Blocked on:** independent re-review; no implementation blockers.
+- **Open questions for Volodymyr:** reviewer needs explicit approval before sensitive merge
+  (retention error reporting touches personal-data cleanup) and before applying migration 0022/deploying.
+
+- **T33 review fixes:** authenticity labels move only before a standalone trailing hashtag block,
+  preserving inline hashtags and complete multi-line blocks (including CRLF). Cleanup reconciles
+  pending erasures in `finally` before reporting a retention failure. Regression uses real local D1
+  with a failing tenant and proves another tenant's public erasure completes before cron rejection.
+  Channels 344/344, composition/retention 23/23, workspace typecheck, lint/format and bot/channels
+  builds pass. No production migration, deploy, publishing, paid calls, workflows or secrets changed.
+
+- **T33 validation:** full local bot 809/809, channels 338/338 and site 58/58 pass.
+  Workspace typecheck/build, lint, formatting and staged gitleaks pass. CI run 43446665835
+  passed on 0766bbc: all 1,971 tests, typecheck/build, lint/format, actionlint, dry-run and secrets.
+  Sandboxed D1 initialization stalled; site child-process diagnostics were unavailable;
+  unrestricted runs passed. The initial unrestricted full bot run was restarted with verbose progress.
+  Definitions and deployment prerequisites: docs/usage-metrics.md. PR #125/#127 notes resolved.
+  No production migration, deploy, publishing, paid calls, workflow or secret changes.
 
 - **T54a:** PR #138 merged 2026-11-13 by claude-code (squash 953773a, CI green, no findings).
   No migration, no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker

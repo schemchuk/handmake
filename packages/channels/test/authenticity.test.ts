@@ -1,3 +1,4 @@
+import { appendAuthenticity } from '../src/authenticity';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { showSchema, type Post, type SendOperation } from '@handmake/core';
@@ -73,4 +74,22 @@ describe.each([
     );
     expect(text).toContain('KI-generiertes Model\nOriginalarbeit');
   });
+});
+
+it('skips unsupported languages and places the label before trailing hashtags', () => {
+  expect(appendAuthenticity('Approved text', 'fr', true)).toBe('Approved text');
+  expect(appendAuthenticity('Text\n\n#craft #handmade', 'de', true)).toBe(
+    'Text\n\nOriginalarbeit\n\n#craft #handmade',
+  );
+});
+
+it.each([
+  ['Я вʼяжу для #Landshut', 'Я вʼяжу для #Landshut\n\nОригінальна робота'],
+  ['Текст\n#a\n#b', 'Текст\n\nОригінальна робота\n\n#a\n#b'],
+  ['Текст\n#a #b\n#c', 'Текст\n\nОригінальна робота\n\n#a #b\n#c'],
+  ['Текст\n#a пояснення\n#b', 'Текст\n#a пояснення\n\nОригінальна робота\n\n#b'],
+  ['Текст\n#a\nпояснення', 'Текст\n#a\nпояснення\n\nОригінальна робота'],
+  ['Текст\r\n#a\r\n#b', 'Текст\n\nОригінальна робота\n\n#a\r\n#b'],
+])('preserves author text and complete standalone hashtag blocks: %s', (text, expected) => {
+  expect(appendAuthenticity(text, 'uk', true)).toBe(expected);
 });

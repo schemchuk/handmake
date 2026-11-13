@@ -150,7 +150,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
         language: 'fr',
         canonical: { ...canonical, defaultLanguage: 'fr' },
       }),
-    ).toThrowError(/unsupported authenticity label language/);
+    ).toThrowError(/unsupported canonical footer language/);
   });
 
   it('rejects a canonical baseUrl that is not an https origin', () => {

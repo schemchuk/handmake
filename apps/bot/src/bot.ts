@@ -1,3 +1,4 @@
+import { formatUsage, type UsageSummary } from './usage-metrics';
 import { registerAuthorEntries, type AuthorEntriesStore } from './author-entries';
 import {
   registerPollResultCallbacks,
@@ -31,6 +32,7 @@ import type { ShowSessionOptions } from './show-session';
 
 export interface CreateBotOptions {
   token: string;
+  usage?: (tenant: string, now: Date) => Promise<UsageSummary>;
   entries?: EntrySessionStore;
   authorEntries?: AuthorEntriesStore;
   pollResults?: PollClosingRuntimeOptions;
@@ -94,6 +96,20 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   registerCommentSession(bot, options);
   const workSession = registerWorkSession(bot, options);
   registerShowSession(bot, options, workSession.start);
+
+  bot.command('stats', async (ctx) => {
+    if (ctx.chat?.type !== 'private') return;
+    try {
+      await ctx.reply(
+        options.usage
+          ? formatUsage(await options.usage(ctx.tenantId, new Date()))
+          : 'Статистика поки недоступна.',
+      );
+    } catch {
+      console.error('Usage report failed');
+      await ctx.reply('Не вдалося отримати статистику. Спробуй /stats пізніше.');
+    }
+  });
 
   bot.command('cost', async (ctx) => {
     let reply: string = texts.costUnavailableText;

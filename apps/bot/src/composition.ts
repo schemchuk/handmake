@@ -1,3 +1,4 @@
+import { usageSummary } from './usage-metrics';
 import { runPollClosingCron } from './poll-closing-runtime';
 import { createEntrySessionStore } from './entry-session';
 import { createAuthorEntriesStore } from './author-entries';
@@ -191,6 +192,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        usage: (tenant, now) => usageSummary(env.DB, tenant, now),
         pollResults: {
           logError,
           db: env.DB,
@@ -342,8 +344,12 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         );
         await createEntrySessionStore(env.DB).cleanup(new Date(event.scheduledTime));
         const deleted = (await drafts.deleteOlderThan(cutoff)) + commentsDeleted;
-        await expireNonWinnerNames(env.DB, new Date(event.scheduledTime));
-        await reconcileNames();
+        try {
+          await expireNonWinnerNames(env.DB, new Date(event.scheduledTime));
+        } finally {
+          // Pending erasures must progress even when another tenant's retention fails.
+          await reconcileNames();
+        }
         return deleted;
       }
       // F18: on every other tick, check whether an announcement/reminder

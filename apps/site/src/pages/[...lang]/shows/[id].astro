@@ -33,7 +33,7 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
       <p class="meta">{ui.authenticityLabel}</p>
       <Provenance value={version.provenance} lang={lang} />
       {show.model && <p>{show.model.name}</p>}
-      {work && <p><a href={pagePath(lang, def, `works/${work.id.toLowerCase()}`)}>{ui.linkedWork}</a></p>}
+      {work && <p><a href={pagePath(lang, def, `works/${work.id.toLowerCase()}`)}>{ui.authenticityLabel}</a></p>}
     </div>
     {show.authentic && show.authentic.length > 0 && <section aria-labelledby="authentic-heading">
       <h2 id="authentic-heading">{ui.authenticityLabel}</h2>
