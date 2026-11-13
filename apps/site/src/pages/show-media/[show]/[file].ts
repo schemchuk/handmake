@@ -13,7 +13,7 @@ const types: Record<string, string> = {
 export const getStaticPaths = (async () => {
   const data = await loadSiteData();
   return data.shows.flatMap((show) =>
-    [...show.images, show.video].map(({ fileName }) => ({
+    [...(show.authentic ?? []), ...show.images, show.video].map(({ fileName }) => ({
       params: { show: show.id.toLowerCase(), file: fileName },
       props: { showId: show.id, fileName },
     })),
