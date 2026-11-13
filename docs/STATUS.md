@@ -1,10 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** none (H12 done).
+- **Active agent:** none.
+- **Current task:** none.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record current live bot version.
-- **Next step:** T34 portfolio pack (claude-code); H12 demo GIF/MP4 come from Volodymyr.
+- **Last commit:** this commit — docs: hand off after T33 rollout.
+- **Next step:** T34 portfolio pack, not started; to be picked up in a fresh session by the agent
+  Volodymyr names. Note for it: the first seconds of the H12 demo (`~/Videos/h12/demo.*`) show the
+  first name from an earlier published post; decide with Volodymyr whether to trim before committing.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
