@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v9 (2026-11-13).**
+Status: **draft v10 (2026-11-13), awaiting Volodymyr's review.** Last approved: v9 (2026-11-13).
 Previous: approved v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v8 (v9) are listed in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
+Changes from v9 (v10 draft) are listed in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -173,8 +173,36 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     to the result, because the author checks that the embroidery pattern is unchanged.
   - **Labelling.** Every generated image carries a visible and machine-readable AI marker (EU AI Act
     art. 50); captions say "KI-generiertes Model"; the real work is labelled "Originalarbeit" (F36).
-  - **Real people later (Q16).** If the author or Volodymyr ever appear in a show, real photos get
-    their own content type so the site and channels always tell generated from real images.
+  - **Real people (Q16, F37).** Real photos and video of the author or Volodymyr in a show are
+    authentic media (F37), never mixed up with generated images.
+- **F37** Authentic media in a show (v10 draft, Q16/Q18). The author may add her own photos and one
+  short video of the work to a show, next to the generated images and video.
+  - **What counts.** Media taken by the author (or Volodymyr) of the real work: on a hanger, worn by
+    the author, worn by Volodymyr, in a room. Nothing generated or AI-edited. People who may appear:
+    only the author and Volodymyr. Participants, children and any other person never appear; the
+    author confirms this with a button before approval (like the face-consent step, F10).
+  - **How many.** 0-3 photos and 0-1 video per show; the show keeps its 3-5 generated images and one
+    generated video. Total per show at most 10 media items (Telegram album and Instagram carousel
+    limit). The author's video: MP4/MOV sent to the bot, at most 60 s and 20 MB (the Bot API download
+    limit); longer or larger clips are refused with a clear message.
+  - **Hand-over (UX).** In the `/show` session, after the generated preview, one optional step:
+    «Додати свої фото/відео» or «Пропустити». The author sends the files, sees them in the preview in
+    a separate block «Оригінальна робота», can remove any of them, then approves the whole show. The
+    step can also be reopened before approval. No AI call is made on authentic media, so it costs
+    nothing (F32).
+  - **Order and labelling.** On the site the show page has two blocks: generated images and video
+    with "KI-generiertes Model" (F30), then «Оригінальна робота» / «Originalarbeit» with the authentic
+    media, without any AI marker. In channels the album/carousel lists the generated items first, the
+    authentic items after them; the caption keeps both lines (F36) and adds "Originalfotos ab Bild N" /
+    «Оригінальні фото з кадру N», so every image is identifiable. Generated items keep their visible
+    and machine-readable marker (F30), authentic items never get one.
+  - **Storage.** Authentic media are stored in the show's content folder as a separate list with
+    `provenance: human`, `kind: photo | video` and `people: none | author | operator`; they never go
+    into the generated `images`/`video` lists, and the schema rejects a file in both. Location and
+    camera metadata (EXIF/GPS, video metadata) are removed before storage. They are not resized or
+    re-encoded beyond that, the same rule as for marked bytes.
+  - **Retry and removal.** Publishing stays idempotent (F11). Removing an authentic item after
+    publishing follows the existing show correction path; channel posts are not edited automatically.
 - **F32** AI cost budget per tenant: a monthly target of 20 EUR with a 5 EUR tolerance. At 20 EUR the
   operator is warned; at 25 EUR new shows wait until next month. Every AI call (text, image, video) is
   booked in the ledger with its cost. The operator has a cost command (spent this month, per show, per
@@ -348,6 +376,11 @@ Non-goals in v5:
 - Participants' works are never sold, licensed or used outside the contest and its posts.
 - No participant-facing bot (the v4 phase 3 "sign-up and submissions bot" is dropped).
 
+Non-goals in v10:
+- No show made only of authentic media (that is a `/work` post, F36).
+- No AI editing, retouching or upscaling of authentic media.
+- No people other than the author and Volodymyr in authentic media.
+
 Non-goals in v8:
 - The system never reads, stores, moderates or re-publishes posts from the discussion group (F35).
 - No pre-moderation by the author; participants' photos are not copied to the site or other networks.
@@ -376,9 +409,11 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
   or both; one message or a guided flow).
 - **Q10** Resolved again (2026-11-04): audience and the author's business first, portfolio as a
   by-product (section 1).
-- **Q16** Deferred: real people in shows need a separate "real photo" content type (F30).
-- **Q18** Requested (2026-11-13): the author's own photos and video in a show next to the generated
-  images, labelled "Originalarbeit" (F36). Same content type as Q16; scope and UX not yet specified.
+- **Q16** Proposed in v10 (F37): real people (only the author and Volodymyr) appear only in
+  authentic media of a show, stored as a separate list, not as a new content type.
+- **Q18** Proposed in v10 (F37): the author's own photos (0-3) and video (0-1) in a show, labelled
+  "Originalarbeit". *Flag, not legal advice: photos of the author and Volodymyr are their own personal
+  data, published with their consent; AI Act art. 50 marking stays on each generated item.*
 - **Q11** Open (phase P): business model for bloggers (done-for-you setup vs self-service). Decides
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
@@ -455,6 +490,16 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
   that address (required practice in Germany).
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
+
+## 14-v10. Changes from v9 (v10 draft, 2026-11-13)
+
+- New F37: the author's own photos (0-3) and video (0-1, at most 60 s / 20 MB) in a show, added in an
+  optional `/show` step, shown on the site and in channels after the generated items as
+  "Originalarbeit"; only the author and Volodymyr may appear; metadata stripped; no AI cost.
+- Q16 and Q18 get a proposed answer (F37). New non-goals for v10.
+- Architecture impact (for T53 tasks): show schema gets an authentic-media list; bot `/show` session
+  step; media pipeline for video download and metadata stripping; site show page block; channel
+  renderers order items and add the caption line.
 
 ## 14-v9. Changes from v8 (v9, approved 2026-11-13)
 

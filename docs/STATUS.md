@@ -3,11 +3,11 @@
 - **Active agent:** claude-code.
 - **Current task:** T53 — author's own photos and video in shows (Q18, F30/F36); spec first.
 - **Branch:** `main`.
-- **Last commit:** see `git log` (`docs: record T52 merge and hand off T53`).
-- **Next step:** Claude Code (fresh session) drafts the spec detail for T53 (Q16/Q18) for
-  Volodymyr's review, then cuts the implementation task. After that, T33 to Codex, including the
-  PR #125 and PR #127 review notes in docs/03-tasks.md.
-- **Blocked on:** nothing.
+- **Last commit:** see `git log` (`docs: draft spec v10 authentic media in shows (T53)`).
+- **Next step:** Volodymyr reviews spec v10 draft (F37, docs/01-spec.md). After approval
+  claude-code cuts T53 implementation tasks; then T33 to Codex with the PR #125 and PR #127 review
+  notes in docs/03-tasks.md.
+- **Blocked on:** Volodymyr's review of spec v10.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
 - **T52 rollout:** PR #127 merged 2026-11-13 by claude-code with Volodymyr's OK after review
