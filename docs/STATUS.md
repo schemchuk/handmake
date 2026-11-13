@@ -1,17 +1,18 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none — T53g merged (PR #135).
+- **Active agent:** codex.
+- **Current task:** T31e — drop Facebook as a contest vote source.
 - **Branch:** `main`.
 - **Last commit:** this commit — docs: record T53g merge.
-- **Next step:** no queued task in docs/03-tasks.md; Volodymyr names the next one.
+- **Next step:** codex implements T31e (docs/03-tasks.md) in a fresh session; merge and deploy
+  the bot before the next closing, Wednesday 2026-11-18 20:00 Berlin.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none new. Instagram owner `from.id` verified 2026-11-13
   (equals IG User ID). Facebook Page token renewed 2026-11-13 with
   `pages_read_user_content` and `pages_manage_engagement` (`.env`, GitHub Secret, Worker secret);
   Reader-comment check done: Facebook returns reader comments WITHOUT `from`, so Facebook
   tallies are unreadable and would block every contest result (docs/contest-vote-collection.md).
-  Decision needed before T31d goes live: drop Facebook as a vote source, or seek App Review.
+  Volodymyr decided 2026-11-13: drop Facebook as a vote source (T31e); App Review deferred.
 
 - **T53g:** PR #135 merged 2026-11-13 by claude-code after review (no blocking findings, CI
   green). Publisher only: no bot deploy, no migration, no secrets.

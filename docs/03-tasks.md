@@ -2291,3 +2291,25 @@ it becomes a task.
   and plans without authentic media behave unchanged; the legacy-plan error is distinct.
 - Tests: framed-name collision case; legacy plan with generated-only hashes for a show with
   authentic media; existing publisher and core suites (targeted, per limit rules).
+
+#### T31e — Drop Facebook as a contest vote source (`bot`, docs) · Depends on: T31d3
+- Status: ready; approved by Volodymyr 2026-11-13 (option 1 of two; App Review deferred).
+- Owner: codex · Reviewer: claude-code
+- Why: verified 2026-11-13 (docs/contest-vote-collection.md) that Facebook returns reader
+  comments without `from`, even with `pages_read_user_content`. Every Facebook digit comment
+  makes the Facebook tally, and with it the combined contest result, unreadable. `wotwPoll` is
+  enabled for faden-und-stimmung; the next closing is Wednesday 2026-11-18 20:00 Berlin, so
+  this should merge and deploy before then.
+- Change: (1) closing collection reads votes only from Telegram, Instagram and Threads; the
+  Facebook adapter is no longer a contest source (`sources` in `apps/bot/src/composition.ts`),
+  and the totals/author wording no longer lists Facebook. (2) The ballot copy published to
+  Facebook must not invite digit comments: give Facebook a variant (UA/DE) that points readers
+  to vote in Telegram or Instagram instead; other channels keep the current text. (3) The
+  comment inbox (`comment-collect.ts`) for Facebook is unrelated and stays unchanged.
+  (4) Update docs/contest-vote-collection.md: Facebook is not a vote source and why.
+- Acceptance: a closing with Facebook digit comments present makes no Facebook read and yields a
+  readable result from the other sources; Telegram/Instagram/Threads behaviour unchanged;
+  Facebook ballot text has no comment-vote instruction in either language. No migration, no
+  secret or wrangler change.
+- Tests: closing sources exclude Facebook for a tenant with Facebook configured; combined totals
+  without Facebook; Facebook ballot wording UA/DE; affected bot suites only (limit rules).
