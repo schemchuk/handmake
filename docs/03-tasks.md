@@ -2274,6 +2274,7 @@ it becomes a task.
   build assertion that a show without authentic media has no `authentic-heading`.
 
 #### T53g — PR #134 review notes (`publisher`, `core`) · Depends on: T53f
+- Status: implemented; awaiting claude-code review.
 - Owner: codex · Reviewer: claude-code
 - Review notes from PR #134:
   1. `instagramFramedFileName` (`apps/publisher/src/instagram-delivery.ts`) maps `x.jpg` and

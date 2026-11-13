@@ -1,13 +1,17 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53g — PR #134 review notes.
-- **Branch:** `main`.
-- **Last commit:** `ce48870` — feat: copy authentic show media first (T53f) (#134).
-- **Next step:** Codex implements T53g (docs/03-tasks.md) in a fresh session on
-  `feat/t53g-show-copy-review-notes`, then opens a PR for claude-code review.
+- **Active agent:** claude-code.
+- **Current task:** T53g — implemented; awaiting independent review.
+- **Branch:** `feat/t53g-show-copy-review-notes`.
+- **Last commit:** this commit — fix: guard show copy preparation (T53g).
+- **Next step:** Claude-code reviews the T53g PR, checks CI, then merges per AGENTS.md.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+
+- **T53g validation:** publisher targeted suites 62/62; core ledger/show 78/78; publisher
+  typecheck and changed-code lint pass. Framed-name collision rejects before filesystem/Git
+  effects; legacy hash-prefix rejection preserves progress and sends nothing. Recovery documented.
+  No deploy, publishing, workflows, migrations or secrets changed.
 
 - **T53f:** PR #134 merged 2026-11-13 after claude-code review (no blocking findings, CI green).
   No migration or secrets. Bot deployed from clean `main` by claude-code, Worker

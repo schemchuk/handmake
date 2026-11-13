@@ -107,7 +107,17 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
     };
   }
   const plan = showCopyPlanSchema.parse(ledger.showCopyPlan);
-  if (!isDeepStrictEqual(hashes, plan.mediaHashes)) throw new Error('copy media changed');
+  if (!isDeepStrictEqual(hashes, plan.mediaHashes)) {
+    if (
+      authentic.length > 0 &&
+      isDeepStrictEqual(hashes.slice(0, media.length), plan.mediaHashes)
+    ) {
+      throw new Error(
+        'copy plan predates authentic media; stop retries and follow docs/show-copies.md recovery',
+      );
+    }
+    throw new Error('copy media changed');
+  }
   if (!isDeepStrictEqual(Object.keys(ledger.channels).sort(), Object.keys(plan.channels).sort()))
     throw new Error('copy progress channels do not match plan');
   // Validate the entire batch before any network side effect, including completed channels.

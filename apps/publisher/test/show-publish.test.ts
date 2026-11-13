@@ -4,7 +4,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promi
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { ChannelRegistry, showSchema } from '@handmake/core';
+import { ChannelRegistry, serializeShow, showSchema } from '@handmake/core';
 import type { PublishedCallbackBody, Show, Work } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import { markingFixtures } from './fixtures/show-marking';
@@ -642,4 +642,23 @@ it('copies authentic photos first and resumes authentic then generated video rep
   expect(c.requests).toHaveLength(5);
   await writeFile(path.join(root, 'content/shows', show.id, 'authentic.jpg'), new Uint8Array([1]));
   await expect(c.copy()).rejects.toThrow('media changed');
+});
+
+it('rejects a generated-only legacy plan for authentic media without changing progress', async () => {
+  await run();
+  const c = copies();
+  await expect(c.copy()).rejects.toThrow('interrupted');
+  const ledgerBefore = await store.readLedger(show.tenant, show.id);
+  const published = (await store.readShow(show.tenant, show.id))!;
+  published.authentic = [
+    { fileName: 'authentic.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+  ];
+  await writeFile(path.join(root, 'content/shows', show.id, 'index.md'), serializeShow(published));
+  await writeFile(path.join(root, 'content/shows', show.id, 'authentic.jpg'), image);
+  c.requests.length = 0;
+  git.commit.mockClear();
+  await expect(c.copy()).rejects.toThrow('copy plan predates authentic media');
+  expect(c.requests).toEqual([]);
+  expect(git.commit).not.toHaveBeenCalled();
+  expect(await store.readLedger(show.tenant, show.id)).toEqual(ledgerBefore);
 });

@@ -40,6 +40,22 @@ is completed before any further sends. As with ordinary delivery, a process loss
 acceptance and the first durable progress write can require manual reconciliation; the channel
 has no native idempotency key. CI serializes delivery and pushes failed progress (T46c).
 
+## Legacy plans predating authentic media
+
+The error `copy plan predates authentic media` means the saved hashes match all generated
+media, but omit the authentic files now declared by the show. Delivery stops before progress
+writes or channel sends. The publisher does not replace the plan: old photo indexes refer to
+the generated-only ordering and cannot safely resume against the authentic-first ordering.
+
+Stop automated retries and retain the ledger, published files and original run evidence. Compare
+all recorded operation IDs with the actual messages in every configured channel, including any
+uncertain remote acceptance. Do not delete the plan, append hashes, reorder operations or reset
+progress. There is no automatic migration command. Have the technical operator prepare a
+separately reviewed recovery change for that exact show and reconciled delivery state before
+resuming; a hash-only edit is insufficient because photo indexes and video reply order changed.
+Until that recovery is approved and applied, leave copies blocked and the published site intact.
+Other hash mismatches still report `copy media changed` and require media-integrity investigation.
+
 ## CI ordering and recovery (T46c)
 
 `publish.yml` runs show publication and pushes content first, then calls `site.yml` to build and
