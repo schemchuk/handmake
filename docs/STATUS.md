@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** Review T53c — approval transport for authentic media (PR #130).
-- **Branch:** `feat/t53c-authentic-approval`.
-- **Last commit:** `588b72c` — feat: transport authentic show media for approval.
-- **Next step:** Claude Code reviews PR #130 in a fresh session and checks CI. T53c needs
-  Volodymyr's explicit OK before merge (personal data). T53d resolves the new private refs.
+- **Active agent:** codex.
+- **Current task:** T53d — publisher metadata stripping and commit.
+- **Branch:** none yet (`feat/t53d-<slug>`).
+- **Last commit:** `d90e5da` — feat: transport authentic show media for approval (T53c) (#130).
+- **Next step:** Codex starts T53d in a fresh session. Review notes from PR #130 are listed
+  under T53d in docs/03-tasks.md. T53d needs Volodymyr's OK before merge (personal data).
+  After T53d merges, the reviewer deploys the bot from clean `main` (deferred T53c deploy).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
@@ -18,6 +19,10 @@
   was repeated successfully. No deployment, production publishing, paid calls, workflows, secrets
   or migrations changed. PR #130 CI was pending at handoff.
 
+- **T53c rollout:** PR #130 merged 2026-11-13 by claude-code with Volodymyr's OK after review
+  (no blocking findings, CI green). No migration. Bot deploy deferred by Volodymyr until T53d is
+  merged: the current publisher cannot resolve mixed `show-authentic`/`show-marked` refs. Deployed
+  Worker is still T53b (`72235c78-6435-42c1-95d4-516d2c571b8c`).
 - **T53b rollout:** PR #129 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. Bot deployed from clean `main` by claude-code,
   Worker `72235c78-6435-42c1-95d4-516d2c571b8c`.

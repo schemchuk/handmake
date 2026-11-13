@@ -2237,6 +2237,13 @@ it becomes a task.
 - Review notes from PR #128: until this task, `prepareShowPublication` hits a non-null assertion
   (TypeError) on an authentic ref; replace it with an explicit authentic branch. Photo names allow
   only lowercase `.jpg/.jpeg`, so T53b must normalise Telegram file names.
+- Review notes from PR #130 (non-blocking): the publisher passes every show ref to
+  `TelegramMediaSource`, so resolve `show-authentic:v1:` and `show-marked:v1:` refs from R2;
+  `owncancel` does not clear the chat session like `/discard` and omits the evidence/costs note;
+  in `present` a stale `current()` inside the authentic `try` reports a storage failure instead of
+  the stale-step message; `approve` checks `confirmed` but not `people`; whole files (≤20 MB) are
+  buffered before R2 `put` (consider `FixedLengthStream`). Open for Volodymyr: retention/deletion
+  of `show-authentic/` objects (personal data), document the decision with this task.
 
 #### T53e — Site show page (`site`) · Depends on: T53a
 - Change: block «Оригінальна робота» / «Originalarbeit» with authentic photos/video before the
