@@ -1,14 +1,19 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T31e — PR #136 review finding fixed; awaiting re-review.
-- **Branch:** `feat/t31e-drop-facebook-votes`.
-- **Last commit:** this commit — fix: omit Facebook ballot canonical links.
-- **Next step:** claude-code re-reviews PR #136, merges after green CI and deploys
-  the bot before Wednesday 2026-11-18 20:00 Berlin; record Worker version.
-- **Blocked on:** independent re-review and CI.
+- **Active agent:** none.
+- **Current task:** none.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T31e merge, deploy pending.
+- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`)
+  before Wednesday 2026-11-18 20:00 Berlin (the auto-mode classifier blocked claude-code's
+  deploy) and records the Worker version here. Then the next task from docs/03-tasks.md.
+- **Blocked on:** the bot deploy for T31e.
 - **Open questions for Volodymyr:** the author should see the new UA/DE Facebook ballot text
   before the first live ballot.
+
+- **T31e:** PR #136 merged 2026-11-13 by claude-code after re-review (blocking canonical-link
+  finding fixed in 8ddd484, CI green). No migration, no secrets, no wrangler change.
+  Bot deploy pending (see Next step).
 
 - **T31e review fix:** canonical links now apply only to free posts in the Facebook renderer
   and author preview. UA/DE ballot regressions use enabled canonical settings and assert no
