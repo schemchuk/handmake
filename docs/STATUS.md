@@ -3,16 +3,16 @@
 - **Active agent:** none.
 - **Current task:** none.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T31e bot deploy.
+- **Last commit:** this commit — docs: record Facebook ballot text approval.
 - **Next step:** the next task from docs/03-tasks.md.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** the author should see the new UA/DE Facebook ballot text
-  before the first live ballot.
+- **Open questions for Volodymyr:** none.
 
 - **T31e:** PR #136 merged 2026-11-13 by claude-code after re-review (blocking canonical-link
   finding fixed in 8ddd484, CI green). No migration, no secrets, no wrangler change.
   Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker
   `f1f8a57f-b104-4f83-8e39-c378e6674840`. First live closing without Facebook: 2026-11-18 20:00 Berlin.
+  UA/DE Facebook ballot text approved by Volodymyr in chat 2026-11-13.
 
 - **T31e review fix:** canonical links now apply only to free posts in the Facebook renderer
   and author preview. UA/DE ballot regressions use enabled canonical settings and assert no
