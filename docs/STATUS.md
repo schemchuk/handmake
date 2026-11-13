@@ -1,12 +1,14 @@
 # STATUS
 
 - **Active agent:** codex
-- **Current task:** T33 — usage metrics (`/stats`).
-- **Branch:** `feat/t33-usage-metrics` (to create).
-- **Last commit:** `d8f3179 docs(status): record T32d bot deploy version`.
-- **Next step:** codex implements T33 in a fresh session (see docs/03-tasks.md, including the
-  review note from PR #125). T32d is deployed.
-- **Blocked on:** nothing.
+- **Current task:** T51 — fix Instagram carousel container (hotfix from the live `/new` run).
+- **Branch:** `fix/t51-instagram-carousel` (to create).
+- **Last commit:** see `git log` (docs: hand T51 to codex).
+- **Next step:** codex implements T51 in a fresh session (docs/03-tasks.md). Volodymyr keeps
+  doing live runs; fixes they need go before T33. T33 (usage metrics, including the PR #125
+  review note) follows after the runs.
+- **Blocked on:** nothing. Post `01M79WSSK61F11FA1C5J61BVCS` is half published (Telegram only,
+  site 404) until T51 is merged and the post is published again from `main`.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T32d rollout:** PR #125 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
   after blocker fix, CI green: bot 780, publisher 259, site 53). No new migration. Bot deployed

@@ -2123,6 +2123,26 @@ T26d added 2026-11-10 by Volodymyr (Threads token refresh); it runs right after 
   Volodymyr; no bot, D1 or publisher change.
 - Tests: site build with and without `site.groupUrl`.
 
+### T51 — Fix Instagram carousel container (`channels`) · hotfix before T33
+- Owner: kimi-code · Reviewer: claude-code · Found in the live `/new` run 2026-11-13
+- Failure: publish run 43386329746, post `01M79WSSK61F11FA1C5J61BVCS` (3 photos). Telegram
+  delivered; Instagram failed with `(#100) The parameter image_url is required` on the carousel
+  parent container, so Facebook, Threads and the site build never ran (site page 404).
+- Cause: `packages/channels/src/instagram/adapter.ts` creates the parent container with
+  `children` and `caption` but without `media_type: 'CAROUSEL'`, so Graph treats it as a single
+  image. `children` is also sent as a JSON array; Meta documents a comma-separated string. This was
+  the first live carousel (docs/instagram-runbook.md, "Carousel `children` format").
+- Change: send `media_type: 'CAROUSEL'` and `children: children.join(',')` on the parent
+  container; keep single-photo and child-item calls unchanged. Update the runbook note (verified
+  live once the retry succeeds). Check the Facebook and Threads multi-photo paths for the same
+  gap; fix only if they have it, otherwise note "checked" in the PR.
+- Acceptance: unit test asserts the exact parent-container params; resume of the failed post
+  after merge skips Telegram (ledger) and delivers Instagram, Facebook, Threads, then the site.
+- Recovery after merge (operator): do not use "Re-run jobs" on run 43386329746 (it runs the old
+  dispatch commit); start a new publish from `main` for the same draft (bot "Publish" again, or
+  workflow_dispatch with the same payload and `live`).
+- Tests: Instagram adapter carousel test; existing channel suites.
+
 ### Contest on all networks (T27-T32, revised in v5)
 - T30 also drafts one numbered carousel post per Meta network (no names, see T28 policy).
 - T31 also counts comment votes on those posts through the T49 comment reader (one vote per account
