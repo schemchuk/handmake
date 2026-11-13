@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53f — channel show rendering (authentic photos first, caption line N).
+- **Active agent:** claude-code.
+- **Current task:** T53f — review PR #134 (authentic-first channel show copies).
 - **Branch:** `feat/t53f-channel-authentic-media`.
-- **Last commit:** `c937433` — docs: record T53e merge and hand off T53f.
-- **Next step:** finish T53f validation, push implementation and open the review PR.
+- **Last commit:** `db67a89` — feat: copy authentic show media before generated media (T53f).
+- **Next step:** Claude Code reviews PR #134, checks CI and merges if clear. Then deploy the bot
+  from clean `main` under AGENTS.md (packages changed; no migration or secret changes).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
