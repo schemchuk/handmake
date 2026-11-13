@@ -51,13 +51,17 @@ reason.
 - **Carousel parent parameters (T51).** The first live three-photo post failed
   in run `43386329746` with `(#100) The parameter image_url is required`:
   the parent omitted `media_type: 'CAROUSEL'`. The adapter now sends that
-  type and comma-separated child ids (`children.join(',')`). Unit tests assert
-  the exact parent parameters; live verification remains pending after merge.
-  Start a new publish from `main` for draft `01M79WSSK61F11FA1C5J61BVCS`
-  (bot "Publish" again, or workflow dispatch with the same payload and `live`).
-  Do not re-run the failed run: it uses the old dispatch commit. Verify that
-  the ledger skips Telegram, the remaining networks deliver, and the site
-  page becomes available before recording live success here.
+  type and comma-separated child ids (`children.join(',')`). **Verified live
+  2026-11-13** (PR #126): run `43389020371` (workflow dispatch from `main`, same
+  payload, `live`) published the three-photo carousel to Instagram
+  (`18127099369917141`), Facebook and Threads; the ledger skipped Telegram (ids
+  unchanged), the published callback reached the bot and the site page
+  `/posts/01m79wssk61f11fa1c5j61bvcs/` returns 200 (DE and UK).
+- **Retry of a failed publish.** A run that fails before the callback leaves the
+  draft in `publishing`, so the bot's "Publish" button answers "not ready". Retry
+  with the consent message's confirm button (reclaims after 5 min) or a workflow
+  dispatch from `main` with the original payload (from the failed run's
+  "Write dispatch payload" log, without `live`) and `live` on.
 - **Raw-URL acceptance.** Confirm Meta fetches `raw.githubusercontent.com`
   photo URLs (served as `image/jpeg`) on the first live post; if the CDN is
   rejected, serve the framed copies from another public https origin and

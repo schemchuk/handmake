@@ -1,16 +1,12 @@
 # STATUS
 
-- **Active agent:** none (operator live retry).
-- **Current task:** T51 — merged (PR #126); live verification pending.
+- **Active agent:** codex (T33).
+- **Current task:** T51 — done; live carousel verified 2026-11-13 (run `43389020371`).
 - **Branch:** `main`.
-- **Last commit:** see `git log` (`docs: record T51 merge and bot deploy`).
-- **Next step:** Volodymyr starts a new publish from `main` for draft
-  `01M79WSSK61F11FA1C5J61BVCS` (bot "Publish" again); do not re-run run `43386329746`.
-  Verify Telegram is skipped via the ledger, Instagram/Facebook/Threads deliver and the
-  site page exists; record the live result in docs/instagram-runbook.md. Live-run fixes
-  precede T33 (including the PR #125 review note).
-- **Blocked on:** operator live retry; the draft is currently Telegram-only and its site
-  page returns 404.
+- **Last commit:** see `git log` (`docs: record T51 live carousel verification`).
+- **Next step:** Live-run fixes are done; continue with T33 (including the PR #125
+  review note), owner per docs/03-tasks.md.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 - **T51 rollout:** PR #126 merged 2026-11-13 by Volodymyr after claude-code review (no
   blocking findings, CI green). No migration. Bot deployed from clean `main` by
