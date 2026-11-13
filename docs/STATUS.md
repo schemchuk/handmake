@@ -3,7 +3,7 @@
 - **Active agent:** codex.
 - **Current task:** T31e — drop Facebook as a contest vote source.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T53g merge.
+- **Last commit:** this commit — docs: add T31e and hand off to Codex.
 - **Next step:** codex implements T31e (docs/03-tasks.md) in a fresh session; merge and deploy
   the bot before the next closing, Wednesday 2026-11-18 20:00 Berlin.
 - **Blocked on:** nothing.
