@@ -1,4 +1,5 @@
 import {
+  appendAuthenticity,
   FacebookRenderError,
   facebookSkipReason,
   instagramCaptionWindow,
@@ -204,12 +205,20 @@ export function buildPreview(
     if (!(error instanceof EntryPlaceholderError)) throw error;
     return invalidEntryPreview(draft, texts);
   }
-  const uk = post.texts['uk'];
-  const de = post.texts['de'];
+  const uk =
+    post.texts['uk'] === undefined
+      ? undefined
+      : appendAuthenticity(post.texts['uk'], 'uk', post.photos.length > 0);
+  const de =
+    post.texts['de'] === undefined
+      ? undefined
+      : appendAuthenticity(post.texts['de'], 'de', post.photos.length > 0);
   const primaryLanguage =
     telegram?.languages?.find((lang) => post.texts[lang] !== undefined) ??
     Object.keys(post.texts)[0];
-  const primaryText = primaryLanguage ? post.texts[primaryLanguage] : undefined;
+  const primaryText = primaryLanguage
+    ? appendAuthenticity(post.texts[primaryLanguage]!, primaryLanguage, post.photos.length > 0)
+    : undefined;
 
   let threadsPreview: string | undefined;
   let blockedError: string | undefined;

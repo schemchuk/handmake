@@ -11,7 +11,7 @@ describe('Telegram preview subscription footer', () => {
     const draft = {
       ...createDraft('tenant', 'draft', now),
       state: 'ready' as const,
-      texts: { uk: 'Привіт', de: 'x'.repeat(4096) },
+      texts: { uk: 'Привіт', de: 'x'.repeat(4096 - '\n\nOriginalarbeit'.length) },
       photoRefs: ['photo'],
     };
     const without = buildPreview(draft, botTexts, now);
@@ -31,7 +31,7 @@ describe('Telegram preview canonical footer (T40)', () => {
   const draft = {
     ...createDraft('tenant', 'draft', now),
     state: 'ready' as const,
-    texts: { uk: 'Привіт', de: 'x'.repeat(4096) },
+    texts: { uk: 'Привіт', de: 'x'.repeat(4096 - '\n\nOriginalarbeit'.length) },
     photoRefs: ['photo'],
   };
   const actions = (preview: {
@@ -76,7 +76,7 @@ describe('tenant preview settings', () => {
   const draft = {
     ...createDraft('tenant', 'draft', now),
     state: 'ready' as const,
-    texts: { uk: 'Привіт', de: 'x'.repeat(4096) },
+    texts: { uk: 'Привіт', de: 'x'.repeat(4096 - '\n\nOriginalarbeit'.length) },
     photoRefs: ['photo'],
   };
 
@@ -136,8 +136,8 @@ describe('Instagram preview section (T26a1, F33)', () => {
   it('shows the caption window and the length against the 2200 limit', () => {
     const preview = buildPreview(draft(), botTexts, now, undefined, { language: 'de' });
     expect(preview.text).toContain('📸 Instagram (DE,');
-    expect(preview.text).toContain('39/2200');
-    expect(preview.text).toContain('«Neue bestickte Tasche aus der Werkstatt»');
+    expect(preview.text).toContain('55/2200');
+    expect(preview.text).toContain('«Neue bestickte Tasche aus der Werkstatt\n\nOriginalarbeit»');
     expect(actions(preview)).toContain('draft:draft:publish');
   });
 
@@ -220,7 +220,8 @@ describe('Instagram preview section (T26a1, F33)', () => {
     // caption start, and the canonical flag must not smuggle a URL in.
     const windowLine = preview.text.split('\n').find((line) => line.startsWith('видно без'));
     expect(windowLine).not.toContain('http');
-    expect(windowLine).toContain('«Neue bestickte Tasche aus der Werkstatt»');
+    expect(windowLine).toContain('«Neue bestickte Tasche aus der Werkstatt');
+    expect(preview.text).toContain('\n\nOriginalarbeit»');
   });
 
   it('keeps the preview unchanged without Instagram settings', () => {
@@ -521,3 +522,26 @@ it.each(['{entry', '{entry:bad}', '{Entry:bad}'])(
     expect(buildPreview(draft, botTexts).text).toContain(botTexts.previewInvalidEntryText);
   },
 );
+
+it('previews both authenticity labels and blocks captions that only exceed the limit after labelling', () => {
+  const draft = {
+    ...createDraft('tenant', 'draft', now),
+    state: 'ready' as const,
+    texts: { uk: 'Ручна робота', de: 'Handarbeit' },
+    photoRefs: ['photo'],
+  };
+  const preview = buildPreview(draft, botTexts, now);
+  expect(preview.text).toContain('Ручна робота\n\nОригінальна робота');
+  expect(preview.text).toContain('Handarbeit\n\nOriginalarbeit');
+  const plain = buildPreview({ ...draft, photoRefs: [] }, botTexts, now);
+  expect(plain.text).not.toContain('Оригінальна робота');
+  expect(plain.text).not.toContain('Originalarbeit');
+  const blocked = buildPreview(
+    { ...draft, texts: { uk: 'Робота', de: 'x'.repeat(4096) } },
+    botTexts,
+    now,
+  );
+  expect(blocked.keyboard!.inline_keyboard.flat().map((b) => b.callback_data)).not.toContain(
+    'draft:draft:publish',
+  );
+});

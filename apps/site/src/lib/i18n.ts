@@ -3,6 +3,7 @@ export interface UiStrings {
   showsHeading: string;
   noShows: string;
   linkedWork: string;
+  authenticityLabel: string;
   skip: string;
   worksHeading: string;
   collectionsHeading: string;
@@ -31,6 +32,7 @@ const strings: Record<string, UiStrings> = {
     showsHeading: 'Shows',
     noShows: 'Noch keine Shows.',
     linkedWork: 'Originalarbeit',
+    authenticityLabel: 'Originalarbeit',
     skip: 'Zum Inhalt springen',
     worksHeading: 'Arbeiten',
     collectionsHeading: 'Kollektionen',
@@ -58,6 +60,7 @@ const strings: Record<string, UiStrings> = {
     showsHeading: 'Покази',
     noShows: 'Поки що немає показів.',
     linkedWork: 'Оригінальна робота',
+    authenticityLabel: 'Оригінальна робота',
     skip: 'Перейти до вмісту',
     worksHeading: 'Роботи',
     collectionsHeading: 'Колекції',

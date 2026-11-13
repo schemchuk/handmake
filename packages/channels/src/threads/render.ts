@@ -1,3 +1,4 @@
+import { appendAuthenticity } from '../authenticity';
 import {
   canonicalUrl,
   type CanonicalLinkSettings,
@@ -61,6 +62,7 @@ export function renderThreads(post: Post, value: unknown): SendOperation[] {
   let text = post.texts[language];
   if (text === undefined)
     throw new ThreadsRenderError(`Threads language "${language}" has no text`);
+  text = appendAuthenticity(text, language, post.photos.length > 0);
   if (canonical?.links) {
     const origin = new URL(canonical.baseUrl);
     if (origin.protocol !== 'https:' || origin.origin !== canonical.baseUrl)

@@ -55,6 +55,7 @@ const [lead, ...rest] = paragraphs(version.description);
       {work && <time class="meta" datetime={work.date}>{new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: data.tenant.meetingSchedule.timezone }).format(new Date(work.date))}</time>}
       <p class="lead">{lead}</p>
       {rest.map((paragraph) => <p>{paragraph}</p>)}
+      {work && <p class="meta">{ui.authenticityLabel}</p>}
       <Provenance value={version.provenance} lang={lang} />
       {collection && <p><a href={pagePath(lang, def, portfolioPage('collections', collection))}>{collection.versions[lang]!.title}</a></p>}
       <a class="back" href={pagePath(lang, def, section)}>{section === 'works' ? ui.worksHeading : ui.collectionsHeading}</a>

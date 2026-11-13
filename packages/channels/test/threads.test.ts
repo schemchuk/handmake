@@ -70,7 +70,7 @@ describe('Threads rendering', () => {
       {
         kind: 'mediaGroup',
         photoIndexes: [0, 1],
-        caption: `${post.texts.de}\n\nhttps://craft.example/posts/${post.id.toLowerCase()}/`,
+        caption: `${post.texts.de}\n\nOriginalarbeit\n\nhttps://craft.example/posts/${post.id.toLowerCase()}/`,
         captionLang: 'de',
       },
     ]);
@@ -85,7 +85,7 @@ describe('Threads rendering', () => {
   });
   it('includes the footer in the 500-byte budget and never silently rewrites text', () => {
     expect(
-      renderThreads({ ...post, texts: { de: 'x'.repeat(500) } }, { language: 'de' }),
+      renderThreads({ ...post, texts: { de: 'x'.repeat(484) } }, { language: 'de' }),
     ).toHaveLength(1);
     expect(() => renderThreads({ ...post, texts: { de: 'x'.repeat(500) } }, settings)).toThrow(
       /500/,

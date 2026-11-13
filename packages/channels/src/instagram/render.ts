@@ -1,3 +1,4 @@
+import { appendAuthenticity } from '../authenticity';
 import type {
   ChannelCapabilities,
   Post,
@@ -172,7 +173,9 @@ export function renderInstagram(post: Post, settings?: unknown): SendOperation[]
       `Instagram language "${parsed.language}" has no text in this post`,
     );
   }
-  const caption = buildInstagramCaption(post.texts[parsed.language]!);
+  const caption = buildInstagramCaption(
+    appendAuthenticity(post.texts[parsed.language]!, parsed.language, true),
+  );
   return [
     {
       kind: 'mediaGroup',

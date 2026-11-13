@@ -99,12 +99,12 @@ describe('portfolio fixture build', () => {
           date: '2026-11-04T10:00:00Z',
           publishAt: 'now',
           type: 'free',
-          photos: [],
+          photos: ['post.jpg'],
           channels: ['telegram'],
-          versions: { de: { provenance: 'human' }, uk: { provenance: 'human' } },
+          versions: { de: { provenance: 'ai-assisted' }, uk: { provenance: 'ai-assisted' } },
           texts: { de: 'Fixture post', uk: 'Тестовий допис' },
         },
-        [],
+        [{ fileName: 'post.jpg', data: original }],
       );
       fixture.tenant.channels.telegram!.joinUrl = 'https://t.me/fixture_join';
       fixture.tenant.site!.circle = {
@@ -193,6 +193,16 @@ describe('portfolio fixture build', () => {
       expect(
         await readFile(path.join(dist, `show-media/${show.id.toLowerCase()}/video.mp4`)),
       ).toEqual(video);
+      for (const [prefix, label] of [
+        ['', 'Originalarbeit'],
+        ['uk/', 'Оригінальна робота'],
+      ]) {
+        const postHtml = await html(dist, `${prefix}posts/01jbca1b2c3d4e5f6g7h8j9k0m`);
+        expect(postHtml).toContain(label);
+        expect(postHtml).not.toContain('Mit KI-Unterstützung erstellt');
+        expect(postHtml).not.toContain('Створено за допомогою ШІ');
+      }
+      expect(showHtml).toContain('Originalarbeit');
       const workUrl = `works/${ids.a.toLowerCase()}`;
       const de = await html(dist, workUrl);
       const uk = await html(dist, `uk/${workUrl}`);
@@ -200,7 +210,9 @@ describe('portfolio fixture build', () => {
       expect(uk).toContain(`rel="canonical" href="https://example.invalid/uk/${workUrl}/"`);
       expect(de).toContain(`hreflang="uk" href="https://example.invalid/uk/${workUrl}/"`);
       expect(de).toContain('Beschreibung: Von KI erstellt');
-      expect(uk).toContain('Опис: Створено за допомогою ШІ');
+      expect(uk).not.toContain('Створено за допомогою ШІ');
+      expect(uk).toContain('Оригінальна робота');
+      expect(de).toContain('Originalarbeit');
       expect(de).toContain('Literal &lt;b&gt;fixture&lt;/b&gt; text.');
       expect(de).not.toContain('<p>Literal <b>fixture</b> text.</p>');
       expect(de).toContain('srcset=');

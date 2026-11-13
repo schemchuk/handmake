@@ -4,6 +4,6 @@ import type { Provenance } from '@handmake/core';
 interface Props { value: Provenance; lang: string }
 const { value, lang } = Astro.props;
 const ui = uiStrings(lang);
-const note = value === 'ai-assisted' ? ui.aiAssisted : value === 'ai-generated' ? ui.aiGenerated : undefined;
+const note = value === 'ai-generated' ? ui.aiGenerated : undefined;
 ---
 {note && <p class="meta">{ui.descriptionLabel}: {note}</p>}

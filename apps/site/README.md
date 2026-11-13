@@ -27,8 +27,9 @@ Works and collections come through `ContentStore.listWorks`, `listCollections` a
 no detail route or language-switch link. Collection membership uses the work's `collection` slug;
 a missing collection, dangling cover or missing declared photo fails the build.
 
-Work descriptions and collection titles/descriptions are authored content. Non-human descriptions
-carry a localized provenance label; it does not describe the authentic photos. Work titles in
+Work descriptions and collection titles/descriptions are authored content. Only AI-generated descriptions
+carry a public AI note. Photo posts, works and shows carry a localized authenticity label;
+AI-assisted translation provenance remains internal. Shows also retain their generated-model disclosure. Work titles in
 metadata and cards are excerpts of the stored description.
 
 Sharp auto-orients declared photos and generates WebP variants at up to 480, 960 and 1440 pixels

@@ -33,14 +33,14 @@ describe('show rendering', () => {
       kind: 'mediaGroup',
       photoIndexes: [0, 1, 2],
       captionLang: 'de',
-      caption: `Fixture DE\n\nKI-generiertes Model\nhttps://craft.example/shows/${show.id.toLowerCase()}/`,
+      caption: `Fixture DE\n\nKI-generiertes Model\nOriginalarbeit\nhttps://craft.example/shows/${show.id.toLowerCase()}/`,
     });
     expect(ops[1]).toEqual({ kind: 'video', replyToOp: 0 });
     expect(ops[2]).toEqual({
       kind: 'message',
       lang: 'uk',
       replyToOp: 0,
-      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nhttps://craft.example/uk/shows/${show.id.toLowerCase()}/`,
+      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота\nhttps://craft.example/uk/shows/${show.id.toLowerCase()}/`,
     });
     expect(renderTelegramShow(show, { ...context, languages: ['uk', 'uk'] })[0]).toMatchObject({
       captionLang: 'uk',
@@ -109,11 +109,11 @@ describe('show rendering', () => {
     const showUrl = `https://craft.example/shows/${show.id.toLowerCase()}/`;
     expect(ops[0]).toMatchObject({
       kind: 'mediaGroup',
-      caption: `Fixture DE\n\nKI-generiertes Model`,
+      caption: `Fixture DE\n\nKI-generiertes Model\nOriginalarbeit`,
     });
     expect(ops[2]).toMatchObject({
       kind: 'message',
-      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)`,
+      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота`,
     });
     expect(JSON.stringify(ops)).not.toContain(showUrl);
   });

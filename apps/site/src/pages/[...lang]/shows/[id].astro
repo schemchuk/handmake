@@ -30,6 +30,7 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
     <h1>{title}</h1>
     <div class="page-body">
       {paragraphs(version.description).map((text) => <p>{text}</p>)}
+      <p class="meta">{ui.authenticityLabel}</p>
       <Provenance value={version.provenance} lang={lang} />
       {show.model && <p>{show.model.name}</p>}
       {work && <p><a href={pagePath(lang, def, `works/${work.id.toLowerCase()}`)}>{ui.linkedWork}</a></p>}

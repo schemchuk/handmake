@@ -26,7 +26,7 @@ const text = post.texts[lang]!;
 const photo = post.photos[0];
 const provenance = post.versions[lang]?.provenance;
 const aiNote =
-  provenance === 'ai-assisted' ? ui.aiAssisted : provenance === 'ai-generated' ? ui.aiGenerated : undefined;
+  provenance === 'ai-generated' ? ui.aiGenerated : undefined;
 const date = new Intl.DateTimeFormat(lang, {
   dateStyle: 'long',
   timeZone: data.tenant.meetingSchedule.timezone,
@@ -50,6 +50,7 @@ const [lead, ...rest] = paragraphs(text);
       <time class="meta" datetime={post.date}>{date}</time>
       <p class="lead">{lead}</p>
       {rest.map((paragraph) => <p>{paragraph}</p>)}
+      {photo && <p class="meta">{ui.authenticityLabel}</p>}
       {aiNote && <p class="meta">{aiNote}</p>}
       <a class="back" href={pagePath(lang, def)}>{ui.back}</a>
     </div>
