@@ -9,7 +9,7 @@ import type {
   SendOperation,
 } from '@handmake/core';
 
-import { showDisclosures } from '../show-disclosures';
+import { showDisclosure } from '../show-disclosures';
 
 /**
  * Pure part of the Telegram ChannelAdapter (T05): turns a post into the
@@ -237,6 +237,8 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
 
 /** Show descriptions remain verbatim; disclosure and canonical links are appended. */
 export function renderTelegramShow(show: Show, context: ShowRenderContext): SendOperation[] {
+  const authenticPhotos = (show.authentic ?? []).filter((item) => item.kind === 'photo');
+  const photos = [...authenticPhotos, ...show.images];
   const { baseUrl, defaultLanguage } = context.site;
   const origin = new URL(baseUrl);
   if (origin.protocol !== 'https:' || origin.origin !== baseUrl) {
@@ -245,19 +247,25 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
   if (show.images.length < 3 || show.images.length > 5 || !show.video) {
     throw new TelegramRenderError('show requires 3-5 images and a video');
   }
+  if (photos.length > telegramCapabilities.maxPhotos) {
+    throw new TelegramRenderError('show exceeds Telegram photo limit');
+  }
   const languages = [...new Set(context.languages.filter((lang) => show.versions[lang]))];
   if (!languages.length) throw new TelegramRenderError('show requires descriptions');
   const ops: SendOperation[] = [
     {
       kind: 'mediaGroup',
-      photoIndexes: show.images.map((_, index) => index),
+      photoIndexes: photos.map((_, index) => index),
     },
+    ...((show.authentic ?? []).some((item) => item.kind === 'video')
+      ? [{ kind: 'video' as const, videoSource: 'authentic' as const, replyToOp: 0 }]
+      : []),
     { kind: 'video', replyToOp: 0 },
   ];
   for (const [index, lang] of languages.entries()) {
     if (!/^[a-z]{2}$/.test(lang)) throw new TelegramRenderError('invalid show language');
     const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
-    const disclosure = showDisclosures[lang as keyof typeof showDisclosures];
+    const disclosure = showDisclosure(lang, authenticPhotos.length);
     if (!disclosure) throw new TelegramRenderError(`unsupported show disclosure language: ${lang}`);
     // A site-excluded (test) show's page is never built, so the copy must
     // not link to it (PR #89 review).

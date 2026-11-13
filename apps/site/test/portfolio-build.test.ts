@@ -99,6 +99,16 @@ describe('portfolio fixture build', () => {
         ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
         { fileName: show.video.fileName, data: video },
       ]);
+      const germanShow = {
+        ...untranslatedShow,
+        id: '01JBCA1B2C3D4E5F6G7H8J9K1C',
+        date: '2026-11-02T12:00:00Z',
+        versions: { de: show.versions.de! },
+      };
+      await fixture.store.saveShow(germanShow, [
+        ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
+        { fileName: show.video.fileName, data: video },
+      ]);
       await fixture.store.savePost(
         {
           id: '01JBCA1B2C3D4E5F6G7H8J9K0M',
@@ -223,6 +233,9 @@ describe('portfolio fixture build', () => {
         expect(block).toContain('alt=');
         expect(block).toContain('authentic.mp4');
       }
+      expect(await html(dist, `shows/${germanShow.id.toLowerCase()}`)).not.toContain(
+        'authentic-heading',
+      );
       expect(await html(dist, `uk/shows/${untranslatedShow.id.toLowerCase()}`)).not.toContain(
         'authentic-heading',
       );

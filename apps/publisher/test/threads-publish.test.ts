@@ -359,9 +359,19 @@ describe('runPublish with Threads enabled (T26c)', () => {
 describe('runCopyShow with Threads enabled (T26c)', () => {
   const showFixture = new URL('../../../packages/core/test/fixtures/show.json', import.meta.url);
 
-  async function publishShow() {
+  async function publishShow(withAuthentic = false) {
     const show = showSchema.parse(JSON.parse(await readFile(showFixture, 'utf8')));
+    if (withAuthentic)
+      show.authentic = [
+        {
+          fileName: 'authentic.jpg',
+          kind: 'photo',
+          provenance: 'human',
+          people: 'none',
+        },
+      ];
     const fixtures = await markingFixtures();
+    const original = new Uint8Array(await sharp(fixtures.image).jpeg().toBuffer());
     const image = new Uint8Array(fixtures.markedImage.result.bytes);
     const video = new Uint8Array(fixtures.markedVideo.result.bytes);
     for (const entry of show.images) entry.marker = fixtures.markedImage.marker;
@@ -391,11 +401,16 @@ describe('runCopyShow with Threads enabled (T26c)', () => {
       ),
       show: {
         show,
-        media: [...show.images, show.video].map(({ fileName }) => ({ fileName, ref: fileName })),
+        media: [...show.images, show.video, ...(show.authentic ?? [])].map(({ fileName }) => ({
+          fileName,
+          ref: fileName,
+        })),
       },
     };
     const source = {
-      fetchMedia: vi.fn(async (ref: string) => (ref.endsWith('.mp4') ? video : image)),
+      fetchMedia: vi.fn(async (ref: string) =>
+        ref === 'authentic.jpg' ? original : ref.endsWith('.mp4') ? video : image,
+      ),
     };
     const payloadPath = path.join(root, 'show-payload.json');
     await writeFile(payloadPath, JSON.stringify(payload));
@@ -410,6 +425,32 @@ describe('runCopyShow with Threads enabled (T26c)', () => {
     });
     return show;
   }
+
+  it('aligns authentic-first bytes and URLs for show copies', async () => {
+    const show = await publishShow(true);
+    const original = (await new GitRepoContentStore({ rootDir: root }).readShowMedia(
+      show.tenant,
+      show.id,
+      'authentic.jpg',
+    ))!;
+    vi.spyOn(threads, 'renderShow').mockImplementation(renderThreadsShow);
+    await runCopyShow(show.tenant, show.id, {
+      root,
+      env: { CONTENT_RAW_BASE_URL: 'https://raw.example/base' },
+      now,
+      registry: registry(),
+      git,
+      notifier,
+      logger: () => {},
+    });
+    expect(threads.contexts[0]!.photos[0]).toEqual(original);
+    expect(threads.contexts[0]!.photoUrls).toEqual([
+      `https://raw.example/base/content/shows/${show.id}/authentic.jpg`,
+      ...show.images.map(
+        (item) => `https://raw.example/base/content/shows/${show.id}/${item.fileName}`,
+      ),
+    ]);
+  });
 
   it('delivers the show images by plain raw-GitHub URLs', async () => {
     const show = await publishShow();

@@ -37,7 +37,7 @@ export type SendOperation =
       captionLang?: string;
       replyToOp?: number;
     }
-  | { kind: 'video'; replyToOp?: number }
+  | { kind: 'video'; videoSource?: 'authentic'; replyToOp?: number }
   | { kind: 'message'; text: string; lang: string; replyToOp?: number }
   | {
       kind: 'poll';
@@ -190,6 +190,8 @@ export interface DeliverContext {
   photoUrls?: string[];
   /** Approved marked video bytes; adapters must upload without re-encoding. */
   video?: Uint8Array;
+  /** Authentic video reply, uploaded before the generated video. */
+  authenticVideo?: Uint8Array;
 }
 
 /**

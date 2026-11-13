@@ -7,7 +7,7 @@ import type {
   SendOperation,
 } from '@handmake/core';
 
-import { showDisclosures } from '../show-disclosures';
+import { showDisclosure } from '../show-disclosures';
 
 /*
  * Caption rules ported from instagram-agent-skill
@@ -194,6 +194,11 @@ export function renderInstagram(post: Post, settings?: unknown): SendOperation[]
  */
 export function renderInstagramShow(show: Show, context: ShowRenderContext): SendOperation[] {
   if (show.siteExcluded) return [];
+  const authenticPhotos = (show.authentic ?? []).filter((item) => item.kind === 'photo');
+  const photos = [...authenticPhotos, ...show.images];
+  if (photos.length > instagramMaxPhotos) {
+    throw new InstagramRenderError('show exceeds Instagram photo limit');
+  }
   const settings = parseInstagramChannelSettings(context.settings);
   const version = show.versions[settings.language];
   if (!version) {
@@ -201,7 +206,7 @@ export function renderInstagramShow(show: Show, context: ShowRenderContext): Sen
       `Instagram language "${settings.language}" has no show description`,
     );
   }
-  const disclosure = showDisclosures[settings.language as keyof typeof showDisclosures];
+  const disclosure = showDisclosure(settings.language, authenticPhotos.length);
   if (!disclosure) {
     throw new InstagramRenderError(`unsupported show disclosure language: "${settings.language}"`);
   }
@@ -209,7 +214,7 @@ export function renderInstagramShow(show: Show, context: ShowRenderContext): Sen
   return [
     {
       kind: 'mediaGroup',
-      photoIndexes: show.images.map((_, index) => index),
+      photoIndexes: photos.map((_, index) => index),
       caption,
       captionLang: settings.language,
     },
