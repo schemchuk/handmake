@@ -61,6 +61,10 @@ real owner comment's `from.id` with the IG User ID; if different, match `from.us
 the account username fetched once per contest read. T31d2 performs no external comment reads
 and does not resolve that rollout check.
 
+Verified 2026-11-13: an owner comment on a real post returned `from.id` equal to the IG User ID
+(and `from.username` equal to the account username), so the `from.id` comparison is sufficient
+for Instagram. The Facebook `from.id` check for reader comments is still open.
+
 
 ## Scheduler and author decisions (T31d3)
 
