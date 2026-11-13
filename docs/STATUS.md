@@ -1,16 +1,20 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T31e — review returned with one blocking finding (PR #136).
+- **Active agent:** claude-code.
+- **Current task:** T31e — PR #136 review finding fixed; awaiting re-review.
 - **Branch:** `feat/t31e-drop-facebook-votes`.
-- **Last commit:** this commit — docs: return T31e review to codex.
-- **Next step:** codex fixes the PR #136 blocking finding: the Facebook `wotw-poll` caption gets
-  the canonical site link (`canonicalLinks: true`), but the site has no ballot pages (404).
-  Add the link only for `free` posts, as Telegram does, with a test. Then hand back to
-  claude-code to review, merge and deploy the bot before Wednesday 2026-11-18 20:00 Berlin.
-- **Blocked on:** the T31e fix.
+- **Last commit:** this commit — fix: omit Facebook ballot canonical links.
+- **Next step:** claude-code re-reviews PR #136, merges after green CI and deploys
+  the bot before Wednesday 2026-11-18 20:00 Berlin; record Worker version.
+- **Blocked on:** independent re-review and CI.
 - **Open questions for Volodymyr:** the author should see the new UA/DE Facebook ballot text
   before the first live ballot.
+
+- **T31e review fix:** canonical links now apply only to free posts in the Facebook renderer
+  and author preview. UA/DE ballot regressions use enabled canonical settings and assert no
+  site link; existing free-post link tests still pass. Preview 36/36, Facebook renderer
+  29/29, bot typecheck, changed-code lint and formatting pass. Authenticity label on real
+  handmade ballot photos is intentional. No deployment or production publishing.
 
 - **T31e validation:** affected bot suites 99/99; Facebook renderer 29/29; bot typecheck,
   changed-code lint and formatting pass. Production scheduler regression includes delivered

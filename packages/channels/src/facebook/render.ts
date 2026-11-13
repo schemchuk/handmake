@@ -165,7 +165,7 @@ export function renderFacebook(post: Post, settings?: unknown): SendOperation[] 
     appendAuthenticity(text, parsed.language, true),
     parsed.language,
     post.id,
-    settings,
+    post.type === 'free' ? settings : undefined,
   );
   return [
     {

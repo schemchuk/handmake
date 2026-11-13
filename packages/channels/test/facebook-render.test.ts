@@ -248,7 +248,7 @@ it.each([
     texts: { uk: 'Напишіть номер у коментарі', de: 'Nummer in einen Kommentar schreiben' },
     poll: { question: 'Favorite?', options: ['No 1', 'No 2'] },
   });
-  const [op] = renderFacebook(post, { language });
+  const [op] = renderFacebook(post, { language, canonical });
   expect(op).toMatchObject({
     kind: 'mediaGroup',
     photoIndexes: [0, 1],
@@ -256,5 +256,7 @@ it.each([
     caption: expect.stringContaining(`${intro}\n\n${label} 1\n${label} 2`),
   });
   expect(JSON.stringify(op)).not.toMatch(/коментар|Kommentar/);
+  expect(JSON.stringify(op)).not.toContain(canonical.baseUrl);
+  expect(JSON.stringify(op)).not.toMatch(/Mehr auf der Website|Більше на сайті/);
   expect(renderFacebook({ ...post, siteExcluded: true }, { language })).toEqual([]);
 });
