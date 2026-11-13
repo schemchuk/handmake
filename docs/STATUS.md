@@ -1,12 +1,15 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T53g — implemented; awaiting independent review.
-- **Branch:** `feat/t53g-show-copy-review-notes`.
-- **Last commit:** this commit — fix: guard show copy preparation (T53g).
-- **Next step:** Claude-code reviews the T53g PR, checks CI, then merges per AGENTS.md.
+- **Active agent:** none.
+- **Current task:** none — T53g merged (PR #135).
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T53g merge.
+- **Next step:** no queued task in docs/03-tasks.md; Volodymyr names the next one.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+
+- **T53g:** PR #135 merged 2026-11-13 by claude-code after review (no blocking findings, CI
+  green). Publisher only: no bot deploy, no migration, no secrets.
 
 - **T53g validation:** publisher targeted suites 62/62; core ledger/show 78/78; publisher
   typecheck and changed-code lint pass. Framed-name collision rejects before filesystem/Git
