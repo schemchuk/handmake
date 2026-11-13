@@ -1,12 +1,19 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T54a (profile config hardening, T54 review follow-up).
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: add T54a and record T54 bot deploy.
-- **Next step:** codex implements T54a on `feat/t54a-profile-config` in a fresh session, then T33.
-- **Blocked on:** nothing.
+- **Active agent:** claude-code.
+- **Current task:** T54a review (profile config hardening).
+- **Branch:** `feat/t54a-profile-config`.
+- **Last commit:** this commit — fix: validate site profiles in tenant schema.
+- **Next step:** claude-code reviews T54a, merges after green CI, and deploys the bot from clean
+  `main` because core changed; then hands off T33 to codex in a fresh session.
+- **Blocked on:** independent review.
 - **Open questions for Volodymyr:** none.
+
+- **T54a validation:** core 308/308 and site 58/58 pass; changed-file formatting passes. The sandboxed
+  malformed-document build lost child diagnostics; the unrestricted full site rerun passed. Profile lists
+  must be nonempty when present; HTTPS is enforced in the shared schema with the offending field
+  named in errors. The site loader delegates validation to that schema. No migration, workflows,
+  secrets, deployment or production publishing changed.
 
 - **T54:** PR #137 merged 2026-11-13 by claude-code (squash 871b114, CI green). No migration,
   no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker

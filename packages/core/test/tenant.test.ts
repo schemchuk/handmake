@@ -231,6 +231,25 @@ describe('parseTenantConfig', () => {
       expect(() => parseTenantConfig(bad)).toThrowError(/circle\.texts/);
     });
 
+    it('allows omitted profiles but rejects an empty profile list', () => {
+      const tenant = parseTenantConfig(realConfig());
+      delete tenant.site!.profiles;
+      expect(parseTenantConfig(JSON.stringify(tenant)).site?.profiles).toBeUndefined();
+      tenant.site!.profiles = [];
+      expect(() => parseTenantConfig(JSON.stringify(tenant))).toThrowError(/site\.profiles/);
+    });
+
+    it.each(['http://example.invalid/profile', 'javascript:alert(1)'])(
+      'rejects a non-https profile URL: %s',
+      (url) => {
+        const tenant = parseTenantConfig(realConfig());
+        tenant.site!.profiles = [{ network: 'custom', url }];
+        expect(() => parseTenantConfig(JSON.stringify(tenant))).toThrowError(
+          /site\.profiles\.0\.url/,
+        );
+      },
+    );
+
     it('rejects a non-https join link', () => {
       const bad = realConfig().replace(/joinUrl: https:\/\/\S+/, 'joinUrl: http://t.me/channel');
       expect(bad).toContain('joinUrl: http://t.me/channel');

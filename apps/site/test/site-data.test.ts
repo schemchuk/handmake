@@ -113,7 +113,7 @@ describe('profile config validation in the loader', () => {
       tenant.site!.profiles = [{ network: 'custom', url }];
       mkdirSync(path.join(root, 'config/tenants'), { recursive: true });
       writeFileSync(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
-      expect(() => readTenantConfig(root, 'fixture')).toThrow(/https/);
+      expect(() => readTenantConfig(root, 'fixture')).toThrow(/site\.profiles\.0\.url/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
