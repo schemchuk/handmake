@@ -11,8 +11,17 @@ CI invokes it after a successful site deployment. No live smoke run was performe
 for T46b or T46c. Existing deployment gates in `show-deployment.md` still apply.
 
 The command reads the tenant-scoped show and marked PNG/MP4 bytes through the content store. It
-checks markers and media availability before sending. It never downloads draft references,
-regenerates media, changes the show or sends a draft publication callback.
+checks markers and media availability before sending. Authentic files are read from the same
+published folder and included in the immutable hash list (after generated images and video,
+in declaration order). Photo bytes and public URLs both list authentic photos first. Captions
+retain the existing disclosures and add the generated-image start number only when authentic
+photos exist. Telegram replies with authentic video first, then generated video;
+`videoSource: authentic` in the saved operation selects the former. An absent selector preserves
+legacy plans.
+Instagram frames authentic carousel copies using the existing contain-fit pipeline; Facebook,
+Threads and Telegram use stored authentic photo bytes. No generated marker is added to them.
+The copy command never downloads draft
+references, regenerates media, changes the show or sends a draft publication callback.
 
 Before sending, it commits `showCopyPlan` in `content/ledger/<showId>.json`: version 1, ordered
 media SHA-256 hashes, per-channel operations and channel settings containing secret names only.

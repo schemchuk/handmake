@@ -7,7 +7,7 @@ import {
   type Show,
   type ShowRenderContext,
 } from '@handmake/core';
-import { showDisclosures } from '../show-disclosures';
+import { showDisclosure } from '../show-disclosures';
 
 export const threadsTextLimit = 500;
 export const threadsCapabilities = {
@@ -73,14 +73,16 @@ export function renderThreads(post: Post, value: unknown): SendOperation[] {
 }
 export function renderThreadsShow(show: Show, context: ShowRenderContext): SendOperation[] {
   if (show.siteExcluded) return [];
+  const authenticPhotos = (show.authentic ?? []).filter((item) => item.kind === 'photo');
+  const photos = [...authenticPhotos, ...show.images];
   const { language } = parseThreadsSettings(context.settings);
   const description = show.versions[language]?.description;
-  const disclosure = showDisclosures[language as keyof typeof showDisclosures];
+  const disclosure = showDisclosure(language, authenticPhotos.length);
   if (!description || !disclosure || !show.images.length)
     throw new ThreadsRenderError('Threads show needs images, description and disclosure');
   const origin = new URL(context.site.baseUrl);
   if (origin.protocol !== 'https:' || origin.origin !== context.site.baseUrl)
     throw new ThreadsRenderError('Threads show baseUrl must be an HTTPS origin');
   const url = canonicalUrl(context.site, 'shows', show.id, language);
-  return operation(`${description}\n\n${disclosure}\n${url}`, show.images, language);
+  return operation(`${description}\n\n${disclosure}\n${url}`, photos, language);
 }

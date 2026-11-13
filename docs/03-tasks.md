@@ -2262,6 +2262,7 @@ it becomes a task.
 - Acceptance: build test for a show with and without authentic media, DE and UK.
 
 #### T53f — Channel show rendering (`channels`) · Depends on: T53a
+- Implementation: PR #134 (`db67a89`), completed by Codex; awaiting Claude Code review.
 - Change: Telegram/Instagram/Facebook/Threads albums put authentic photos first; caption line
   "KI-generierte Bilder ab Bild N" / «Згенеровані ШІ кадри з кадру N» only when authentic photos
   exist; Telegram replies with authentic video before the generated one; limits rechecked.

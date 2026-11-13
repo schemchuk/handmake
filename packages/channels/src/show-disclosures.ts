@@ -11,3 +11,16 @@ export const showDisclosures = {
   uk: `Модель згенерована ШІ (KI-generiertes Model)\n${authenticityLabels.uk}`,
   en: `AI-generated model\n${authenticityLabels.en}`,
 } as const;
+
+/** Preserve legacy captions when no authentic photos precede generated images. */
+export function showDisclosure(lang: string, authenticPhotos: number): string | undefined {
+  const disclosure = showDisclosures[lang as keyof typeof showDisclosures];
+  if (!disclosure || !authenticPhotos) return disclosure;
+  const first = authenticPhotos + 1;
+  const lines: Record<string, string> = {
+    de: `KI-generierte Bilder ab Bild ${first}`,
+    uk: `Згенеровані ШІ кадри з кадру ${first}`,
+    en: `AI-generated images from image ${first}`,
+  };
+  return `${disclosure}\n${lines[lang]}`;
+}

@@ -9,7 +9,7 @@ import type {
   SendOperation,
 } from '@handmake/core';
 
-import { showDisclosures } from '../show-disclosures';
+import { showDisclosure } from '../show-disclosures';
 
 /**
  * Pure part of the Facebook Page ChannelAdapter (T26b, F33): turns a post
@@ -173,15 +173,17 @@ export function renderFacebook(post: Post, settings?: unknown): SendOperation[] 
  */
 export function renderFacebookShow(show: Show, context: ShowRenderContext): SendOperation[] {
   if (show.siteExcluded) return [];
+  const authenticPhotos = (show.authentic ?? []).filter((item) => item.kind === 'photo');
+  const photos = [...authenticPhotos, ...show.images];
   // Fail at render time (bot preview + publisher), like renderFacebook, not
   // later in deliver: a show outside 1..facebookMaxPhotos images can never
   // become a valid Facebook post (PR #96 review note).
   if (show.images.length === 0) {
     throw new FacebookRenderError('Facebook show post has no images to send');
   }
-  if (show.images.length > facebookMaxPhotos) {
+  if (photos.length > facebookMaxPhotos) {
     throw new FacebookRenderError(
-      `Facebook allows at most ${facebookMaxPhotos} photos per show post; show has ${show.images.length}`,
+      `Facebook allows at most ${facebookMaxPhotos} photos per show post; show has ${photos.length}`,
     );
   }
   const settings = parseFacebookChannelSettings(context.settings);
@@ -196,7 +198,7 @@ export function renderFacebookShow(show: Show, context: ShowRenderContext): Send
       `Facebook language "${settings.language}" has no show description`,
     );
   }
-  const disclosure = showDisclosures[settings.language as keyof typeof showDisclosures];
+  const disclosure = showDisclosure(settings.language, authenticPhotos.length);
   if (!disclosure) {
     throw new FacebookRenderError(`unsupported show disclosure language: "${settings.language}"`);
   }
@@ -210,7 +212,7 @@ export function renderFacebookShow(show: Show, context: ShowRenderContext): Send
   return [
     {
       kind: 'mediaGroup',
-      photoIndexes: show.images.map((_, index) => index),
+      photoIndexes: photos.map((_, index) => index),
       caption,
       captionLang: settings.language,
     },

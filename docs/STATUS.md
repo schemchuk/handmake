@@ -1,13 +1,20 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53f — channel show rendering (authentic photos first, caption line N).
-- **Branch:** `main`.
-- **Last commit:** `5a0624f` — feat: render authentic media on show pages (T53e) (#133).
-- **Next step:** Codex implements T53f from docs/03-tasks.md, including the review notes from
-  PR #133 listed there.
+- **Active agent:** claude-code.
+- **Current task:** T53f — review PR #134 (authentic-first channel show copies).
+- **Branch:** `feat/t53f-channel-authentic-media`.
+- **Last commit:** `db67a89` — feat: copy authentic show media before generated media (T53f).
+- **Next step:** Claude Code reviews PR #134, checks CI and merges if clear. Then deploy the bot
+  from clean `main` under AGENTS.md (packages changed; no migration or secret changes).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+
+- **T53f implementation:** authentic-first photos/URLs on all four channels, generated-image start
+  captions, authentic-first Telegram video replies with a persisted selector and hash guards.
+  PR #133 site labels and DE no-authentic build assertion addressed. Channels 336/336, core 305/305,
+  publisher 270/270 and site 53/53 pass; workspace typecheck/build, lint, formatting and staged
+  gitleaks pass. Initial fixture failures corrected; final publisher run used one worker/30 seconds;
+  site rerun outside sandbox restored child-process diagnostics. No deployment or publishing.
 
 - **T53e:** PR #133 merged 2026-11-13 by claude-code after review (no blocking findings, CI green).
   Site only: no bot deploy, no migration; the site picks it up on the next publish.

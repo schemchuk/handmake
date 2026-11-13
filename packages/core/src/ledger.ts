@@ -36,7 +36,7 @@ const operationSchema = z.discriminatedUnion('kind', [
     captionLang: z.string().optional(),
     replyToOp,
   }),
-  z.object({ kind: z.literal('video'), replyToOp }),
+  z.object({ kind: z.literal('video'), videoSource: z.literal('authentic').optional(), replyToOp }),
   z.object({ kind: z.literal('message'), text: z.string(), lang: z.string(), replyToOp }),
   z.object({
     kind: z.literal('poll'),

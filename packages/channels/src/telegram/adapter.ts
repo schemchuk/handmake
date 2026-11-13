@@ -164,14 +164,22 @@ export class TelegramAdapter implements ChannelAdapter {
           }
         }
       }
-      if (op.kind === 'video' && (!ctx.video || ctx.video.length === 0)) {
+      const video =
+        op.kind === 'video' && op.videoSource === 'authentic' ? ctx.authenticVideo : ctx.video;
+      if (op.kind === 'video' && !video?.length) {
         throw new TelegramAdapterError('video op requires video bytes');
       }
     }
     const ids: RemoteId[] = [...known];
     for (let i = start; i < ops.length; i++) {
       const op = ops[i]!;
-      const remoteId = await this.#sendWithRetry(op, chatId, ctx.photos, ids, ctx.video);
+      const remoteId = await this.#sendWithRetry(
+        op,
+        chatId,
+        ctx.photos,
+        ids,
+        op.kind === 'video' && op.videoSource === 'authentic' ? ctx.authenticVideo : ctx.video,
+      );
       ids.push(remoteId);
       // Awaited BEFORE the next send, so the caller persists the ledger
       // between ops and the at-least-once window is a single op.

@@ -58,7 +58,24 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
     );
     media.push(bytes);
   }
-  const hashes = media.map((bytes) => createHash('sha256').update(bytes).digest('hex'));
+  const authentic = show.authentic ?? [];
+  const authenticBytes = new Map<string, Uint8Array>();
+  for (const item of authentic) {
+    const bytes = await store.readShowMedia(tenantId, showId, item.fileName);
+    if (!bytes?.length) throw new Error('published authentic media is missing');
+    authenticBytes.set(item.fileName, bytes);
+  }
+  const photos = [...authentic.filter((item) => item.kind === 'photo'), ...show.images];
+  const copyPhotoBytes = [
+    ...authentic
+      .filter((item) => item.kind === 'photo')
+      .map((item) => authenticBytes.get(item.fileName)!),
+    ...media.slice(0, -1),
+  ];
+  const authenticVideo = authentic.find((item) => item.kind === 'video');
+  const hashes = [...media, ...authenticBytes.values()].map((bytes) =>
+    createHash('sha256').update(bytes).digest('hex'),
+  );
   let ledger = (await store.readLedger(tenantId, showId)) ?? initLedger(tenantId, showId, [], now);
   const registry =
     deps.registry ??
@@ -105,7 +122,9 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
     for (const [index, op] of operations.entries()) {
       if (op.replyToOp !== undefined && op.replyToOp >= index)
         throw new Error('invalid copy reply target');
-      if (op.kind === 'mediaGroup' && op.photoIndexes.some((i) => i >= show.images.length))
+      if (op.kind === 'video' && op.videoSource === 'authentic' && !authenticVideo)
+        throw new Error('invalid copy authentic video');
+      if (op.kind === 'mediaGroup' && op.photoIndexes.some((i) => i >= photos.length))
         throw new Error('invalid copy image index');
     }
   }
@@ -117,7 +136,6 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
   const skipped: string[] = [];
   // Also commits progress left on disk by a previous interrupted commit before resuming.
   await persist();
-  const copyPhotoBytes = media.slice(0, -1);
   // One content push per run covers every Meta channel (the plan order puts
   // Instagram before Facebook): the first opted-in preparation pushes,
   // later ones skip the no-op second push (PR #96 review note 4).
@@ -138,7 +156,7 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
           env,
           git,
           repoDir: `content/shows/${show.id}`,
-          fileNames: show.images.map((image) => image.fileName),
+          fileNames: photos.map((image) => image.fileName),
           photoBytes: copyPhotoBytes,
           ops: snapshot.operations,
           startAt: entry.remoteIds.length,
@@ -157,7 +175,7 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
           env,
           git,
           repoDir: `content/shows/${show.id}`,
-          fileNames: show.images.map((image) => image.fileName),
+          fileNames: photos.map((image) => image.fileName),
           ops: snapshot.operations,
           startAt: entry.remoteIds.length,
           contentAlreadyPushed: contentPushed,
@@ -174,6 +192,7 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
           idempotencyBase: idempotencyBase(tenantId, showId, channel),
           photos: copyPhotoBytes,
           video: media.at(-1),
+          authenticVideo: authenticVideo && authenticBytes.get(authenticVideo.fileName),
           ...(photoUrls !== undefined && { photoUrls }),
         },
         {

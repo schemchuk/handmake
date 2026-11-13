@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import sharp from 'sharp';
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -584,4 +585,61 @@ it('dry-runs authentic show preparation into a temporary store only', async () =
     await new GitRepoContentStore({ rootDir: tempDir }).readShow(show.tenant, show.id),
   ).toBeDefined();
   expect(git.commit).not.toHaveBeenCalled();
+});
+
+it('copies authentic photos first and resumes authentic then generated video replies', async () => {
+  const original = new Uint8Array(
+    await sharp((await markingFixtures()).image)
+      .jpeg()
+      .toBuffer(),
+  );
+  const originalVideo = new Uint8Array((await markingFixtures()).markedVideo.result.bytes);
+  show.authentic = [
+    { fileName: 'authentic.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+    { fileName: 'authentic.mp4', kind: 'video', provenance: 'human', people: 'none' },
+  ];
+  payload.show!.show = show;
+  payload.show!.media.push(
+    { fileName: 'authentic.jpg', ref: 'authentic.jpg' },
+    { fileName: 'authentic.mp4', ref: 'authentic.mp4' },
+  );
+  source.fetchMedia.mockImplementation(async (ref) =>
+    ref === 'authentic.jpg'
+      ? original
+      : ref === 'authentic.mp4'
+        ? originalVideo
+        : ref.endsWith('.mp4')
+          ? video
+          : image,
+  );
+  await run();
+  const storedOriginalVideo = (await store.readShowMedia(show.tenant, show.id, 'authentic.mp4'))!;
+  const c = copies();
+  await expect(c.copy()).rejects.toThrow('interrupted');
+  const album = c.requests[0]!.body;
+  expect(new Uint8Array(await (album.get('media0') as File).arrayBuffer())).toEqual(original);
+  const partial = (await store.readLedger(show.tenant, show.id))!;
+  expect(partial.showCopyPlan!.mediaHashes).toHaveLength(6);
+  expect(partial.showCopyPlan!.channels.telegram!.operations[1]).toMatchObject({
+    videoSource: 'authentic',
+  });
+  c.succeed();
+  await c.copy();
+  expect(c.requests.map((request) => request.method)).toEqual([
+    'sendMediaGroup',
+    'sendVideo',
+    'sendVideo',
+    'sendVideo',
+    'sendMessage',
+  ]);
+  expect(new Uint8Array(await (c.requests[2]!.body.get('video') as File).arrayBuffer())).toEqual(
+    storedOriginalVideo,
+  );
+  expect(new Uint8Array(await (c.requests[3]!.body.get('video') as File).arrayBuffer())).toEqual(
+    video,
+  );
+  await c.copy();
+  expect(c.requests).toHaveLength(5);
+  await writeFile(path.join(root, 'content/shows', show.id, 'authentic.jpg'), new Uint8Array([1]));
+  await expect(c.copy()).rejects.toThrow('media changed');
 });
