@@ -2161,7 +2161,7 @@ generated. Needs a spec decision (show type, how authenticity is recorded in `pr
 it becomes a task.
 
 ### T52 — Authenticity label instead of AI note (F36, `site`, `channels`, `bot`)
-- Owner: codex · Reviewer: claude-code · Depends on: spec v9 approved · Before T33
+- Owner: codex · Reviewer: claude-code · Depends on: spec v9 (approved 2026-11-13) · Before T33
 - Found 2026-11-13: post `01m79ykb8cdgrx6k29htysnzja` (photos of a participant's work) shows
   "Створено за допомогою ШІ" on the site, because a German version sets `provenance: ai-assisted`
   (`apps/bot/src/bot.ts` publishJobOf) and the site renders it.

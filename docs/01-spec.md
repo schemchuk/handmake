@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **draft v9 (2026-11-13), awaiting Volodymyr's review.**
+Status: **approved v9 (2026-11-13).**
 Previous: approved v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
 Changes from v8 (v9) are listed in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
@@ -456,7 +456,7 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14-v9. Changes from v8 (v9, draft 2026-11-13)
+## 14-v9. Changes from v8 (v9, approved 2026-11-13)
 
 - New F36: "Оригінальна робота" / "Originalarbeit" on every publication with authentic media (site,
   all channels, bot preview); no public AI note for human or AI-assisted texts; shows keep their AI
