@@ -2347,3 +2347,21 @@ it becomes a task.
 - Tests: site build with and without `site.profiles`; per-language order; loader rejects a
   non-https URL; build policy accepts valid JSON-LD and rejects non-JSON `application/ld+json`,
   other inline script types and a script without `type`; site suites only (limit rules).
+
+### T54a — Profile config hardening (T54 review follow-up, `site`)
+- Status: ready; do before T33.
+- Owner: codex · Reviewer: claude-code · Depends on: T54
+- Why: two non-blocking findings from the PR #137 review.
+- Change:
+  1. `packages/core/src/tenant.ts`: `site.profiles` gets `.min(1)`. An empty list today renders an
+     empty footer `<nav>` instead of `JoinChannel` and a JSON-LD block with an empty `sameAs`;
+     omitting the key is the way to have no profiles.
+  2. Profile `url` uses the existing `httpsUrlSchema` instead of `z.string().url()`, so the https
+     rule lives in the schema like `joinUrl` and `groupUrl`. Remove the now redundant loop in
+     `readTenantConfig` (`apps/site/src/lib/site-data.ts`) unless the schema error would no longer
+     name the field; the loader must still reject `http:` and `javascript:` URLs.
+- Acceptance: `profiles: []` fails config parsing; `http://` and `javascript:` profile URLs still
+  fail; the faden-und-stimmung config and the T54 fixture builds pass unchanged.
+- Tests: core tenant schema test for the empty list and the non-https URL; keep the site-data
+  loader rejection tests green (adjust the expected message if needed); core and site suites only
+  (limit rules).

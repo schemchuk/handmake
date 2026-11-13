@@ -1,18 +1,16 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T54 merged).
+- **Active agent:** codex.
+- **Current task:** T54a (profile config hardening, T54 review follow-up).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T54 merge.
-- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`):
-  T54 changed `packages/core` (tenant schema); the classifier blocked claude-code's deploy.
+- **Last commit:** this commit — docs: add T54a and record T54 bot deploy.
+- **Next step:** codex implements T54a on `feat/t54a-profile-config` in a fresh session, then T33.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
 - **T54:** PR #137 merged 2026-11-13 by claude-code (squash 871b114, CI green). No migration,
-  no secrets, no wrangler change. Non-blocking notes: an empty `site.profiles: []` would render
-  an empty footer nav and JSON-LD with empty `sameAs` (`.min(1)` would prevent it); core uses
-  `z.string().url()` where the existing `httpsUrlSchema` would do the https check in one place.
+  no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker
+  `4a3b6d46-41cc-4d5e-840a-b9e57c2b4f65`. Review findings moved to T54a.
 
 - **T31e:** PR #136 merged 2026-11-13 by claude-code after re-review (blocking canonical-link
   finding fixed in 8ddd484, CI green). No migration, no secrets, no wrangler change.
