@@ -11,10 +11,11 @@
       "updatedAt": "2026-11-13T07:31:35.055Z"
     },
     "instagram": {
-      "status": "failed",
-      "remoteIds": [],
-      "error": "Instagram /17841434440786110/media failed: (#100) The parameter image_url is required",
-      "updatedAt": "2026-11-13T07:31:31.319Z"
+      "status": "done",
+      "remoteIds": [
+        "18127099369917141"
+      ],
+      "updatedAt": "2026-11-13T07:54:24.821Z"
     },
     "facebook": {
       "status": "pending",
