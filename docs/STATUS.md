@@ -1,15 +1,29 @@
 # STATUS
 
-- **Active agent:** codex
-- **Current task:** T51 — fix Instagram carousel container (hotfix from the live `/new` run).
-- **Branch:** `fix/t51-instagram-carousel` (to create).
-- **Last commit:** see `git log` (docs: hand T51 to codex).
-- **Next step:** codex implements T51 in a fresh session (docs/03-tasks.md). Volodymyr keeps
-  doing live runs; fixes they need go before T33. T33 (usage metrics, including the PR #125
-  review note) follows after the runs.
-- **Blocked on:** nothing. Post `01M79WSSK61F11FA1C5J61BVCS` is half published (Telegram only,
-  site 404) until T51 is merged and the post is published again from `main`.
+- **Active agent:** claude-code
+- **Current task:** T51 — Instagram carousel hotfix implemented; awaiting review.
+- **Branch:** `fix/t51-instagram-carousel`.
+- **Last commit:** see `git log` (`fix: send valid Instagram carousel parent parameters`).
+- **Next step:** Claude Code reviews the T51 PR, merges after green CI, and deploys
+  the bot from clean `main` because `packages/` changed (AGENTS.md). Then the
+  operator starts a new publish from `main` for draft `01M79WSSK61F11FA1C5J61BVCS`;
+  do not re-run run `43386329746`. Verify Telegram is skipped via the ledger,
+  Instagram/Facebook/Threads deliver and the site page exists; record the live
+  result in docs/instagram-runbook.md. Live-run fixes precede T33 (including the
+  PR #125 review note).
+- **Blocked on:** independent review/merge and operator live retry; the draft is
+  currently Telegram-only and its site page returns 404.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+- **T51 validation:** channel suites 288/288, channel typecheck, changed-code lint
+  and changed-file formatting pass. Initial run exposed one additional stale
+  array assertion in the child-retry test; corrected and full suite rerun passed.
+  Parent now sends `media_type: CAROUSEL` and comma-separated child ids. Facebook
+  multi-photo `attached_media` and Threads carousel parameters checked; no changes
+  needed. No workflows, secrets, migrations, deployment or production publishing.
+- **Last bot deployment:** T32d rollout, Worker
+  `d0e03dce-2ddc-4a66-bbf1-5a752b13cb31` (Volodymyr, clean `main`).
+- **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
+
 - **T32d rollout:** PR #125 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
   after blocker fix, CI green: bot 780, publisher 259, site 53). No new migration. Bot deployed
   from clean `main` by Volodymyr, Worker `d0e03dce-2ddc-4a66-bbf1-5a752b13cb31`.

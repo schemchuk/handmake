@@ -168,7 +168,8 @@ describe('InstagramAdapter', () => {
     expect(requests[1]!.json).toEqual({ image_url: PHOTO_2, is_carousel_item: true });
     expect(requests[2]!.json).toEqual({ image_url: PHOTO_3, is_carousel_item: true });
     expect(requests[3]!.json).toEqual({
-      children: ['container-1', 'container-2', 'container-3'],
+      media_type: 'CAROUSEL',
+      children: 'container-1,container-2,container-3',
       caption: 'Hallo!',
     });
     // Only the carousel container is polled and published.
@@ -368,7 +369,8 @@ describe('InstagramAdapter', () => {
       `/v21.0/${USER_ID}/media_publish`,
     ]);
     expect(requests[3]!.json).toEqual({
-      children: ['container-1', 'container-2', 'container-3'],
+      media_type: 'CAROUSEL',
+      children: 'container-1,container-2,container-3',
       caption: 'Hallo!',
     });
     expect(sleeps).toEqual([500]);
@@ -406,7 +408,8 @@ describe('InstagramAdapter', () => {
       `/v21.0/${USER_ID}/media_publish`,
     ]);
     expect(requests[3]!.json).toEqual({
-      children: ['container-1', 'container-2'],
+      media_type: 'CAROUSEL',
+      children: 'container-1,container-2',
       caption: 'Hallo!',
     });
     expect(sleeps).toEqual([700]);
