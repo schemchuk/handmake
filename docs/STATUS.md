@@ -1,19 +1,22 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T33 (usage metrics, `/stats`), implementation complete; final validation in progress.
+- **Active agent:** claude-code.
+- **Current task:** T33 implementation complete; PR #139 awaits independent review.
 - **Branch:** `feat/t33-usage-metrics`.
-- **Last commit:** this commit — feat: add anonymous workflow usage metrics.
-- **Next step:** finish full bot validation, open the T33 PR and hand off to claude-code for review.
-- **Blocked on:** nothing.
+- **Last commit:** this commit — docs: hand off T33 for review.
+- **Next step:** claude-code reviews PR #139 (implementation 0766bbc, CI green), then follows
+  the sensitive-merge and migration/deployment approval gates before merging/deploying.
+- **Blocked on:** independent review; no implementation blockers.
 - **Open questions for Volodymyr:** reviewer needs explicit approval before sensitive merge
   (retention error reporting touches personal-data cleanup) and before applying migration 0022/deploying.
 
-- **T33 validation so far:** workspace typecheck/build, lint, formatting and staged gitleaks pass.
-  Channels 338/338, site 58/58, bot routes/store 90/90 and metrics/callback 33/33 pass;
-  name retention 7/7 passed in the targeted run. D1/site tests ran outside the sandbox.
-  Full bot run restarted with verbose progress after an unresponsive initial run.
-  Definitions and deployment prerequisites: docs/usage-metrics.md. No production changes.
+- **T33 validation:** full local bot 809/809, channels 338/338 and site 58/58 pass.
+  Workspace typecheck/build, lint, formatting and staged gitleaks pass. CI run 43446665835
+  passed on 0766bbc: all 1,971 tests, typecheck/build, lint/format, actionlint, dry-run and secrets.
+  Sandboxed D1 initialization stalled; site child-process diagnostics were unavailable;
+  unrestricted runs passed. The initial unrestricted full bot run was restarted with verbose progress.
+  Definitions and deployment prerequisites: docs/usage-metrics.md. PR #125/#127 notes resolved.
+  No production migration, deploy, publishing, paid calls, workflow or secret changes.
 
 - **T54a:** PR #138 merged 2026-11-13 by claude-code (squash 953773a, CI green, no findings).
   No migration, no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker
