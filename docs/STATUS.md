@@ -1,21 +1,18 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T33 review fixes complete; PR #139 awaits re-review.
-- **Branch:** `feat/t33-usage-metrics`.
-- **Last commit:** this commit — fix: preserve hashtag text and resume cleanup reconciliation.
-- **Next step:** claude-code re-reviews both fixes from PR #139 comment 6856843590, checks CI,
-  then follows the sensitive-merge and migration/deployment approval gates.
-- **Blocked on:** independent re-review; no implementation blockers.
-- **Open questions for Volodymyr:** reviewer needs explicit approval before sensitive merge
-  (retention error reporting touches personal-data cleanup) and before applying migration 0022/deploying.
+- **Current task:** T33 rollout: migration 0022 on prod D1, then bot deploy.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T33 merge.
+- **Next step:** Volodymyr applies migration 0022 to prod D1
+  (`pnpm -C apps/bot exec wrangler d1 migrations apply handmake-bot --remote`), then the bot is
+  deployed from clean `main` and the Worker version recorded here. Until then, do not deploy the
+  bot: published callbacks would fail on missing usage tables. Then T34 (claude-code).
+- **Blocked on:** migration 0022 on prod D1.
+- **Open questions for Volodymyr:** none.
 
-- **T33 review fixes:** authenticity labels move only before a standalone trailing hashtag block,
-  preserving inline hashtags and complete multi-line blocks (including CRLF). Cleanup reconciles
-  pending erasures in `finally` before reporting a retention failure. Regression uses real local D1
-  with a failing tenant and proves another tenant's public erasure completes before cron rejection.
-  Channels 344/344, composition/retention 23/23, workspace typecheck, lint/format and bot/channels
-  builds pass. No production migration, deploy, publishing, paid calls, workflows or secrets changed.
+- **T33:** PR #139 merged 2026-11-13 by claude-code (squash 3fc144d, CI green) with Volodymyr's
+  OK after re-review of 7a32ee4 (hashtag placement, cleanup reconciliation in `finally`).
 
 - **T33 validation:** full local bot 809/809, channels 338/338 and site 58/58 pass.
   Workspace typecheck/build, lint, formatting and staged gitleaks pass. CI run 43446665835
