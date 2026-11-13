@@ -115,6 +115,12 @@ export async function prepareInstagramDelivery(
   const remaining = deps.ops.slice(deps.startAt);
   if (remaining.length === 0) return { photoUrls: urls, pushed: false };
 
+  // Validate all names before framing: different extensions can share an output name.
+  const framedNames = deps.fileNames.map(instagramFramedFileName);
+  if (new Set(framedNames).size !== framedNames.length) {
+    throw new Error('Instagram framed photo names collide');
+  }
+
   const framedRepoPaths: string[] = [];
   for (const op of remaining) {
     if (op.kind !== 'mediaGroup') continue;

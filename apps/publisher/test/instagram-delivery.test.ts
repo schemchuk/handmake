@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -107,6 +107,31 @@ describe('prepareInstagramDelivery', () => {
     caption: 'Hallo!',
     captionLang: 'de',
   };
+
+  it('rejects colliding framed names before writing files or pushing content', async () => {
+    const root = await freshDir('handmake-ig-collision-');
+    const g = git();
+    await expect(
+      prepareInstagramDelivery({
+        root,
+        env: {
+          CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+          CONTENT_PUSH_BEFORE_DELIVERY: 'true',
+          GITHUB_REF_NAME: 'main',
+        },
+        git: g,
+        repoDir: 'content/shows/show-1',
+        fileNames: ['foo.jpg', 'foo.png'],
+        photoBytes: [photos[0]!, photos[1]!],
+        ops: [{ kind: 'mediaGroup', photoIndexes: [0, 1] }],
+        startAt: 0,
+        itemId: 'show-1',
+      }),
+    ).rejects.toThrow('Instagram framed photo names collide');
+    expect(await readdir(root)).toEqual([]);
+    expect(g.commit).not.toHaveBeenCalled();
+    expect(g.push).not.toHaveBeenCalled();
+  });
 
   it('throws without any raw base URL', async () => {
     const root = await freshDir('handmake-ig-prep-');
