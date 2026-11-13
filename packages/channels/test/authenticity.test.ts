@@ -1,3 +1,4 @@
+import { appendAuthenticity } from '../src/authenticity';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { showSchema, type Post, type SendOperation } from '@handmake/core';
@@ -73,4 +74,11 @@ describe.each([
     );
     expect(text).toContain('KI-generiertes Model\nOriginalarbeit');
   });
+});
+
+it('skips unsupported languages and places the label before trailing hashtags', () => {
+  expect(appendAuthenticity('Approved text', 'fr', true)).toBe('Approved text');
+  expect(appendAuthenticity('Text\n\n#craft #handmade', 'de', true)).toBe(
+    'Text\n\nOriginalarbeit\n\n#craft #handmade',
+  );
 });

@@ -77,6 +77,30 @@ export async function handlePublishedCallback(
     return new Response('work delivery incomplete', { status: 409 });
   }
   const deliveries = Object.entries(parsed.data.channels);
+  const observedAt = new Date().toISOString();
+  // The receipt and all outcomes commit together: interruption cannot make
+  // a partial delivery look like a completed site-only publication.
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO usage_publications
+      (tenant_id, draft_id, observed_at) VALUES (?, ?, ?)`,
+    ).bind(tenantId, postId, observedAt),
+    ...deliveries.map(([channel, delivery]) =>
+      env.DB.prepare(
+        `INSERT INTO usage_deliveries
+        (tenant_id, draft_id, channel, status, observed_at) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (tenant_id, draft_id, channel) DO UPDATE SET
+          status = excluded.status, observed_at = excluded.observed_at
+        WHERE usage_deliveries.status = 'failed' AND excluded.status = 'done'`,
+      ).bind(
+        tenantId,
+        postId,
+        channel,
+        typeof delivery === 'string' ? delivery : delivery.status,
+        observedAt,
+      ),
+    ),
+  ]);
   const receiptStatements = deliveries.flatMap(([channel, delivery]) => {
     if (typeof delivery === 'string' || !delivery.editReceipt) return [];
     if (delivery.status !== 'done') return [];

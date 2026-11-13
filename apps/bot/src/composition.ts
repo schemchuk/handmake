@@ -1,3 +1,4 @@
+import { usageSummary } from './usage-metrics';
 import { runPollClosingCron } from './poll-closing-runtime';
 import { createEntrySessionStore } from './entry-session';
 import { createAuthorEntriesStore } from './author-entries';
@@ -191,6 +192,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        usage: (tenant, now) => usageSummary(env.DB, tenant, now),
         pollResults: {
           logError,
           db: env.DB,

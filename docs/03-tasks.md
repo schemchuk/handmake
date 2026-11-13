@@ -712,6 +712,8 @@ and must remain visible as unresolved even after supported caption/message edits
   suites and workspace checks. Reviewer handles deploy/migration approval under AGENTS.md.
 
 ### T33 — Usage metrics (`bot`)
+- Implementation: ready for claude-code review on `feat/t33-usage-metrics`; definitions and
+  migration/deployment prerequisites: `docs/usage-metrics.md`. Includes PR #125/#127 follow-ups.
 - Owner: codex · Reviewer: claude-code · Depends on: T25
 - Change: per draft store `first_ready_at`, edit count (UA, DE, regenerate) and the final delivery
   status from the callback. Operator command `/stats`: last 4 weeks, posts published, median time from

@@ -1,12 +1,19 @@
 # STATUS
 
 - **Active agent:** codex.
-- **Current task:** T33 (usage metrics, `/stats`).
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: record T54a bot deploy.
-- **Next step:** codex implements T33 in a fresh session.
+- **Current task:** T33 (usage metrics, `/stats`), implementation complete; final validation in progress.
+- **Branch:** `feat/t33-usage-metrics`.
+- **Last commit:** this commit — feat: add anonymous workflow usage metrics.
+- **Next step:** finish full bot validation, open the T33 PR and hand off to claude-code for review.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Open questions for Volodymyr:** reviewer needs explicit approval before sensitive merge
+  (retention error reporting touches personal-data cleanup) and before applying migration 0022/deploying.
+
+- **T33 validation so far:** workspace typecheck/build, lint, formatting and staged gitleaks pass.
+  Channels 338/338, site 58/58, bot routes/store 90/90 and metrics/callback 33/33 pass;
+  name retention 7/7 passed in the targeted run. D1/site tests ran outside the sandbox.
+  Full bot run restarted with verbose progress after an unresponsive initial run.
+  Definitions and deployment prerequisites: docs/usage-metrics.md. No production changes.
 
 - **T54a:** PR #138 merged 2026-11-13 by claude-code (squash 953773a, CI green, no findings).
   No migration, no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker

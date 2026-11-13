@@ -13,6 +13,7 @@ export async function expireNonWinnerNames(db: D1Database, now: Date): Promise<v
   const tenants = await db.prepare('SELECT DISTINCT tenant_id FROM contest_entries').all<{
     tenant_id: string;
   }>();
+  let failed = false;
   for (const { tenant_id: tenant } of tenants.results) {
     // Eligibility, erasure and queue generation share a transaction. A concurrent
     // winner selection or manual withdrawal cannot split the private/public state.
@@ -31,7 +32,9 @@ export async function expireNonWinnerNames(db: D1Database, now: Date): Promise<v
       ]);
     } catch {
       // Never log private values from a failed bound statement. Retry next day.
+      failed = true;
       console.error('Tenant name retention failed');
     }
   }
+  if (failed) throw new Error('Tenant name retention failed');
 }

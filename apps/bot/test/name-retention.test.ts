@@ -106,7 +106,7 @@ it('rolls back erasure if queueing fails', async () => {
   await db.exec(
     "CREATE TRIGGER reject_queue BEFORE INSERT ON name_reconciliations BEGIN SELECT RAISE(ABORT, 'fixture'); END;",
   );
-  await expireNonWinnerNames(db, cutoff);
+  await expect(expireNonWinnerNames(db, cutoff)).rejects.toThrow('Tenant name retention failed');
   expect(await rows(db)).toEqual(before);
   expect((await db.prepare('SELECT * FROM name_withdrawals').all()).results).toEqual([]);
 });
@@ -170,7 +170,7 @@ it('continues with later tenants after one transaction fails', async () => {
   await db.exec(
     "CREATE TRIGGER reject_fixture BEFORE INSERT ON name_reconciliations WHEN NEW.tenant_id = 'fixture' BEGIN SELECT RAISE(ABORT, 'fixture'); END;",
   );
-  await expireNonWinnerNames(db, cutoff);
+  await expect(expireNonWinnerNames(db, cutoff)).rejects.toThrow('Tenant name retention failed');
   const entries = await rows(db);
   expect(
     entries
