@@ -3,14 +3,14 @@
 - **Active agent:** codex.
 - **Current task:** T33 (usage metrics, `/stats`).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T54a merge.
-- **Next step:** codex implements T33 in a fresh session. Before that, Volodymyr deploys the bot
-  from clean `main` (`pnpm -C apps/bot run deploy`): T54a changed `packages/core`.
+- **Last commit:** this commit — docs: record T54a bot deploy.
+- **Next step:** codex implements T33 in a fresh session.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
 - **T54a:** PR #138 merged 2026-11-13 by claude-code (squash 953773a, CI green, no findings).
-  No migration, no secrets, no wrangler change. Bot deploy pending (Volodymyr).
+  No migration, no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker
+  `56f39724-1635-4034-b6fb-a752d730fcb7`.
 
 - **T54:** PR #137 merged 2026-11-13 by claude-code (squash 871b114, CI green). No migration,
   no secrets, no wrangler change. Bot deployed by Volodymyr from clean `main` 2026-11-13, Worker
