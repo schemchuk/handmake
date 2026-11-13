@@ -1,14 +1,18 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T33 rollout: bot deploy (migration 0022 applied to prod D1 2026-11-13).
+- **Current task:** none (H12 done).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T33 migration.
-- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`;
-  the agent deploy was blocked by the classifier) and the Worker version is recorded here.
-  Then T34 (claude-code).
-- **Blocked on:** bot deploy.
+- **Last commit:** this commit — docs: record H12 and T33 bot deploy.
+- **Next step:** T34 portfolio pack (claude-code); H12 demo GIF/MP4 come from Volodymyr.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **H12:** done 2026-11-13. Demo recorded on the test channel; bot switched to test mode for the
+  recording and back to live. Cloudflare returned 500 / code 10013 on three `wrangler deploy`
+  attempts (17:18-17:29 EET); a `versions upload` at 17:32 passed, so it was a transient API error.
+  Bot redeployed live from clean `main` by Volodymyr 2026-11-13 18:01 EET, Worker
+  `674f193b-01cc-4e95-aa3a-742b993e48ba` (includes T33).
 
 - **T33:** PR #139 merged 2026-11-13 by claude-code (squash 3fc144d, CI green) with Volodymyr's
   OK after re-review of 7a32ee4 (hashtag placement, cleanup reconciliation in `finally`).
