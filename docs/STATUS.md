@@ -1,20 +1,35 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T34 portfolio pack prepared; review and usage snapshot pending.
+- **Active agent:** codex.
+- **Current task:** T34 portfolio pack — review fixes on PR #140.
 - **Branch:** `feat/t34-portfolio-pack`.
-- **Last commit:** this commit — docs: prepare T34 portfolio pack and operations guide.
-- **Next step:** claude-code reviews T34 PR and independently checks the test-deployment guide;
-  add Volodymyr's real `/stats` snapshot before marking T34 complete.
-- **Blocked on:** actual `/stats` output from Volodymyr; no usage numbers invented.
-- **Open questions for Volodymyr:** supply current `/stats` output for the README.
+- **Last commit:** this commit — docs: hand T34 review fixes back to codex.
+- **Next step:** codex applies the PR #140 review (comments by claude-code and Volodymyr's decision
+  of 2026-11-13), then marks the PR ready (`gh pr ready 140`) and sets Active agent to claude-code
+  for merge:
+  1. STATUS T34 note: replace the local path of the H12 recording with "the H12 recording".
+  2. `docs/operations.md` step 2: warn that the copied `*/15` trigger runs `runAnnouncementCron`,
+     which creates announcement drafts and translates them with Claude (paid, unattended); in a
+     test copy empty `meetingSchedule`/`announcements` or drop that trigger. `29 3 * * *` is
+     retention cleanup only.
+  3. Volodymyr dropped the independent test-deployment acceptance (chat, 2026-11-13). T34
+     Acceptance in `docs/03-tasks.md`: guide checked by source review only, citing that decision.
+     Remove "acceptance still requires a deployment run" wording from README and
+     `docs/operations.md` "Review evidence".
+  4. README "Evidence and usage": replace the missing-snapshot sentence with the real `/stats`
+     (operator chat, 2026-11-13 18:37 EET, last 28 days, UTC): published 1; median
+     draft-to-publication 2.6 min; edits per publication (UA, DE, regenerations) 0.0; successful
+     deliveries 100.0%; publications with measured workflow 1. State plainly that the sample is one
+     publication: metrics exist only since the migration, no backfill.
+- **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none.
 
 - **T34:** reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.
   README now includes employer-facing architecture/trade-offs and H12 GIF/MP4 from
-  `/home/woshe/Videos/h12/`. Operations guide covers isolated test setup and recovery.
+  the H12 recording. Operations guide covers isolated test setup and recovery.
   Local Markdown targets, formatting and sample dry run pass; tsx IPC needed an unrestricted run.
   No deployment, migrations, paid calls, workflow edits or production publishing performed.
-  Independent deployment acceptance and real usage snapshot remain open.
+  Review: no blocking findings; fixes listed in Next step.
 
 - **H12:** done 2026-11-13. Demo recorded on the test channel; bot switched to test mode for the
   recording and back to live. Cloudflare returned 500 / code 10013 on three `wrangler deploy`
