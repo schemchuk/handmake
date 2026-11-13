@@ -16,6 +16,8 @@ import { buildPostFromPayload } from './build-post';
 import { fetchAndProcessPhotos } from './photos';
 import { parseDispatchPayload } from './payload';
 import { loadTenantConfig } from './tenant-config';
+import { prepareShowPublication } from './show-publication';
+import { createPublicationMediaSource } from './show-media-source';
 import { prepareWorkPublication } from './work-publication';
 
 export interface DryRunDeps {
@@ -27,6 +29,7 @@ export interface DryRunDeps {
   env?: NodeJS.ProcessEnv;
   logger?: (line: string) => void;
   mediaSource?: MediaSource;
+  showMediaSource?: import('@handmake/core').ShowMediaSource;
   now?: Date;
   newId?: () => string;
 }
@@ -55,6 +58,16 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
     payload.kind === 'work'
       ? await prepareWorkPublication(payload, tenant, new GitRepoContentStore({ rootDir: root }))
       : undefined;
+  const showPublication =
+    payload.kind === 'show'
+      ? await prepareShowPublication(
+          payload,
+          tenant,
+          new GitRepoContentStore({ rootDir: root }),
+          deps.showMediaSource ??
+            createPublicationMediaSource(tenant.id, payload.draftId, deps.env ?? process.env),
+        )
+      : undefined;
   const tempDir = deps.tempDir ?? (await mkdtemp(path.join(os.tmpdir(), 'handmake-dry-run-')));
 
   const photos = await fetchAndProcessPhotos(
@@ -64,23 +77,38 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
   );
 
   const post =
+    showPublication?.post ??
     publication?.post ??
     buildPostFromPayload(payload, tenant, { now: deps.now, newId: deps.newId });
   const store = new GitRepoContentStore({ rootDir: tempDir });
-  if (publication) {
+  if (showPublication) {
+    const sourceStore = new GitRepoContentStore({ rootDir: root });
+    const work = (await sourceStore.readWork(tenant.id, showPublication.show.workId))!;
+    const originals = [];
+    for (const fileName of work.photos)
+      originals.push({
+        fileName,
+        data: (await sourceStore.readWorkPhoto(tenant.id, work.id, fileName))!,
+      });
+    await store.saveWork(work, originals);
+    await store.saveShow(showPublication.show, showPublication.media);
+  } else if (publication) {
     if (publication.collection) await store.saveCollection(publication.collection);
     await store.saveWork(publication.work, photos);
   } else await store.savePost(post, photos);
 
-  const postDir = publication
-    ? path.join(tempDir, 'content', 'works', post.id)
-    : path.join(tempDir, 'content', 'posts', postFolderName(post));
+  const postDir = showPublication
+    ? path.join(tempDir, 'content', 'shows', post.id)
+    : publication
+      ? path.join(tempDir, 'content', 'works', post.id)
+      : path.join(tempDir, 'content', 'posts', postFolderName(post));
   // Acceptance check: the written folder must validate with parsePost.
-  if (!publication) parsePost(await readFile(path.join(postDir, 'index.md'), 'utf8'));
+  if (!publication && !showPublication)
+    parsePost(await readFile(path.join(postDir, 'index.md'), 'utf8'));
 
   const canonical = canonicalLinkSettings(tenant, publication ? 'works' : 'posts');
   const ops =
-    publication && !post.channels.includes('telegram')
+    (publication || showPublication) && !post.channels.includes('telegram')
       ? []
       : renderTelegram(
           resolvePostEntryNames(

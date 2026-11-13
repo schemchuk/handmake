@@ -459,3 +459,48 @@ it('hides authentic input after approval', async () => {
   const keyboard = refreshKeyboard(await stored(), botTexts);
   expect(JSON.stringify(keyboard)).not.toContain(':own:');
 });
+
+it('rejects approval with a proposal but no people answer', async () => {
+  await present();
+  const s = await stored();
+  await store.updateShow(
+    {
+      ...s.draft,
+      extras: {
+        ...s.draft.extras,
+        showAuthentic: { editing: false, confirmed: true, items: [{ fileName: 'authentic.jpg' }] },
+        showProposalVersion: s.version + 1,
+      },
+    },
+    s.version,
+  );
+  const current = await stored();
+  expect(await approval.approve(ctx, current, String(current.version))).toBeUndefined();
+  expect((await stored()).draft.state).toBe('ready');
+});
+
+it('reports a stale step separately when the draft changes during authentic storage', async () => {
+  const s = await stored();
+  await store.updateShow(
+    {
+      ...s.draft,
+      extras: {
+        ...s.draft.extras,
+        showAuthentic: {
+          editing: false,
+          confirmed: true,
+          people: 'none',
+          items: [{ fileId: 'private', fileName: 'authentic.jpg', kind: 'photo', size: 3 }],
+        },
+      },
+    },
+    s.version,
+  );
+  authentic.mockImplementationOnce(async () => {
+    const current = await stored();
+    await store.updateShow({ ...current.draft }, current.version);
+    return [{ fileName: 'authentic.jpg', ref: 'show-authentic:v1:fixture:show:opaque' }];
+  });
+  await expect(present()).rejects.toThrow('stale');
+  expect(reply.mock.calls.flat().join(' ')).not.toContain('Не вдалося зберегти');
+});

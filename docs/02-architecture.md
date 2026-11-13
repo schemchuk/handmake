@@ -872,8 +872,11 @@ metadata, including its Telegram identity, without disclosing that identity. Com
 are reused after partial failure. Bounded downloads must match the declared size. Mixed jobs use
 existing `show-marked:v1:...` refs for generated media, so neither Telegram ids nor bytes enter
 these jobs. Generated-only jobs retain their existing transport. Telegram file ids are not written
-to Git. T53d must resolve both private ref kinds before authentic publication can succeed; T53c
-alone does not supply publisher metadata stripping or ref resolution.
+to Git. The publisher resolves both private ref kinds through the account-scoped Cloudflare R2 Get Object
+API, with tenant/show checks and a 20 MB streaming limit. Mixed jobs need
+`CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` (R2 object read permission) in the publish job.
+Generated-only jobs retain Telegram transport. API reference:
+https://developers.cloudflare.com/api/resources/r2/subresources/buckets/subresources/objects/methods/get/
 
 Retention of authentic staging objects (Volodymyr, 2026-11-13): `show-authentic/` objects in
 `handmake-show` are deleted by an R2 lifecycle rule 30 days after upload, matching the 30-day
@@ -887,7 +890,11 @@ JPEG: lossless removal of APP1 (EXIF/XMP) and APP13 (IPTC) segments, ICC kept, p
 Video: `ffmpeg -map_metadata -1 -c copy -movflags +faststart` remux to MP4; a failed remux or a
 probed duration over 60 s fails the job with an author-visible reason. A post-strip check
 asserts no GPS/EXIF/location tags remain. Files land beside the generated media in
-`content/shows/<ULID>/`.
+`content/shows/<ULID>/`. Preparation completes before any store write or Git commit; a rejected
+video notifies the author. Retry reads committed media without private storage access. Dry-run uses
+the same preparation and copies the linked work into its temporary store before saving the show.
+The bot still buffers bounded authentic inputs before R2 upload (at most 20 MB); streaming upload
+with `FixedLengthStream` remains a possible memory optimization.
 
 Rendering: site show page and channel albums list authentic media first, then generated media;
 the caption adds the "generated from image N" line only when authentic photos exist. Telegram sends

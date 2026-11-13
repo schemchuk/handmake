@@ -68,7 +68,11 @@ export class GitShowContentStore extends GitWorkContentStore implements ShowCont
       if (!(await this.readWorkPhoto(show.tenant, work.id, original.fileName))?.length)
         throw new Error('show original is missing from linked work');
     }
-    const names = [...show.images.map((image) => image.fileName), show.video.fileName];
+    const names = [
+      ...show.images.map((image) => image.fileName),
+      show.video.fileName,
+      ...(show.authentic ?? []).map((item) => item.fileName),
+    ];
     if (
       media.length !== names.length ||
       new Set(media.map((file) => file.fileName)).size !== names.length ||
@@ -118,7 +122,11 @@ export class GitShowContentStore extends GitWorkContentStore implements ShowCont
     const show = await this.readShow(tenantId, id);
     if (
       !show ||
-      ![...show.images.map((image) => image.fileName), show.video.fileName].includes(name)
+      ![
+        ...show.images.map((image) => image.fileName),
+        show.video.fileName,
+        ...(show.authentic ?? []).map((item) => item.fileName),
+      ].includes(name)
     )
       return undefined;
     return this.#bytes(id, name);

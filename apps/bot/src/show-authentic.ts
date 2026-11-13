@@ -108,7 +108,15 @@ export function createShowAuthentic(drafts: D1DraftStore) {
           ))
         )
           return ctx.reply(error);
-        return ctx.reply('Показ скасовано.');
+        await drafts.setChatSession(
+          ctx.tenantId,
+          String(ctx.chat.id),
+          { kind: 'show', draftId: null },
+          new Date(),
+        );
+        return ctx.reply(
+          `Показ ${stored.draft.draftId} скасовано. Докази та невизначені витрати збережено; їх перевіряє оператор.`,
+        );
       }
       const own: ShowAuthentic = structuredClone(
         authenticOf(stored) ?? { editing: true, items: [], confirmed: false },

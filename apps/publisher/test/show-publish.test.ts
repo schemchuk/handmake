@@ -525,3 +525,63 @@ it.each([
   await expect(c.copy()).rejects.toThrow();
   expect(c.requests).toEqual([]);
 });
+
+it('strips authentic photos beside marked media and reuses committed bytes on retry', async () => {
+  const { default: sharp } = await import('sharp');
+  const jpeg = await readFile(new URL('./fixtures/with-gps-exif.jpg', import.meta.url));
+  show.authentic = [
+    { fileName: 'authentic-photo-1.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+  ];
+  payload.show!.media.push({ fileName: 'authentic-photo-1.jpg', ref: 'authentic' });
+  source.fetchMedia.mockImplementation(async (ref) =>
+    ref === 'authentic' ? jpeg : ref.endsWith('.mp4') ? video : image,
+  );
+  await run();
+  const clean = (await store.readShowMedia(show.tenant, show.id, 'authentic-photo-1.jpg'))!;
+  expect((await sharp(clean).metadata()).exif).toBeUndefined();
+  expect(await sharp(clean).raw().toBuffer()).toEqual(await sharp(jpeg).raw().toBuffer());
+  source.fetchMedia.mockRejectedValue(new Error('expired'));
+  await run();
+  expect(await store.readShowMedia(show.tenant, show.id, 'authentic-photo-1.jpg')).toEqual(clean);
+});
+
+it('rejects bad authentic video before any content or ledger commit and informs the author', async () => {
+  show.authentic = [
+    { fileName: 'authentic-video.mp4', kind: 'video', provenance: 'human', people: 'none' },
+  ];
+  payload.show!.media.push({ fileName: 'authentic-video.mp4', ref: 'broken' });
+  source.fetchMedia.mockImplementation(async (ref) =>
+    ref === 'broken' ? Buffer.from('broken') : ref.endsWith('.mp4') ? video : image,
+  );
+  const notifier = { notify: vi.fn(async () => {}) };
+  await expect(run({ notifier })).rejects.toThrow('60');
+  expect(git.commit).not.toHaveBeenCalled();
+  expect(await store.readShow(show.tenant, show.id)).toBeUndefined();
+  expect(notifier.notify).toHaveBeenCalledWith('author', expect.stringContaining('60'));
+});
+
+it('dry-runs authentic show preparation into a temporary store only', async () => {
+  const { runDryRun } = await import('../src/dry-run');
+  const jpeg = await readFile(new URL('./fixtures/with-gps-exif.jpg', import.meta.url));
+  show.authentic = [
+    { fileName: 'authentic-photo.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+  ];
+  payload.show!.media.push({ fileName: 'authentic-photo.jpg', ref: 'authentic' });
+  source.fetchMedia.mockImplementation(async (ref) =>
+    ref === 'authentic' ? jpeg : ref.endsWith('.mp4') ? video : image,
+  );
+  await writeFile(payloadPath, JSON.stringify(payload));
+  const tempDir = path.join(root, 'dry-run');
+  const result = await runDryRun(payloadPath, {
+    root,
+    tempDir,
+    showMediaSource: source,
+    logger: () => {},
+  });
+  expect(result.ops).toEqual([]);
+  expect(await store.readShow(show.tenant, show.id)).toBeUndefined();
+  expect(
+    await new GitRepoContentStore({ rootDir: tempDir }).readShow(show.tenant, show.id),
+  ).toBeDefined();
+  expect(git.commit).not.toHaveBeenCalled();
+});
