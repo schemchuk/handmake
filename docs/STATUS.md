@@ -1,13 +1,20 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: drop demo note from handoff.
-- **Next step:** T34 portfolio pack, not started; to be picked up in a fresh session by the agent
-  Volodymyr names.
-- **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** claude-code.
+- **Current task:** T34 portfolio pack prepared; review and usage snapshot pending.
+- **Branch:** `feat/t34-portfolio-pack`.
+- **Last commit:** this commit — docs: prepare T34 portfolio pack and operations guide.
+- **Next step:** claude-code reviews T34 PR and independently checks the test-deployment guide;
+  add Volodymyr's real `/stats` snapshot before marking T34 complete.
+- **Blocked on:** actual `/stats` output from Volodymyr; no usage numbers invented.
+- **Open questions for Volodymyr:** supply current `/stats` output for the README.
+
+- **T34:** reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.
+  README now includes employer-facing architecture/trade-offs and H12 GIF/MP4 from
+  `/home/woshe/Videos/h12/`. Operations guide covers isolated test setup and recovery.
+  Local Markdown targets, formatting and sample dry run pass; tsx IPC needed an unrestricted run.
+  No deployment, migrations, paid calls, workflow edits or production publishing performed.
+  Independent deployment acceptance and real usage snapshot remain open.
 
 - **H12:** done 2026-11-13. Demo recorded on the test channel; bot switched to test mode for the
   recording and back to live. Cloudflare returned 500 / code 10013 on three `wrangler deploy`

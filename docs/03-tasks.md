@@ -730,7 +730,8 @@ and must remain visible as unresolved even after supported caption/message edits
   the label, with a test. When a caption ends with hashtags the label lands after them; consider
   inserting it before a trailing hashtag block. Site `authenticityLabel` duplicates `linkedWork`.
 
-### T34 — Portfolio pack (docs) · Owner: claude-code · Reviewer: kimi-code
+### T34 — Portfolio pack (docs) · Owner: codex · Reviewer: claude-code
+- Reassigned to Codex by Volodymyr in chat on 2026-11-13; independent review by claude-code.
 - Depends on: T33, H12
 - Change: English README rewritten for employers: problem, architecture diagram, demo GIF (H12),
   real usage numbers from `/stats`, design trade-offs with ADR links; `docs/operations.md`: failure and
