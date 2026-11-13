@@ -94,7 +94,8 @@ jobs:
 
       - name: Publish to channels
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Read-only R2 token for private show media; the Pages token stays in site.yml.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_READ_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SITE_EXCLUDE_POST: >-
             ${{ !((github.event_name == 'workflow_dispatch' && inputs.live)
