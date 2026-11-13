@@ -27,6 +27,7 @@ function fixture() {
     getSessionShow: async () => structuredClone(stored),
     get: async () => structuredClone(stored),
     updateShow: update,
+    setChatSession: vi.fn(async () => {}),
   } as unknown as D1DraftStore;
   const ctx = {
     tenantId: 'tenant',
@@ -36,7 +37,7 @@ function fixture() {
     replyWithPhoto: vi.fn(),
     replyWithVideo: vi.fn(),
   } as unknown as AppContext;
-  return { handler: createShowAuthentic(drafts), ctx, update, read: () => stored };
+  return { handler: createShowAuthentic(drafts), ctx, update, drafts, read: () => stored };
 }
 it('retries album CAS, preserves every file, enforces bounds and clears proposals', async () => {
   const f = fixture();
@@ -116,4 +117,16 @@ it('cancels from the approval screen with a version guard', async () => {
   await f.handler.action(f.ctx, f.read(), 'owncancel', '1');
   expect(f.read().draft.extras['showCancelled']).toBe(true);
   expect(f.read().draft.state).toBe('failed');
+});
+
+it('cancellation clears the active session and retains the evidence notice', async () => {
+  const f = fixture();
+  await f.handler.action(f.ctx, f.read(), 'owncancel', '1');
+  expect(f.drafts.setChatSession).toHaveBeenCalledWith(
+    'tenant',
+    '1',
+    { kind: 'show', draftId: null },
+    expect.any(Date),
+  );
+  expect(f.ctx.reply).toHaveBeenCalledWith(expect.stringContaining('витрати збережено'));
 });

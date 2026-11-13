@@ -1,18 +1,30 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53d — publisher metadata stripping and commit.
-- **Branch:** none yet (`feat/t53d-<slug>`).
-- **Last commit:** `d90e5da` — feat: transport authentic show media for approval (T53c) (#130).
-- **Next step:** Codex starts T53d in a fresh session. Review notes from PR #130 are listed
-  under T53d in docs/03-tasks.md. T53d needs Volodymyr's OK before merge (personal data).
-  After T53d merges, the reviewer deploys the bot from clean `main` (deferred T53c deploy).
+- **Active agent:** claude-code.
+- **Current task:** Review T53d — publisher metadata stripping and commit (PR #131).
+- **Branch:** `feat/t53d-authentic-publication`.
+- **Last commit:** `6e679fc` — feat: strip and publish authentic show media (T53d).
+- **Next step:** Claude Code reviews https://github.com/schemchuk/handmake/pull/131. Volodymyr's explicit
+  OK is required before merge (personal data, publish workflow and private-media credentials).
+  Reviewer adds the 30-day `show-authentic/` R2 lifecycle rule before the deferred bot deploy.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
+- **T53d implementation:** scoped private R2 authentic/marked reads, lossless JPEG APP1/APP13
+  removal, audio/video stream-copy remux and duration/location checks, Git-store authentic media,
+  idempotent retry and temporary-store dry-run. PR #130 approval/cancellation correctness notes
+  addressed; bounded 20 MB upload buffering remains a documented optional optimization.
+- **T53d validation:** publisher 266/266, stores 46/46, bot approval/authentic 29/29 pass;
+  workspace typecheck, build, lint, changed-file formatting and staged gitleaks pass. JPEG GPS EXIF/pixel equality,
+  progressive scans/ICC, QuickTime location removal and audio/video packet hashes covered.
+  Initial integration failures exposed missing store support and temporary linked work; fixed.
+  Sandboxed D1 run stalled; unrestricted targeted run passed. No deploy, lifecycle mutation,
+  production publishing, paid calls or migrations. Verify the existing Cloudflare API token has
+  R2 object read permission before rollout; runtime requests were mocked locally.
+
 - **T53c implementation:** private authentic R2 refs and mixed-job marked refs; retry reuse,
   bounded downloads, confirmation/CAS approval and PR #129 UI follow-ups. Publisher ref resolution
-  and metadata stripping remain T53d; authentic publication cannot succeed before that task.
+  and metadata stripping are implemented in T53d, pending review/merge.
 - **T53c validation:** full bot suite 799/799 (44 files) passes; workspace typecheck/build, lint,
   changed-file formatting and staged secret scan pass. Targeted tests also pass. The sandboxed D1
   run was interrupted; unrestricted runs passed. A server restart lost the first full run, so it

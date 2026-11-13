@@ -53,7 +53,7 @@ import { requiredEnv } from './required-env';
 import { loadTenantConfig } from './tenant-config';
 import { prepareWorkPublication } from './work-publication';
 import { prepareShowPublication } from './show-publication';
-import { TelegramMediaSource } from './photos/telegram-media-source';
+import { createPublicationMediaSource } from './show-media-source';
 
 export interface PublishDeps {
   cwd?: string;
@@ -160,21 +160,25 @@ export async function runPublish(
     payload.kind === 'work'
       ? await prepareWorkPublication(payload, tenant, store, env.SITE_EXCLUDE_POST === 'true')
       : undefined;
-  const showPublication =
-    payload.kind === 'show'
-      ? await prepareShowPublication(
-          payload,
-          tenant,
-          store,
-          deps.showMediaSource ?? {
-            fetchMedia: (ref) =>
-              new TelegramMediaSource({ token: requiredEnv('TELEGRAM_BOT_TOKEN', env) }).fetchMedia(
-                ref,
-              ),
-          },
-          env.SITE_EXCLUDE_POST === 'true',
-        )
-      : undefined;
+  let showPublication;
+  try {
+    showPublication =
+      payload.kind === 'show'
+        ? await prepareShowPublication(
+            payload,
+            tenant,
+            store,
+            deps.showMediaSource ??
+              createPublicationMediaSource(tenant.id, payload.draftId, env, deps.fetchImpl),
+            env.SITE_EXCLUDE_POST === 'true',
+          )
+        : undefined;
+  } catch (error) {
+    await deps.notifier
+      ?.notify('author', `Не вдалося опублікувати показ: ${safeErrorMessage(error)}`)
+      .catch(() => undefined);
+    throw error;
+  }
   const publication = workPublication ?? showPublication;
   const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
   const entryIds = postEntryReferences(post);

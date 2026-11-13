@@ -56,7 +56,6 @@ export function createShowApproval(deps: {
         try {
           if (!deps.authentic) throw new Error('authentic transport unavailable');
           authenticMedia = await deps.authentic(stored);
-          await current(ctx, stored);
         } catch {
           return ctx.reply(
             'Не вдалося зберегти власні фото/відео. Спробуйте «Оновити перегляд» ще раз.',
@@ -64,6 +63,7 @@ export function createShowApproval(deps: {
           );
         }
       }
+      await current(ctx, stored);
       const media: ShowPublication['media'] = [...authenticMedia];
       const images: ShowPublication['show']['images'] = [];
       let video: ShowVideo | undefined;
@@ -226,7 +226,8 @@ export function createShowApproval(deps: {
       if (
         String(stored.version) !== version ||
         stored.draft.state !== 'ready' ||
-        (!!authenticOf(stored)?.items.length && !authenticOf(stored)?.confirmed) ||
+        (!!authenticOf(stored)?.items.length &&
+          (!authenticOf(stored)?.confirmed || !authenticOf(stored)?.people)) ||
         authenticOf(stored)?.editing === true ||
         stored.draft.extras['showProposalVersion'] !== stored.version
       )

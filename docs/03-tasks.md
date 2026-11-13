@@ -2229,6 +2229,10 @@ it becomes a task.
   the add button stays on approved shows and answers with the stale-step error.
 
 #### T53d — Publisher metadata stripping and commit (`publisher`) · Depends on: T53c
+- Implementation: resolves scoped R2 refs, strips authentic metadata before any content write,
+  persists authentic files through the Git store, reuses committed bytes on retry and supports
+  temporary-store dry-run. PR #130 approval/cancellation correctness notes addressed; bounded
+  upload buffering retained as a documented optional memory optimization.
 - Change: resolve authentic refs, lossless JPEG APP1/APP13 removal, ffmpeg metadata-free remux to
   MP4, duration probe, post-strip check, commit beside generated media; dry-run support.
 - Acceptance: fixtures with GPS EXIF and a QuickTime location tag come out clean, pixels/streams
