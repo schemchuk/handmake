@@ -48,7 +48,13 @@ export function readTenantConfig(root: string, tenantId = process.env.SITE_TENAN
       `cannot pick a tenant config in ${dir}: set SITE_TENANT to one of [${files.map((f) => f.replace(/\.yaml$/, '')).join(', ')}]`,
     );
   }
-  return parseTenantConfig(readFileSync(path.join(dir, file), 'utf8'));
+  const tenant = parseTenantConfig(readFileSync(path.join(dir, file), 'utf8'));
+  for (const profile of tenant.site?.profiles ?? []) {
+    if (new URL(profile.url).protocol !== 'https:') {
+      throw new Error('site.profiles URLs must use https');
+    }
+  }
+  return tenant;
 }
 
 /** `languages` are the tenant's: a text in a language the site does not serve gets no page. */

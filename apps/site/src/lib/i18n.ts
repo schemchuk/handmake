@@ -25,6 +25,7 @@ export interface UiStrings {
   aiAssisted: string;
   aiGenerated: string;
   language: string;
+  profiles: string;
 }
 
 const strings: Record<string, UiStrings> = {
@@ -55,6 +56,7 @@ const strings: Record<string, UiStrings> = {
     aiAssisted: 'Mit KI-Unterstützung erstellt',
     aiGenerated: 'Von KI erstellt',
     language: 'Sprache',
+    profiles: 'Social-Media-Profile',
   },
   uk: {
     showsHeading: 'Покази',
@@ -83,6 +85,7 @@ const strings: Record<string, UiStrings> = {
     aiAssisted: 'Створено за допомогою ШІ',
     aiGenerated: 'Створено ШІ',
     language: 'Мова',
+    profiles: 'Профілі в соцмережах',
   },
 };
 

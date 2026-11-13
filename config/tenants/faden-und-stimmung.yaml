@@ -63,6 +63,13 @@ announcements:
 # Theme "Lookbook": cool white paper, near-black ink, grey meta text,
 # madder-red running-stitch dividers; one wide grotesk for everything.
 site:
+  profiles:
+    - network: instagram
+      url: https://www.instagram.com/fadenundstimmung/
+      lead: [de]
+    - network: telegram
+      url: https://t.me/Faden_und_Stimmung
+      lead: [uk]
   baseUrl: https://fadenundstimmung.de
   defaultLanguage: de
   newsletter:
