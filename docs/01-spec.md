@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **draft v10 (2026-11-13), awaiting Volodymyr's review.** Last approved: v9 (2026-11-13).
-Previous: approved v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
+Status: **approved v10 (2026-11-13).**
+Previous: approved v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v9 (v10 draft) are listed in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
+Changes from v9 (v10) are listed in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -190,11 +190,14 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     a separate block «Оригінальна робота», can remove any of them, then approves the whole show. The
     step can also be reopened before approval. No AI call is made on authentic media, so it costs
     nothing (F32).
-  - **Order and labelling.** On the site the show page has two blocks: generated images and video
-    with "KI-generiertes Model" (F30), then «Оригінальна робота» / «Originalarbeit» with the authentic
-    media, without any AI marker. In channels the album/carousel lists the generated items first, the
-    authentic items after them; the caption keeps both lines (F36) and adds "Originalfotos ab Bild N" /
-    «Оригінальні фото з кадру N», so every image is identifiable. Generated items keep their visible
+  - **Order and labelling.** Authentic media come first. On the site the show page has two blocks:
+    «Оригінальна робота» / «Originalarbeit» with the authentic media, without any AI marker, then the
+    generated images and video with "KI-generiertes Model" (F30). In channels the album/carousel lists
+    the authentic items first, the generated items after them; when a show has authentic media the
+    caption keeps both lines (F36) and adds "KI-generierte Bilder ab Bild N" / «Згенеровані ШІ кадри
+    з кадру N», so every image is identifiable.
+    Videos follow the existing show video rule: Telegram sends them as replies to the album (authentic
+    video first); Instagram, Facebook and Threads do not copy show video yet. Generated items keep their visible
     and machine-readable marker (F30), authentic items never get one.
   - **Storage.** Authentic media are stored in the show's content folder as a separate list with
     `provenance: human`, `kind: photo | video` and `people: none | author | operator`; they never go
@@ -409,11 +412,12 @@ Resolved questions Q1, Q4-Q6, Q8 keep their v4 decisions (git history); Q7 is re
   or both; one message or a guided flow).
 - **Q10** Resolved again (2026-11-04): audience and the author's business first, portfolio as a
   by-product (section 1).
-- **Q16** Proposed in v10 (F37): real people (only the author and Volodymyr) appear only in
+- **Q16** Resolved in v10 (Volodymyr, 2026-11-13, F37): real people (only the author and Volodymyr) appear only in
   authentic media of a show, stored as a separate list, not as a new content type.
-- **Q18** Proposed in v10 (F37): the author's own photos (0-3) and video (0-1) in a show, labelled
+- **Q18** Resolved in v10 (Volodymyr, 2026-11-13, F37): the author's own photos (0-3) and video (0-1) in a show, labelled
   "Originalarbeit". *Flag, not legal advice: photos of the author and Volodymyr are their own personal
-  data, published with their consent; AI Act art. 50 marking stays on each generated item.*
+  data, published with their consent; AI Act art. 50 marking stays on each generated item.* Volodymyr
+  accepts this working assessment.
 - **Q11** Open (phase P): business model for bloggers (done-for-you setup vs self-service). Decides
   whether the MIT license stays for all modules or commercial modules move to another license or a
   private repo.
@@ -491,10 +495,10 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14-v10. Changes from v9 (v10 draft, 2026-11-13)
+## 14-v10. Changes from v9 (v10, approved 2026-11-13)
 
 - New F37: the author's own photos (0-3) and video (0-1, at most 60 s / 20 MB) in a show, added in an
-  optional `/show` step, shown on the site and in channels after the generated items as
+  optional `/show` step, shown on the site and in channels before the generated items as
   "Originalarbeit"; only the author and Volodymyr may appear; metadata stripped; no AI cost.
 - Q16 and Q18 get a proposed answer (F37). New non-goals for v10.
 - Architecture impact (for T53 tasks): show schema gets an authentic-media list; bot `/show` session

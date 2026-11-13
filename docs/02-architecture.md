@@ -843,3 +843,36 @@ each new call still passes the existing budget gates. Repeated dispatches share 
 journal fences. At the monthly target, the author also sees a warning before dispatch; existing
 operator threshold notices remain unchanged. Preparation/dispatch diagnostics retain fixed safe
 reasons and HTTP status only. No deployment or paid call is authorized by this implementation.
+
+### Authentic show media (T53, F37, spec v10)
+
+Real photos and video of the work (F37) are a separate, optional list on the show, never part of
+the generated `images`/`video` or the work's `originals`:
+`authentic: [{ fileName, kind: photo | video, provenance: human, people: none | author | operator }]`.
+Old shows stay valid without it. Bounds: 0-3 photos (JPEG file names like work photos), 0-1 video
+(MP4), at most 10 items per show in total; names are disjoint from generated and original names.
+`showPublicationSchema.media` must list generated plus authentic files exactly (4-10 refs).
+
+Intake (bot): the `/show` session gets an optional step after a ready preview. The draft stores
+`extras.showAuthentic`: Telegram file ids, kind, size/duration from the message, one show-level
+people answer (none / author / operator / both, mapped per item) and an explicit confirmation that
+nobody else appears. Photos come as Telegram photos; video as `video` or an MP4/QuickTime document,
+at most 60 s and 20 MB (Bot API `getFile` limit), checked before download. Every mutation bumps the
+draft version and invalidates readiness, like other show inputs. No AI call, no cost booking.
+
+Approval (bot): authentic files are downloaded once and stored in the private `SHOW_MEDIA` R2 bucket
+under the show prefix, with opaque refs in the `kind: show` publish job, the same transport as
+generated media. Telegram file ids are not written to Git.
+
+Publisher: resolves refs through `ShowMediaSource`, then strips metadata before the content commit.
+JPEG: lossless removal of APP1 (EXIF/XMP) and APP13 (IPTC) segments, ICC kept, pixels untouched.
+Video: `ffmpeg -map_metadata -1 -c copy -movflags +faststart` remux to MP4; a failed remux or a
+probed duration over 60 s fails the job with an author-visible reason. A post-strip check
+asserts no GPS/EXIF/location tags remain. Files land beside the generated media in
+`content/shows/<ULID>/`.
+
+Rendering: site show page and channel albums list authentic media first, then generated media;
+the caption adds the "generated from image N" line only when authentic photos exist. Telegram sends
+videos as replies to the album, authentic first; Instagram, Facebook and Threads copy photos only.
+Personal data note: these files may show the author or Volodymyr (their consent, spec Q18); PRs
+T53b-T53d process personal data and need Volodymyr's OK before merge.

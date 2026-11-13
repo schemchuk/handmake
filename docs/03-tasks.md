@@ -2185,6 +2185,51 @@ it becomes a task.
   for a post with `ai-assisted` DE version: no AI text, label present in DE and UK. Already published
   site pages change on the next site build; existing channel posts are not edited.
 
-### T53 — Author's own photos and video in shows (Q18, F30/F36)
-- Owner: claude-code (spec first) · Reviewer: Volodymyr · Status: not started; needs spec detail
-  (Q16/Q18) before an implementation task is cut.
+### T53 — Author's own photos and video in shows (F37, spec v10)
+- Spec v10 approved 2026-11-13 (Volodymyr): only the author and Volodymyr may appear; authentic
+  media first; 0-3 photos + 0-1 video. Architecture: docs/02-architecture.md "Authentic show media".
+- Split into T53a-T53f, each one PR under ~400 changed non-test lines.
+  All: **Owner: codex · Reviewer: claude-code**. T53b, T53c and T53d process personal data:
+  Volodymyr's OK in chat before merge.
+
+#### T53a — Authentic media contracts (`core`)
+- Change: optional `authentic` list on `showSchema` (fileName, kind, provenance `human`, people);
+  bounds 0-3 photos, 0-1 video, total ≤10; names disjoint from generated and originals;
+  `showPublicationSchema` media = generated + authentic (4-10). Serialize/parse round trip.
+- Acceptance: existing show fixtures parse unchanged; invalid bounds, overlaps and a generated file
+  marked `human` are rejected.
+- Tests: schema cases above, publication media match.
+
+#### T53b — `/show` step "Додати свої фото/відео" (`bot`) · Depends on: T53a
+- Change: optional step after a ready preview: add photos/video, remove an item, people answer
+  (ніхто / авторка / Володимир / обоє) and the confirmation «У кадрі лише авторка і/або Володимир»;
+  stored in `extras.showAuthentic`; size/duration/type checks (≤60 s, ≤20 MB) with UA messages;
+  version bump and readiness invalidation; preview shows the block «Оригінальна робота». No AI call.
+- Acceptance: approval is impossible with unconfirmed people or over-limit media; skipping keeps the
+  current flow byte-for-byte.
+- Tests: session flow, limits, CAS races on album intake, stale callbacks, skip path.
+
+#### T53c — Approval transport for authentic media (`bot`) · Depends on: T53b
+- Change: on approval download each file once via `getFile`, store in `SHOW_MEDIA` R2 under the
+  show prefix, add refs to the `kind: show` job; retries reuse stored objects (idempotent).
+- Acceptance: job validates against T53a; no Telegram file id or bytes in Git or job payload.
+- Tests: mocked Telegram/R2, retry without second download, failure message to the author.
+
+#### T53d — Publisher metadata stripping and commit (`publisher`) · Depends on: T53c
+- Change: resolve authentic refs, lossless JPEG APP1/APP13 removal, ffmpeg metadata-free remux to
+  MP4, duration probe, post-strip check, commit beside generated media; dry-run support.
+- Acceptance: fixtures with GPS EXIF and a QuickTime location tag come out clean, pixels/streams
+  unchanged; a bad video fails with an author-visible reason and no partial commit.
+- Tests: fixtures above, idempotent retry, dry-run.
+
+#### T53e — Site show page (`site`) · Depends on: T53a
+- Change: block «Оригінальна робота» / «Originalarbeit» with authentic photos/video before the
+  generated block; served as-is; alt texts; no AI note on authentic items.
+- Acceptance: build test for a show with and without authentic media, DE and UK.
+
+#### T53f — Channel show rendering (`channels`) · Depends on: T53a
+- Change: Telegram/Instagram/Facebook/Threads albums put authentic photos first; caption line
+  "KI-generierte Bilder ab Bild N" / «Згенеровані ШІ кадри з кадру N» only when authentic photos
+  exist; Telegram replies with authentic video before the generated one; limits rechecked.
+- Acceptance: unit tests per renderer for shows with 0, 1 and 3 authentic photos and with a video;
+  shows without authentic media render exactly as before.
