@@ -2313,3 +2313,37 @@ it becomes a task.
   secret or wrangler change.
 - Tests: closing sources exclude Facebook for a tenant with Facebook configured; combined totals
   without Facebook; Facebook ballot wording UA/DE; affected bot suites only (limit rules).
+
+### T54 — Profile links in the site footer (F38, `site`)
+- Status: ready; approved by Volodymyr 2026-11-13.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Why: the site links only the Telegram channel. Visitors should find the brand's active profiles,
+  and search engines should connect the site with them, without pulling visitors away from the
+  newsletter (F38).
+- Change:
+  1. Tenant config: optional `site.profiles`, an ordered list of `{ network, url, lead }`, where
+     `network` is a free string label (no enum in core, any tenant may list any network), `url` an
+     https URL and `lead` an optional list of language codes for which this entry moves to the
+     front. Validate in the site-data loader; reject non-https URLs. For faden-und-stimmung:
+     `instagram` → `https://www.instagram.com/larysashemchuk/` (lead: `de`), `telegram` →
+     `https://t.me/Faden_und_Stimmung` (lead: `uk`).
+  2. Footer (`apps/site/src/layouts/Base.astro`): a profile list replaces the footer's
+     `JoinChannel` when `site.profiles` is set; without it the footer stays as today.
+     `JoinChannel` on post and show pages is unchanged. Visible label is the network name
+     (capitalised: "Instagram", "Telegram"), with a localized group label (`aria-label`) from
+     `lib/i18n.ts`. Text only: no logos, icons of third parties, `target="_blank"`, widgets or
+     external resources. Each link has `rel="me"`.
+  3. Home page (both languages): a JSON-LD `Organization` block with `name`, `url` (`site.baseUrl`)
+     and `sameAs` (profile URLs), only when `site.profiles` is set. Serialize with `<`, `>` and `&`
+     escaped as `\u003c`, `\u003e`, `\u0026`.
+  4. Build policy (`apps/site/src/lib/build-policy.ts`): allow an inline `<script>` only when its
+     `type` is exactly `application/ld+json` and its text parses as JSON; every other inline script
+     still fails the build.
+- Acceptance: DE pages list Instagram then Telegram, UK pages Telegram then Instagram; links have
+  `rel="me"` and no other attributes that open new windows; a tenant without `site.profiles`
+  builds the same footer as before and has no JSON-LD; the home page JSON-LD `sameAs` equals the
+  configured URLs; no third-party resource or logo in the generated site; no Datenschutz change
+  (plain links, profiles are already covered there).
+- Tests: site build with and without `site.profiles`; per-language order; loader rejects a
+  non-https URL; build policy accepts valid JSON-LD and rejects non-JSON `application/ld+json`,
+  other inline script types and a script without `type`; site suites only (limit rules).

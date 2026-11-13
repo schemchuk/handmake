@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
+- **Active agent:** codex.
+- **Current task:** T54 (profile links in the site footer, F38).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record Facebook ballot text approval.
-- **Next step:** the next task from docs/03-tasks.md.
+- **Last commit:** this commit — docs: add F38 profile links and task T54.
+- **Next step:** codex implements T54 on `feat/t54-profile-links` in a fresh session.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 

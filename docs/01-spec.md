@@ -238,6 +238,13 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   another tenant gets its own site without code changes.
 - **F31** Canonical links (POSSE): every channel post of a site-worthy item links to its page on the
   site. The post id is stable, so the URL is known before the site rebuild.
+- **F38** Profile links (approved by Volodymyr 2026-11-13). The site footer links the brand's social
+  profiles as plain text links (network names, no third-party logos, no widgets, embeds or share
+  buttons). Only profiles listed in tenant configuration are shown; for faden-und-stimmung that is
+  Instagram and Telegram (Facebook and Threads are added once they are active). The order follows
+  the page language: Instagram first on German pages, Telegram first on Ukrainian pages. Links carry
+  `rel="me"`, and the home page states the same profiles as schema.org `sameAs`. The newsletter stays
+  the site's main call to action; profile links never appear in the header or on work cards.
 - **F24** Collections and works are content types in the content store, created through the bot like
   posts (the author sends photos and a short note; AI drafts the description; she approves).
 
