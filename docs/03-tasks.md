@@ -2267,3 +2267,6 @@ it becomes a task.
   exist; Telegram replies with authentic video before the generated one; limits rechecked.
 - Acceptance: unit tests per renderer for shows with 0, 1 and 3 authentic photos and with a video;
   shows without authentic media render exactly as before.
+- Review notes from PR #133 (site, fix in this PR): in `apps/site/src/pages/[...lang]/shows/[id].astro`
+  use `ui.authenticityLabel` instead of the three hardcoded `lang === 'uk' ? ...` labels; add a DE
+  build assertion that a show without authentic media has no `authentic-heading`.

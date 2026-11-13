@@ -1,14 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T53e implemented; awaiting independent review.
-- **Branch:** `feat/t53e-site-authentic-media`.
-- **Last commit:** feat: render authentic media on show pages (T53e); see branch HEAD.
-- **Next step:** Claude Code reviews T53e PR; merge after green CI.
+- **Active agent:** codex.
+- **Current task:** T53f — channel show rendering (authentic photos first, caption line N).
+- **Branch:** `main`.
+- **Last commit:** `5a0624f` — feat: render authentic media on show pages (T53e) (#133).
+- **Next step:** Codex implements T53f from docs/03-tasks.md, including the review notes from
+  PR #133 listed there.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
-- **T53e validation:** site 53/53 tests, site typecheck, changed TypeScript lint and formatting pass. Build tests cover DE/UK authentic sections, ordering, absent media and byte-preserved JPEG/MP4. Sandboxed diagnostic test failed; unrestricted full rerun passed. No deployment or production changes.
+- **T53e:** PR #133 merged 2026-11-13 by claude-code after review (no blocking findings, CI green).
+  Site only: no bot deploy, no migration; the site picks it up on the next publish.
 
 - **T53d rollout:** PR #131 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. R2 lifecycle rule `show-authentic-30d`
