@@ -1,12 +1,17 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53b — `/show` step «Додати свої фото/відео» (`bot`).
-- **Branch:** none yet (`feat/t53b-<slug>`).
+- **Active agent:** claude-code.
+- **Current task:** T53b — authentic show intake implemented; independent review pending.
+- **Branch:** `feat/t53b-authentic-intake`.
 - **Last commit:** see `git log`.
-- **Next step:** Codex starts T53b in a fresh session (docs/03-tasks.md, incl. PR #128 review
-  notes). T53b-T53d need Volodymyr's OK before merge (personal data). T33 follows T53.
+- **Next step:** Review T53b PR. Confirm the documented document-to-video resend constraint
+  (Telegram documents have no duration). Authentic approval stays blocked until T53c transport.
+  T53b needs Volodymyr's OK before merge (personal data); reviewer deploys after merge.
 - **Blocked on:** nothing.
+- **T53b validation:** 85/85 existing session/approval/preview tests, 5/5 new intake unit tests
+  and 3/3 new D1 session/approval tests pass. Bot typecheck, changed-file lint/format and
+  diff checks pass. Initial sandbox integration run stalled; unrestricted run passed.
+  No deployment, AI call, workflow, migration or secret changes.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
 - **T52 rollout:** PR #127 merged 2026-11-13 by claude-code with Volodymyr's OK after review

@@ -380,3 +380,32 @@ it.each([false, true])(
     });
   },
 );
+
+it.each([false, true])(
+  'blocks authentic publication until transport exists (confirmed: %s)',
+  async (confirmed) => {
+    await approval.present(ctx, (await store.get(tenant, id))!);
+    const proposed = (await store.get(tenant, id))!;
+    await store.updateShow(
+      {
+        ...proposed.draft,
+        extras: {
+          ...proposed.draft.extras,
+          showAuthentic: {
+            editing: !confirmed,
+            confirmed,
+            people: 'both',
+            items: [{ fileId: 'private', fileName: 'authentic.jpg', kind: 'photo', size: 100 }],
+          },
+        },
+      },
+      proposed.version,
+    );
+    const current = (await store.get(tenant, id))!;
+    expect(await approval.approve(ctx, current, String(current.version))).toBeUndefined();
+    upload.mockClear();
+    await approval.present(ctx, current);
+    expect(upload).not.toHaveBeenCalled();
+    expect((await store.get(tenant, id))!.draft.state).toBe('ready');
+  },
+);

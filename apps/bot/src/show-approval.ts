@@ -1,3 +1,4 @@
+import { authenticOf, authenticKeyboard } from './show-authentic';
 import { refreshKeyboard } from './show-preview';
 import { botTexts } from './texts';
 import { showPublicationSchema } from '@handmake/core';
@@ -42,6 +43,16 @@ export function createShowApproval(deps: {
       await current(ctx, stored);
       if (stored.draft.state !== 'ready' || stored.draft.extras['showApproved'])
         throw new Error('show not ready');
+      const own = authenticOf(stored);
+      if (own?.items.length) {
+        await ctx.reply(
+          own.confirmed && !own.editing
+            ? 'Оригінальна робота збережена. Публікація власних медіа стане доступною після наступного оновлення.'
+            : 'Завершіть додавання власних медіа та підтвердьте, хто у кадрі.',
+          { reply_markup: { inline_keyboard: authenticKeyboard(stored) } },
+        );
+        return;
+      }
       const media: ShowPublication['media'] = [];
       const images: ShowPublication['show']['images'] = [];
       let video: ShowVideo | undefined;
@@ -186,6 +197,8 @@ export function createShowApproval(deps: {
       if (
         String(stored.version) !== version ||
         stored.draft.state !== 'ready' ||
+        !!authenticOf(stored)?.items.length ||
+        authenticOf(stored)?.editing === true ||
         stored.draft.extras['showProposalVersion'] !== stored.version
       )
         return;

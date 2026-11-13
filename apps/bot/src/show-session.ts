@@ -13,6 +13,7 @@ import type { ShowStart } from './show-start';
 import { refreshKeyboard } from './show-preview';
 import type { ShowPreview } from './show-preview';
 import { createShowInput } from './show-input';
+import { createShowAuthentic } from './show-authentic';
 
 export interface ShowSessionOptions {
   approval?: ShowApproval;
@@ -33,6 +34,7 @@ export function registerShowSession(
   registerShowRecovery(bot, options);
   const { drafts, texts, show } = options;
   const input = createShowInput(options);
+  const authentic = createShowAuthentic(drafts);
   const enabled = async (tenantId: string) => {
     const config = await show?.configs.load(tenantId);
     return config?.id === tenantId && !!config.shows && !!config.ai;
@@ -150,6 +152,8 @@ export function registerShowSession(
       if (!(await enabled(ctx.tenantId))) return ctx.reply(texts.showUnavailableText);
       const [, id, action, value] = ctx.callbackQuery.data.split(':');
       const stored = id && isUlid(id) ? await drafts.get(ctx.tenantId, id) : undefined;
+      if (action?.startsWith('own') && stored)
+        return await authentic.action(ctx, stored, action, value ?? '');
       if (action === 'approve' && stored && show?.approval) {
         const job = await show.approval.approve(ctx, stored, value ?? '');
         if (!job) return ctx.reply(texts.draftBusyText);
@@ -255,6 +259,7 @@ export function registerShowSession(
     const session = await drafts.getChatSession(ctx.tenantId, String(ctx.chat.id));
     if (session?.kind !== 'show' || ctx.msg.text?.startsWith('/')) return next();
     try {
+      if (session.draftId && (await authentic.intake(ctx, session.draftId))) return;
       if (ctx.msg.photo?.length && session.draftId)
         return await input.photo(ctx, session.draftId, ctx.msg.photo.at(-1)!.file_id);
       return ctx.reply(texts.showContinueText);

@@ -1,3 +1,4 @@
+import { authenticKeyboard } from './show-authentic';
 import { showDraftDataSchema } from '@handmake/core';
 import type { ShowResultStore, ShowSourceImage } from '@handmake/core';
 import { InputFile } from 'grammy';
@@ -116,6 +117,7 @@ export function refreshKeyboard(stored: StoredDraft, texts: BotTexts) {
   return {
     reply_markup: {
       inline_keyboard: [
+        ...(stored.draft.state === 'ready' ? authenticKeyboard(stored) : []),
         ...(stored.draft.state === 'ready'
           ? [
               ...Array.from(

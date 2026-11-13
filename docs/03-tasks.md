@@ -2209,6 +2209,10 @@ it becomes a task.
 - Acceptance: approval is impossible with unconfirmed people or over-limit media; skipping keeps the
   current flow byte-for-byte.
 - Tests: session flow, limits, CAS races on album intake, stale callbacks, skip path.
+- Implementation note: MP4/MOV documents lack duration in Telegram message metadata; the bot
+  asks the author to resend as video so the 60-second limit can be checked before download.
+  Authentic publication stays blocked until T53c supplies its transport; generated-only approval
+  remains available.
 
 #### T53c — Approval transport for authentic media (`bot`) · Depends on: T53b
 - Change: on approval download each file once via `getFile`, store in `SHOW_MEDIA` R2 under the

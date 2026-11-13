@@ -848,7 +848,7 @@ reasons and HTTP status only. No deployment or paid call is authorized by this i
 
 Real photos and video of the work (F37) are a separate, optional list on the show, never part of
 the generated `images`/`video` or the work's `originals`:
-`authentic: [{ fileName, kind: photo | video, provenance: human, people: none | author | operator }]`.
+`authentic: [{ fileName, kind: photo | video, provenance: human, people: none | author | operator | both }]`.
 Old shows stay valid without it. Bounds: 0-3 photos (JPEG file names like work photos), 0-1 video
 (MP4), at most 10 items per show in total; names are disjoint from generated and original names.
 `showPublicationSchema.media` must list generated plus authentic files exactly (4-10 refs).
@@ -856,8 +856,13 @@ Old shows stay valid without it. Bounds: 0-3 photos (JPEG file names like work p
 Intake (bot): the `/show` session gets an optional step after a ready preview. The draft stores
 `extras.showAuthentic`: Telegram file ids, kind, size/duration from the message, one show-level
 people answer (none / author / operator / both, mapped per item) and an explicit confirmation that
-nobody else appears. Photos come as Telegram photos; video as `video` or an MP4/QuickTime document,
-at most 60 s and 20 MB (Bot API `getFile` limit), checked before download. Every mutation bumps the
+nobody else appears. Photos come as Telegram photos; MP4/QuickTime video comes as Telegram `video`,
+at most 60 s and 20 MB (Bot API `getFile` limit), checked before download. Documents
+have no duration metadata in the Bot API message, so intake asks the author to resend them
+as video rather than accepting an uncheckable duration. T53b stores only private Telegram
+references and clears any publication proposal after edits. Until T53c supplies authentic
+media transport, shows with authentic items cannot be approved; generated-only shows retain
+the existing approval path. Every mutation bumps the
 draft version and invalidates readiness, like other show inputs. No AI call, no cost booking.
 
 Approval (bot): authentic files are downloaded once and stored in the private `SHOW_MEDIA` R2 bucket
