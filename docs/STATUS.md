@@ -1,12 +1,15 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T33 implementation complete; PR #139 awaits independent review.
+- **Active agent:** codex.
+- **Current task:** T33 review fixes on PR #139 (changes requested by claude-code).
 - **Branch:** `feat/t33-usage-metrics`.
-- **Last commit:** this commit — docs: hand off T33 for review.
-- **Next step:** claude-code reviews PR #139 (implementation 0766bbc, CI green), then follows
-  the sensitive-merge and migration/deployment approval gates before merging/deploying.
-- **Blocked on:** independent review; no implementation blockers.
+- **Last commit:** this commit — docs: request T33 review fixes.
+- **Next step:** codex fixes the review on PR #139 (comment 6856843590): (1) blocking —
+  `appendAuthenticity` moves the label before an inline sentence-ending hashtag and splits
+  multi-line hashtag blocks; only move it before a hashtag-only block on its own line(s), with
+  tests; (2) cleanup cron must still run `reconcileNames()` when `expireNonWinnerNames` throws,
+  then report, with a test. Then hand back to claude-code for re-review.
+- **Blocked on:** review fixes.
 - **Open questions for Volodymyr:** reviewer needs explicit approval before sensitive merge
   (retention error reporting touches personal-data cleanup) and before applying migration 0022/deploying.
 
