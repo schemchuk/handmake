@@ -25,7 +25,7 @@ const base = parseTenantConfig(yaml);
 base.featureFlags.wotwPoll = true;
 afterEach(() => vi.restoreAllMocks());
 
-async function fixture(counts = [1, 2]) {
+async function fixture(counts = [1, 2], metaEnv: Partial<Env> = {}) {
   const db = await makeD1();
   const refs = counts.map(() => newUlid());
   const id = newUlid();
@@ -73,6 +73,7 @@ async function fixture(counts = [1, 2]) {
       TELEGRAM_ALLOWED_USER_IDS: JSON.stringify({ 111: tenant, 222: tenant, 333: 'other' }),
       GITHUB_REPO: 'fixture/repo',
       PUBLISH_LIVE: 'true',
+      ...metaEnv,
     } as Env,
     botTexts,
   );
@@ -366,4 +367,69 @@ it('does not resend an automatic preview on later ticks and picks the lowest aut
       .bind(tenant, receipt!.draftId)
       .first('chat_id'),
   ).toBe('111');
+});
+
+it('closes with Instagram and Threads totals without reading a delivered Facebook ballot', async () => {
+  const f = await fixture([1, 2], {
+    INSTAGRAM_USER_ID: '123',
+    INSTAGRAM_ACCESS_TOKEN: 'fixture-ig',
+    THREADS_USER_ID: '456',
+    THREADS_ACCESS_TOKEN: 'fixture-threads',
+    FACEBOOK_PAGE_ID: '789',
+    FACEBOOK_PAGE_ACCESS_TOKEN: 'fixture-fb',
+  });
+  for (const network of ['instagram', 'facebook', 'threads']) {
+    await f.db
+      .prepare('INSERT INTO channel_deliveries VALUES (?, ?, ?, ?, ?)')
+      .bind(tenant, f.id, network, 'done', JSON.stringify({ main: `${network}-ballot` }))
+      .run();
+  }
+  const reads: string[] = [];
+  f.fetchConfig.mockImplementation(async (url) => {
+    const target = String(url);
+    if (target.includes('config/tenants/')) return new Response(yaml);
+    if (target.endsWith('/stopPoll'))
+      return Response.json({
+        ok: true,
+        result: { options: [{ voter_count: 1 }, { voter_count: 2 }], total_voter_count: 3 },
+      });
+    reads.push(target);
+    // Facebook reader digit comments lack identity. They must never be requested by closing.
+    if (target.includes('facebook-ballot'))
+      return Response.json({ data: [{ id: 'fb', message: '1' }] });
+    if (target.includes('instagram-ballot'))
+      return Response.json({
+        data: [
+          {
+            id: 'ig',
+            text: '1',
+            username: 'reader',
+            from: { id: '321', username: 'reader' },
+            timestamp: '2026-11-11T18:00:00Z',
+          },
+        ],
+      });
+    if (target.includes('threads-ballot'))
+      return Response.json({
+        data: [
+          {
+            id: 'th',
+            text: '2',
+            username: 'reader',
+            timestamp: '2026-11-11T18:00:00Z',
+            is_reply_owned_by_me: false,
+          },
+        ],
+      });
+    return Response.json({ data: [] });
+  });
+  await f.app.scheduled({ cron: '*/15 * * * *', scheduledTime: tick.getTime() } as ScheduledEvent);
+  expect(reads.some((url) => url.includes('facebook-ballot'))).toBe(false);
+  const closing = await f.closings.get(tenant, week);
+  expect(closing?.tally).toMatchObject({ status: 'counted', total: 5, counts: [2, 3] });
+  expect(Object.keys(closing!.tally!.sources!)).toEqual(['telegram', 'instagram', 'threads']);
+  const prompt = sentTexts(f.calls).find((text) => text.includes('Оберіть роботу'))!;
+  expect(prompt).toContain('instagram: 1');
+  expect(prompt).toContain('threads: 1');
+  expect(prompt).not.toContain('facebook');
 });

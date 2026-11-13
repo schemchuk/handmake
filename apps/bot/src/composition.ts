@@ -403,7 +403,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
             photos: [],
           }),
           sources: (config) =>
-            [new InstagramAdapter(), new FacebookAdapter(), new ThreadsAdapter()]
+            [new InstagramAdapter(), new ThreadsAdapter()]
               .filter((adapter) => adapter.key in config.channels)
               .map((adapter) => ({ adapter, context: commentsContext })),
         });

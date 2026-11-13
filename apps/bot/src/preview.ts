@@ -354,7 +354,7 @@ export function buildPreview(
       lines.push('');
       lines.push(texts.previewFacebookHeader(facebookCaption.lang, facebookCaption.caption.length));
       const canonical = facebook?.canonical;
-      if (canonical?.links) {
+      if (post.type === 'free' && canonical?.links) {
         lines.push(
           texts.previewFacebookLink(
             canonicalUrl(canonical, canonical.section, post.id, facebookCaption.lang),

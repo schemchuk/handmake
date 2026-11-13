@@ -321,6 +321,23 @@ describe('Facebook preview section (T26b, F33)', () => {
     );
   });
 
+  it('shows a Facebook ballot without a nonexistent canonical page link', () => {
+    const preview = buildPreview(
+      draft({
+        type: 'wotw-poll',
+        extras: { poll: { question: 'Favorite?', options: ['No 1', 'No 2'] } },
+      }),
+      botTexts,
+      now,
+      undefined,
+      undefined,
+      { language: 'de', canonical },
+    );
+    expect(preview.text).toContain('📘 Facebook (DE,');
+    expect(preview.text).not.toContain('посилання в підписі');
+    expect(preview.text).not.toContain(canonical.baseUrl);
+  });
+
   it('shows no link line when the canonical footer is off', () => {
     const preview = buildPreview(draft(), botTexts, now, undefined, undefined, { language: 'de' });
     expect(preview.text).toContain('📘 Facebook (DE,');

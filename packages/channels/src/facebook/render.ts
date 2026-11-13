@@ -21,7 +21,7 @@ import { showDisclosure } from '../show-disclosures';
  * the canonical site link appended to the caption — unlike Instagram,
  * Facebook post messages make URLs clickable, so the link rides the post
  * itself (F33: "the canonical link where the network allows it"). A post
- * without photos, a non-`free` type and a site-excluded (test) post all
+ * without photos, a type other than `free` or `wotw-poll`, and a site-excluded post all
  * render to zero operations (`facebookSkipReason` says which case a caller
  * has). Shows render to one image op; the video is not copied (same scope
  * as the Instagram show copy).
@@ -62,7 +62,7 @@ export type FacebookSkip = 'no-photos' | 'not-site-worthy' | 'site-excluded';
 
 export function facebookSkipReason(post: Post): FacebookSkip | undefined {
   if (post.photos.length === 0) return 'no-photos';
-  if (post.type !== 'free') return 'not-site-worthy';
+  if (post.type !== 'free' && post.type !== 'wotw-poll') return 'not-site-worthy';
   if (post.siteExcluded) return 'site-excluded';
   return undefined;
 }
@@ -149,11 +149,23 @@ export function renderFacebook(post: Post, settings?: unknown): SendOperation[] 
       `Facebook language "${parsed.language}" has no text in this post`,
     );
   }
+  // Ballots use a network-specific invitation, independent of editable comment-vote copy.
+  const ballotIntros: Record<string, string> = {
+    uk: 'Роботи тижня. Голосуйте в Telegram або Instagram.',
+    de: 'Werke der Woche. Stimmt in Telegram oder Instagram ab.',
+  };
+  let text = post.texts[parsed.language]!;
+  if (post.type === 'wotw-poll') {
+    const intro = ballotIntros[parsed.language];
+    if (!intro) throw new FacebookRenderError('Unsupported Facebook ballot language');
+    const label = parsed.language === 'uk' ? 'Робота №' : 'Werk Nr.';
+    text = `${intro}\n\n${post.photos.map((_, i) => `${label} ${i + 1}`).join('\n')}`;
+  }
   const caption = buildFacebookCaption(
-    appendAuthenticity(post.texts[parsed.language]!, parsed.language, true),
+    appendAuthenticity(text, parsed.language, true),
     parsed.language,
     post.id,
-    settings,
+    post.type === 'free' ? settings : undefined,
   );
   return [
     {
