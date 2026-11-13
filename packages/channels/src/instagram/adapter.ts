@@ -254,11 +254,8 @@ export class InstagramAdapter implements ChannelAdapter {
       }
       containerId = await call(() =>
         this.#createContainer(userId, auth, {
-          // Meta's docs describe a comma-separated string; the JSON array is
-          // what the pre-live mocks exercise. Verify on the first live
-          // carousel and switch to `children.join(',')` if Meta rejects it
-          // (PR #94 review note; docs/instagram-runbook.md).
-          children,
+          media_type: 'CAROUSEL',
+          children: children.join(','),
           ...(op.caption !== undefined && { caption: op.caption }),
         }),
       );

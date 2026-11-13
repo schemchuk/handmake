@@ -48,11 +48,16 @@ reason.
 
 ## First live checks (record outcomes in the PR/task)
 
-- **Carousel `children` format.** The adapter sends the carousel container's
-  child ids as a JSON array; Meta documents a comma-separated string. The
-  mocks pre-land can't settle this — publish the first real multi-photo post
-  and, if Meta rejects the container with a malformed-children error, switch
-  `packages/channels/src/instagram/adapter.ts` to `children.join(',')`.
+- **Carousel parent parameters (T51).** The first live three-photo post failed
+  in run `43386329746` with `(#100) The parameter image_url is required`:
+  the parent omitted `media_type: 'CAROUSEL'`. The adapter now sends that
+  type and comma-separated child ids (`children.join(',')`). Unit tests assert
+  the exact parent parameters; live verification remains pending after merge.
+  Start a new publish from `main` for draft `01M79WSSK61F11FA1C5J61BVCS`
+  (bot "Publish" again, or workflow dispatch with the same payload and `live`).
+  Do not re-run the failed run: it uses the old dispatch commit. Verify that
+  the ledger skips Telegram, the remaining networks deliver, and the site
+  page becomes available before recording live success here.
 - **Raw-URL acceptance.** Confirm Meta fetches `raw.githubusercontent.com`
   photo URLs (served as `image/jpeg`) on the first live post; if the CDN is
   rejected, serve the framed copies from another public https origin and
