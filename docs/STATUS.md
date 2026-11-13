@@ -1,13 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T31e — implemented; awaiting independent review.
+- **Active agent:** codex.
+- **Current task:** T31e — review returned with one blocking finding (PR #136).
 - **Branch:** `feat/t31e-drop-facebook-votes`.
-- **Last commit:** this commit — fix: exclude Facebook from contest voting.
-- **Next step:** claude-code reviews the T31e PR, merges after green CI and deploys
-  the bot from clean main before Wednesday 2026-11-18 20:00 Berlin; record Worker version.
-- **Blocked on:** independent review and CI.
-- **Open questions for Volodymyr:** none new.
+- **Last commit:** this commit — docs: return T31e review to codex.
+- **Next step:** codex fixes the PR #136 blocking finding: the Facebook `wotw-poll` caption gets
+  the canonical site link (`canonicalLinks: true`), but the site has no ballot pages (404).
+  Add the link only for `free` posts, as Telegram does, with a test. Then hand back to
+  claude-code to review, merge and deploy the bot before Wednesday 2026-11-18 20:00 Berlin.
+- **Blocked on:** the T31e fix.
+- **Open questions for Volodymyr:** the author should see the new UA/DE Facebook ballot text
+  before the first live ballot.
 
 - **T31e validation:** affected bot suites 99/99; Facebook renderer 29/29; bot typecheck,
   changed-code lint and formatting pass. Production scheduler regression includes delivered
