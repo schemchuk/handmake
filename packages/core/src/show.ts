@@ -42,7 +42,7 @@ export const showAuthenticMediaSchema = z.discriminatedUnion('kind', [
       fileName: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.(jpg|jpeg)$/),
       kind: z.literal('photo'),
       provenance: z.literal('human'),
-      people: z.enum(['none', 'author', 'operator']),
+      people: z.enum(['none', 'author', 'operator', 'both']),
     })
     .strict(),
   z
@@ -50,7 +50,7 @@ export const showAuthenticMediaSchema = z.discriminatedUnion('kind', [
       fileName: videoFileSchema,
       kind: z.literal('video'),
       provenance: z.literal('human'),
-      people: z.enum(['none', 'author', 'operator']),
+      people: z.enum(['none', 'author', 'operator', 'both']),
     })
     .strict(),
 ]);

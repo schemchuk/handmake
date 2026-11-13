@@ -251,6 +251,8 @@ describe('authentic show media', () => {
       [],
       [photo()],
       [video],
+      [{ ...photo(), people: 'both' as const }],
+      [{ ...video, people: 'both' as const }],
       [photo(), photo('two.jpeg'), photo('three.jpg'), video],
     ].map((authentic) => ({ authentic })),
   )('round-trips optional authentic media %#', ({ authentic }) => {
@@ -284,7 +286,6 @@ describe('authentic show media', () => {
       [{ ...video, fileName: 'real.mov' }],
       [{ ...photo(), provenance: 'ai-generated' }],
       [{ ...photo(), people: 'participant' }],
-      [{ ...photo(), people: 'both' }],
       [{ ...photo(), marker: {} }],
     ].map((authentic) => ({ authentic })),
   )('rejects invalid authentic declarations %#', ({ authentic }) => {

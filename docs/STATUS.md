@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53a — authentic media contracts; review found one blocker.
+- **Active agent:** claude-code.
+- **Current task:** T53a — authentic media contracts; review blocker fixed.
 - **Branch:** `feat/t53a-authentic-media-contracts` (PR #128).
-- **Last commit:** see `git log`.
-- **Next step:** Codex fixes the PR #128 blocker: add `both` to the authentic `people` enum (spec
-  F37 fixed on `main` in `4eda0e4`), accept it in tests, rebase on `main`, push. Then Claude Code
-  re-reviews and merges. T53b-T53d need Volodymyr's OK before merge (personal data).
+- **Last commit:** see `git log` (`fix: allow both people in authentic show media`).
+- **Next step:** Claude Code re-reviews PR #128 and merges after green CI if no blockers.
+  The `both` value is accepted for authentic photos and video with round-trip coverage.
+  Updated spec from `main` merged without rewriting published history. T53b-T53d need
+  Volodymyr's OK before merge (personal data).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
@@ -19,7 +20,9 @@
 - **Last bot deployment:** T52, Worker `177a5254-aec2-4933-9a7d-0fd5896f0dcb`
   (claude-code, clean `main`).
 - **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
-- **T53a validation:** core 304/304 tests pass; workspace typecheck/build, lint and changed-file
+- **T53a review-fix validation:** core 305/305, core typecheck, changed-file lint and formatting
+  pass. Both photo and video round-trip `people: both`.
+- **T53a initial validation:** core 304/304 tests pass; workspace typecheck/build, lint and changed-file
   formatting pass. Optional authentic JPEG/MP4 declarations, bounds, disjoint names, exact
   publication refs and YAML round trips covered. No deployment, migrations, workflows,
   production publishing or secret changes.
