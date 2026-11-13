@@ -3,7 +3,7 @@
 - **Active agent:** codex.
 - **Current task:** T53e — site show page (authentic block «Оригінальна робота»).
 - **Branch:** `main`.
-- **Last commit:** `9444b58` — feat: strip and publish authentic show media (T53d) (#131).
+- **Last commit:** `cb11810` — fix: dedicated R2 read token for show media (T53d) (#132).
 - **Next step:** Codex implements T53e from docs/03-tasks.md.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
@@ -11,8 +11,9 @@
 - **T53d rollout:** PR #131 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. R2 lifecycle rule `show-authentic-30d`
   (`show-authentic/`, 30 days) added to `handmake-show`. Bot (with T53c) deployed from clean
-  `main`, Worker `0adbbf5a-1f5f-44f6-bee8-219789ebc583`. R2 read permission of the GitHub
-  `CLOUDFLARE_API_TOKEN` secret still unverified; the first live mixed show will show it.
+  `main`, Worker `0adbbf5a-1f5f-44f6-bee8-219789ebc583`. The Pages token got 403 on R2 reads, so
+  PR #132 (`cb11810`) maps a separate `CLOUDFLARE_R2_READ_TOKEN` secret (account R2 admin read-only,
+  `handmake-publisher-r2-read`) into the publish step; verified: real object read 200, write 403.
 - **T53d implementation:** scoped private R2 authentic/marked reads, lossless JPEG APP1/APP13
   removal, audio/video stream-copy remux and duration/location checks, Git-store authentic media,
   idempotent retry and temporary-store dry-run. PR #130 approval/cancellation correctness notes
