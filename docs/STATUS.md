@@ -1,27 +1,22 @@
 # STATUS
 
-- **Active agent:** claude-code
-- **Current task:** T51 — Instagram carousel hotfix implemented; awaiting review.
-- **Branch:** `fix/t51-instagram-carousel`.
-- **Last commit:** see `git log` (`fix: send valid Instagram carousel parent parameters`).
-- **Next step:** Claude Code reviews the T51 PR, merges after green CI, and deploys
-  the bot from clean `main` because `packages/` changed (AGENTS.md). Then the
-  operator starts a new publish from `main` for draft `01M79WSSK61F11FA1C5J61BVCS`;
-  do not re-run run `43386329746`. Verify Telegram is skipped via the ledger,
-  Instagram/Facebook/Threads deliver and the site page exists; record the live
-  result in docs/instagram-runbook.md. Live-run fixes precede T33 (including the
-  PR #125 review note).
-- **Blocked on:** independent review/merge and operator live retry; the draft is
-  currently Telegram-only and its site page returns 404.
+- **Active agent:** none (operator live retry).
+- **Current task:** T51 — merged (PR #126); live verification pending.
+- **Branch:** `main`.
+- **Last commit:** see `git log` (`docs: record T51 merge and bot deploy`).
+- **Next step:** Volodymyr starts a new publish from `main` for draft
+  `01M79WSSK61F11FA1C5J61BVCS` (bot "Publish" again); do not re-run run `43386329746`.
+  Verify Telegram is skipped via the ledger, Instagram/Facebook/Threads deliver and the
+  site page exists; record the live result in docs/instagram-runbook.md. Live-run fixes
+  precede T33 (including the PR #125 review note).
+- **Blocked on:** operator live retry; the draft is currently Telegram-only and its site
+  page returns 404.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
-- **T51 validation:** channel suites 288/288, channel typecheck, changed-code lint
-  and changed-file formatting pass. Initial run exposed one additional stale
-  array assertion in the child-retry test; corrected and full suite rerun passed.
-  Parent now sends `media_type: CAROUSEL` and comma-separated child ids. Facebook
-  multi-photo `attached_media` and Threads carousel parameters checked; no changes
-  needed. No workflows, secrets, migrations, deployment or production publishing.
-- **Last bot deployment:** T32d rollout, Worker
-  `d0e03dce-2ddc-4a66-bbf1-5a752b13cb31` (Volodymyr, clean `main`).
+- **T51 rollout:** PR #126 merged 2026-11-13 by Volodymyr after claude-code review (no
+  blocking findings, CI green). No migration. Bot deployed from clean `main` by
+  claude-code, Worker `7f040189-e5b5-4f86-bb84-c13e43b94759`.
+- **Last bot deployment:** T51, Worker `7f040189-e5b5-4f86-bb84-c13e43b94759`
+  (claude-code, clean `main`).
 - **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
 
 - **T32d rollout:** PR #125 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
