@@ -7,7 +7,10 @@
 - **Next step:** no queued task in docs/03-tasks.md; Volodymyr names the next one.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none new. Instagram owner `from.id` verified 2026-11-13
-  (equals IG User ID); Facebook reader-comment `from.id` check still open before T31d goes live.
+  (equals IG User ID). Facebook reader-comment `from.id` check blocked: the Page token lacks
+  `pages_read_user_content` (also `pages_manage_engagement`, listed in docs/facebook-runbook.md),
+  so `/{post}/comments` returns OAuthException #10. Volodymyr regenerates the System User token
+  with these scopes, then re-run the check before T31d goes live.
 
 - **T53g:** PR #135 merged 2026-11-13 by claude-code after review (no blocking findings, CI
   green). Publisher only: no bot deploy, no migration, no secrets.
