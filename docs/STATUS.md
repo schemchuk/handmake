@@ -1,10 +1,10 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53d — publisher metadata stripping and commit (implemented).
+- **Active agent:** claude-code.
+- **Current task:** Review T53d — publisher metadata stripping and commit (PR #131).
 - **Branch:** `feat/t53d-authentic-publication`.
-- **Last commit:** `d90e5da` — feat: transport authentic show media for approval (T53c) (#130).
-- **Next step:** Commit/push T53d and open its PR for claude-code review. Volodymyr's explicit
+- **Last commit:** `6e679fc` — feat: strip and publish authentic show media (T53d).
+- **Next step:** Claude Code reviews https://github.com/schemchuk/handmake/pull/131. Volodymyr's explicit
   OK is required before merge (personal data, publish workflow and private-media credentials).
   Reviewer adds the 30-day `show-authentic/` R2 lifecycle rule before the deferred bot deploy.
 - **Blocked on:** nothing.
@@ -15,7 +15,7 @@
   idempotent retry and temporary-store dry-run. PR #130 approval/cancellation correctness notes
   addressed; bounded 20 MB upload buffering remains a documented optional optimization.
 - **T53d validation:** publisher 266/266, stores 46/46, bot approval/authentic 29/29 pass;
-  workspace typecheck, build, lint and changed-file formatting pass. JPEG GPS EXIF/pixel equality,
+  workspace typecheck, build, lint, changed-file formatting and staged gitleaks pass. JPEG GPS EXIF/pixel equality,
   progressive scans/ICC, QuickTime location removal and audio/video packet hashes covered.
   Initial integration failures exposed missing store support and temporary linked work; fixed.
   Sandboxed D1 run stalled; unrestricted targeted run passed. No deploy, lifecycle mutation,
