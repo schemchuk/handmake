@@ -2349,7 +2349,7 @@ it becomes a task.
   other inline script types and a script without `type`; site suites only (limit rules).
 
 ### T54a — Profile config hardening (T54 review follow-up, `site`)
-- Status: implemented; awaiting Claude Code review.
+- Status: done (PR #138, merged 2026-11-13).
 - Owner: codex · Reviewer: claude-code · Depends on: T54
 - Why: two non-blocking findings from the PR #137 review.
 - Change:
