@@ -101,3 +101,19 @@ it('removal invalidates confirmation and normalizes photo names', async () => {
   await f.handler.action(f.ctx, f.read(), 'ownremove.0', '4');
   expect(f.read().draft.extras['showAuthentic']).toMatchObject({ items: [], confirmed: false });
 });
+
+it('acknowledges uploads without resending stored media or keyboards', async () => {
+  const f = fixture();
+  await f.handler.intake(f.ctx, 'show');
+  expect(f.ctx.replyWithPhoto).not.toHaveBeenCalled();
+  expect(f.ctx.replyWithVideo).not.toHaveBeenCalled();
+  expect(f.ctx.reply).toHaveBeenCalledWith(expect.stringContaining('Файл збережено'));
+});
+it('cancels from the approval screen with a version guard', async () => {
+  const f = fixture();
+  await f.handler.action(f.ctx, f.read(), 'owncancel', '0');
+  expect(f.update).not.toHaveBeenCalled();
+  await f.handler.action(f.ctx, f.read(), 'owncancel', '1');
+  expect(f.read().draft.extras['showCancelled']).toBe(true);
+  expect(f.read().draft.state).toBe('failed');
+});

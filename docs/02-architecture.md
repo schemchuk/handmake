@@ -859,15 +859,21 @@ people answer (none / author / operator / both, mapped per item) and an explicit
 nobody else appears. Photos come as Telegram photos; MP4/QuickTime video comes as Telegram `video`,
 at most 60 s and 20 MB (Bot API `getFile` limit), checked before download. Documents
 have no duration metadata in the Bot API message, so intake asks the author to resend them
-as video rather than accepting an uncheckable duration. T53b stores only private Telegram
-references and clears any publication proposal after edits. Until T53c supplies authentic
-media transport, shows with authentic items cannot be approved; generated-only shows retain
+as video rather than accepting an uncheckable duration. The draft stores only private Telegram
+references and clears any publication proposal after edits. Generated-only shows retain
 the existing approval path. Every mutation bumps the
 draft version and invalidates readiness, like other show inputs. No AI call, no cost booking.
 
 Approval (bot): authentic files are downloaded once and stored in the private `SHOW_MEDIA` R2 bucket
 under the show prefix, with opaque refs in the `kind: show` publish job, the same transport as
-generated media. Telegram file ids are not written to Git.
+generated media. Authentic refs use `show-authentic:v1:<tenant>:<show>:<sha256>` and map to
+`show-authentic/v1/<tenant>/<show>/<sha256>` objects; the digest identifies the private input
+metadata, including its Telegram identity, without disclosing that identity. Completed objects
+are reused after partial failure. Bounded downloads must match the declared size. Mixed jobs use
+existing `show-marked:v1:...` refs for generated media, so neither Telegram ids nor bytes enter
+these jobs. Generated-only jobs retain their existing transport. Telegram file ids are not written
+to Git. T53d must resolve both private ref kinds before authentic publication can succeed; T53c
+alone does not supply publisher metadata stripping or ref resolution.
 
 Publisher: resolves refs through `ShowMediaSource`, then strips metadata before the content commit.
 JPEG: lossless removal of APP1 (EXIF/XMP) and APP13 (IPTC) segments, ICC kept, pixels untouched.

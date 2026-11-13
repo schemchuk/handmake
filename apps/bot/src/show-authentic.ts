@@ -18,6 +18,7 @@ export const authenticOf = (stored: StoredDraft) =>
 const error = 'Цей крок уже змінився. Відкрийте /show ще раз.';
 
 export function authenticKeyboard(stored: StoredDraft) {
+  if (stored.draft.extras['showApproved']) return [];
   return [
     [
       {
@@ -94,6 +95,21 @@ export function createShowAuthentic(drafts: D1DraftStore) {
         !eligible(stored)
       )
         return ctx.reply(error);
+      if (action === 'owncancel') {
+        if (
+          !(await drafts.updateShow(
+            {
+              ...stored.draft,
+              state: 'failed',
+              updatedAt: new Date().toISOString(),
+              extras: { ...stored.draft.extras, showCancelled: true },
+            },
+            stored.version,
+          ))
+        )
+          return ctx.reply(error);
+        return ctx.reply('Показ скасовано.');
+      }
       const own: ShowAuthentic = structuredClone(
         authenticOf(stored) ?? { editing: true, items: [], confirmed: false },
       );
@@ -177,7 +193,9 @@ export function createShowAuthentic(drafts: D1DraftStore) {
         });
         own.confirmed = false;
         if (!(await save(stored, own))) continue;
-        await present(ctx, (await drafts.get(ctx.tenantId, id))!);
+        await ctx.reply(
+          'Файл збережено. Додайте решту файлів, потім відкрийте /show і «Додати свої фото/відео», щоб підтвердити, хто у кадрі.',
+        );
         return true;
       }
       await ctx.reply(error);

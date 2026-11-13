@@ -1,4 +1,4 @@
-import { authenticOf, authenticKeyboard } from './show-authentic';
+import { authenticOf } from './show-authentic';
 import { refreshKeyboard } from './show-preview';
 import { botTexts } from './texts';
 import { showPublicationSchema } from '@handmake/core';
@@ -20,6 +20,7 @@ export function createShowApproval(deps: {
   drafts: D1DraftStore;
   verified: Pick<ReturnType<typeof createShowVerificationStore>, 'get'>;
   works: WorkReader;
+  authentic?: (stored: StoredDraft) => Promise<ShowPublication['media']>;
   backfill?: (stored: StoredDraft) => Promise<void | 'dispatched' | 'running'>;
 }): ShowApproval {
   const { drafts } = deps;
@@ -44,16 +45,26 @@ export function createShowApproval(deps: {
       if (stored.draft.state !== 'ready' || stored.draft.extras['showApproved'])
         throw new Error('show not ready');
       const own = authenticOf(stored);
-      if (own?.items.length) {
-        await ctx.reply(
-          own.confirmed && !own.editing
-            ? 'Оригінальна робота збережена. Публікація власних медіа стане доступною після наступного оновлення.'
-            : 'Завершіть додавання власних медіа та підтвердьте, хто у кадрі.',
-          { reply_markup: { inline_keyboard: authenticKeyboard(stored) } },
+      if (own?.editing || (own?.items.length && (!own.confirmed || !own.people))) {
+        return ctx.reply(
+          'Завершіть додавання власних медіа та підтвердьте, хто у кадрі.',
+          refreshKeyboard(stored, botTexts),
         );
-        return;
       }
-      const media: ShowPublication['media'] = [];
+      let authenticMedia: ShowPublication['media'] = [];
+      if (own?.items.length) {
+        try {
+          if (!deps.authentic) throw new Error('authentic transport unavailable');
+          authenticMedia = await deps.authentic(stored);
+          await current(ctx, stored);
+        } catch {
+          return ctx.reply(
+            'Не вдалося зберегти власні фото/відео. Спробуйте «Оновити перегляд» ще раз.',
+            refreshKeyboard(stored, botTexts),
+          );
+        }
+      }
+      const media: ShowPublication['media'] = [...authenticMedia];
       const images: ShowPublication['show']['images'] = [];
       let video: ShowVideo | undefined;
       const snapshot = await (async () => {
@@ -72,7 +83,7 @@ export function createShowApproval(deps: {
             doc.mime_type !== item.result.mimeType
           )
             throw new Error('document identity mismatch');
-          media.push({ fileName, ref: doc.file_id });
+          media.push({ fileName, ref: own?.items.length ? item.ref : doc.file_id });
           const metadata = {
             fileName,
             provenance: 'ai-generated' as const,
@@ -108,6 +119,14 @@ export function createShowApproval(deps: {
         );
       });
       if (!snapshot) return;
+      if (own?.items.length) {
+        await ctx.reply('Оригінальна робота');
+        for (const item of own.items) {
+          await current(ctx, stored);
+          if (item.kind === 'photo') await ctx.replyWithPhoto(item.fileId);
+          else await ctx.replyWithVideo(item.fileId);
+        }
+      }
       const work = await deps.works.readWork(snapshot.tenantId, snapshot.plan.workId);
       if (!work || work.tenant !== snapshot.tenantId || work.id !== snapshot.plan.workId)
         throw new Error('linked work missing');
@@ -123,6 +142,16 @@ export function createShowApproval(deps: {
           originals: work.photos.map((fileName) => ({ fileName, provenance: 'human' })),
           images,
           video,
+          ...(own?.items.length
+            ? {
+                authentic: own.items.map((item) => ({
+                  fileName: item.fileName,
+                  kind: item.kind,
+                  provenance: 'human',
+                  people: own.people,
+                })),
+              }
+            : {}),
           versions: work.versions,
         },
         media,
@@ -197,7 +226,7 @@ export function createShowApproval(deps: {
       if (
         String(stored.version) !== version ||
         stored.draft.state !== 'ready' ||
-        !!authenticOf(stored)?.items.length ||
+        (!!authenticOf(stored)?.items.length && !authenticOf(stored)?.confirmed) ||
         authenticOf(stored)?.editing === true ||
         stored.draft.extras['showProposalVersion'] !== stored.version
       )
