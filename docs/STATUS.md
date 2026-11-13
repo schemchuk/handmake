@@ -1,13 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T53a — authentic media contracts; review blocker fixed.
-- **Branch:** `feat/t53a-authentic-media-contracts` (PR #128).
-- **Last commit:** see `git log` (`fix: allow both people in authentic show media`).
-- **Next step:** Claude Code re-reviews PR #128 and merges after green CI if no blockers.
-  The `both` value is accepted for authentic photos and video with round-trip coverage.
-  Updated spec from `main` merged without rewriting published history. T53b-T53d need
-  Volodymyr's OK before merge (personal data).
+- **Active agent:** codex.
+- **Current task:** T53b — `/show` step «Додати свої фото/відео» (`bot`).
+- **Branch:** none yet (`feat/t53b-<slug>`).
+- **Last commit:** see `git log`.
+- **Next step:** Codex starts T53b in a fresh session (docs/03-tasks.md, incl. PR #128 review
+  notes). T53b-T53d need Volodymyr's OK before merge (personal data). T33 follows T53.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
@@ -17,6 +15,9 @@
 - **T51 rollout:** PR #126 merged 2026-11-13 by Volodymyr after claude-code review (no
   blocking findings, CI green). No migration. Bot deployed from clean `main` by
   claude-code, Worker `7f040189-e5b5-4f86-bb84-c13e43b94759`.
+- **T53a rollout:** PR #128 merged 2026-11-13 by claude-code (re-review after blocker fix, CI
+  green). No migration. Bot deploy from clean `main` pending: blocked for the agent by the
+  auto-mode classifier; Volodymyr runs `pnpm -C apps/bot run deploy` and records the Worker.
 - **Last bot deployment:** T52, Worker `177a5254-aec2-4933-9a7d-0fd5896f0dcb`
   (claude-code, clean `main`).
 - **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
