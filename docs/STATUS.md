@@ -1,19 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T53b — authentic show intake implemented; independent review pending.
-- **Branch:** `feat/t53b-authentic-intake`.
+- **Active agent:** codex.
+- **Current task:** T53c — approval transport for authentic media.
+- **Branch:** none yet (`feat/t53c-<slug>`).
 - **Last commit:** see `git log`.
-- **Next step:** Review T53b PR. Confirm the documented document-to-video resend constraint
-  (Telegram documents have no duration). Authentic approval stays blocked until T53c transport.
-  T53b needs Volodymyr's OK before merge (personal data); reviewer deploys after merge.
+- **Next step:** Codex starts T53c in a fresh session. Review notes from PR #129 are listed
+  under T53c in docs/03-tasks.md. T53c needs Volodymyr's OK before merge (personal data).
 - **Blocked on:** nothing.
-- **T53b validation:** 85/85 existing session/approval/preview tests, 5/5 new intake unit tests
-  and 3/3 new D1 session/approval tests pass. Bot typecheck, changed-file lint/format and
-  diff checks pass. Initial sandbox integration run stalled; unrestricted run passed.
-  No deployment, AI call, workflow, migration or secret changes.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
+- **T53b rollout:** PR #129 merged 2026-11-13 by claude-code with Volodymyr's OK after review
+  (no blocking findings, CI green). No migration. Bot deployed from clean `main` by claude-code,
+  Worker `72235c78-6435-42c1-95d4-516d2c571b8c`.
 - **T52 rollout:** PR #127 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. Bot deployed from clean `main` by claude-code,
   Worker `177a5254-aec2-4933-9a7d-0fd5896f0dcb`. Existing site pages change on the next site build.
@@ -23,8 +21,8 @@
 - **T53a rollout:** PR #128 merged 2026-11-13 by claude-code (re-review after blocker fix, CI
   green). No migration. Bot deployed from clean `main` by Volodymyr,
   Worker `33cf33ab-9097-4037-b724-d9c389460afe`.
-- **Last bot deployment:** T53a, Worker `33cf33ab-9097-4037-b724-d9c389460afe`
-  (Volodymyr, clean `main`).
+- **Last bot deployment:** T53b, Worker `72235c78-6435-42c1-95d4-516d2c571b8c`
+  (claude-code, clean `main`).
 - **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
 - **T53a review-fix validation:** core 305/305, core typecheck, changed-file lint and formatting
   pass. Both photo and video round-trip `people: both`.

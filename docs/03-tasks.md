@@ -2219,6 +2219,10 @@ it becomes a task.
   show prefix, add refs to the `kind: show` job; retries reuse stored objects (idempotent).
 - Acceptance: job validates against T53a; no Telegram file id or bytes in Git or job payload.
 - Tests: mocked Telegram/R2, retry without second download, failure message to the author.
+- Review notes from PR #129 (non-blocking): intake resends every stored item on each upload
+  (a 3-photo album gives 6 photos and 3 keyboards); with authentic items the approval screen
+  shows only "Додати свої фото/відео" (no regen/cancel) and no «Оригінальна робота» block;
+  the add button stays on approved shows and answers with the stale-step error.
 
 #### T53d — Publisher metadata stripping and commit (`publisher`) · Depends on: T53c
 - Change: resolve authentic refs, lossless JPEG APP1/APP13 removal, ffmpeg metadata-free remux to
