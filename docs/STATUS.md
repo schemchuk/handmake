@@ -1,18 +1,18 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T33 rollout: migration 0022 on prod D1, then bot deploy.
+- **Current task:** T33 rollout: bot deploy (migration 0022 applied to prod D1 2026-11-13).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T33 merge.
-- **Next step:** Volodymyr applies migration 0022 to prod D1
-  (`pnpm -C apps/bot exec wrangler d1 migrations apply handmake-bot --remote`), then the bot is
-  deployed from clean `main` and the Worker version recorded here. Until then, do not deploy the
-  bot: published callbacks would fail on missing usage tables. Then T34 (claude-code).
-- **Blocked on:** migration 0022 on prod D1.
+- **Last commit:** this commit — docs: record T33 migration.
+- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`;
+  the agent deploy was blocked by the classifier) and the Worker version is recorded here.
+  Then T34 (claude-code).
+- **Blocked on:** bot deploy.
 - **Open questions for Volodymyr:** none.
 
 - **T33:** PR #139 merged 2026-11-13 by claude-code (squash 3fc144d, CI green) with Volodymyr's
   OK after re-review of 7a32ee4 (hashtag placement, cleanup reconciliation in `finally`).
+  Migration 0022 applied to prod D1 by claude-code 2026-11-13 at Volodymyr's request.
 
 - **T33 validation:** full local bot 809/809, channels 338/338 and site 58/58 pass.
   Workspace typecheck/build, lint, formatting and staged gitleaks pass. CI run 43446665835
