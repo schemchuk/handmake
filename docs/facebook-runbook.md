@@ -28,6 +28,12 @@ token dies mid-deliver or Meta flags it early, not after a quiet expiry).
 The reliable recovery is the re-issue below, exactly as documented for the
 Instagram runbook.
 
+Renewed 2026-11-13 (adds `pages_read_user_content` and `pages_manage_engagement`, needed to
+read reader comments for T31d): a System User token (`FACEBOOK_SYSTEM_USER_TOKEN`, local `.env`
+only) mints the non-expiring Page token with `GET /{page-id}?fields=access_token`; only the Page
+token goes to GitHub Secrets and the bot Worker. Run `wrangler secret put` without the `.env`
+Cloudflare token loaded: that token cannot write Worker secrets.
+
 To create or renew the Page token: Graph API Explorer with the app →
 `/{page-id}?fields=access_token` while holding a valid user token with
 `pages_manage_posts`, or the System User flow from the Meta developer
