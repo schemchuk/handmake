@@ -2325,7 +2325,7 @@ it becomes a task.
      `network` is a free string label (no enum in core, any tenant may list any network), `url` an
      https URL and `lead` an optional list of language codes for which this entry moves to the
      front. Validate in the site-data loader; reject non-https URLs. For faden-und-stimmung:
-     `instagram` → `https://www.instagram.com/larysashemchuk/` (lead: `de`), `telegram` →
+     `instagram` → `https://www.instagram.com/fadenundstimmung/` (lead: `de`), `telegram` →
      `https://t.me/Faden_und_Stimmung` (lead: `uk`).
   2. Footer (`apps/site/src/layouts/Base.astro`): a profile list replaces the footer's
      `JoinChannel` when `site.profiles` is set; without it the footer stays as today.

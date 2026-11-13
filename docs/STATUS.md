@@ -3,7 +3,7 @@
 - **Active agent:** codex.
 - **Current task:** T54 (profile links in the site footer, F38).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: add F38 profile links and task T54.
+- **Last commit:** this commit — docs: use new Instagram handle in T54.
 - **Next step:** codex implements T54 on `feat/t54-profile-links` in a fresh session.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
