@@ -2251,6 +2251,11 @@ it becomes a task.
   the reviewer adds it before the bot deploy with
   `wrangler r2 bucket lifecycle add handmake-show <name> show-authentic/ --expire-days 30`.
 
+- Review notes from PR #131 (non-blocking): stripping all APP1 also drops EXIF Orientation
+  (phone JPEGs sent as documents may appear rotated); COM segments are kept; JPEGs with bytes
+  after EOI (Motion Photo) are rejected with a generic error; video codec is not checked (HEVC
+  MOV may be rejected by Instagram/Threads); `dry-run.ts` uses `'posts'` canonical links for shows.
+
 #### T53e — Site show page (`site`) · Depends on: T53a
 - Change: block «Оригінальна робота» / «Originalarbeit» with authentic photos/video before the
   generated block; served as-is; alt texts; no AI note on authentic items.

@@ -1,15 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** Review T53d — publisher metadata stripping and commit (PR #131).
-- **Branch:** `feat/t53d-authentic-publication`.
-- **Last commit:** `6e679fc` — feat: strip and publish authentic show media (T53d).
-- **Next step:** Claude Code reviews https://github.com/schemchuk/handmake/pull/131. Volodymyr's explicit
-  OK is required before merge (personal data, publish workflow and private-media credentials).
-  Reviewer adds the 30-day `show-authentic/` R2 lifecycle rule before the deferred bot deploy.
+- **Active agent:** codex.
+- **Current task:** T53e — site show page (authentic block «Оригінальна робота»).
+- **Branch:** `main`.
+- **Last commit:** `9444b58` — feat: strip and publish authentic show media (T53d) (#131).
+- **Next step:** Codex implements T53e from docs/03-tasks.md.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
+- **T53d rollout:** PR #131 merged 2026-11-13 by claude-code with Volodymyr's OK after review
+  (no blocking findings, CI green). No migration. R2 lifecycle rule `show-authentic-30d`
+  (`show-authentic/`, 30 days) added to `handmake-show`. Bot (with T53c) deployed from clean
+  `main`, Worker `0adbbf5a-1f5f-44f6-bee8-219789ebc583`. R2 read permission of the GitHub
+  `CLOUDFLARE_API_TOKEN` secret still unverified; the first live mixed show will show it.
 - **T53d implementation:** scoped private R2 authentic/marked reads, lossless JPEG APP1/APP13
   removal, audio/video stream-copy remux and duration/location checks, Git-store authentic media,
   idempotent retry and temporary-store dry-run. PR #130 approval/cancellation correctness notes
