@@ -1,19 +1,18 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T54 implemented; awaiting independent review.
-- **Branch:** `feat/t54-profile-links`.
-- **Last commit:** this commit — feat: add localized site profile links.
-- **Next step:** claude-code reviews the T54 PR and merges after green CI.
+- **Active agent:** none.
+- **Current task:** none (T54 merged).
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T54 merge.
+- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`):
+  T54 changed `packages/core` (tenant schema); the classifier blocked claude-code's deploy.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
-- **T54 validation:** site suites 58/58, site typecheck, changed-code lint, formatting and
-  diff checks pass. Fixture builds cover profiles on/off, DE/UK order, custom network labels,
-  rel=me, home-only escaped JSON-LD and unchanged fallback. Loader rejects non-HTTPS URLs;
-  policy rejects invalid JSON-LD and other inline scripts. Initial sandbox run lost an existing
-  malformed-work build diagnostic; unrestricted full rerun passed after correcting the new
-  fallback fixture to configure circle.joinUrl. No deploy, publishing, workflows or secrets changed.
+- **T54:** PR #137 merged 2026-11-13 by claude-code (squash 871b114, CI green). No migration,
+  no secrets, no wrangler change. Non-blocking notes: an empty `site.profiles: []` would render
+  an empty footer nav and JSON-LD with empty `sameAs` (`.min(1)` would prevent it); core uses
+  `z.string().url()` where the existing `httpsUrlSchema` would do the https check in one place.
 
 - **T31e:** PR #136 merged 2026-11-13 by claude-code after re-review (blocking canonical-link
   finding fixed in 8ddd484, CI green). No migration, no secrets, no wrangler change.

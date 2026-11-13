@@ -2315,7 +2315,7 @@ it becomes a task.
   without Facebook; Facebook ballot wording UA/DE; affected bot suites only (limit rules).
 
 ### T54 — Profile links in the site footer (F38, `site`)
-- Status: implemented; awaiting claude-code review (2026-11-13).
+- Status: done (PR #137, merged 2026-11-13).
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Why: the site links only the Telegram channel. Visitors should find the brand's active profiles,
   and search engines should connect the site with them, without pulling visitors away from the
