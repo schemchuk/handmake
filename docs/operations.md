@@ -54,6 +54,13 @@ bucket name with resources created in your own account. Keep bindings `DB` and `
 and `migrations_dir = "migrations"` unchanged. Provisioning an empty private bucket satisfies
 the existing Worker configuration; leaving show secrets unset keeps generation disabled.
 
+Before deployment, remove `"*/15 * * * *"` from `[triggers].crons` in the test copy, leaving
+`crons = ["29 3 * * *"]`. The copied 15-minute trigger runs `runAnnouncementCron`, which creates
+announcement/reminder drafts and translates them with Claude: paid, unattended API calls,
+even with `PUBLISH_LIVE = "false"`. Keep the required `meetingSchedule` and `announcements`
+configuration blocks; disabling polls does not disable announcements. `29 3 * * *` runs retention
+cleanup only.
+
 ```sh
 pnpm -C apps/bot exec wrangler login
 pnpm -C apps/bot exec wrangler d1 create faden-test-bot
@@ -193,6 +200,6 @@ Keep payloads and logs out of public issues when they contain private material.
 
 T34 checks Markdown targets, formatting, the no-credential sample dry run, and command/config
 agreement with the current source. No remote resources, publishing, migrations or paid API calls
-are created during documentation work. Acceptance still requires an independent developer to
-follow the test-installation instructions and record the outcome; a source review alone does
-not satisfy that deployment check.
+are created during documentation work. Per Volodymyr's decision in chat on 2026-11-13,
+the guide is checked by source review only; the independent test-deployment acceptance
+requirement was dropped. No independent deployment run is claimed.

@@ -736,7 +736,8 @@ and must remain visible as unresolved even after supported caption/message edits
 - Change: English README rewritten for employers: problem, architecture diagram, demo GIF (H12),
   real usage numbers from `/stats`, design trade-offs with ADR links; `docs/operations.md`: failure and
   recovery (API down, partial delivery, re-run), security boundaries, deploy from scratch.
-- Acceptance: a developer can deploy a test tenant from the docs alone (checked by kimi-code).
+- Acceptance: the test-installation guide is checked by source review only. Volodymyr dropped
+  the independent test-deployment requirement in chat on 2026-11-13.
 - Tests: n/a (docs); links checked.
 
 ## Order of work (v4), superseded by v5

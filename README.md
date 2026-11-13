@@ -59,9 +59,11 @@ These are verification results, not audience or revenue figures.
 
 Tenant usage is available through operator `/stats`: publications in the last 28 days,
 median draft-to-publication time, edits per published draft and eventual delivery success.
-**A real `/stats` snapshot has not yet been supplied for this README.** No production usage
-numbers are inferred from test fixtures or Git history. Test and live deliveries share the report;
-workflow averages have a post-migration sample size and there is no historical backfill.
+The real operator-chat snapshot from 2026-11-13 at 18:37 EET reports the last 28 days (UTC):
+1 publication; median draft-to-publication time 2.6 min; edits per publication (UA, DE,
+regenerations) 0.0; successful deliveries 100.0%; publications with measured workflow 1.
+The sample is one publication: metrics exist only since the migration, with no backfill.
+Test and live deliveries share the report.
 See [metric definitions and limits](docs/usage-metrics.md).
 
 ## Design decisions and trade-offs
