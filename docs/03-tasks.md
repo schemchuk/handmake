@@ -722,6 +722,11 @@ and must remain visible as unresolved even after supported caption/message edits
 - Review notes from PR #125 (non-blocking): `expireNonWinnerNames`
   (`apps/bot/src/name-retention.ts`) swallows every tenant error, so a full D1 outage still
   reports a successful cron; keep per-tenant isolation but rethrow/report after the loop, with a test.
+- Review notes from PR #127 (non-blocking): `appendAuthenticity`
+  (`packages/channels/src/authenticity.ts`) throws a plain `Error` for a tenant language outside
+  de/uk/en, so the bot preview crashes instead of showing a blocked state; use a render error or skip
+  the label, with a test. When a caption ends with hashtags the label lands after them; consider
+  inserting it before a trailing hashtag block. Site `authenticityLabel` duplicates `linkedWork`.
 
 ### T34 — Portfolio pack (docs) · Owner: claude-code · Reviewer: kimi-code
 - Depends on: T33, H12
@@ -2161,7 +2166,7 @@ generated. Needs a spec decision (show type, how authenticity is recorded in `pr
 it becomes a task.
 
 ### T52 — Authenticity label instead of AI note (F36, `site`, `channels`, `bot`)
-- Status: implemented 2026-11-13; awaiting claude-code review.
+- Status: done 2026-11-13 (PR #127).
 - Owner: codex · Reviewer: claude-code · Depends on: spec v9 (approved 2026-11-13) · Before T33
 - Found 2026-11-13: post `01m79ykb8cdgrx6k29htysnzja` (photos of a participant's work) shows
   "Створено за допомогою ШІ" on the site, because a German version sets `provenance: ai-assisted`
