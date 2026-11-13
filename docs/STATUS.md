@@ -1,12 +1,14 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53e — site show page (authentic block «Оригінальна робота»).
-- **Branch:** `main`.
-- **Last commit:** `cb11810` — fix: dedicated R2 read token for show media (T53d) (#132).
-- **Next step:** Codex implements T53e from docs/03-tasks.md.
+- **Active agent:** claude-code.
+- **Current task:** T53e implemented; awaiting independent review.
+- **Branch:** `feat/t53e-site-authentic-media`.
+- **Last commit:** feat: render authentic media on show pages (T53e); see branch HEAD.
+- **Next step:** Claude Code reviews T53e PR; merge after green CI.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
+
+- **T53e validation:** site 53/53 tests, site typecheck, changed TypeScript lint and formatting pass. Build tests cover DE/UK authentic sections, ordering, absent media and byte-preserved JPEG/MP4. Sandboxed diagnostic test failed; unrestricted full rerun passed. No deployment or production changes.
 
 - **T53d rollout:** PR #131 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. R2 lifecycle rule `show-authentic-30d`

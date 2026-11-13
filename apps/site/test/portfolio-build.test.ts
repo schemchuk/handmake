@@ -68,6 +68,10 @@ describe('portfolio fixture build', () => {
           adult: true,
         },
         originals: [{ fileName: 'a.jpg', provenance: 'human' }],
+        authentic: [
+          { fileName: 'authentic.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+          { fileName: 'authentic.mp4', kind: 'video', provenance: 'human', people: 'none' },
+        ],
         images: [1, 2, 3].map((i) => ({ ...generatedMetadata, fileName: `image-${i}.png` })),
         video: { ...generatedMetadata, fileName: 'video.mp4', durationSeconds: 5 },
         versions: {
@@ -79,11 +83,14 @@ describe('portfolio fixture build', () => {
       const marked = await sharp(original).png().toBuffer();
       const video = Buffer.from('structural-video-fixture');
       await fixture.store.saveShow(show, [
+        { fileName: 'authentic.jpg', data: original },
+        { fileName: 'authentic.mp4', data: video },
         ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
         { fileName: show.video.fileName, data: video },
       ]);
       const untranslatedShow = {
         ...show,
+        authentic: undefined,
         id: '01JBCA1B2C3D4E5F6G7H8J9K1B',
         date: '2026-11-04T12:00:00Z',
         versions: { uk: show.versions.uk! },
@@ -202,7 +209,29 @@ describe('portfolio fixture build', () => {
         expect(postHtml).not.toContain('Mit KI-Unterstützung erstellt');
         expect(postHtml).not.toContain('Створено за допомогою ШІ');
       }
-      expect(showHtml).toContain('Originalarbeit');
+      for (const [prefix, label] of [
+        ['', 'Originalarbeit'],
+        ['uk/', 'Оригінальна робота'],
+      ]) {
+        const page = await html(dist, `${prefix}${showUrl}`);
+        expect(page).toContain(`<h2 id="authentic-heading">${label}</h2>`);
+        expect(page.indexOf('authentic.jpg')).toBeLessThan(page.indexOf('image-1.png'));
+        const block = page
+          .split('<section aria-labelledby="authentic-heading">')[1]!
+          .split('</section>')[0];
+        expect(block).not.toContain('KI-generiertes');
+        expect(block).toContain('alt=');
+        expect(block).toContain('authentic.mp4');
+      }
+      expect(await html(dist, `uk/shows/${untranslatedShow.id.toLowerCase()}`)).not.toContain(
+        'authentic-heading',
+      );
+      expect(
+        await readFile(path.join(dist, `show-media/${show.id.toLowerCase()}/authentic.jpg`)),
+      ).toEqual(original);
+      expect(
+        await readFile(path.join(dist, `show-media/${show.id.toLowerCase()}/authentic.mp4`)),
+      ).toEqual(video);
       const workUrl = `works/${ids.a.toLowerCase()}`;
       const de = await html(dist, workUrl);
       const uk = await html(dist, `uk/${workUrl}`);

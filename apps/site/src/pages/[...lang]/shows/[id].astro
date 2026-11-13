@@ -35,6 +35,19 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
       {show.model && <p>{show.model.name}</p>}
       {work && <p><a href={pagePath(lang, def, `works/${work.id.toLowerCase()}`)}>{ui.linkedWork}</a></p>}
     </div>
+    {show.authentic && show.authentic.length > 0 && <section aria-labelledby="authentic-heading">
+      <h2 id="authentic-heading">{lang === 'uk' ? 'Оригінальна робота' : 'Originalarbeit'}</h2>
+      <div class="work-gallery">
+        {show.authentic.map((item, i) => <figure>
+          {item.kind === 'photo' ?
+            <img src={showMediaPath(show, item.fileName)} alt={`${lang === 'uk' ? 'Оригінальна робота' : 'Originalarbeit'}: ${title} (${i + 1}/${show.authentic.length})`} loading="lazy" style="width:100%;height:auto" /> :
+            <video controls playsinline preload="metadata" aria-label={`${lang === 'uk' ? 'Оригінальна робота' : 'Originalarbeit'}: ${title}`} style="width:100%;height:auto">
+              <source src={showMediaPath(show, item.fileName)} type="video/mp4" />
+              <a href={showMediaPath(show, item.fileName)}>{title}</a>
+            </video>}
+        </figure>)}
+      </div>
+    </section>}
     <div class="work-gallery">
       {show.images.map((image, i) => <figure>
         <img src={showMediaPath(show, image.fileName)} alt={`${title} (${i + 1}/${show.images.length})`} loading="lazy" style="width:100%;height:auto" />
