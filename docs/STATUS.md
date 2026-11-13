@@ -1,20 +1,22 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53c — approval transport for authentic media.
+- **Active agent:** claude-code.
+- **Current task:** Review T53c — approval transport for authentic media (PR #130).
 - **Branch:** `feat/t53c-authentic-approval`.
-- **Last commit:** `a6da573` — docs: record T53b merge and hand off T53c (base).
-- **Next step:** Codex records the full bot test result and opens the T53c PR, then hands off
-  to claude-code for review. T53c needs Volodymyr's OK before merge (personal data).
+- **Last commit:** `588b72c` — feat: transport authentic show media for approval.
+- **Next step:** Claude Code reviews PR #130 in a fresh session and checks CI. T53c needs
+  Volodymyr's explicit OK before merge (personal data). T53d resolves the new private refs.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
 - **T53c implementation:** private authentic R2 refs and mixed-job marked refs; retry reuse,
   bounded downloads, confirmation/CAS approval and PR #129 UI follow-ups. Publisher ref resolution
   and metadata stripping remain T53d; authentic publication cannot succeed before that task.
-- **T53c validation:** targeted approval/intake/preview/storage tests passed; workspace
-  typecheck/build, lint, changed-file formatting and source/test secret scans pass. Full bot suite
-  is running after the server restart lost the original test session. No deployment or paid calls.
+- **T53c validation:** full bot suite 799/799 (44 files) passes; workspace typecheck/build, lint,
+  changed-file formatting and staged secret scan pass. Targeted tests also pass. The sandboxed D1
+  run was interrupted; unrestricted runs passed. A server restart lost the first full run, so it
+  was repeated successfully. No deployment, production publishing, paid calls, workflows, secrets
+  or migrations changed. PR #130 CI was pending at handoff.
 
 - **T53b rollout:** PR #129 merged 2026-11-13 by claude-code with Volodymyr's OK after review
   (no blocking findings, CI green). No migration. Bot deployed from clean `main` by claude-code,
