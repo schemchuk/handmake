@@ -16,10 +16,10 @@
   blocking findings, CI green). No migration. Bot deployed from clean `main` by
   claude-code, Worker `7f040189-e5b5-4f86-bb84-c13e43b94759`.
 - **T53a rollout:** PR #128 merged 2026-11-13 by claude-code (re-review after blocker fix, CI
-  green). No migration. Bot deploy from clean `main` pending: blocked for the agent by the
-  auto-mode classifier; Volodymyr runs `pnpm -C apps/bot run deploy` and records the Worker.
-- **Last bot deployment:** T52, Worker `177a5254-aec2-4933-9a7d-0fd5896f0dcb`
-  (claude-code, clean `main`).
+  green). No migration. Bot deployed from clean `main` by Volodymyr,
+  Worker `33cf33ab-9097-4037-b724-d9c389460afe`.
+- **Last bot deployment:** T53a, Worker `33cf33ab-9097-4037-b724-d9c389460afe`
+  (Volodymyr, clean `main`).
 - **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
 - **T53a review-fix validation:** core 305/305, core typecheck, changed-file lint and formatting
   pass. Both photo and video round-trip `people: both`.
