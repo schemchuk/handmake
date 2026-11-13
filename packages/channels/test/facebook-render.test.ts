@@ -73,14 +73,11 @@ describe('renderFacebook: skips (site-worthy items only)', () => {
     expect(facebookSkipReason(post)).toBe('no-photos');
   });
 
-  it.each(['announcement', 'reminder', 'wotw-poll', 'wotw-result'] as const)(
-    'skips a %s post',
-    (type) => {
-      const post = makePost({ type });
-      expect(renderFacebook(post, settings)).toEqual([]);
-      expect(facebookSkipReason(post)).toBe('not-site-worthy');
-    },
-  );
+  it.each(['announcement', 'reminder', 'wotw-result'] as const)('skips a %s post', (type) => {
+    const post = makePost({ type });
+    expect(renderFacebook(post, settings)).toEqual([]);
+    expect(facebookSkipReason(post)).toBe('not-site-worthy');
+  });
 
   it('skips a site-excluded (test) post', () => {
     const post = makePost({ siteExcluded: true });
@@ -240,4 +237,24 @@ describe('renderFacebookShow', () => {
     show.versions.de!.description = 'x'.repeat(facebookCaptionLimit);
     expect(() => renderFacebookShow(show, showContext)).toThrowError(/63206/);
   });
+});
+
+it.each([
+  ['uk', 'Роботи тижня. Голосуйте в Telegram або Instagram.', 'Робота №'],
+  ['de', 'Werke der Woche. Stimmt in Telegram oder Instagram ab.', 'Werk Nr.'],
+])('renders a %s Facebook ballot without comment-vote instructions', (language, intro, label) => {
+  const post = makePost({
+    type: 'wotw-poll',
+    texts: { uk: 'Напишіть номер у коментарі', de: 'Nummer in einen Kommentar schreiben' },
+    poll: { question: 'Favorite?', options: ['No 1', 'No 2'] },
+  });
+  const [op] = renderFacebook(post, { language });
+  expect(op).toMatchObject({
+    kind: 'mediaGroup',
+    photoIndexes: [0, 1],
+    captionLang: language,
+    caption: expect.stringContaining(`${intro}\n\n${label} 1\n${label} 2`),
+  });
+  expect(JSON.stringify(op)).not.toMatch(/коментар|Kommentar/);
+  expect(renderFacebook({ ...post, siteExcluded: true }, { language })).toEqual([]);
 });

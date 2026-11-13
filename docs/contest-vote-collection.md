@@ -1,7 +1,8 @@
 # Contest vote collection (T31c)
 
 The Worker scheduler wires closing through T31d3. The caller supplies the configured
-comment-capable channels and their tenant-specific contexts. It reads only successful
+Instagram and Threads adapters and their tenant-specific contexts. Facebook is not a contest
+vote source; its ordinary comment inbox remains enabled independently. It reads only successful
 deliveries of the same published ballot post, never the comment inbox or recent posts.
 Missing, failed or skipped deliveries are recorded as `skipped`, without API calls.
 
@@ -11,8 +12,7 @@ wins; ties use the comment ID in ascending code-unit order. Invalid comments do 
 consume a vote. Missing timestamps sort after known timestamps, then by comment ID.
 Repeated identical comment IDs count once; conflicting versions make collection
 unreadable. Accounts are scoped to their network, with no cross-network matching.
-Instagram and Threads use the network username; Facebook uses `from.id`, never its
-non-unique display name. A valid vote without an account identity makes the source
+Instagram and Threads use the network username. A valid vote without an account identity makes the source
 unreadable. Usernames are case-normalized. This is a collection-time snapshot;
 renames, deleted comments and subsequent edits cannot be reconstructed.
 
@@ -31,7 +31,10 @@ collection sequence to two minutes. Timeout persists only an unreadable tally; l
 completion cannot overwrite it or start another source. In-flight reads may finish in
 memory. An unreadable Telegram tally skips all Meta reads. Contest reads omit Instagram
 owner comments by account ID; ordinary comment inbox reads retain them. Generated UA/DE
-ballots request plain numeric comments without emoji.
+ballots request plain numeric comments without emoji on comment-voting channels. Facebook
+ballot copies instead show numbered photos and invite voting in Telegram or Instagram;
+they never reuse the editable comment-vote instruction. This rendering is shared by the
+author preview and publisher.
 
 ## Result persistence (T31d2)
 
@@ -69,8 +72,11 @@ Facebook, verified 2026-11-13 with a non-expiring Page token holding `pages_read
 a reader comment on a Page post comes back without `from` (also when `from{id,name}` is
 requested explicitly). Meta only exposes the commenter for apps with Advanced Access (App Review)
 or for users with a role on the app. As designed, every Facebook tally is therefore unreadable,
-and an unreadable source makes the combined contest result unreadable. T31d must not go live with
-Facebook as a vote source until Volodymyr decides how to handle this.
+and an unreadable source makes the combined contest result unreadable. Volodymyr decided
+2026-11-13 (T31e) to exclude Facebook from closing collection and defer App Review.
+Facebook deliveries and digit comments therefore cause no Facebook contest API read and
+contribute neither votes nor an unreadable source to the result. Historical immutable
+tallies are not rewritten.
 
 
 ## Scheduler and author decisions (T31d3)
@@ -82,7 +88,7 @@ cleanup-only cron remains separate. Disabled tenants perform no closing or resul
 Failed tenants and failed closing weeks cannot stop later cron steps or other tenants.
 
 The scheduler supplies the Telegram adapter with the tenant's channel settings and the
-configured Meta adapters with the existing comment secret resolver. Only the ballot's
+configured Instagram and Threads adapters with the existing comment secret resolver. Only the ballot's
 successful deliveries are read; a configured delivered network with missing credentials
 fails unreadable rather than silently disappearing from the tally. Before enabling the
 flag, provision the publisher's existing `TELEGRAM_CHANNEL_ID` value as a Worker secret

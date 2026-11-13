@@ -1,18 +1,23 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T31e — drop Facebook as a contest vote source.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: add T31e and hand off to Codex.
-- **Next step:** codex implements T31e (docs/03-tasks.md) in a fresh session; merge and deploy
-  the bot before the next closing, Wednesday 2026-11-18 20:00 Berlin.
-- **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none new. Instagram owner `from.id` verified 2026-11-13
-  (equals IG User ID). Facebook Page token renewed 2026-11-13 with
-  `pages_read_user_content` and `pages_manage_engagement` (`.env`, GitHub Secret, Worker secret);
-  Reader-comment check done: Facebook returns reader comments WITHOUT `from`, so Facebook
-  tallies are unreadable and would block every contest result (docs/contest-vote-collection.md).
-  Volodymyr decided 2026-11-13: drop Facebook as a vote source (T31e); App Review deferred.
+- **Active agent:** claude-code.
+- **Current task:** T31e — implemented; awaiting independent review.
+- **Branch:** `feat/t31e-drop-facebook-votes`.
+- **Last commit:** this commit — fix: exclude Facebook from contest voting.
+- **Next step:** claude-code reviews the T31e PR, merges after green CI and deploys
+  the bot from clean main before Wednesday 2026-11-18 20:00 Berlin; record Worker version.
+- **Blocked on:** independent review and CI.
+- **Open questions for Volodymyr:** none new.
+
+- **T31e validation:** affected bot suites 99/99; Facebook renderer 29/29; bot typecheck,
+  changed-code lint and formatting pass. Production scheduler regression includes delivered
+  Facebook, Instagram and Threads ballots: Facebook digit comments are never requested;
+  Telegram/Instagram/Threads total is readable and author prompt omits Facebook.
+  Facebook previously skipped ballots entirely; shared preview/publisher renderer now emits
+  a numbered-photo UA/DE invitation to vote in Telegram or Instagram, independent of editable
+  comment-vote text. Ordinary Facebook comment inbox is unchanged. Historical tallies remain
+  immutable. Sandboxed D1 run interrupted; unrestricted targeted rerun passed.
+  No migration, workflows, wrangler, secrets, deployment or production publishing changed.
 
 - **T53g:** PR #135 merged 2026-11-13 by claude-code after review (no blocking findings, CI
   green). Publisher only: no bot deploy, no migration, no secrets.

@@ -2293,7 +2293,7 @@ it becomes a task.
   authentic media; existing publisher and core suites (targeted, per limit rules).
 
 #### T31e — Drop Facebook as a contest vote source (`bot`, docs) · Depends on: T31d3
-- Status: ready; approved by Volodymyr 2026-11-13 (option 1 of two; App Review deferred).
+- Status: implemented; awaiting claude-code review; approved by Volodymyr 2026-11-13 (option 1 of two; App Review deferred).
 - Owner: codex · Reviewer: claude-code
 - Why: verified 2026-11-13 (docs/contest-vote-collection.md) that Facebook returns reader
   comments without `from`, even with `pages_read_user_content`. Every Facebook digit comment
