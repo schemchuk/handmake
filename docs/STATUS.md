@@ -1,14 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T34 portfolio pack — review fixes on PR #140.
-- **Branch:** `feat/t34-portfolio-pack`.
-- **Last commit:** this commit — docs: apply T34 review fixes.
-- **Next step:** claude-code merges PR #140 after green CI.
+- **Active agent:** none.
+- **Current task:** none.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T34 merge.
+- **Next step:** v5 plan complete (T34 was its last task); the next task is the one Volodymyr names,
+  for a fresh session.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
-- **T34:** reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.
+- **T34:** done 2026-11-13, PR #140 squash-merged by claude-code; docs only, no bot deploy.
+  Reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.
   README now includes employer-facing architecture/trade-offs and H12 GIF/MP4 from
   the H12 recording. Operations guide covers isolated test setup and recovery.
   Local Markdown targets, formatting and sample dry run pass; tsx IPC needed an unrestricted run.
