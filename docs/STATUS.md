@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T53a — authentic media contracts; implementation ready for review.
-- **Branch:** `feat/t53a-authentic-media-contracts`.
-- **Last commit:** see `git log` (`feat: add authentic show media contracts`).
-- **Next step:** Claude Code reviews the T53a task PR and merges after green CI if no blockers.
-  Then hand off T53b to Codex in a fresh session. T53b-T53d need Volodymyr's OK before merge
-  (personal data). T33 follows T53 with the PR #125 and PR #127 review notes.
+- **Active agent:** codex.
+- **Current task:** T53a — authentic media contracts; review found one blocker.
+- **Branch:** `feat/t53a-authentic-media-contracts` (PR #128).
+- **Last commit:** see `git log`.
+- **Next step:** Codex fixes the PR #128 blocker: add `both` to the authentic `people` enum (spec
+  F37 fixed on `main` in `4eda0e4`), accept it in tests, rebase on `main`, push. Then Claude Code
+  re-reviews and merges. T53b-T53d need Volodymyr's OK before merge (personal data).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
