@@ -36,6 +36,26 @@ export const showVideoSchema = z
 export type ShowImage = z.infer<typeof showImageSchema>;
 export type ShowVideo = z.infer<typeof showVideoSchema>;
 
+export const showAuthenticMediaSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      fileName: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.(jpg|jpeg)$/),
+      kind: z.literal('photo'),
+      provenance: z.literal('human'),
+      people: z.enum(['none', 'author', 'operator', 'both']),
+    })
+    .strict(),
+  z
+    .object({
+      fileName: videoFileSchema,
+      kind: z.literal('video'),
+      provenance: z.literal('human'),
+      people: z.enum(['none', 'author', 'operator', 'both']),
+    })
+    .strict(),
+]);
+export type ShowAuthenticMedia = z.infer<typeof showAuthenticMediaSchema>;
+
 /** Stored file names only: no expiring provider URLs or platform-specific file ids. */
 export const showSchema = z
   .object({
@@ -53,6 +73,7 @@ export const showSchema = z
       .min(1),
     images: z.array(showImageSchema).min(3).max(5),
     video: showVideoSchema,
+    authentic: z.array(showAuthenticMediaSchema).max(4).optional(),
     versions: workVersionsSchema,
   })
   .strict()
@@ -62,6 +83,29 @@ export const showSchema = z
     }
     const originals = show.originals.map((p) => p.fileName);
     const generated = [...show.images.map((p) => p.fileName), show.video.fileName];
+    const authentic = show.authentic ?? [];
+    const authenticNames = authentic.map((p) => p.fileName);
+    if (
+      authentic.filter((p) => p.kind === 'photo').length > 3 ||
+      authentic.filter((p) => p.kind === 'video').length > 1 ||
+      generated.length + authentic.length > 10
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['authentic'],
+        message: 'authentic media limits exceeded',
+      });
+    }
+    if (
+      new Set(authenticNames).size !== authenticNames.length ||
+      authenticNames.some((name) => originals.includes(name) || generated.includes(name))
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['authentic'],
+        message: 'authentic media file names must be disjoint',
+      });
+    }
     // Originals belong to the linked work; generated files belong to the show directory.
     if (
       new Set(originals).size !== originals.length ||
@@ -87,11 +131,15 @@ export const showPublicationSchema = z
     media: z
       .array(z.object({ fileName: z.string().min(1), ref: text }).strict())
       .min(4)
-      .max(6),
+      .max(10),
   })
   .strict()
   .superRefine(({ show, media }, ctx) => {
-    const names = [...show.images.map((image) => image.fileName), show.video.fileName].sort();
+    const names = [
+      ...show.images.map((image) => image.fileName),
+      show.video.fileName,
+      ...(show.authentic ?? []).map((item) => item.fileName),
+    ].sort();
     if (JSON.stringify(names) !== JSON.stringify(media.map((file) => file.fileName).sort())) {
       ctx.addIssue({ code: 'custom', message: 'show media must match declared files exactly' });
     }

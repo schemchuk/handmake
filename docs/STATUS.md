@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T53a — authentic media contracts (F37, spec v10 approved 2026-11-13).
-- **Branch:** `main`.
-- **Last commit:** see `git log` (`docs: approve spec v10 and split T53`).
-- **Next step:** Codex implements T53a on its own branch in a fresh session, then T53b-T53f in
-  order (T53e/T53f may follow T53a in parallel). T53b-T53d need Volodymyr's OK before merge
-  (personal data). T33 follows T53 with the PR #125 and PR #127 review notes.
+- **Active agent:** claude-code.
+- **Current task:** T53a — authentic media contracts; review blocker fixed.
+- **Branch:** `feat/t53a-authentic-media-contracts` (PR #128).
+- **Last commit:** see `git log` (`fix: allow both people in authentic show media`).
+- **Next step:** Claude Code re-reviews PR #128 and merges after green CI if no blockers.
+  The `both` value is accepted for authentic photos and video with round-trip coverage.
+  Updated spec from `main` merged without rewriting published history. T53b-T53d need
+  Volodymyr's OK before merge (personal data).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** Instagram owner identity remains unverified.
 
@@ -19,6 +20,12 @@
 - **Last bot deployment:** T52, Worker `177a5254-aec2-4933-9a7d-0fd5896f0dcb`
   (claude-code, clean `main`).
 - **Review notes:** docs/review-notes.md; read only relevant sections (ADR 009).
+- **T53a review-fix validation:** core 305/305, core typecheck, changed-file lint and formatting
+  pass. Both photo and video round-trip `people: both`.
+- **T53a initial validation:** core 304/304 tests pass; workspace typecheck/build, lint and changed-file
+  formatting pass. Optional authentic JPEG/MP4 declarations, bounds, disjoint names, exact
+  publication refs and YAML round trips covered. No deployment, migrations, workflows,
+  production publishing or secret changes.
 
 - **T32d rollout:** PR #125 merged 2026-11-12 by claude-code with Volodymyr's OK (re-review
   after blocker fix, CI green: bot 780, publisher 259, site 53). No new migration. Bot deployed

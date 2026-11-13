@@ -11,6 +11,7 @@ import {
   selectShowTemplate,
   showConfigSchema,
   showSchema,
+  showPublicationSchema,
   tenantConfigSchema,
 } from '../src';
 import type { Show, ShowConfig, ShowGenerator } from '../src';
@@ -223,4 +224,90 @@ it('round-trips the show content document and rejects missing video or non-docum
   expect(parseShow(serializeShow(input))).toEqual(input);
   expect(() => parseShow('not frontmatter')).toThrow();
   expect(showSchema.safeParse({ ...input, video: undefined }).success).toBe(false);
+});
+
+describe('authentic show media', () => {
+  const photo = (fileName = 'real.jpg') => ({
+    fileName,
+    kind: 'photo' as const,
+    provenance: 'human' as const,
+    people: 'author' as const,
+  });
+  const video = {
+    fileName: 'real.mp4',
+    kind: 'video' as const,
+    provenance: 'human' as const,
+    people: 'operator' as const,
+  };
+  const refs = (input: Show) =>
+    [...input.images, input.video, ...(input.authentic ?? [])].map(({ fileName }) => ({
+      fileName,
+      ref: `stored/${fileName}`,
+    }));
+
+  it.each(
+    [
+      undefined,
+      [],
+      [photo()],
+      [video],
+      [{ ...photo(), people: 'both' as const }],
+      [{ ...video, people: 'both' as const }],
+      [photo(), photo('two.jpeg'), photo('three.jpg'), video],
+    ].map((authentic) => ({ authentic })),
+  )('round-trips optional authentic media %#', ({ authentic }) => {
+    const input = show();
+    if (authentic !== undefined) input.authentic = authentic;
+    expect(parseShow(serializeShow(input))).toEqual(input);
+    expect(showPublicationSchema.parse({ show: input, media: refs(input).reverse() }).show).toEqual(
+      input,
+    );
+  });
+  it('accepts the ten-item publication boundary', () => {
+    const input = show();
+    input.images.push(
+      { ...input.images[0]!, fileName: 'four.webp' },
+      { ...input.images[0]!, fileName: 'five.webp' },
+    );
+    input.authentic = [photo(), photo('two.jpeg'), photo('three.jpg'), video];
+    expect(refs(input)).toHaveLength(10);
+    expect(showPublicationSchema.safeParse({ show: input, media: refs(input) }).success).toBe(true);
+  });
+  it.each(
+    [
+      [photo(), photo('two.jpg'), photo('three.jpg'), photo('four.jpg')],
+      [video, { ...video, fileName: 'second.mp4' }],
+      [photo(), photo()],
+      [photo('original.jpg')],
+      [photo('image-1.webp')],
+      [{ ...video, fileName: 'clip.mp4' }],
+      [photo('../escape.jpg')],
+      [photo('real.png')],
+      [{ ...video, fileName: 'real.mov' }],
+      [{ ...photo(), provenance: 'ai-generated' }],
+      [{ ...photo(), people: 'participant' }],
+      [{ ...photo(), marker: {} }],
+    ].map((authentic) => ({ authentic })),
+  )('rejects invalid authentic declarations %#', ({ authentic }) => {
+    expect(showSchema.safeParse({ ...show(), authentic }).success).toBe(false);
+  });
+  it('rejects a generated JPEG relabelled as authentic human media', () => {
+    const input = show();
+    input.images[0]!.fileName = 'generated.jpg';
+    input.authentic = [photo('generated.jpg')];
+    expect(showSchema.safeParse(input).success).toBe(false);
+  });
+  it('requires exactly the generated and authentic publication refs', () => {
+    const input = show();
+    input.authentic = [photo(), video];
+    const media = refs(input);
+    for (const invalid of [
+      media.slice(0, -1),
+      [...media, media[0]!],
+      [...media.slice(0, -1), { fileName: 'other.mp4', ref: 'stored/other' }],
+      [...media, { fileName: 'original.jpg', ref: 'stored/original' }],
+    ]) {
+      expect(showPublicationSchema.safeParse({ show: input, media: invalid }).success).toBe(false);
+    }
+  });
 });
