@@ -823,3 +823,29 @@ it('offers work selection again after discarding the awaited work', async () => 
   await press(button('pick'));
   expect((await get(showId))!.draft.extras['showSelection']).toMatchObject({ workId: work.id });
 });
+
+it('collects authentic album media in the active ready session with stale callback protection', async () => {
+  const id = await completedShow('ready');
+  const stored = (await get(id))!;
+  await press(`show:${id}:own:${stored.version}`);
+  await bot.handleUpdate(photoUpdate(11, ['authentic-one']));
+  const added = (await get(id))!;
+  expect(added.draft.extras['showAuthentic']).toMatchObject({
+    items: [{ kind: 'photo', fileName: 'authentic-photo-1.jpg' }],
+    confirmed: false,
+  });
+  await press(`show:${id}:ownpeople.both:${stored.version}`);
+  expect(await get(id)).toEqual(added);
+  await press(`show:${id}:ownpeople.both:${added.version}`);
+  const people = (await get(id))!;
+  await press(`show:${id}:ownconfirm:${people.version}`);
+  const confirmed = (await get(id))!;
+  await press(`show:${id}:owndone:${confirmed.version}`);
+  expect((await get(id))!.draft.extras['showAuthentic']).toMatchObject({
+    editing: false,
+    people: 'both',
+    confirmed: true,
+  });
+  expect(start).not.toHaveBeenCalled();
+  expect(runner.jobs).toEqual([]);
+});
