@@ -10,6 +10,13 @@
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
+- **T58 implementation/validation (codex, edit-only):** default global fetch now runs through
+  an arrow in `MetaGraphClient` and `TelegramAdapter`, avoiding a client receiver in Workers.
+  Token exchange, Instagram upload and Threads already use receiver-free calls. Added global
+  fetch receiver regressions for Meta and Telegram; affected channels tests 207/207 pass
+  across eight files (`--maxWorkers=2`), and channels typecheck passes. No Git commands,
+  network calls or deployment; changes await claude-code review.
+
 - **T57:** PR #149 squash-merged 2026-11-14 by claude-code (CI green). Bot-only, no migration;
   bot deployed by Volodymyr from clean `main` 2026-11-14 13:57 EET, Worker
   `f8ef3351-e074-4e50-9a2b-754e9687662a`.
