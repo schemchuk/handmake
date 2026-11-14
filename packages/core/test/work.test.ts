@@ -50,6 +50,42 @@ describe('work and collection documents', () => {
     },
   );
 
+  it.each(['none', 'author', 'operator', 'both'] as const)(
+    'round-trips an authentic video with people=%s',
+    (people) => {
+      const value = {
+        ...work,
+        video: { fileName: 'video.mp4', provenance: 'human' as const, people },
+      };
+      expect(parseWork(serializeWork(value))).toEqual(value);
+    },
+  );
+
+  it.each([
+    { fileName: 'video.mov' },
+    { fileName: 'photo-1.jpg' },
+    { fileName: '../video.mp4' },
+    { fileName: 'folder/video.mp4' },
+    { provenance: 'ai-assisted' },
+    { provenance: 'ai-generated' },
+    { people: 'participant' },
+    { people: undefined },
+    { extra: true },
+  ])('rejects invalid work video fields %j', (patch) => {
+    const video = { fileName: 'video.mp4', provenance: 'human', people: 'none', ...patch };
+    expect(workSchema.safeParse({ ...work, video }).success).toBe(false);
+  });
+
+  it('still requires photos when a video is present', () => {
+    expect(
+      workSchema.safeParse({
+        ...work,
+        photos: [],
+        video: { fileName: 'video.mp4', provenance: 'human', people: 'none' },
+      }).success,
+    ).toBe(false);
+  });
+
   it.each([
     { id: '../bad' },
     { tenant: '../other' },
