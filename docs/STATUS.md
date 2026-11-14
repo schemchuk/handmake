@@ -1,15 +1,17 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T58 — bind `fetch` in `MetaGraphClient` (IG/FB comment collection fails in the Worker).
-- **Branch:** `feat/T58-meta-fetch-binding`.
+- **Active agent:** none.
+- **Current task:** none.
+- **Branch:** `main`.
 - **Last commit:** this commit — docs: drop answered T55e2 question.
-- **Next step:** codex implements T58 (docs/03-tasks.md) on `feat/T58-meta-fetch-binding`; then
-  claude-code reviews, merges and deploys the bot. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Next step:** Volodymyr deploys the bot from clean `main` (T58, auto-mode blocks claude-code);
+  then claude-code checks the next cron tick for IG/FB comment rows. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
+- **T58:** PR #150 squash-merged 2026-11-14 by claude-code (CI green). Channels-only, no
+  migration; bot deploy pending.
 - **T58 implementation/validation (codex, edit-only):** default global fetch now runs through
   an arrow in `MetaGraphClient` and `TelegramAdapter`, avoiding a client receiver in Workers.
   Token exchange, Instagram upload and Threads already use receiver-free calls. Added global
