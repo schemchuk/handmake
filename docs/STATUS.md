@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T55b — `/work` step «Додати відео», PR open, waiting for Volodymyr's OK.
-- **Branch:** `feat/T55b-work-video-step`.
-- **Last commit:** this commit — feat(bot): add optional video step to /work (T55b).
-- **Next step:** after CI and Volodymyr's OK (personal data), claude-code merges, deploys the bot
-  from clean `main`, hands T55c to codex.
+- **Active agent:** codex.
+- **Current task:** T55c — publisher: download, strip, commit work video, Telegram reply.
+- **Branch:** `feat/T55c-work-video-publish`.
+- **Last commit:** this commit — docs: record T55b merge and deploy, hand T55c to codex.
+- **Next step:** codex implements T55c (sandboxed: edit files only; claude-code reviews, runs the
+  tests the sandbox cannot, commits, pushes, opens the PR). Personal data: Volodymyr's OK before merge.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** OK to merge T55b (personal data: author may appear in video)?
+- **Open questions for Volodymyr:** none.
 
+- **T55b:** PR #142 merged 2026-11-14 by claude-code with Volodymyr's OK (squash b7d0e70, CI green).
+  No migration, secrets or wrangler change. Bot deployed from clean `main`, Worker
+  `ed2d1672-e3aa-4c93-9f64-0aa73d3e0ce6`. Until T55c the publisher ignores the work video.
 - **T55b implementation/validation:** versioned optional video controls after photos, metadata limits,
   document resend hint, replace/remove/skip, people confirmation, video preview and approved job
   metadata. T55a review note: publication metadata requires both video fields or neither.
