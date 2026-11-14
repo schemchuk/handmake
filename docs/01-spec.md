@@ -2,8 +2,8 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v11 (2026-11-14).**
-Previous: approved v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
+Status: **v12 draft (2026-11-14), F40 awaits Volodymyr's review; v11 approved.**
+Previous: approved v11 (2026-11-14), v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
 Changes from v10 (v11) are listed in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
@@ -269,6 +269,33 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   the page language: Instagram first on German pages, Telegram first on Ukrainian pages. Links carry
   `rel="me"`, and the home page states the same profiles as schema.org `sameAs`. The newsletter stays
   the site's main call to action; profile links never appear in the header or on work cards.
+- **F40** Cloth look (v12 draft, interview round 2026-11-14). Every page of the site looks like an
+  unrolled scroll of homespun cloth, so the site reads as a craft workshop. Reference mockup:
+  `docs/design/site-cloth/index.html` (home page; the other pages follow the same parts).
+  - **Roll**: the header is a round bolt of cloth with the site name, navigation and language
+    switch. It stays at the top of the screen; the cloth comes out from under it, and the surface
+    of the roll moves with the scroll so the roll reads as turning.
+  - **Cloth**: one centred strip of unbleached linen drawn in code (faint weave, a tighter selvedge
+    on both sides, a hem and a fringe at the end of the page). No photo texture. Behind it a dark
+    blue ground; the footer sits on the ground below the fringe.
+  - **Seam**: a red running stitch down the left edge of the cloth, sewn by a needle as far as the
+    visitor has scrolled; it stops before the fringe. It is the only motion that is not a direct
+    hover or focus response.
+  - **Name**: on the home page the heading is the name in the author's own handwriting, in the red
+    thread colour, with the name as text for assistive technology and search engines. A tenant
+    without a handwriting asset gets the name set in the display typeface.
+  - **Photos and video**: shown whole, never cropped, as patches sewn on with a linen-coloured
+    running stitch and a slight tilt that straightens on hover and focus.
+  - **Type and colour**: display typeface Gabriela, body Onest, both self-hosted with Latin and
+    Cyrillic. Text is a dark blue related to the ground. Three colours carry the page: linen, blue,
+    red thread.
+  - **Rules**: colours, typefaces and the handwriting asset come from tenant configuration (F23),
+    nothing brand-specific in code. No third-party requests. Without JavaScript and with reduced
+    motion the page is complete: the seam is shown fully sewn and the roll does not move. Text
+    contrast meets WCAG AA; keyboard focus stays visible; no horizontal scroll from 320 px up.
+  - Acceptance: home, shows (list and page), works and collections (list and page), post, circle,
+    gift, legal and 404 pages in both languages use the look and pass the rules above at 390 px
+    and 1280 px widths.
 - **F24** Collections and works are content types in the content store, created through the bot like
   posts (the author sends photos and a short note; AI drafts the description; she approves).
 
@@ -525,6 +552,15 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
   that address (required practice in Germany).
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
+
+## 14-v12. Changes from v11 (v12 draft, 2026-11-14)
+
+- New F40: the cloth look for every page of the site (roll header, linen cloth, sewn red seam,
+  handwritten name, uncropped sewn-on photos, Gabriela and Onest, dark blue ground).
+- Architecture impact (for T60 tasks): `site.theme` gains `ground` and `thread` colours and an
+  optional handwriting asset; `rule` is retired in favour of `thread`; the bundled Latin family
+  Familjen Grotesk is replaced by Gabriela (display) with Onest as body for both scripts; one small
+  inline script drives the seam and the roll.
 
 ## 14-v11. Changes from v10 (v11, approved 2026-11-14)
 

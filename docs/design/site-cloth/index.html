@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faden und Stimmung — макет «полотно»</title>
+<!-- Mockup only: the real site self-hosts its fonts. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gabriela&family=Onest:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ground: #27313c;      /* the wall behind the cloth: woad-dyed wool */
+  --ground-ink: #c8c2b2;
+  --cloth: #e3ddcd;       /* unbleached linen */
+  --cloth-shade: #cbc3ae;
+  --weft: 92, 80, 54;     /* weave line colour, as rgb parts */
+  --ink: #283442;       /* the same woad blue as the wall, darker */
+  --muted: #5c6470;
+  --thread: #b3362b;      /* the red thread, kept from the current site */
+  --patch-thread: #d9d1bb; /* linen thread, close to the cloth */
+  --display: 'Gabriela', Georgia, serif;
+  --body: 'Onest', system-ui, sans-serif;
+  --cloth-w: min(100% - 2.6rem, 60rem);
+  --pad: clamp(2.4rem, 7vw, 5.5rem);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { overflow-x: clip; background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 112.5%; line-height: 1.5; }
+body { margin: 0; }
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--thread); outline-offset: 3px; }
+
+/* ── the roll: a round bolt of cloth that stays at the top and turns as the cloth is pulled ── */
+.roll-bar {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--ground);
+  padding-top: .6rem;
+}
+.roll {
+  position: relative;
+  width: calc(var(--cloth-w) + 1.1rem);
+  margin-inline: auto;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .1rem 1.5rem;
+  padding: 1.25rem clamp(1.6rem, 4.5vw, 3rem) 1.35rem;
+  border-radius: 1.15rem / 50%;
+  background: linear-gradient(180deg, #6c644f 0%, #a39a82 9%, #d6cfbc 24%, #f7f3e7 41%, #ebe5d5 54%, #c4bba5 74%, #8d846d 90%, #5d5542 100%);
+  box-shadow: 0 .5rem .9rem -.2rem rgba(0, 0, 0, .55);
+}
+.roll > :not(.roll-skin, .peg) { position: relative; }
+/* the cloth surface of the roll; its slubs travel with the scroll, so the roll reads as turning */
+.roll-skin {
+  position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='240'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.008 .22' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .25 0 0 0 0 .15 0 0 0 1.5 -.62'/%3E%3C/filter%3E%3Crect width='700' height='240' filter='url(%23a)'/%3E%3C/svg%3E") 0 var(--turn, 0px),
+    repeating-linear-gradient(90deg, rgba(var(--weft), .1) 0 1px, transparent 1px 3px);
+}
+/* wound layers showing at both ends */
+.roll-skin::before, .roll-skin::after {
+  content: ''; position: absolute; top: -4%; bottom: -4%; width: 2.1rem; border-radius: 50%;
+  border: 1px solid rgba(var(--weft), .5);
+  box-shadow: inset 0 0 0 .22rem transparent, inset 0 0 0 calc(.22rem + 1px) rgba(var(--weft), .32),
+              inset 0 0 0 .5rem transparent, inset 0 0 0 calc(.5rem + 1px) rgba(var(--weft), .2);
+}
+.roll-skin::before { left: -1.2rem; }
+.roll-skin::after { right: -1.2rem; }
+/* the wooden rod the cloth is wound on */
+.peg {
+  position: absolute; top: 50%; translate: 0 -50%; width: .62rem; height: 1.05rem;
+  background: linear-gradient(180deg, #4a321c, #b08453 38%, #86623b 62%, #38250f);
+}
+.peg--l { right: calc(100% - .12rem); border-radius: 45% 0 0 45%; }
+.peg--r { left: calc(100% - .12rem); border-radius: 0 45% 45% 0; }
+/* shadow the roll casts on the cloth */
+.roll-bar::after {
+  content: ''; position: absolute; top: 100%; left: 50%; translate: -50% 0;
+  width: var(--cloth-w); height: 1.4rem; pointer-events: none;
+  background: linear-gradient(180deg, rgba(38, 28, 10, .34), rgba(38, 28, 10, .1) 45%, transparent);
+}
+.wordmark { font-family: var(--display); font-size: 1.3rem; text-decoration: none; }
+.nav { font-family: var(--display); font-size: 1.1rem; display: flex; flex-wrap: wrap; gap: .1rem 1.3rem; align-items: baseline; }
+.nav a { text-decoration: none; padding-block: .15rem; }
+.nav a:hover { text-decoration: underline; text-decoration-color: var(--thread); text-decoration-thickness: 2px; text-underline-offset: .2em; }
+.nav { margin-left: auto; }
+@media (max-width: 40rem) {
+  .roll { padding-block: .8rem .9rem; }
+  .nav { order: 3; width: 100%; margin: 0; justify-content: space-between; font-size: .95rem; }
+}
+.langs { display: flex; gap: .6rem; color: var(--muted); font-size: .9rem; }
+.langs [aria-current] { color: var(--ink); font-weight: 700; }
+
+/* ── the cloth ── */
+.cloth {
+  position: relative;
+  width: var(--cloth-w);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 3rem) var(--pad) clamp(3rem, 7vw, 5rem);
+  background-color: var(--cloth);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .31 0 0 0 0 .2 0 0 0 .5 -.2'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23a)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .012' numOctaves='2' seed='9'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .31 0 0 0 0 .2 0 0 0 .4 -.16'/%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23a)'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(0deg, rgba(var(--weft), .1) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(var(--weft), .08) 0 1px, transparent 1px 3px);
+  box-shadow: 0 0 2.5rem rgba(0, 0, 0, .35);
+}
+/* selvedge: the tighter woven edge on both sides */
+.cloth::before, .cloth::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: .5rem;
+  background:
+    repeating-linear-gradient(0deg, rgba(var(--weft), .28) 0 1px, transparent 1px 2px),
+    rgba(var(--weft), .14);
+}
+.cloth::before { left: 0; }
+.cloth::after { right: 0; }
+
+/* the seam: sewn as far as the reader has scrolled */
+.seam {
+  position: absolute; left: calc(var(--pad) / 2 - 2px); top: 0; width: 5px;
+  height: var(--sewn, 100%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='26'%3E%3Cpath d='M2.5 3.5v13' stroke='%23b3362b' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E") repeat-y;
+  pointer-events: none;
+}
+.needle {
+  position: absolute; left: calc(var(--pad) / 2 + .5px); top: var(--sewn, 100%);
+  width: 30px; height: 126px; translate: -50% -5px; rotate: 7deg; transform-origin: 50% 0;
+  pointer-events: none; overflow: visible;
+  filter: drop-shadow(2px 3px 2px rgba(40, 30, 10, .35));
+}
+
+.hero h1 { margin: 0; }
+/* the name in the author's own hand, in the same red thread as the seam */
+.hand {
+  display: block; width: min(100%, 36rem); aspect-ratio: 1890 / 1581;
+  background: var(--thread);
+  -webkit-mask: url(wordmark.png) center / contain no-repeat; mask: url(wordmark.png) center / contain no-repeat;
+}
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.section-title {
+  margin: clamp(2.5rem, 7vw, 4.5rem) 0 0;
+  font-family: var(--display); font-weight: 400; font-size: 1.9rem;
+}
+.section-title a { text-decoration-color: var(--thread); text-decoration-thickness: 2px; text-underline-offset: .22em; }
+
+.feed {
+  list-style: none; margin: 0; padding: clamp(1.5rem, 4vw, 2.5rem) 0 0;
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  row-gap: clamp(2.5rem, 7vw, 5rem);
+}
+.entry a { display: block; text-decoration: none; }
+/* a photo is a patch sewn onto the cloth with pale thread */
+.patch { position: relative; margin: 0; rotate: var(--tilt, -.7deg); box-shadow: 0 2px 5px rgba(40, 30, 10, .28); transition: rotate .25s ease; }
+.patch img { width: 100%; height: auto; background: var(--cloth-shade); }
+.patch::after { content: ''; position: absolute; inset: 7px; border: 2px dashed var(--patch-thread); pointer-events: none; }
+.entry:nth-child(even) .patch { --tilt: .6deg; }
+.entry a:hover .patch, .entry a:focus-visible .patch { rotate: 0deg; }
+.credit { margin: .7rem 0 -.6rem; font-size: .8rem; color: var(--muted); }
+.entry time { display: block; margin-block: 1rem .2rem; color: var(--muted); font-size: .9rem; }
+.entry-text { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(1.3rem, 3vw, 1.9rem); line-height: 1.22; text-wrap: pretty; }
+.entry a:hover .entry-text, .entry a:focus-visible .entry-text { text-decoration: underline; text-decoration-color: var(--thread); text-decoration-thickness: 2px; text-underline-offset: .18em; }
+
+@media (min-width: 52rem) {
+  .feed { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 1.5rem; }
+  .entry:nth-child(3n + 1) { grid-column: 1 / span 7; }
+  .entry:nth-child(3n + 2) { grid-column: 8 / span 5; align-self: end; }
+  .entry:nth-child(3n) { grid-column: 3 / span 8; }
+  .feed--single .entry { grid-column: 1 / span 6; }
+  .entry--note { align-self: center; }
+}
+
+/* ── the end of the cloth: hem and fringe ── */
+.fringe {
+  width: var(--cloth-w); margin-inline: auto; height: 4.2rem;
+  background:
+    repeating-linear-gradient(90deg, var(--cloth) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(90deg, transparent 0 7px, var(--cloth-shade) 7px 8.5px, transparent 8.5px 13px);
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, rgba(0,0,0,.55) 75%, transparent);
+          mask-image: linear-gradient(180deg, #000 40%, rgba(0,0,0,.55) 75%, transparent);
+}
+.hem { width: var(--cloth-w); margin-inline: auto; height: .7rem;
+  background: repeating-linear-gradient(90deg, var(--cloth-shade) 0 3px, var(--cloth) 3px 5px); }
+
+.site-footer {
+  width: var(--cloth-w); margin-inline: auto; padding: 1.5rem .25rem 3rem;
+  display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; color: var(--ground-ink); font-size: .9rem;
+}
+.site-footer :first-child { margin-right: auto; font-family: var(--display); }
+
+@media (prefers-reduced-motion: reduce) {
+  .patch { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="roll-bar">
+  <header class="roll">
+    <span class="roll-skin" aria-hidden="true"></span><span class="peg peg--l" aria-hidden="true"></span><span class="peg peg--r" aria-hidden="true"></span>
+    <a class="wordmark" href="#">Faden und Stimmung</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#">Покази</a><a href="#">Роботи</a><a href="#">Колекції</a><a href="#">Гурток</a>
+    </nav>
+    <span class="langs"><a href="#">DE</a><a href="#" aria-current="true">UK</a></span>
+  </header>
+</div>
+
+<main class="cloth" id="cloth">
+  <div class="seam" aria-hidden="true"></div>
+  <svg class="needle" viewBox="0 0 22 92" aria-hidden="true">
+    <path d="M11 0 C 4 8, 17 12, 11 21" fill="none" stroke="#b3362b" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M11 14 C 14.2 14, 14.6 20, 14 30 L 11.6 90 L 11 92 L 10.4 90 L 8 30 C 7.4 20, 7.8 14, 11 14 Z" fill="#444b54"/>
+    <path d="M10 26 L 10.7 86" stroke="#c9d0d6" stroke-width="1" stroke-linecap="round"/>
+    <ellipse cx="11" cy="21" rx="1.3" ry="4" fill="#e3ddcd"/>
+    <path d="M11 17.5 v7" stroke="#b3362b" stroke-width="1.6"/>
+  </svg>
+
+  <section class="hero"><h1><span class="visually-hidden">Faden und Stimmung</span><span class="hand" aria-hidden="true"></span></h1></section>
+
+  <h2 class="section-title"><a href="#">Покази</a></h2>
+  <ol class="feed feed--single">
+    <li class="entry"><a href="#">
+      <figure class="patch"><img src="https://fadenundstimmung.de/show-media/01m7cgzvw0pg0fq7wdfdzqs3wg/image-0.png" alt=""></figure>
+      <p class="credit">KI-generiertes Model</p>
+      <time>14 листопада 2026 р.</time>
+      <p class="entry-text">Теплі слідки для дому. Допоможуть комфортно почуватися у власних стінах.</p>
+    </a></li>
+  </ol>
+
+  <h2 class="section-title">Дописи</h2>
+  <ol class="feed">
+    <li class="entry"><a href="#">
+      <figure class="patch"><img src="https://fadenundstimmung.de/media/01m79ykb8cdgrx6k29htysnzja/photo-1.jpg" alt=""></figure>
+      <time>13 листопада 2026 р.</time><p class="entry-text">Робота Люби</p></a></li>
+    <li class="entry"><a href="#">
+      <figure class="patch"><img src="https://fadenundstimmung.de/media/01m79wssk61f11fa1c5j61bvcs/photo-1.jpg" alt=""></figure>
+      <time>13 листопада 2026 р.</time><p class="entry-text">Роботи Оксани</p></a></li>
+    <li class="entry"><a href="#">
+      <figure class="patch"><img src="https://fadenundstimmung.de/media/01m79w06ysx6fhb055twxywd1c/photo-1.jpg" alt=""></figure>
+      <time>13 листопада 2026 р.</time><p class="entry-text">легенькі шерстяні слідки</p></a></li>
+    <li class="entry"><a href="#">
+      <figure class="patch"><img src="https://fadenundstimmung.de/media/01m6gwmcgbp2ct99va1zgzfbkp/photo-1.jpg" alt=""></figure>
+      <time>4 листопада 2026 р.</time><p class="entry-text">елемент ірландського мережива</p></a></li>
+    <li class="entry entry--note"><a href="#">
+      <time>29 жовтня 2026 р.</time>
+      <p class="entry-text">🧶 Сьогодні о 14:00 зустріч нашого гуртка, як і завжди, в Landshut, Niedermayerstr. 85! Не забудь хороший настрій.</p></a></li>
+    <li class="entry"><a href="#">
+      <figure class="patch"><img src="https://fadenundstimmung.de/media/01m5yys4hkd43sp821xejqvt6e/photo-1.jpg" alt=""></figure>
+      <time>27 жовтня 2026 р.</time><p class="entry-text">Ще один повсякденний плед, який приносить тепло і затишок у холодну погоду</p></a></li>
+  </ol>
+</main>
+<div class="hem" aria-hidden="true"></div>
+<div class="fringe" aria-hidden="true"></div>
+
+<footer class="site-footer">
+  <span>Faden und Stimmung</span>
+  <a href="#">Telegram</a><a href="#">Instagram</a><a href="#">Impressum</a><a href="#">Datenschutzerklärung</a>
+</footer>
+
+<script>
+// The needle sews the seam down the cloth as far as the reader has scrolled.
+(() => {
+  const cloth = document.getElementById('cloth');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let queued = false;
+  const sew = () => {
+    queued = false;
+    const end = cloth.offsetHeight - 150;
+    const y = still ? end : Math.max(40, Math.min(innerHeight * 0.6 - cloth.getBoundingClientRect().top, end));
+    cloth.style.setProperty('--sewn', y + 'px');
+    if (!still) document.querySelector('.roll-skin').style.setProperty('--turn', Math.round(scrollY * 0.45) + 'px');
+  };
+  const ask = () => { if (!queued) { queued = true; requestAnimationFrame(sew); } };
+  addEventListener('scroll', ask, { passive: true });
+  addEventListener('resize', ask);
+  sew();
+})();
+</script>
+</body>
+</html>

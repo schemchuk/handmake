@@ -164,3 +164,21 @@ on 2026-11-03.
 - Q10 Social media replies: the bot drafts replies to comments (rules ported from `/ig-reply`), the
   author approves them in Telegram. Volodymyr runs `/ig-plan` and `/ig-audit` himself once a week.
 - Order: T41 (legal pages and go-live) first, then the end-to-end check of what exists.
+
+## Round 2026-11-14: site redesign ("unrolled homespun cloth")
+- Volodymyr's brief: the pages must not look like memorial plaques; they should carry the spirit of a
+  craft workshop. A page is an unrolled scroll of homespun cloth: the roll sits at the top, the cloth
+  falls down the page. The red line gets animated.
+- Q1 Red line: it is the existing red running stitch. It becomes a seam sewn by a needle down the
+  edge of the cloth as the visitor scrolls (motion answers the scroll, nothing loops on its own).
+- Q2 Cloth: stylized, drawn in code (selvedge, faint weave, fringe at the bottom). No photo texture.
+- Q3 Roll: stays fixed at the top of the screen with the name and navigation; the cloth is pulled
+  out from under it.
+- Q4 No real homespun cloth at hand to photograph; colour and weave are designed by Claude Code.
+- Mockup review (same day): the roll must look round (done: a cylinder that turns with the scroll).
+  The author wrote the name by hand; her handwriting becomes the home page heading, in the red
+  thread colour. The thread that sews the photos on is linen-coloured, not white. Photos are shown
+  whole, never cropped. Text colour is a dark blue related to the background. The dark blue
+  background behind the cloth stays. Display typeface: Gabriela (chosen from four with Cyrillic).
+  All pages are redesigned, not only the home page.
+- Mockup: docs/design/site-cloth/index.html.

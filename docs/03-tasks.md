@@ -2524,3 +2524,66 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   error and advances the watermark; an existing blank `new` row is not drafted.
 - Tests: `comment-collect` cases for a blank incoming comment and a blank stored row. Bot tests
   only, `--maxWorkers=2`.
+
+### T60 — Cloth look for the site (`site`, F40, spec v12)
+Reference: `docs/design/site-cloth/index.html` (open it in a browser; it is the visual contract for
+colours, proportions and motion). Split into four PRs, each under ~400 changed non-test lines and
+each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot deploy.
+
+#### T60a — Theme tokens, typefaces, roll, cloth, fringe
+- Status: planned.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Change: `site.theme.colors` in `packages/core/src/tenant.ts` and the tenant YAML become
+  `ground` `#27313c`, `paper` `#e3ddcd` (the cloth), `ink` `#283442`, `muted` `#5c6470`, `thread`
+  `#b3362b`; `rule` is removed and its uses move to `thread` or to a linen thread derived from
+  `paper`. Fonts: display `Gabriela` (`@fontsource/gabriela`, Latin and Cyrillic subsets), body
+  `Onest` for both scripts; drop Familjen Grotesk and its package. `Base.astro` and `global.css`:
+  the sticky roll header (skin, wound-layer ends, rod), the cloth wrapper around `<main>` with
+  weave, selvedge, hem and fringe, the footer on the ground. Headings lose the heavy grotesque
+  settings (weight 700, tight tracking) and follow the mockup's scale.
+- Acceptance: every existing page renders inside the cloth in both languages; no request leaves
+  the site's origin; no horizontal scroll at 320, 390 and 1280 px; the roll keeps name, navigation
+  and language switch reachable by keyboard with visible focus; `theme-color` is the ground.
+- Tests: tenant schema accepts the new theme and rejects `rule`; font CSS lists Gabriela and Onest
+  faces with Cyrillic ranges; a build smoke test finds the roll and cloth landmarks on the home page.
+
+#### T60b — Sewn seam and turning roll
+- Status: planned.
+- Owner: codex · Reviewer: claude-code · Depends on: T60a
+- Change: the seam and needle from the mockup as a component in the cloth, driven by one small
+  inline script (scroll and resize, `requestAnimationFrame`, passive listener) that sets `--sewn`
+  on the cloth and `--turn` on the roll skin. The old `stitch--draw` load animation is removed;
+  remaining horizontal `Stitch` dividers use the linen thread, so red stays for the seam and name.
+- Acceptance: the needle stays near 60% of the viewport height and stops before the hem; with
+  `prefers-reduced-motion: reduce` or without JavaScript the seam is fully sewn, the needle rests
+  at the end and the roll does not move; the seam and needle are hidden from assistive technology
+  and never cover text or links at 320 px.
+- Tests: the built home page contains the seam markup and the script; a unit test for the pure
+  function that maps scroll position to the sewn length (clamped at both ends).
+
+#### T60c — Handwritten name and sewn-on media
+- Status: planned.
+- Owner: codex · Reviewer: claude-code · Depends on: T60a; the SVG asset from claude-code
+- Change: optional `site.theme.wordmark` (path of an SVG in the repo, alt text is the tenant
+  name). Home page `h1`: the tenant name as visually hidden text plus the asset as a CSS mask in
+  the thread colour; without the asset, the name in the display typeface. `WorkImage`, feeds
+  (`PortfolioFeed`, `ShowFeed`, home feed), work and show galleries and the work video: media keep
+  their own aspect ratio (no `object-fit: cover` crop), carry `width` and `height` so the page does
+  not jump, and get the patch treatment (linen running stitch inset, small shadow, alternating
+  tilt that straightens on hover and focus). The AI-model label stays a text line under the patch.
+- Acceptance: no photo or video is cropped on any list or detail page; layout shift stays near
+  zero on the home page; the `h1` text is exactly the tenant name; a tenant without `wordmark`
+  builds and shows a text heading.
+- Tests: schema for `wordmark`; home page renders both variants; image markup has dimensions.
+
+#### T60d — Remaining pages on the cloth
+- Status: planned.
+- Owner: codex · Reviewer: claude-code · Depends on: T60a, T60c
+- Change: circle, gift, newsletter form, legal pages, 404, show and work detail pages: spacing,
+  heading scale, form controls and buttons restyled for the cloth (inputs as plain linen fields
+  with an ink underline, the submit button in ink on cloth, focus in thread red), long legal text
+  at a readable measure (under 75 characters). Remove CSS left unused by T60a-c.
+- Acceptance: each page type in both languages checked at 390 and 1280 px (screenshots attached
+  to the PR); contrast of text and controls meets WCAG AA; the newsletter form still submits to
+  the configured action with the same field names.
+- Tests: existing site tests stay green; the newsletter markup test still passes.

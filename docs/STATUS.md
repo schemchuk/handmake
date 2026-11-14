@@ -1,14 +1,15 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T59 — skip comments without text in collection.
-- **Branch:** `feat/T59-skip-blank-comments`.
-- **Last commit:** this commit — docs: drop answered T55e2 question.
-- **Next step:** codex implements T59 (docs/03-tasks.md); claude-code reviews and merges,
-  Volodymyr deploys the bot. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-  Otherwise the next task is the one Volodymyr names.
-- **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Active agent:** claude-code.
+- **Current task:** T60 — cloth look for the site (F40, spec v12 draft): awaiting Volodymyr's review of spec and tasks.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: spec F40 cloth look, plan T60.
+- **Next step:** after Volodymyr's OK, claude-code hands T60a to codex (`feat/T60a-cloth-shell`), then
+  T60b, T60c, T60d in order. claude-code supplies the handwriting SVG before T60c (needs `potrace`).
+  T59 is merged (PR #151); its bot deploy is not recorded here, confirm with Volodymyr.
+  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Blocked on:** Volodymyr's review of F40 and T60.
+- **Open questions for Volodymyr:** approve F40 (docs/01-spec.md) and T60a-d (docs/03-tasks.md).
 
 - **T59 implementation/validation (codex, edit-only):** blank incoming comment text is
   skipped after advancing the watermark; blank pending rows stay `new` without drafting
