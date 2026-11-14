@@ -1,13 +1,18 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T55a — work video contract (`core`), docs/03-tasks.md.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: approve spec v11 (F39), hand T55a to codex.
-- **Next step:** codex implements T55a on `feat/T55a-work-video-contract` (sandboxed run: edit
-  files only; claude-code reviews, commits, pushes and opens the PR). Then T55b.
+- **Active agent:** claude-code.
+- **Current task:** T55a — implementation complete; awaiting claude-code review.
+- **Branch:** `feat/T55a-work-video-contract`.
+- **Last commit:** this commit — feat(core): add optional work video contract (T55a).
+- **Next step:** claude-code merges the T55a PR after CI is green, then hands T55b to codex.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T55a implementation/validation:** optional human MP4 video metadata on works; optional
+  `videoFileId`/`videoPeople` in work publication metadata, preserved through draft approval.
+  Core tests pass (329/329, `vitest run --maxWorkers=2`); core typecheck, changed-file ESLint
+  and Prettier pass. Tests cover legacy works/jobs, video round trips and invalid metadata.
+  Files only; no commit, push, deployment or network access.
 
 - **T34:** done 2026-11-13, PR #140 squash-merged by claude-code; docs only, no bot deploy.
   Reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.

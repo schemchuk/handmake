@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildApprovedWorkJob, createDraft, workDraftDataSchema } from '../src';
+import {
+  buildApprovedWorkJob,
+  createDraft,
+  workDraftDataSchema,
+  workPublicationSchema,
+} from '../src';
 
 const generated = {
   uk: {
@@ -48,6 +53,30 @@ describe('approved work job', () => {
     });
     expect(job.fileIds).toEqual(['opaque-photo']);
     expect(draft).toEqual(before);
+  });
+  it.each(['none', 'author', 'operator', 'both'] as const)(
+    'preserves the optional video reference and people=%s through approval and JSON',
+    (videoPeople) => {
+      const draft = ready();
+      Object.assign(draft.extras.work.config, { videoFileId: 'opaque-video', videoPeople });
+      const before = structuredClone(draft);
+      const job = buildApprovedWorkJob(draft);
+      expect(job.work).toMatchObject({ videoFileId: 'opaque-video', videoPeople });
+      expect(workPublicationSchema.parse(JSON.parse(JSON.stringify(job.work)))).toEqual(job.work);
+      expect(draft).toEqual(before);
+    },
+  );
+  it.each([{ videoFileId: '' }, { videoPeople: 'participant' }])(
+    'rejects invalid publication video metadata %j',
+    (patch) => {
+      const job = buildApprovedWorkJob(ready());
+      expect(workPublicationSchema.safeParse({ ...job.work, ...patch }).success).toBe(false);
+    },
+  );
+  it('omits video metadata from existing jobs', () => {
+    const job = buildApprovedWorkJob(ready());
+    expect(job.work).not.toHaveProperty('videoFileId');
+    expect(job.work).not.toHaveProperty('videoPeople');
   });
   it('marks both versions ai-assisted if UA was edited, preserving the approved text exactly', () => {
     const draft = ready();

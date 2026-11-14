@@ -2391,6 +2391,8 @@ it becomes a task.
 - Acceptance: approval is impossible with an unconfirmed people answer or an over-limit video; a
   stale callback after replace is rejected.
 - Tests: session flow, limits, replace/remove, skip path, stale callbacks.
+- Review notes from T55a (non-blocking): `workPublicationSchema` accepts `videoFileId` without
+  `videoPeople` and vice versa; add a refine that requires both or neither.
 
 #### T55c — Publisher: download, strip, commit, Telegram reply (`publisher`, `channels`) · Depends on: T55a
 - Change: download via `getFile` (20 MB limit), reuse the T53d remux/probe/post-strip check, commit
