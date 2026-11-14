@@ -168,11 +168,26 @@ describe('parseTenantConfig', () => {
         paper: '#e3ddcd',
         ground: '#27313c',
         ink: '#283442',
-        muted: '#5c6470',
+        muted: '#59616d',
         thread: '#b3362b',
       });
       expect(site?.theme.fonts).toEqual({ display: 'Gabriela', body: 'Onest' });
       expect(Object.keys(site?.circle?.texts ?? {}).sort()).toEqual(['de', 'uk']);
+    });
+
+    it('keeps cloth body and muted text above WCAG AA contrast', () => {
+      const colors = parseTenantConfig(realConfig()).site!.theme.colors;
+      const luminance = (hex: string) => {
+        const linear = [1, 3, 5].map((offset) => {
+          const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+          return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        });
+        return linear[0]! * 0.2126 + linear[1]! * 0.7152 + linear[2]! * 0.0722;
+      };
+      for (const foreground of [colors.ink, colors.muted]) {
+        const contrast = (luminance(colors.paper) + 0.05) / (luminance(foreground) + 0.05);
+        expect(contrast).toBeGreaterThanOrEqual(4.5);
+      }
     });
 
     it('is optional: a tenant without a site still parses', () => {

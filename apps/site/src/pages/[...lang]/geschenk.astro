@@ -15,8 +15,8 @@ const text = newsletterStrings(lang);
 const alternates = Object.fromEntries(tenant.languages.map((code) => [code, pagePath(code, site.defaultLanguage, 'geschenk')]));
 ---
 <Base lang={lang} title={text.gift} alternates={alternates}>
-  <article class="wrap page">
+  <article class="wrap page page--reading">
     <h1>{text.gift}</h1>
-    <p><a href="/geschenk/rosenbluete.pdf" download>{text.download}</a></p>
+    <p><a class="button" href="/geschenk/rosenbluete.pdf" download>{text.download}</a></p>
   </article>
 </Base>

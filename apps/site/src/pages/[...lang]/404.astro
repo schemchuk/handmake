@@ -11,5 +11,5 @@ const { tenant, site } = await loadSiteData();
 const alternates = Object.fromEntries(tenant.languages.map((code) => [code, pagePath(code, site.defaultLanguage, '404')]));
 ---
 <Base lang={lang} title="404" alternates={alternates}>
-  <div class="wrap page"><h1>404</h1><p>{lang === 'uk' ? 'Сторінку не знайдено.' : 'Seite nicht gefunden.'}</p><a href={pagePath(lang, site.defaultLanguage)}>{lang === 'uk' ? 'На головну' : 'Zur Startseite'}</a></div>
+  <div class="wrap page page--reading"><h1>404</h1><p>{lang === 'uk' ? 'Сторінку не знайдено.' : 'Seite nicht gefunden.'}</p><a href={pagePath(lang, site.defaultLanguage)}>{lang === 'uk' ? 'На головну' : 'Zur Startseite'}</a></div>
 </Base>
