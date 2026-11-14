@@ -18,9 +18,11 @@
       "updatedAt": "2026-11-14T07:44:24.805Z"
     },
     "facebook": {
-      "status": "pending",
-      "remoteIds": [],
-      "updatedAt": "2026-11-14T07:43:54.878Z"
+      "status": "done",
+      "remoteIds": [
+        "1535779399608717_122110427295537792"
+      ],
+      "updatedAt": "2026-11-14T07:44:34.780Z"
     },
     "threads": {
       "status": "pending",
