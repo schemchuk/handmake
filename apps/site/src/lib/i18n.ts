@@ -15,6 +15,7 @@ export interface UiStrings {
   when: string;
   where: string;
   join: string;
+  presentation: string;
   joinChannel: string;
   groupHeading: string;
   groupText: string;
@@ -44,6 +45,7 @@ const strings: Record<string, UiStrings> = {
     when: 'Wann',
     where: 'Wo',
     join: 'Zum Telegram-Kanal',
+    presentation: 'Präsentation ansehen (PDF)',
     joinChannel: 'Telegram-Kanal abonnieren',
     groupHeading: 'Austauschgruppe',
     groupText:
@@ -72,6 +74,7 @@ const strings: Record<string, UiStrings> = {
     when: 'Коли',
     where: 'Де',
     join: 'До Telegram-каналу',
+    presentation: 'Переглянути презентацію (PDF)',
     joinChannel: 'Підписатися на Telegram-канал',
     groupHeading: 'Група для обміну',
     groupText:

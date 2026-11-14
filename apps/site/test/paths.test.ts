@@ -7,9 +7,17 @@ import {
   mediaPath,
   pagePath,
   postPage,
+  presentationPath,
 } from '../src/lib/paths';
 
 describe('language routing', () => {
+  it('links only the presentation available in the requested language', () => {
+    expect(presentationPath('de')).toBe('/praesentation/de.pdf');
+    expect(presentationPath('uk')).toBe('/praesentation/uk.pdf');
+    expect(presentationPath('fr')).toBeUndefined();
+    expect(presentationPath('constructor')).toBeUndefined();
+  });
+
   it('serves the default language at the root and others under /<lang>/', () => {
     expect(pagePath('de', 'de')).toBe('/');
     expect(pagePath('uk', 'de')).toBe('/uk/');

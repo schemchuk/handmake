@@ -31,3 +31,13 @@ export function absoluteUrl(baseUrl: string, path: string): string {
 export function mediaPath(postId: string, fileName: string): string {
   return `/media/${postId.toLowerCase()}/${fileName}`;
 }
+
+const presentations = new Map([
+  ['de', '/praesentation/de.pdf'],
+  ['uk', '/praesentation/uk.pdf'],
+]);
+
+/** A language without a presentation has no link or fallback PDF. */
+export function presentationPath(lang: string): string | undefined {
+  return presentations.get(lang);
+}
