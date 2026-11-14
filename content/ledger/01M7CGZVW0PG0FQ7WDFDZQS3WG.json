@@ -28,7 +28,9 @@
     },
     "threads": {
       "status": "pending",
-      "remoteIds": [],
+      "remoteIds": [
+        "18119907677470609"
+      ],
       "updatedAt": "2026-11-14T08:30:00.544Z"
     }
   },
