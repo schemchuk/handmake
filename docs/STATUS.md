@@ -1,16 +1,19 @@
 # STATUS
 
 - **Active agent:** codex.
-- **Current task:** T60b — sewn seam and turning roll (F40).
-- **Branch:** `feat/T60b-seam-roll`.
-- **Last commit:** this commit — feat: sewn seam and turning roll (T60b).
-- **Next step:** codex implements T60b (docs/03-tasks.md, reference docs/design/site-cloth/index.html);
-  claude-code reviews, opens the PR and merges; then T60c, T60d. The live site picks up T60 changes
+- **Current task:** T60c — handwritten name and sewn-on media (F40).
+- **Branch:** `feat/T60c-name-patches`.
+- **Last commit:** this commit — docs: record T60b merge, hand T60c to codex.
+- **Next step:** codex implements T60c (docs/03-tasks.md, incl. review note from PR #153);
+  claude-code reviews, opens the PR and merges; then T60d. The live site picks up T60 changes
   on the next publish run (site.yml is called only from publish.yml).
   T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at 12:14Z; Volodymyr deploys.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T60b:** PR #153 merged 2026-11-14 by claude-code (CI green). Seam and turning roll; review note
+  (needle offset) moved to T60c. Site only, no bot deploy.
 
 
 - **T60a:** PR #152 merged 2026-11-14 by claude-code (squash c285b11, CI green). Review found and

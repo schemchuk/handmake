@@ -2548,7 +2548,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   faces with Cyrillic ranges; a build smoke test finds the roll and cloth landmarks on the home page.
 
 #### T60b — Sewn seam and turning roll
-- Status: planned.
+- Status: done (PR #153, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T60a
 - Change: the seam and needle from the mockup as a component in the cloth, driven by one small
   inline script (scroll and resize, `requestAnimationFrame`, passive listener) that sets `--sewn`
