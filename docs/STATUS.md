@@ -1,13 +1,23 @@
 # STATUS
 
-- **Active agent:** codex.
+- **Active agent:** claude-code (review of T57).
 - **Current task:** T57 — remove the own-media step from `/show`.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: plan T57, withdraw own media from shows.
-- **Next step:** codex implements T57 (docs/03-tasks.md) on `feat/t57-show-no-own-media`;
-  claude-code reviews. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Branch:** `feat/t57-show-no-own-media`.
+- **Last commit:** this commit — feat: remove own-media step from /show (T57).
+- **Next step:** CI on the T57 PR, then claude-code merges and deploys the bot;
+  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
+
+- **T57 implementation/validation (codex):** removed own-media input, preview and storage wiring
+  from `/show`; ready unapproved shows retain cancel (`owncancel`). Legacy `own*` actions are
+  stale, legacy draft media are ignored, unfrozen proposals drop authentic refs, and frozen
+  approvals remain unchanged. Preview tests 28/28 pass (`--maxWorkers=2`); bot typecheck includes
+  tests; changed-file ESLint, Prettier and diff checks pass. Approval/session tests with
+  `--maxWorkers=2` stalled without results in the D1 sandbox (including a bounded-hook retry)
+  and were interrupted. Review (claude-code): legacy proposals now omit `authentic` instead of an
+  empty list; approval 20/20 and the new session cases 8/8 pass; the full session file stalls
+  locally under the 3 GB cgroup, CI decides. No network, commits or deployment.
 
 - **Full `/show` run 2026-11-14:** show `01M7CGZVW0PG0FQ7WDFDZQS3WG` (work `01M7CH07KE5PY7KGSAN2354KZ2`)
   published to site (5 media byte-equal), Telegram 68-73, Instagram, Facebook, Threads; cost EUR 1.10

@@ -1,4 +1,3 @@
-import { authenticOf } from './show-authentic';
 import { refreshKeyboard } from './show-preview';
 import { botTexts } from './texts';
 import { showPublicationSchema } from '@handmake/core';
@@ -20,7 +19,6 @@ export function createShowApproval(deps: {
   drafts: D1DraftStore;
   verified: Pick<ReturnType<typeof createShowVerificationStore>, 'get'>;
   works: WorkReader;
-  authentic?: (stored: StoredDraft) => Promise<ShowPublication['media']>;
   backfill?: (stored: StoredDraft) => Promise<void | 'dispatched' | 'running'>;
 }): ShowApproval {
   const { drafts } = deps;
@@ -44,27 +42,7 @@ export function createShowApproval(deps: {
       await current(ctx, stored);
       if (stored.draft.state !== 'ready' || stored.draft.extras['showApproved'])
         throw new Error('show not ready');
-      const own = authenticOf(stored);
-      if (own?.editing || (own?.items.length && (!own.confirmed || !own.people))) {
-        return ctx.reply(
-          'Завершіть додавання власних медіа та підтвердьте, хто у кадрі.',
-          refreshKeyboard(stored, botTexts),
-        );
-      }
-      let authenticMedia: ShowPublication['media'] = [];
-      if (own?.items.length) {
-        try {
-          if (!deps.authentic) throw new Error('authentic transport unavailable');
-          authenticMedia = await deps.authentic(stored);
-        } catch {
-          return ctx.reply(
-            'Не вдалося зберегти власні фото/відео. Спробуйте «Оновити перегляд» ще раз.',
-            refreshKeyboard(stored, botTexts),
-          );
-        }
-      }
-      await current(ctx, stored);
-      const media: ShowPublication['media'] = [...authenticMedia];
+      const media: ShowPublication['media'] = [];
       const images: ShowPublication['show']['images'] = [];
       let video: ShowVideo | undefined;
       const snapshot = await (async () => {
@@ -83,7 +61,7 @@ export function createShowApproval(deps: {
             doc.mime_type !== item.result.mimeType
           )
             throw new Error('document identity mismatch');
-          media.push({ fileName, ref: own?.items.length ? item.ref : doc.file_id });
+          media.push({ fileName, ref: doc.file_id });
           const metadata = {
             fileName,
             provenance: 'ai-generated' as const,
@@ -119,14 +97,6 @@ export function createShowApproval(deps: {
         );
       });
       if (!snapshot) return;
-      if (own?.items.length) {
-        await ctx.reply('Оригінальна робота');
-        for (const item of own.items) {
-          await current(ctx, stored);
-          if (item.kind === 'photo') await ctx.replyWithPhoto(item.fileId);
-          else await ctx.replyWithVideo(item.fileId);
-        }
-      }
       const work = await deps.works.readWork(snapshot.tenantId, snapshot.plan.workId);
       if (!work || work.tenant !== snapshot.tenantId || work.id !== snapshot.plan.workId)
         throw new Error('linked work missing');
@@ -142,16 +112,6 @@ export function createShowApproval(deps: {
           originals: work.photos.map((fileName) => ({ fileName, provenance: 'human' })),
           images,
           video,
-          ...(own?.items.length
-            ? {
-                authentic: own.items.map((item) => ({
-                  fileName: item.fileName,
-                  kind: item.kind,
-                  provenance: 'human',
-                  people: own.people,
-                })),
-              }
-            : {}),
           versions: work.versions,
         },
         media,
@@ -226,13 +186,10 @@ export function createShowApproval(deps: {
       if (
         String(stored.version) !== version ||
         stored.draft.state !== 'ready' ||
-        (!!authenticOf(stored)?.items.length &&
-          (!authenticOf(stored)?.confirmed || !authenticOf(stored)?.people)) ||
-        authenticOf(stored)?.editing === true ||
         stored.draft.extras['showProposalVersion'] !== stored.version
       )
         return;
-      const proposal = stored.draft.extras['showProposal'] as PublishJob | undefined;
+      let proposal = stored.draft.extras['showProposal'] as PublishJob | undefined;
       if (
         !proposal ||
         proposal.kind !== 'show' ||
@@ -240,7 +197,22 @@ export function createShowApproval(deps: {
         proposal.postId !== stored.draft.draftId
       )
         throw new Error('missing show proposal');
-      showPublicationSchema.parse(proposal.show);
+      const publication = showPublicationSchema.parse(proposal.show);
+      // Already frozen approvals above remain immutable; retire own media from old proposals only.
+      if (publication.show.authentic?.length) {
+        const names = new Set([
+          ...publication.show.images.map((item) => item.fileName),
+          ...(publication.show.video ? [publication.show.video.fileName] : []),
+        ]);
+        const { authentic: _retired, ...show } = publication.show;
+        proposal = {
+          ...proposal,
+          show: {
+            show,
+            media: publication.media.filter((item) => names.has(item.fileName)),
+          },
+        };
+      }
       await resolveVerifiedShowSnapshot(deps, stored, async () => {});
       // One statement freezes payload and state against cancellation and regeneration.
       if (!(await drafts.freezeShowApproval(stored, proposal, String(ctx.chat!.id)))) return;

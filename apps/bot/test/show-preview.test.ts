@@ -4,7 +4,7 @@ import { InputFile } from 'grammy';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { AppContext } from '../src/context';
 import type { D1DraftStore, StoredDraft } from '../src/draft-store';
-import { createShowPreview } from '../src/show-preview';
+import { createShowPreview, refreshKeyboard } from '../src/show-preview';
 import { botTexts } from '../src/texts';
 
 const tenant = 'fixture';
@@ -230,7 +230,7 @@ it('logs fixed diagnostics for unavailable media and interrupted delivery withou
   }
 });
 
-it('shows the authentic block and keeps regeneration and cancellation controls', async () => {
+it('ignores legacy own media and keeps regeneration and cancellation controls', async () => {
   stored.draft.extras['showAuthentic'] = {
     items: [
       { fileId: 'private-photo', kind: 'photo' },
@@ -244,13 +244,22 @@ it('shows the authentic block and keeps regeneration and cancellation controls',
   ctx.replyWithPhoto = vi.fn() as never;
   ctx.replyWithVideo = vi.fn() as never;
   await preview(ctx, stored);
-  expect(ctx.replyWithPhoto).toHaveBeenCalledWith('private-photo', {
-    caption: 'Оригінальна робота',
-  });
-  expect(ctx.replyWithVideo).toHaveBeenCalledWith('private-video', {
-    caption: 'Оригінальна робота',
-  });
+  expect(ctx.replyWithPhoto).not.toHaveBeenCalled();
+  expect(ctx.replyWithVideo).not.toHaveBeenCalled();
   const keyboard = JSON.stringify(reply.mock.calls.at(-1)?.[1]);
   expect(keyboard).toContain(':regen:');
   expect(keyboard).toContain(':owncancel:');
 });
+
+it.each(['ready', 'failed', 'approved'] as const)(
+  'offers controls for %s shows without own-media input',
+  (state) => {
+    stored.draft.state = state === 'failed' ? 'failed' : 'ready';
+    if (state === 'approved') stored.draft.extras['showApproved'] = {};
+    const keyboard = JSON.stringify(refreshKeyboard(stored, botTexts));
+    expect(keyboard).not.toContain(':own:');
+    expect(keyboard).toContain(':preview:');
+    expect(keyboard.includes(':owncancel:')).toBe(state === 'ready');
+    expect(keyboard.includes(':regen:')).toBe(state !== 'failed');
+  },
+);

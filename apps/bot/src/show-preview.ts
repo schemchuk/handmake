@@ -1,4 +1,3 @@
-import { authenticOf, authenticKeyboard } from './show-authentic';
 import { showDraftDataSchema } from '@handmake/core';
 import type { ShowResultStore, ShowSourceImage } from '@handmake/core';
 import { InputFile } from 'grammy';
@@ -103,12 +102,6 @@ export function createShowPreview(deps: {
           deps.texts.showMarkedLabel(slot),
         );
       }
-      for (const item of authenticOf(stored)?.items ?? []) {
-        await current();
-        if (item.kind === 'photo')
-          await ctx.replyWithPhoto(item.fileId, { caption: 'Оригінальна робота' });
-        else await ctx.replyWithVideo(item.fileId, { caption: 'Оригінальна робота' });
-      }
       await current();
       return ctx.reply(deps.texts.showPreviewStatus(missing), refreshKeyboard(stored, deps.texts));
     } catch {
@@ -123,10 +116,7 @@ export function refreshKeyboard(stored: StoredDraft, texts: BotTexts) {
   return {
     reply_markup: {
       inline_keyboard: [
-        ...(stored.draft.state === 'ready' ? authenticKeyboard(stored) : []),
-        ...(stored.draft.state === 'ready' &&
-        !!authenticOf(stored)?.items.length &&
-        !stored.draft.extras['showApproved']
+        ...(stored.draft.state === 'ready' && !stored.draft.extras['showApproved']
           ? [
               [
                 {
