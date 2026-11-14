@@ -123,6 +123,9 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
       ) : <JoinChannel lang={lang} />}
       <a href={pagePath(lang, def, 'impressum')}>Impressum</a>
       <a href={pagePath(lang, def, 'datenschutz')}>Datenschutzerklärung</a>
+      {site.makingOf && (
+        <a href={pagePath(lang, def, 'technik')}>{site.makingOf.texts[lang]!.title}</a>
+      )}
     </footer>
   </body>
 </html>
