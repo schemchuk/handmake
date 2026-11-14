@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T61 done: PR #156).
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: record T61 merge.
-- **Next step:** the presentation link on /kreis/ and /uk/kreis/ goes live with the next publish run
-  (site.yml is called only from publish.yml). 2026-11-18 20:00 Berlin: first live contest closing
-  without Facebook (logs on). Otherwise the next task is the one Volodymyr names.
+- **Active agent:** codex.
+- **Current task:** T62 making-of page (docs/03-tasks.md).
+- **Branch:** `feat/T62-making-of`.
+- **Last commit:** this commit — docs: add T62 making-of task, hand to codex.
+- **Next step:** codex implements T62 edit-only; claude-code reviews, commits, opens the PR and
+  merges. Volodymyr to send his LinkedIn URL and e-mail for `site.makingOf.contacts`. T61's link goes
+  live with the next publish run. 2026-11-18 20:00 Berlin: first live contest closing without Facebook.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 

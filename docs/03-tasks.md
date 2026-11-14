@@ -2610,3 +2610,49 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   site's origin; layout holds at 320 and 1280 px.
 - Tests: site build test asserts `/kreis/` links `/praesentation/de.pdf` and `/uk/kreis/` links
   `/praesentation/uk.pdf`, and neither links the other. Site tests only, `--maxWorkers=2`.
+
+### T62 — Making-of page for Volodymyr's portfolio (`site`)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Context: Volodymyr (2026-11-14) wants his engineering portfolio for this project on the site. The
+  author agreed to a footer link. Volodymyr agreed to show his name and contacts. The page is a
+  1–2 screen showcase; depth stays in the public GitHub README.
+- Config: optional `site.makingOf` in `packages/core/src/tenant.ts` and the tenant YAML:
+  `author` (`Volodymyr Schemchuk`), `role` per language, `repoUrl`
+  (`https://github.com/schemchuk/handmake`), `contacts`: list of `{ kind: github | linkedin | email,
+  url }` (`https`-only for github/linkedin, `mailto:` for email; the loader rejects anything else),
+  and `texts.de` / `texts.uk` (title, intro, steps, decisions). Real values: GitHub
+  `https://github.com/schemchuk`; LinkedIn and e-mail are NOT known yet: leave them out of the real
+  YAML (claude-code adds them later), keep them in the schema and the fixture. Without `makingOf`
+  the page and footer link do not exist.
+- Page: `/technik/` (DE) and `/uk/technik/` (UK), on the cloth like the other reading pages:
+  1. title and intro (texts below);
+  2. four steps (photo and text → translation → one approval, four networks → site), same structure
+     as the circle presentation's slide 6;
+  3. demo video: copy `docs/assets/demo.mp4` to `apps/site/public/technik/demo.mp4`, shown with
+     `<video muted loop playsinline controls preload="metadata">` and width/height set; a caption
+     says it was recorded on the private test channel;
+  4. numbers computed at build time from `content/ledger/*.json`: published items (a ledger with at
+     least one channel `done`), successful channel deliveries (count of `done` channel entries) and
+     the number of networks seen; a pure function with unit tests, no D1;
+  5. five decisions, one line each, each linking its ADR on GitHub (`<repoUrl>/blob/main/docs/decisions/<file>`):
+     idempotent publishing (003), channels as adapters (007), multi-tenant ready (006), AI translation
+     reviewed by the author (004), site from the same content (011/016);
+  6. author block: name, role, contact links (`rel="me noopener"`), repo link.
+- Footer: link after Datenschutzerklärung, DE „Website & Technik“, UK «Як зроблено сайт».
+- Draft texts (Volodymyr confirms):
+  - DE title „Website & Technik“; intro: „Die Autorin schreibt einen ukrainischen Text und schickt
+    Fotos an einen Telegram-Bot. Alles Weitere läuft automatisch: Übersetzung ins Deutsche, ihre
+    Freigabe, Veröffentlichung auf Telegram, Instagram, Facebook und Threads und auf dieser Website
+    in zwei Sprachen.“ Role: „Konzept, Architektur und Umsetzung“.
+  - UK title «Як зроблено сайт»; intro: «Авторка пише текст українською й надсилає фото в
+    Telegram-бот. Далі все автоматично: переклад німецькою, її підтвердження, публікація в
+    Telegram, Instagram, Facebook і Threads та на цьому сайті двома мовами.» Role: «Концепція,
+    архітектура й реалізація».
+  - Decision lines and step texts: write them short in both languages; no claims beyond the ADRs.
+- Acceptance: no request leaves the site's origin except the outbound links; video does not
+  autoplay with sound; layout holds at 320, 390 and 1280 px; footer link present on every page in
+  both languages; sitemap includes both pages; AI costs and logs are not shown.
+- Tests: schema accepts/rejects contacts; ledger-stats function; build test for both pages (title,
+  contact links, ADR links, video) and the footer link; a tenant without `makingOf` builds without
+  the page or link. Site and core tests only, `--maxWorkers=2`.
