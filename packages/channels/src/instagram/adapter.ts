@@ -16,6 +16,8 @@ import { createMetaCommentsCapability, unixSinceQuery } from '../meta/comments';
 import {
   MetaGraphClient,
   MetaGraphError,
+  MetaRateLimitError,
+  MetaTokenExpiredError,
   metaPhotoUrls,
   type MetaAuthState,
   type MetaCallRetry,
@@ -31,16 +33,22 @@ import {
 } from './render';
 
 export interface InstagramAdapterOptions extends MetaGraphOptions {
-  /** Sleep between container-status polls; default 2000 ms. */
+  /** Sleep between image container-status polls; default 2000 ms. */
   statusPollIntervalMs?: number;
-  /** Max container-status polls before failing the op; default 30. */
+  /** Max image container-status polls before failing the op; default 30. */
   statusPollMaxAttempts?: number;
+  /** Sleep between video container-status polls; default 5000 ms. */
+  videoStatusPollIntervalMs?: number;
+  /** Max video container-status polls before failing the op; default 72. */
+  videoStatusPollMaxAttempts?: number;
   /** Bound on followed comment/posts pages per comments-capability op; default 5. */
   commentsMaxPages?: number;
 }
 
 const DEFAULT_STATUS_POLL_INTERVAL_MS = 2000;
 const DEFAULT_STATUS_POLL_MAX_ATTEMPTS = 30;
+const DEFAULT_VIDEO_STATUS_POLL_INTERVAL_MS = 5000;
+const DEFAULT_VIDEO_STATUS_POLL_MAX_ATTEMPTS = 72;
 
 /** Secret names the adapter resolves through `DeliverContext.secrets`. */
 export const instagramUserIdSecret = 'INSTAGRAM_USER_ID';
@@ -57,14 +65,14 @@ export class InstagramAdapterError extends Error {
 }
 
 type MediaGroupOp = Extract<SendOperation, { kind: 'mediaGroup' }>;
+type InstagramOp = MediaGroupOp | Extract<SendOperation, { kind: 'video' }>;
 
 /**
  * Instagram ChannelAdapter (T26a2, F33): `render` delegates to
  * renderInstagram; `deliver` talks to the Graph API content-publishing
  * flow — media container(s) → status polling → media_publish. A 1-photo
  * op becomes a single image container; 2-10 photos become carousel
- * children plus one carousel container (video/Reels stays a later task;
- * only `mediaGroup` ops are deliverable). Instagram has no native
+ * children plus one carousel container; videos use resumable Reel uploads. Instagram has no native
  * idempotency keys, so the ledger-driven resume (`progress.startAt` /
  * `progress.knownIds`, persisted by the caller between ops via
  * `onDelivered`) IS the idempotency mechanism, exactly like Telegram:
@@ -105,10 +113,15 @@ export class InstagramAdapter implements ChannelAdapter {
   readonly #statusPollIntervalMs: number;
   readonly #statusPollMaxAttempts: number;
 
+  readonly #videoStatusPollIntervalMs: number;
+  readonly #videoStatusPollMaxAttempts: number;
+
   constructor({
     commentsMaxPages,
     statusPollIntervalMs,
     statusPollMaxAttempts,
+    videoStatusPollIntervalMs,
+    videoStatusPollMaxAttempts,
     ...graphOptions
   }: InstagramAdapterOptions = {}) {
     this.#graph = new MetaGraphClient('Instagram', graphOptions);
@@ -116,6 +129,10 @@ export class InstagramAdapter implements ChannelAdapter {
     this.#sleep = graphOptions.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
     this.#statusPollIntervalMs = statusPollIntervalMs ?? DEFAULT_STATUS_POLL_INTERVAL_MS;
     this.#statusPollMaxAttempts = statusPollMaxAttempts ?? DEFAULT_STATUS_POLL_MAX_ATTEMPTS;
+    this.#videoStatusPollIntervalMs =
+      videoStatusPollIntervalMs ?? DEFAULT_VIDEO_STATUS_POLL_INTERVAL_MS;
+    this.#videoStatusPollMaxAttempts =
+      videoStatusPollMaxAttempts ?? DEFAULT_VIDEO_STATUS_POLL_MAX_ATTEMPTS;
     this.comments = createMetaCommentsCapability({
       network: 'Instagram',
       error: (message) => new InstagramAdapterError(message),
@@ -176,11 +193,13 @@ export class InstagramAdapter implements ChannelAdapter {
       // Check every remaining op AND build its photo URLs before creating any
       // container, so a bad op fails the deliver without orphan containers;
       // the validated pairs are reused for sending (each op is checked once).
-      const pending: Array<{ op: MediaGroupOp; urls: string[] }> = [];
+      const pending: Array<{ op: InstagramOp; urls: string[] }> = [];
       for (let index = start; index < ops.length; index++) {
         const op = ops[index]!;
         this.#assertOp(op);
-        pending.push({ op, urls: metaPhotoUrls('Instagram', op, ctx) });
+        if (op.kind === 'video' && !ctx.video?.length)
+          throw new InstagramAdapterError('Instagram video bytes are missing');
+        pending.push({ op, urls: op.kind === 'video' ? [] : metaPhotoUrls('Instagram', op, ctx) });
       }
 
       for (const [i, { op, urls }] of pending.entries()) {
@@ -199,13 +218,16 @@ export class InstagramAdapter implements ChannelAdapter {
     return ids;
   }
 
-  #assertOp(op: SendOperation): asserts op is MediaGroupOp {
-    if (op.kind !== 'mediaGroup') {
-      throw new InstagramAdapterError(`Instagram supports only mediaGroup ops, got "${op.kind}"`);
+  #assertOp(op: SendOperation): asserts op is InstagramOp {
+    if (op.kind !== 'mediaGroup' && op.kind !== 'video') {
+      throw new InstagramAdapterError(
+        `Instagram supports only mediaGroup/video ops, got "${op.kind}"`,
+      );
     }
     if (op.replyToOp !== undefined) {
       throw new InstagramAdapterError('replyToOp is not supported by Instagram');
     }
+    if (op.kind === 'video') return;
     if (op.photoIndexes.length === 0) {
       throw new InstagramAdapterError('mediaGroup op has no photos to send');
     }
@@ -224,7 +246,7 @@ export class InstagramAdapter implements ChannelAdapter {
    * containers expire unused).
    */
   async #sendWithRetry(
-    op: MediaGroupOp,
+    op: InstagramOp,
     urls: string[],
     userId: string,
     auth: MetaAuthState,
@@ -236,7 +258,16 @@ export class InstagramAdapter implements ChannelAdapter {
     );
 
     let containerId: string;
-    if (urls.length === 1) {
+    if (op.kind === 'video') {
+      containerId = await call(() =>
+        this.#createContainer(userId, auth, {
+          media_type: 'REELS',
+          upload_type: 'resumable',
+          ...(op.caption !== undefined && { caption: op.caption }),
+        }),
+      );
+      await call(() => this.#uploadVideo(containerId, auth, ctx.video!));
+    } else if (urls.length === 1) {
       containerId = await call(() =>
         this.#createContainer(userId, auth, {
           image_url: urls[0]!,
@@ -260,7 +291,7 @@ export class InstagramAdapter implements ChannelAdapter {
         }),
       );
     }
-    await this.#awaitContainer(auth, containerId, call);
+    await this.#awaitContainer(auth, containerId, call, op.kind);
     const published = (await call(() =>
       this.#graph.call(auth, 'POST', `/${userId}/media_publish`, {
         creation_id: containerId,
@@ -270,6 +301,45 @@ export class InstagramAdapter implements ChannelAdapter {
       throw new InstagramAdapterError('Instagram media_publish returned a malformed result');
     }
     return published.id;
+  }
+
+  /** Fixed upload origin: never follow an upstream URL carrying credentials. */
+  async #uploadVideo(id: string, auth: MetaAuthState, video: Uint8Array): Promise<void> {
+    let response: Response;
+    try {
+      response = await (this.#graphOptions.fetchImpl ?? fetch)(
+        `https://rupload.facebook.com/ig-api-upload/${encodeURIComponent(id)}`,
+        {
+          method: 'POST',
+          redirect: 'error',
+          headers: {
+            Authorization: `OAuth ${auth.token}`,
+            offset: '0',
+            file_size: String(video.byteLength),
+            'Content-Type': 'application/octet-stream',
+          },
+          body: new Blob([new Uint8Array(video)], { type: 'video/mp4' }),
+        },
+      );
+    } catch {
+      throw new InstagramAdapterError('Instagram video upload transport failed');
+    }
+    if (response.status === 429)
+      throw new MetaRateLimitError(
+        'Instagram video upload rate limited',
+        this.#graphOptions.rateLimitBackoffMs ?? 60_000,
+      );
+    let result: { success?: unknown; error?: { code?: unknown } };
+    try {
+      result = (await response.json()) as { success?: unknown; error?: { code?: unknown } };
+    } catch {
+      throw new InstagramAdapterError('Instagram video upload returned malformed JSON');
+    }
+    if (result?.error?.code === 190)
+      throw new MetaTokenExpiredError('Instagram video upload: access token expired');
+    if (!response.ok) throw new InstagramAdapterError('Instagram video upload failed');
+    if (result?.success !== true)
+      throw new InstagramAdapterError('Instagram video upload was not accepted');
   }
 
   async #createContainer(
@@ -291,13 +361,18 @@ export class InstagramAdapter implements ChannelAdapter {
   /**
    * Instagram processes a container asynchronously; media_publish requires
    * status FINISHED. EXPIRED/ERROR fail the op; anything else polls until
-   * `statusPollMaxAttempts`. Each status poll is retried like any call.
+   * the image or video polling budget. Each status poll is retried like any call.
    */
   async #awaitContainer(
     auth: MetaAuthState,
     containerId: string,
     call: MetaCallRetry,
+    kind: InstagramOp['kind'],
   ): Promise<void> {
+    const maxAttempts =
+      kind === 'video' ? this.#videoStatusPollMaxAttempts : this.#statusPollMaxAttempts;
+    const intervalMs =
+      kind === 'video' ? this.#videoStatusPollIntervalMs : this.#statusPollIntervalMs;
     for (let poll = 0; ; poll++) {
       const result = (await call(() =>
         this.#graph.call(auth, 'GET', `/${containerId}?fields=status_code`),
@@ -307,12 +382,12 @@ export class InstagramAdapter implements ChannelAdapter {
       if (status === 'EXPIRED' || status === 'ERROR') {
         throw new InstagramAdapterError(`Instagram media container ${status.toLowerCase()}`);
       }
-      if (poll + 1 >= this.#statusPollMaxAttempts) {
+      if (poll + 1 >= maxAttempts) {
         throw new InstagramAdapterError(
-          `Instagram media container did not finish after ${this.#statusPollMaxAttempts} status polls`,
+          `Instagram media container did not finish after ${maxAttempts} status polls`,
         );
       }
-      await this.#sleep(this.#statusPollIntervalMs);
+      await this.#sleep(intervalMs);
     }
   }
 

@@ -922,7 +922,7 @@ call. Retry reads the committed file. Telegram clients send videos as H.264 by d
 does not transcode, and a codec Instagram rejects fails only that channel's video entry.
 
 Channels: the photo post keeps its current ledger key; the video is a second ledger entry
-(`<workId>:video` per channel), so a failed video never reposts photos. Telegram: `sendVideo` as a
+(`<workId>-video` per channel), so a failed video never reposts photos. Telegram: `sendVideo` as a
 reply to the album. Instagram: a `REELS` container (resumable upload) with the work caption.
 Facebook: `/{page-id}/videos` with a multipart `source` upload and the caption. Threads: the video
 is a `VIDEO` carousel item after the photos (a single entry, no second post). Raw GitHub serves

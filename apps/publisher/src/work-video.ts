@@ -41,7 +41,7 @@ export async function prepareWorkVideo(
   return stripAuthenticVideo(raw);
 }
 
-/** Separate ledger, with the album as a known prefix solely to resolve the reply. */
+/** Separate ledger; only Telegram needs the album prefix to resolve its reply. */
 export async function deliverWorkVideo(
   work: Work,
   video: Uint8Array,
@@ -51,26 +51,40 @@ export async function deliverWorkVideo(
   store: GitRepoContentStore,
   persist: (ledger: PublishLedger) => Promise<void>,
   now: Date,
+  caption?: string,
 ) {
   const id = `${work.id}-video`;
   let ledger =
     (await store.readLedger(work.tenant, id)) ?? initLedger(work.tenant, id, [adapter.key], now);
+  if (!ledger.channels[adapter.key]) {
+    ledger = {
+      ...ledger,
+      channels: {
+        ...ledger.channels,
+        ...initLedger(work.tenant, id, [adapter.key], now).channels,
+      },
+    };
+  }
   const entry = ledger.channels[adapter.key]!;
   if (entry.status === 'done') return;
   const album = photosLedger.channels[adapter.key]?.remoteIds[0];
   if (album === undefined) throw new Error('Work video requires a delivered photo album');
+  const telegram = adapter.key === 'telegram';
+  const prefix = telegram ? [album] : [];
   try {
     await adapter.deliver(
-      [
-        { kind: 'mediaGroup', photoIndexes: [0] },
-        { kind: 'video', replyToOp: 0 },
-      ],
+      telegram
+        ? [
+            { kind: 'mediaGroup', photoIndexes: [0] },
+            { kind: 'video', replyToOp: 0 },
+          ]
+        : [{ kind: 'video', ...(caption !== undefined && { caption }) }],
       { ...context, video, idempotencyBase: idempotencyBase(work.tenant, id, adapter.key) },
       {
-        startAt: 1 + entry.remoteIds.length,
-        knownIds: [album, ...entry.remoteIds],
+        startAt: prefix.length + entry.remoteIds.length,
+        knownIds: [...prefix, ...entry.remoteIds],
         onDelivered: async (index, remoteId) => {
-          ledger = markOpDelivered(ledger, adapter.key, index - 1, remoteId, now);
+          ledger = markOpDelivered(ledger, adapter.key, index - prefix.length, remoteId, now);
           await store.writeLedger(ledger);
         },
       },
