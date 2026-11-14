@@ -5,7 +5,8 @@
     "telegram": {
       "status": "pending",
       "remoteIds": [
-        68
+        68,
+        71
       ],
       "updatedAt": "2026-11-14T08:30:00.544Z"
     },
