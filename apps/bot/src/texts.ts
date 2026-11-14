@@ -105,6 +105,8 @@ export const botTexts = {
   showContinueText:
     'Це сесія показу. /show — продовжити, /work — робота, /new — допис, /discard — видалити чернетку показу.',
   workUnavailableText: 'Роботи зараз недоступні. Спробуй /work пізніше.',
+  workVideoConfirmationText:
+    'Підтвердіть відео: оберіть, хто в кадрі, і натисніть «У кадрі лише авторка і/або Володимир».',
   workSetupText: 'Обери, як буде представлено роботу:',
   workKinds: { worn: 'На моделі', closeup: 'Крупний план', interior: 'В інтер’єрі' },
   workCollectionsText: 'Обери колекцію або створи нову:',

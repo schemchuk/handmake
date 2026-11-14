@@ -562,3 +562,87 @@ it('previews both authenticity labels and blocks captions that only exceed the l
     'draft:draft:publish',
   );
 });
+
+describe('work video confirmation preview (T56)', () => {
+  const draft = {
+    ...createDraft('tenant', '01JBCA1B2C3D4E5F6G7H8J9K0M', now, { kind: 'work' }),
+    state: 'ready' as const,
+    texts: { uk: 'Опис', de: 'Beschreibung' },
+    photoRefs: ['photo'],
+    extras: {
+      work: {
+        config: { kind: 'worn', collection: 'fixture', channels: ['telegram'] },
+        generated: {
+          uk: { description: 'Опис', provenance: 'ai-assisted', model: 'm', prompt: 'p@1' },
+          de: { description: 'Beschreibung', provenance: 'ai-assisted', model: 'm', prompt: 'p@1' },
+        },
+      },
+    },
+  };
+
+  it.each([
+    { workVideoEditing: true },
+    { workVideo: { fileId: 'video', size: 1000, duration: 10, confirmed: false } },
+    { workVideo: { fileId: 'video', size: 1000, duration: 10, confirmed: true } },
+    {
+      workVideo: { fileId: 'video', size: 1000, duration: 10, people: 'author', confirmed: false },
+    },
+  ])('shows a neutral prompt and hides publish for pending video: %j', (extras) => {
+    const preview = buildPreview(
+      { ...draft, extras: { ...draft.extras, ...extras } },
+      botTexts,
+      now,
+    );
+    expect(preview.text).toContain(botTexts.workVideoConfirmationText);
+    expect(preview.text).not.toContain('❌');
+    expect(preview.text).not.toContain(botTexts.workSetupText);
+    expect(JSON.stringify(preview.keyboard)).not.toContain(':publish');
+  });
+
+  it('offers publication after video confirmation', () => {
+    const preview = buildPreview(
+      {
+        ...draft,
+        extras: {
+          ...draft.extras,
+          workVideo: {
+            fileId: 'video',
+            size: 1000,
+            duration: 10,
+            people: 'both',
+            confirmed: true,
+          },
+        },
+      },
+      botTexts,
+      now,
+    );
+    expect(preview.text).not.toContain(botTexts.workVideoConfirmationText);
+    expect(preview.text).not.toContain('❌');
+    expect(JSON.stringify(preview.keyboard)).toContain(':publish');
+  });
+
+  it('keeps the setup error for malformed video data', () => {
+    const preview = buildPreview(
+      {
+        ...draft,
+        extras: {
+          ...draft.extras,
+          workVideoEditing: true,
+          workVideo: { fileId: 'video', size: -1, duration: 10, confirmed: false },
+        },
+      },
+      botTexts,
+      now,
+    );
+    expect(preview.text).toContain(botTexts.previewBlockedText(botTexts.workSetupText));
+    expect(preview.text).not.toContain(botTexts.workVideoConfirmationText);
+  });
+
+  it('keeps the blocked setup error for a broken work even with video editing', () => {
+    const preview = buildPreview({ ...draft, extras: { workVideoEditing: true } }, botTexts, now);
+    expect(preview.text).toContain(botTexts.previewBlockedText(botTexts.workSetupText));
+    expect(preview.text).not.toContain(botTexts.workVideoConfirmationText);
+    expect(JSON.stringify(preview.keyboard)).not.toContain(':publish');
+  });
+});

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createBot } from '../src/bot';
 import type { AppContext } from '../src/context';
-import { createD1DraftStore } from '../src/draft-store';
+import { publishingStaleMs, createD1DraftStore } from '../src/draft-store';
 import type { D1DraftStore } from '../src/draft-store';
 import { botTexts } from '../src/texts';
 import type { SentCall } from './helpers';
@@ -501,6 +501,46 @@ describe('publishing (T16)', () => {
     const ready = await drafts.listByState(allowed.tenantId, 'ready');
     return ready[0]!.draft.draftId;
   }
+
+  it.each([
+    { state: 'ready', age: 0, consent: true, reply: botTexts.publishConsentText },
+    { state: 'publishing', age: 0, consent: false, reply: botTexts.draftBusyText },
+    {
+      state: 'publishing',
+      age: publishingStaleMs + 60_000,
+      consent: true,
+      reply: botTexts.publishConsentText,
+    },
+    { state: 'published', age: 0, consent: false, reply: botTexts.draftFinishedText },
+    { state: 'collecting', age: 0, consent: false, reply: botTexts.publishNotReadyText },
+  ])(
+    'publish from $state aged $age ms uses the correct consent gate',
+    async ({ state, age, consent, reply }) => {
+      const draftId = await makeReadyDraft();
+      await db
+        .prepare('UPDATE drafts SET status = ?, updated_at = ? WHERE id = ?')
+        .bind(state, new Date(Date.now() - age).toISOString(), draftId)
+        .run();
+      await bot.handleUpdate(
+        callbackQueryUpdate(allowed.userId, allowed.userId, `draft:${draftId}:publish`),
+      );
+      expect(sentTexts(calls).at(-1)).toBe(reply);
+      expect(publishJobs).toHaveLength(0);
+      expect(
+        JSON.stringify(lastSendMessage(calls)?.['reply_markup'] ?? {}).includes(':publish:confirm'),
+      ).toBe(consent);
+      expect((await drafts.get(allowed.tenantId, draftId))?.draft.state).toBe(state);
+      if (consent) {
+        await bot.handleUpdate(
+          callbackQueryUpdate(allowed.userId, allowed.userId, `draft:${draftId}:publish:confirm`),
+        );
+        await flushBackground();
+        expect(publishJobs).toHaveLength(1);
+        expect(publishJobs[0]?.postId).toBe(draftId);
+        expect((await drafts.get(allowed.tenantId, draftId))?.draft.state).toBe('publishing');
+      }
+    },
+  );
 
   it('dispatches the draft as claimed, including an edit that landed after the read', async () => {
     const draftId = await makeReadyDraft();

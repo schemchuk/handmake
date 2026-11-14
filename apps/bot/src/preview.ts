@@ -222,6 +222,7 @@ export function buildPreview(
 
   let threadsPreview: string | undefined;
   let blockedError: string | undefined;
+  let videoConfirmationPending = false;
   let instagramCaption: { lang: string; caption: string } | undefined;
   let instagramSkip: ReturnType<typeof instagramSkipReason> | undefined;
   let instagramApplies = false;
@@ -283,6 +284,14 @@ export function buildPreview(
       // Render limits are author-actionable: name the exact rule (render
       // errors read as-is inside the channel-agnostic blocked text).
       blockedError = error.message;
+    } else if (
+      draft.kind === 'work' &&
+      error instanceof Error &&
+      error.message === 'work video requires people confirmation'
+    ) {
+      // Match only the approval guard: malformed work/video data must retain
+      // the setup error even when the editing flag is also present.
+      videoConfirmationPending = true;
     } else if (draft.kind === 'work') {
       // Only a broken work setup hides behind the generic text.
       blockedError = texts.workSetupText;
@@ -296,6 +305,8 @@ export function buildPreview(
     lines.push(texts.previewBlockedText(blockedError));
     lines.push('');
   }
+
+  if (videoConfirmationPending) lines.push(texts.workVideoConfirmationText, '');
 
   const ukText = uk ?? '';
   lines.push(texts.previewUkLabel(ukText.length));
@@ -313,6 +324,7 @@ export function buildPreview(
   // a separate message, but the author should know that layout in advance.
   if (
     blockedError === undefined &&
+    !videoConfirmationPending &&
     draft.photoRefs.length > 0 &&
     primaryText !== undefined &&
     primaryText.length > telegramCapabilities.captionLimit &&
@@ -369,8 +381,12 @@ export function buildPreview(
 
   if (post.poll) lines.push('', post.poll.question, ...post.poll.options);
   if (threadsPreview && !blockedError) lines.push('', threadsPreview);
-  const rows = keyboard(draft.draftId, texts, blockedError !== undefined);
-  if (draft.kind === 'work' && !blockedError) {
+  const rows = keyboard(
+    draft.draftId,
+    texts,
+    blockedError !== undefined || videoConfirmationPending,
+  );
+  if (draft.kind === 'work' && !blockedError && !videoConfirmationPending) {
     const { config } = readWorkDraftData(draft);
     lines.unshift(
       texts.workPreview(
