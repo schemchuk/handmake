@@ -44,7 +44,11 @@ import { buildPostFromPayload } from './build-post';
 import { createGitCommitter } from './git';
 import type { GitCommitter } from './git';
 import { prepareMetaPhotoDelivery } from './facebook-delivery';
-import { prepareInstagramDelivery } from './instagram-delivery';
+import {
+  contentRawBaseUrl,
+  contentRawPhotoUrl,
+  prepareInstagramDelivery,
+} from './instagram-delivery';
 import { fetchAndProcessPhotos } from './photos';
 import { createPublishCallbackSender } from './publish-callback';
 import type { PublishCallbackSender } from './publish-callback';
@@ -346,6 +350,9 @@ export async function runPublish(
     } catch (error) {
       throw new Error(errorMessage(error));
     }
+    if (channel === 'threads' && workVideo) {
+      ops = ops.map((op) => (op.kind === 'mediaGroup' ? { ...op, includeVideo: true } : op));
+    }
     channelOperations.set(channel, ops);
     if (entry?.status === 'done') {
       skipped.push(channel);
@@ -356,6 +363,7 @@ export async function runPublish(
     log(`channel ${channel}: ${ops.length} op(s), resuming at op ${startAt}`);
     try {
       let photoUrls: string[] | undefined;
+      let videoUrl: string | undefined;
       if (channel === 'instagram') {
         // Frame the 4:5 carousel copies, commit them and (when the workflow
         // opted in and no earlier channel pushed) push, all before Meta
@@ -394,6 +402,13 @@ export async function runPublish(
         });
         contentPushed = contentPushed || prepared.pushed;
         photoUrls = prepared.photoUrls;
+        if (channel === 'threads' && workVideo && workPublication?.work.video) {
+          videoUrl = contentRawPhotoUrl(
+            contentRawBaseUrl(env)!,
+            path.join('content', 'works', workPublication.work.id),
+            workPublication.work.video.fileName,
+          );
+        }
       }
       await adapter.deliver(
         ops,
@@ -404,6 +419,7 @@ export async function runPublish(
           // DeliverContext wants the processed bytes, aligned with post.photos.
           photos: photoBytes,
           ...(photoUrls !== undefined && { photoUrls }),
+          ...(videoUrl !== undefined && { videoUrl }),
         },
         {
           startAt,
@@ -434,7 +450,7 @@ export async function runPublish(
 
   if (workPublication && workVideo) {
     for (const channel of post.channels.filter(
-      (key) => key === 'telegram' || key === 'instagram',
+      (key) => key === 'telegram' || key === 'instagram' || key === 'facebook',
     )) {
       try {
         await deliverWorkVideo(

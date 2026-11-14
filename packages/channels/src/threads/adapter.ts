@@ -40,6 +40,9 @@ export interface ThreadsAdapterOptions extends MetaGraphOptions {
   commentsMaxPages?: number;
   statusPollIntervalMs?: number;
   statusPollMaxAttempts?: number;
+  /** Video processing has an independent six-minute budget by default. */
+  videoStatusPollMaxAttempts?: number;
+  videoStatusPollIntervalMs?: number;
 }
 /** Ledger prefix skips delivered ops. Ambiguous writes are never retried in-process. */
 export class ThreadsAdapter implements ChannelAdapter {
@@ -167,7 +170,20 @@ export class ThreadsAdapter implements ChannelAdapter {
       assertThreadsText(op.kind === 'message' ? op.text : (op.caption ?? ''));
       if (op.kind === 'mediaGroup' && (!op.photoIndexes.length || op.photoIndexes.length > 20))
         throw new ThreadsAdapterError('Threads image ops need 1–20 photos');
+      const videoUrl = op.kind === 'mediaGroup' && op.includeVideo ? ctx.videoUrl : undefined;
+      if (op.kind === 'mediaGroup' && op.includeVideo) {
+        let valid = false;
+        try {
+          valid = new URL(videoUrl ?? '').protocol === 'https:';
+        } catch {
+          /* Invalid URL. */
+        }
+        if (!valid) throw new ThreadsAdapterError('Threads video needs a public HTTPS URL');
+        if (op.photoIndexes.length + 1 > 20)
+          throw new ThreadsAdapterError('Threads carousel allows at most 20 items');
+      }
       return {
+        videoUrl,
         text: op.kind === 'message' ? op.text : op.caption!,
         urls: op.kind === 'message' ? [] : metaPhotoUrls('Threads', op, ctx),
       };
@@ -183,7 +199,7 @@ export class ThreadsAdapter implements ChannelAdapter {
       // Threads cannot refresh an expired token; rotation must precede expiry.
       throw new ThreadsAdapterError('Threads token expired; rotate THREADS_ACCESS_TOKEN');
     });
-    for (const [index, { text, urls }] of pending.entries()) {
+    for (const [index, { text, urls, videoUrl }] of pending.entries()) {
       let remoteId: string;
       try {
         const create = (params: Record<string, unknown>) =>
@@ -191,7 +207,8 @@ export class ThreadsAdapter implements ChannelAdapter {
             this.#id(await this.#graph.call(auth, 'POST', `/${userId}/threads`, params)),
           );
         const children: string[] = [];
-        if (urls.length > 1) {
+        const carousel = urls.length > 1 || videoUrl !== undefined;
+        if (carousel) {
           for (const url of urls) {
             const child = await create({
               media_type: 'IMAGE',
@@ -202,15 +219,36 @@ export class ThreadsAdapter implements ChannelAdapter {
             children.push(child);
           }
         }
+        if (videoUrl !== undefined) {
+          const child = await create({
+            media_type: 'VIDEO',
+            video_url: videoUrl,
+            is_carousel_item: true,
+          });
+          await this.#awaitContainer(
+            child,
+            auth,
+            call,
+            this.#options.videoStatusPollMaxAttempts ?? 72,
+            this.#options.videoStatusPollIntervalMs ?? 5000,
+          );
+          children.push(child);
+        }
         const container = await create({
           text,
-          ...(urls.length > 1
+          ...(carousel
             ? { media_type: 'CAROUSEL', children: children.join(',') }
             : urls.length
               ? { media_type: 'IMAGE', image_url: urls[0] }
               : { media_type: 'TEXT' }),
         });
-        await this.#awaitContainer(container, auth, call);
+        await this.#awaitContainer(
+          container,
+          auth,
+          call,
+          videoUrl !== undefined ? (this.#options.videoStatusPollMaxAttempts ?? 72) : undefined,
+          videoUrl !== undefined ? (this.#options.videoStatusPollIntervalMs ?? 5000) : undefined,
+        );
         remoteId = await call(async () =>
           this.#id(
             await this.#graph.call(auth, 'POST', `/${userId}/threads_publish`, {
@@ -239,6 +277,7 @@ export class ThreadsAdapter implements ChannelAdapter {
     auth: MetaAuthState,
     call: MetaCallRetry,
     attempts = this.#options.statusPollMaxAttempts ?? 12,
+    interval = this.#options.statusPollIntervalMs ?? 5000,
   ): Promise<void> {
     for (let poll = 0; poll < attempts; poll++) {
       const result = (await call(() => this.#graph.call(auth, 'GET', `/${id}?fields=status`))) as {
@@ -247,7 +286,7 @@ export class ThreadsAdapter implements ChannelAdapter {
       if (result?.status === 'FINISHED') return;
       if (result?.status !== 'IN_PROGRESS')
         throw new ThreadsAdapterError('Threads container failed or returned an unknown status');
-      if (poll + 1 < attempts) await this.#sleep(this.#options.statusPollIntervalMs ?? 5000);
+      if (poll + 1 < attempts) await this.#sleep(interval);
     }
     throw new ThreadsAdapterError('Threads container processing timed out');
   }

@@ -1,13 +1,24 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T55e2 — Facebook and Threads work video.
+- **Active agent:** claude-code.
+- **Current task:** T55e2 — Facebook and Threads work video, PR open, waiting for CI and Volodymyr's OK.
 - **Branch:** `feat/T55e2-fb-threads-work-video`.
-- **Last commit:** this commit — docs: record T55e1 merge, hand T55e2 to codex.
-- **Next step:** codex implements T55e2 (sandboxed: edit files only; claude-code reviews, commits,
-  pushes, opens the PR); then the live test with the test accounts.
+- **Last commit:** this commit — feat(channels): publish work video to Facebook and Threads (T55e2).
+- **Next step:** after CI and Volodymyr's OK, claude-code merges; then the live test of a work with
+  video on the test accounts (Threads raw `video_url` decides raw vs site URL).
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
+
+- **T55e2 implementation/validation (codex, edit-only sandbox):** Facebook multipart MP4
+  `source` with photo caption, shared per-call retries, separate `<workId>-video` ledger via
+  `deliverWorkVideo`. Direct Page upload records the accepted post id without container polling.
+  Threads appends a VIDEO child using the committed work-root raw URL, publishes one carousel
+  under the photo ledger, and gives the video child/parent independent 72 x 5000 ms polling;
+  photos retain their existing budget. Mocked HTTP covers upload bytes, retries, errors,
+  timeout boundaries, resume and publisher wiring. Channels affected tests 114/114; publisher
+  work-publish 25/25 plus Facebook/Threads publish 18/18 pass (`--maxWorkers=2`). Core,
+  channels and publisher typechecks include tests; changed-file lint/format and diff checks pass.
+  No network, pull, commit, push or deploy. Live raw-video acceptance remains for claude-code.
 
 - **T55e1 implementation/validation (codex, sandbox):** Instagram REELS resumable binary upload,
   bounded FINISHED polling, caption from the photo operation, per-call upload 429/190 retries,

@@ -288,3 +288,85 @@ describe('Threads delivery', () => {
     expect(api.fetchImpl).not.toHaveBeenCalled();
   });
 });
+
+describe('Threads work video carousel', () => {
+  const op: SendOperation = { ...image, includeVideo: true };
+  const ctx = { ...context, videoUrl: 'https://raw.example/content/works/work/video.mp4' };
+  it('appends VIDEO after photos, checks every child, and publishes a single carousel', async () => {
+    let rejected = false;
+    const api = mockApi((_path, params) => {
+      if (params.get('media_type') === 'VIDEO' && !rejected) {
+        rejected = true;
+        return response({ error: { code: 4 } }, 429);
+      }
+    });
+    const persisted = vi.fn();
+    await api.adapter.deliver([op], ctx, { startAt: 0, knownIds: [], onDelivered: persisted });
+    const writes = api.requests.filter((r) => r.init?.method === 'POST');
+    expect(writes.map((r) => r.params.get('media_type'))).toEqual([
+      'IMAGE',
+      'VIDEO',
+      'VIDEO',
+      'CAROUSEL',
+      null,
+    ]);
+    expect(writes[2]!.params.get('video_url')).toBe(ctx.videoUrl);
+    expect(writes[2]!.params.get('is_carousel_item')).toBe('true');
+    expect(writes[3]!.params.get('children')).toBe('101,102');
+    expect(writes[3]!.params.get('text')).toBe(image.caption);
+    expect(persisted).toHaveBeenCalledTimes(1);
+    const count = api.requests.length;
+    await api.adapter.deliver([op], context, {
+      startAt: 1,
+      knownIds: ['104'],
+      onDelivered: persisted,
+    });
+    expect(api.requests).toHaveLength(count);
+  });
+  it.each([true, false])(
+    'gives video children and parent 72 polls; finishes=%s',
+    async (finishes) => {
+      const polls: Record<string, number> = {};
+      const api = mockApi((path) => {
+        if (/\/10[23]$/.test(path)) {
+          polls[path] = (polls[path] ?? 0) + 1;
+          return response({ status: finishes && polls[path] === 72 ? 'FINISHED' : 'IN_PROGRESS' });
+        }
+      });
+      if (finishes) {
+        await api.adapter.deliver([op], ctx);
+        expect(Object.values(polls)).toEqual([72, 72]);
+      } else {
+        await expect(api.adapter.deliver([op], ctx)).rejects.toThrow(/timed out/);
+        expect(Object.values(polls)).toEqual([72]);
+        expect(api.requests.some((r) => r.path.endsWith('threads_publish'))).toBe(false);
+      }
+      expect(api.requests.filter((r) => r.params.get('media_type') === 'VIDEO')).toHaveLength(1);
+    },
+  );
+  it('retains the image budget even for photos in a video carousel', async () => {
+    let polls = 0;
+    const api = mockApi((path) =>
+      path.endsWith('/101')
+        ? response({ status: ++polls === 13 ? 'FINISHED' : 'IN_PROGRESS' })
+        : undefined,
+    );
+    await expect(api.adapter.deliver([op], ctx)).rejects.toThrow(/timed out/);
+    expect(polls).toBe(12);
+  });
+  it.each([undefined, 'http://raw.example/video.mp4', 'invalid'])(
+    'rejects invalid video URL %s before requests',
+    async (videoUrl) => {
+      const api = mockApi();
+      await expect(api.adapter.deliver([op], { ...context, videoUrl })).rejects.toThrow(/HTTPS/);
+      expect(api.requests).toHaveLength(0);
+    },
+  );
+  it('rejects 21 total carousel items before requests', async () => {
+    const api = mockApi();
+    await expect(
+      api.adapter.deliver([{ ...op, photoIndexes: Array(20).fill(0) }], ctx),
+    ).rejects.toThrow(/20 items/);
+    expect(api.requests).toHaveLength(0);
+  });
+});
