@@ -3,11 +3,11 @@
 - **Active agent:** none.
 - **Current task:** none.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T57 bot deploy.
+- **Last commit:** this commit — docs: drop answered T55e2 question.
 - **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
+- **Open questions for Volodymyr:** none.
 
 - **T57:** PR #149 squash-merged 2026-11-14 by claude-code (CI green). Bot-only, no migration;
   bot deployed by Volodymyr from clean `main` 2026-11-14 13:57 EET, Worker
