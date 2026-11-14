@@ -2612,7 +2612,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   `/praesentation/uk.pdf`, and neither links the other. Site tests only, `--maxWorkers=2`.
 
 ### T62 — Making-of page for Volodymyr's portfolio (`site`)
-- Status: in progress.
+- Status: done (PR #157, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Context: Volodymyr (2026-11-14) wants his engineering portfolio for this project on the site. The
   author agreed to a footer link. Volodymyr agreed to show his name and contacts. The page is a

@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T62 making-of page, PR open, review by claude-code.
-- **Branch:** `feat/T62-making-of`.
-- **Last commit:** feat: add making-of page with author contacts (T62).
-- **Next step:** merge T62 after green CI (site + core, no bot deploy); T61 and T62 go live with the
-  next publish run. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Active agent:** none.
+- **Current task:** none (T62 done: PR #157).
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T62 merge.
+- **Next step:** T61 (presentation link) and T62 (/technik/ making-of page) go live with the next
+  publish run (site.yml is called only from publish.yml). 2026-11-18 20:00 Berlin: first live
+  contest closing without Facebook (logs on). Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 
@@ -15,6 +16,9 @@
   contacts, ADR links, local muted video, every page's footer, sitemap and optional-page absence.
   Pure ledger statistics include tenant isolation and pending/failed entries. Real config has only
   GitHub contact; LinkedIn/e-mail remain fixture-only. No Git writes, network or deployment.
+
+- **T62:** PR #157 merged 2026-11-14 by claude-code (CI green). Making-of page /technik/ with
+  Volodymyr's name and contacts (his choice), footer link agreed by the author. No bot deploy.
 
 - **T61:** PR #156 merged 2026-11-14 by claude-code (CI green). Circle presentation PDFs (DE/UK)
   linked per language on the circle page. Site only, no bot deploy.
