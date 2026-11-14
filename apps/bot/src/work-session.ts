@@ -7,6 +7,7 @@ import type { AppContext } from './context';
 import type { StoredDraft } from './draft-store';
 import { buildTenantPreview } from './preview';
 import type { TenantConfigSource } from './tenant-config-source';
+import { createWorkVideo, showWorkVideo, workVideoKeyboard } from './work-video';
 import { createWorkDraftFlow } from './work-draft-flow';
 
 export interface WorkSessionOptions {
@@ -21,6 +22,7 @@ type Menu = { kind: Work['kind']; slugs: string[]; version: number; creating?: b
 export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOptions) {
   const { texts, drafts } = options;
   const settings = options.work;
+  const video = createWorkVideo(drafts);
   const replyPreview = async (ctx: AppContext, stored: StoredDraft) => {
     const preview = await buildTenantPreview(
       stored.draft,
@@ -28,6 +30,10 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
       options.tenantConfigs,
       options.publishesLive,
     );
+    if (stored.draft.kind === 'work') {
+      await showWorkVideo(ctx, stored);
+      preview.keyboard!.inline_keyboard.push(...workVideoKeyboard(stored));
+    }
     await ctx.reply(preview.text, { reply_markup: preview.keyboard! });
   };
   const flow =
@@ -107,6 +113,11 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
     const stored = id && isUlid(id) ? await drafts.get(ctx.tenantId, id) : undefined;
     if (!settings || !stored || stored.draft.kind !== 'work') return ctx.reply(texts.draftNoneText);
     try {
+      if (action?.startsWith('video.')) {
+        if (await video.action(ctx, stored, action.slice(6), value ?? ''))
+          return replyPreview(ctx, (await drafts.get(ctx.tenantId, id!))!);
+        return;
+      }
       if (
         action === 'announce' &&
         stored.draft.state === 'ready' &&
@@ -175,6 +186,16 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
       settings.logError('work setup failed', error, ctx.tenantId);
       await ctx.reply(texts.workSetupErrorText);
     }
+  });
+  bot.on(['message:video', 'message:document'], async (ctx, next) => {
+    if (!settings || ctx.chat.type !== 'private') return next();
+    const session = await drafts.getChatSession(ctx.tenantId, String(ctx.chat.id));
+    const stored =
+      session?.kind === 'work' && session.draftId
+        ? await drafts.get(ctx.tenantId, session.draftId)
+        : undefined;
+    if (!stored || !(await video.intake(ctx, stored))) return next();
+    return replyPreview(ctx, (await drafts.get(ctx.tenantId, stored.draft.draftId))!);
   });
   bot.on('message:text', async (ctx, next) => {
     if (!settings || ctx.msg.text.startsWith('/')) return next();
@@ -249,6 +270,10 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
               options.tenantConfigs,
               options.publishesLive,
             );
+            preview.keyboard!.inline_keyboard.push(...workVideoKeyboard(fresh));
+            const video = fresh.draft.extras['workVideo'] as { fileId: string } | undefined;
+            if (video)
+              await bot.api.sendVideo(chat, video.fileId, { caption: 'Оригінальна робота' });
             await bot.api.sendMessage(chat, preview.text, { reply_markup: preview.keyboard! });
           }
         } catch {

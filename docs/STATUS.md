@@ -1,13 +1,22 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T55b — `/work` step «Додати відео» (`bot`), docs/03-tasks.md.
+- **Active agent:** claude-code.
+- **Current task:** T55b — `/work` step «Додати відео», PR open, waiting for Volodymyr's OK.
 - **Branch:** `feat/T55b-work-video-step`.
-- **Last commit:** this commit — docs: record T55a merge, hand T55b to codex.
-- **Next step:** codex implements T55b incl. the T55a review note (sandboxed: edit files only;
-  claude-code reviews, commits, pushes, opens the PR). Personal data: Volodymyr's OK before merge.
+- **Last commit:** this commit — feat(bot): add optional video step to /work (T55b).
+- **Next step:** after CI and Volodymyr's OK (personal data), claude-code merges, deploys the bot
+  from clean `main`, hands T55c to codex.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Open questions for Volodymyr:** OK to merge T55b (personal data: author may appear in video)?
+
+- **T55b implementation/validation:** versioned optional video controls after photos, metadata limits,
+  document resend hint, replace/remove/skip, people confirmation, video preview and approved job
+  metadata. T55a review note: publication metadata requires both video fields or neither.
+  Targeted pure tests: work-video 7/7, core work-draft 19/19; workspace typecheck and changed-file
+  ESLint/Prettier pass. D1-backed work-session tests stalled in the sandbox; claude-code reran them:
+  three fixture bugs fixed in review (video/document updates kept the `bot_command` entity, mock API
+  lacked `sendVideo`), then work-session 28/28, work-video and bot.test green, bot typecheck clean; core test typecheck
+  fix (extras indexing) after the first CI run.
 
 - **T55a:** PR #141 merged 2026-11-14 by claude-code (squash, CI green, no blocking findings).
   Core only: no bot deploy needed until T55b.

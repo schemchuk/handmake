@@ -397,3 +397,107 @@ it('explains that collection fields and the photo caption describe different thi
   expect(text).toContain('Текст роботи береться з підпису до фото');
   expect(text.split('\n').slice(1)).toEqual(['Назва (uk)', 'Опис (uk)', 'Назва (de)', 'Опис (de)']);
 });
+
+async function videoAction(action: string) {
+  await press(`work:${id}:video.${action}:${(await get()).version}`);
+}
+async function uploadVideo(patch: Record<string, unknown> = {}) {
+  const update = textUpdate(11, 'video');
+  const message = update.message as unknown as Record<string, unknown>;
+  delete message['text'];
+  delete message['entities'];
+  message['video'] = {
+    file_id: 'video-1',
+    file_unique_id: 'unique',
+    width: 100,
+    height: 100,
+    mime_type: 'video/mp4',
+    duration: 60,
+    file_size: 20_000_000,
+    ...patch,
+  };
+  await bot.handleUpdate(update);
+}
+it('previews and approves an authentic video only after people confirmation, without AI calls', async () => {
+  await selectExisting();
+  await contentAndGenerate();
+  await videoAction('add');
+  await uploadVideo();
+  expect(calls.some((c) => c.method === 'sendVideo' && c.payload['video'] === 'video-1')).toBe(
+    true,
+  );
+  await press(`draft:${id}:publish:confirm`);
+  await flush();
+  expect(publish.jobs).toHaveLength(0);
+  await videoAction('confirm');
+  expect(sentTexts(calls).at(-1)).toContain('Спочатку оберіть');
+  await videoAction('both');
+  await press(`draft:${id}:publish:confirm`);
+  expect(publish.jobs).toHaveLength(0);
+  await videoAction('confirm');
+  await press(`draft:${id}:publish:confirm`);
+  await flush();
+  expect(publish.jobs[0]?.work).toMatchObject({ videoFileId: 'video-1', videoPeople: 'both' });
+  expect(uk).toHaveBeenCalledOnce();
+  expect(de).toHaveBeenCalledOnce();
+});
+it('resets confirmation on replacement, rejects stale callbacks and removes or skips video', async () => {
+  await selectExisting();
+  await contentAndGenerate();
+  await videoAction('add');
+  await uploadVideo();
+  await videoAction('author');
+  const stale = `work:${id}:video.confirm:${(await get()).version}`;
+  await uploadVideo({ file_id: 'replacement' });
+  const before = await get();
+  await press(stale);
+  expect(await get()).toEqual(before);
+  await videoAction('confirm');
+  expect((await get()).draft.extras['workVideoEditing']).toBe(true);
+  await videoAction('none');
+  await videoAction('confirm');
+  await videoAction('add');
+  await videoAction('remove');
+  expect((await get()).draft.extras['workVideo']).toBeUndefined();
+  await videoAction('skip');
+  await press(`draft:${id}:publish:confirm`);
+  await flush();
+  expect(publish.jobs[0]?.work).not.toHaveProperty('videoFileId');
+  expect(publish.jobs[0]?.work).not.toHaveProperty('videoPeople');
+});
+it.each([
+  { duration: 61 },
+  { duration: 0 },
+  { duration: undefined },
+  { file_size: 20_000_001 },
+  { file_size: undefined },
+  { file_size: 0 },
+  { mime_type: 'image/png' },
+])('refuses invalid video metadata %j and keeps approval blocked', async (patch) => {
+  await selectExisting();
+  await contentAndGenerate();
+  await videoAction('add');
+  await uploadVideo(patch);
+  expect((await get()).draft.extras['workVideo']).toBeUndefined();
+  await press(`draft:${id}:publish:confirm`);
+  await flush();
+  expect(publish.jobs).toHaveLength(0);
+});
+it('refuses video documents with a resend hint', async () => {
+  await selectExisting();
+  await contentAndGenerate();
+  await videoAction('add');
+  const update = textUpdate(11, 'document');
+  const message = update.message as unknown as Record<string, unknown>;
+  delete message['text'];
+  delete message['entities'];
+  message['document'] = {
+    file_id: 'doc',
+    file_unique_id: 'doc',
+    mime_type: 'video/mp4',
+    file_name: 'a.mp4',
+  };
+  await bot.handleUpdate(update);
+  expect(sentTexts(calls).some((text) => text.includes('як відео'))).toBe(true);
+  expect((await get()).draft.extras['workVideo']).toBeUndefined();
+});

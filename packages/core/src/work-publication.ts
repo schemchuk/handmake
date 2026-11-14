@@ -24,5 +24,8 @@ export const workPublicationSchema = z
     /** Cover/identity come from the first work, never arbitrary paths supplied by the client. */
     newCollection: collectionSchema.pick({ versions: true, order: true }).optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => !!value.videoFileId === !!value.videoPeople, {
+    message: 'Video reference and people answer must be supplied together',
+  });
 export type WorkPublication = z.infer<typeof workPublicationSchema>;

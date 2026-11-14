@@ -25,6 +25,7 @@ import { buildTenantPreview } from './preview';
 import type { AiCostLedger } from './ai-costs';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
+import { showWorkVideo, workVideoKeyboard } from './work-video';
 import { registerWorkSession } from './work-session';
 import type { WorkSessionOptions } from './work-session';
 import { registerShowSession } from './show-session';
@@ -348,7 +349,15 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       }
       // Dispatch the draft as claimed, not as read above: an edit that landed
       // in between (replaceText works on ready drafts) must be published.
-      await runPublish(ctx, claimed, publishJobOf(claimed.draft));
+      let job: PublishJob;
+      try {
+        job = publishJobOf(claimed.draft);
+      } catch {
+        await ctx.drafts.revertPublishing(ctx.tenantId, draftId, new Date());
+        await ctx.reply(texts.publishInvalidText);
+        return;
+      }
+      await runPublish(ctx, claimed, job);
       return;
     }
 
@@ -553,6 +562,10 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       options.publishesLive,
       options.entryNames,
     );
+    if (stored.draft.kind === 'work') {
+      await showWorkVideo(ctx, stored);
+      preview.keyboard!.inline_keyboard.push(...workVideoKeyboard(stored));
+    }
     await ctx.reply(preview.text, preview.keyboard ? { reply_markup: preview.keyboard } : {});
   }
 
