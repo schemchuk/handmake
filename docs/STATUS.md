@@ -7,7 +7,11 @@
 - **Next step:** codex implements T60c (docs/03-tasks.md, incl. review note from PR #153);
   claude-code reviews, opens the PR and merges; then T60d. The live site picks up T60 changes
   on the next publish run (site.yml is called only from publish.yml).
-  T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at 12:14Z; Volodymyr deploys.
+  T59 deployed by Volodymyr 2026-11-14 13:27Z from a clean `main` worktree, Worker
+  `3c932b61-08d4-456f-8f2b-7c290aab9e08`; 13:30Z tick logged no errors. Incident: deploy
+  `964d60d1` (13:00Z) bundled uncommitted T60 core changes and broke every cron with
+  `invalid tenant config at site.theme.colors.rule`. Deploy the bot only from a clean tree
+  or a separate worktree, never from a branch switch carrying uncommitted changes.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
