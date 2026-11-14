@@ -14,7 +14,9 @@
     },
     "instagram": {
       "status": "pending",
-      "remoteIds": [],
+      "remoteIds": [
+        "17882915670544502"
+      ],
       "updatedAt": "2026-11-14T08:30:00.544Z"
     },
     "facebook": {
