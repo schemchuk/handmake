@@ -1,13 +1,31 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T55e — Instagram Reel, Facebook video, Threads carousel video.
+- **Active agent:** claude-code.
+- **Current task:** T55e1 — Instagram work Reel, PR open, waiting for CI and Volodymyr's OK.
 - **Branch:** `feat/T55e-meta-work-video`.
-- **Last commit:** this commit — docs: record T55d merge, refine T55e upload path, hand to codex.
-- **Next step:** codex implements T55e (sandboxed: edit files only, mocked APIs; claude-code
-  reviews, commits, pushes, opens the PR, then runs the live test with the test accounts).
+- **Last commit:** this commit — feat(channels): publish work video as Instagram Reel (T55e1).
+- **Next step:** after CI and Volodymyr's OK (personal data), claude-code merges and hands T55e2
+  (Facebook, Threads) to codex; live test with the test accounts after T55e2.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Open questions for Volodymyr:** OK to merge T55e1 (author's video to Instagram)?
+
+- **T55e1 implementation/validation (codex, sandbox):** Instagram REELS resumable binary upload,
+  bounded FINISHED polling, caption from the photo operation, per-call upload 429/190 retries,
+  separate `<workId>-video` ledger preserving Telegram entries. Failed Reel retries skip photos;
+  completed video entries skip upload. Proposed split leaves Facebook/Threads for T55e2.
+  Mocked HTTP only. Targeted Vitest with `--maxWorkers=2`: Instagram adapter 33/33 and
+  work-publish 23/23. Core/channels/publisher typechecks include tests; changed TypeScript ESLint,
+  Prettier and diff checks pass. Initial adapter run had one obsolete error-message assertion,
+  updated for video support. No network, pull, commit, push or deploy; live verification remains
+  with claude-code after review/merge.
+  Blocking review fix: video ops now use independent `videoStatusPollIntervalMs` (5000 ms)
+  and `videoStatusPollMaxAttempts` (72); images retain 2000 ms / 30 polls. Regression tests
+  publish a Reel FINISHED on poll 72, reject one still processing after poll 72, and reject
+  an image after 30 polls even when FINISHED would arrive on poll 31. Upload occurs once.
+  Adapter Vitest `--maxWorkers=2`: 36/36; channels typecheck includes tests; changed-file
+  ESLint, Prettier and diff checks pass. Initial regression run exposed a mock URL matcher
+  ignoring the auth query; corrected matcher and rerun passed. Edit-only sandbox fix;
+  no pull, commit, push or deploy, as requested by Volodymyr.
 
 - **T55d implementation/validation:** static MP4 route reads declared work video through the
   tenant-scoped store, preserves bytes and serves video/mp4; excluded works expose no video route.

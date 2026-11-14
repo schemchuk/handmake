@@ -432,32 +432,37 @@ export async function runPublish(
     await persistLedger();
   }
 
-  if (workPublication && workVideo && post.channels.includes('telegram')) {
-    try {
-      await deliverWorkVideo(
-        workPublication.work,
-        workVideo,
-        ledger,
-        registry.get('telegram'),
-        {
-          secrets,
-          settings: tenant.channels.telegram,
-          photos: photoBytes,
-          idempotencyBase: '',
-        },
-        store,
-        async (videoLedger) => {
-          await store.writeLedger(videoLedger);
-          await git.commit(
-            [path.join('content', 'ledger', `${videoLedger.postId}.json`)],
-            `content: update ledger ${videoLedger.postId}`,
-          );
-        },
-        now,
-      );
-    } catch (error) {
-      await notify('author', safeErrorMessage(error));
-      throw error;
+  if (workPublication && workVideo) {
+    for (const channel of post.channels.filter(
+      (key) => key === 'telegram' || key === 'instagram',
+    )) {
+      try {
+        await deliverWorkVideo(
+          workPublication.work,
+          workVideo,
+          ledger,
+          registry.get(channel),
+          {
+            secrets,
+            settings: tenant.channels[channel],
+            photos: photoBytes,
+            idempotencyBase: '',
+          },
+          store,
+          async (videoLedger) => {
+            await store.writeLedger(videoLedger);
+            await git.commit(
+              [path.join('content', 'ledger', `${videoLedger.postId}.json`)],
+              `content: update ledger ${videoLedger.postId}`,
+            );
+          },
+          now,
+          channelOperations.get(channel)?.find((op) => op.kind === 'mediaGroup')?.caption,
+        );
+      } catch (error) {
+        await notify('author', safeErrorMessage(error));
+        throw error;
+      }
     }
   }
 

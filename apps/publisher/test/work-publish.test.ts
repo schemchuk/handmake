@@ -505,3 +505,127 @@ it('uploads the Telegram video as a reply to the recorded album and skips a comp
   expect(fetchImpl).toHaveBeenCalledTimes(1);
   expect(String(fetchImpl.mock.calls[0]![0])).toContain('/sendVideo');
 });
+
+it('retries only the Instagram Reel with its caption and separate channel ledger', async () => {
+  const result = await run();
+  const { InstagramAdapter } = await import('@handmake/channels');
+  let fail = true;
+  const requests: Array<{ url: string; body?: Record<string, unknown> }> = [];
+  const fetchImpl = vi.fn<typeof fetch>(async (input, init) => {
+    const url = String(input);
+    requests.push({ url, ...(typeof init?.body === 'string' && { body: JSON.parse(init.body) }) });
+    if (url.includes('rupload.')) return Response.json({ success: !fail });
+    if (url.includes('media_publish')) return Response.json({ id: 'reel-id' });
+    if (url.includes('fields=status_code')) return Response.json({ status_code: 'FINISHED' });
+    return Response.json({ id: 'container-id' });
+  });
+  const adapter = new InstagramAdapter({ fetchImpl });
+  const photosLedger = {
+    tenantId,
+    postId: id,
+    channels: {
+      instagram: { status: 'done' as const, remoteIds: ['photos-id'], updatedAt: work.date },
+    },
+  };
+  const context = {
+    photos: [],
+    settings: { language: 'de' },
+    idempotencyBase: '',
+    secrets: { resolve: async () => 'fixture' },
+  };
+  const persist = async (value: import('@handmake/core').PublishLedger) => store.writeLedger(value);
+  await store.writeLedger({
+    ...photosLedger,
+    postId: `${id}-video`,
+    channels: { telegram: { status: 'done', remoteIds: [123], updatedAt: work.date } },
+  });
+  const send = () =>
+    deliverWorkVideo(
+      result.work!,
+      new Uint8Array([1]),
+      photosLedger,
+      adapter,
+      context,
+      store,
+      persist,
+      new Date(),
+      'Same photo caption',
+    );
+  await expect(send()).rejects.toThrow('відео');
+  expect(await store.readLedger(tenantId, `${id}-video`)).toMatchObject({
+    channels: { instagram: { status: 'failed' } },
+  });
+  fail = false;
+  await send();
+  expect(await store.readLedger(tenantId, `${id}-video`)).toMatchObject({
+    channels: { instagram: { status: 'done', remoteIds: ['reel-id'] } },
+  });
+  const count = requests.length;
+  await send();
+  expect(requests).toHaveLength(count);
+  expect(
+    requests
+      .filter((request) => request.body?.media_type === 'REELS')
+      .map((request) => request.body?.caption),
+  ).toEqual(['Same photo caption', 'Same photo caption']);
+  expect(requests.some((request) => request.body?.image_url)).toBe(false);
+  expect(photosLedger.channels.instagram.remoteIds).toEqual(['photos-id']);
+  expect((await store.readLedger(tenantId, `${id}-video`))?.channels.telegram?.remoteIds).toEqual([
+    123,
+  ]);
+});
+
+it('wires the Instagram work caption and resumes only its failed Reel', async () => {
+  await writeFile(
+    path.join(root, 'config/tenants/faden-und-stimmung.yaml'),
+    await readFile(new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url)),
+  );
+  const file = path.join(root, 'input.mp4');
+  await exec('ffmpeg', [
+    '-v',
+    'error',
+    '-f',
+    'lavfi',
+    '-i',
+    'color=s=16x16:r=1',
+    '-t',
+    '1',
+    '-c:v',
+    'libx264',
+    '-threads',
+    '1',
+    file,
+  ]);
+  current.work!.channels = ['instagram'];
+  current.work!.videoFileId = 'opaque-video';
+  current.work!.videoPeople = 'none';
+  const videoSource = { fetchMedia: vi.fn(async () => new Uint8Array(await readFile(file))) };
+  const adapter = new FakeChannelAdapter({
+    key: 'instagram',
+    renderImpl: () => [{ kind: 'mediaGroup', photoIndexes: [0], caption: 'Work caption' }],
+  });
+  const registry = new ChannelRegistry();
+  registry.register(adapter);
+  const original = adapter.deliver.bind(adapter);
+  const deliver = vi.spyOn(adapter, 'deliver').mockImplementation(async (ops, ctx, progress) => {
+    if (ctx.video) throw new Error('fixture upload rejected');
+    return original(ops, ctx, progress);
+  });
+  const overrides = {
+    ...deps(),
+    registry,
+    showMediaSource: videoSource,
+    env: { ...deps().env, CONTENT_RAW_BASE_URL: 'https://raw.example/content' },
+  };
+  await expect(run(overrides)).rejects.toThrow('відео');
+  expect((await store.readLedger(tenantId, id))?.channels.instagram?.status).toBe('done');
+  deliver.mockImplementation(original);
+  await run(overrides);
+  expect(deliver.mock.calls.at(-1)![0]).toEqual([{ kind: 'video', caption: 'Work caption' }]);
+  expect(deliver.mock.calls.at(-1)![2]).toMatchObject({ startAt: 0, knownIds: [] });
+  expect(videoSource.fetchMedia).toHaveBeenCalledTimes(1);
+  expect(deliver.mock.calls.filter(([ops]) => ops[0]?.kind === 'mediaGroup')).toHaveLength(1);
+  const count = deliver.mock.calls.length;
+  await run(overrides);
+  expect(deliver).toHaveBeenCalledTimes(count);
+});

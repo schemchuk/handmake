@@ -37,7 +37,7 @@ export type SendOperation =
       captionLang?: string;
       replyToOp?: number;
     }
-  | { kind: 'video'; videoSource?: 'authentic'; replyToOp?: number }
+  | { kind: 'video'; videoSource?: 'authentic'; replyToOp?: number; caption?: string }
   | { kind: 'message'; text: string; lang: string; replyToOp?: number }
   | {
       kind: 'poll';

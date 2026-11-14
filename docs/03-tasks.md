@@ -2424,3 +2424,15 @@ it becomes a task.
   container retries without reposting the photos; works without video are unchanged.
 - Tests: mocked Graph/Threads API for container creation, status polling, retry and error paths.
 
+
+##### T55e split proposal (2026-11-14, codex)
+The three transports plus publisher wiring exceed the ~400 changed non-test line budget.
+Implement only T55e1 in this session; leave T55e2 for a fresh task session.
+
+- **T55e1 — Instagram work Reel**. Owner: codex. Reviewer: claude-code.
+  Resumable binary upload, bounded FINISHED polling, same photo caption, separate
+  `<workId>-video` channel ledger. Mocked tests cover upload, failures and video-only retry.
+- **T55e2 — Facebook and Threads work video**. Owner: codex. Reviewer: claude-code.
+  Depends on T55e1. Facebook multipart `source` and separate video ledger; Threads final
+  VIDEO carousel item with raw `video_url`, one ledger entry. Mocked transport/retry tests.
+  Retain the parent acceptance criteria and post-merge live-test gate.
