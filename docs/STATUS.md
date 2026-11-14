@@ -1,13 +1,18 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
+- **Active agent:** codex.
+- **Current task:** T57 — remove the own-media step from `/show`.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T56 merge and deploy.
-- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-  Otherwise the next task is the one Volodymyr names.
+- **Last commit:** this commit — docs: plan T57, withdraw own media from shows.
+- **Next step:** codex implements T57 (docs/03-tasks.md) on `feat/t57-show-no-own-media`;
+  claude-code reviews. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
+
+- **Full `/show` run 2026-11-14:** show `01M7CGZVW0PG0FQ7WDFDZQS3WG` (work `01M7CH07KE5PY7KGSAN2354KZ2`)
+  published to site (5 media byte-equal), Telegram 68-73, Instagram, Facebook, Threads; cost EUR 1.10
+  (video regenerated once). Findings: own-media step blocked the author (→ T57), IG/FB comment
+  collection fails every 30 min (open).
 
 - **T56 implementation/validation (codex, edit-only sandbox):** neutral pending-video prompt
   hides publish; malformed work/video keeps the setup error. Stale publishing drafts offer

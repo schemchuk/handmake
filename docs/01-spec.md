@@ -175,7 +175,9 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     art. 50); captions say "KI-generiertes Model"; the real work is labelled "Originalarbeit" (F36).
   - **Real people (Q16, F37).** Real photos and video of the author or Volodymyr in a show are
     authentic media (F37), never mixed up with generated images.
-- **F37** Authentic media in a show (v10 draft, Q16/Q18). The author may add her own photos and one
+- **F37** Authentic media in a show (v10 draft, Q16/Q18). **Withdrawn for new shows 2026-11-14
+  (Volodymyr, T57):** the author's own photos and video belong to the work (F39, `/work`); a show
+  carries only generated media. Already published shows with authentic media stay as they are. The author may add her own photos and one
   short video of the work to a show, next to the generated images and video.
   - **What counts.** Media taken by the author (or Volodymyr) of the real work: on a hanger, worn by
     the author, worn by Volodymyr, in a room. Nothing generated or AI-edited. People who may appear:

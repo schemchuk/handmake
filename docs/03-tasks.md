@@ -2457,3 +2457,34 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   on a stale publishing draft leads to the consent step and a re-dispatch; a fresh one says busy.
 - Tests: preview with unconfirmed video, broken work setup unchanged; publish on ready / fresh
   publishing / stale publishing / published drafts.
+
+### T57 — Remove the own-media step from `/show` (`bot`, F37 withdrawn)
+- Status: todo.
+- Owner: codex · Reviewer: claude-code · Depends on: T53, T55
+- Why: decided by Volodymyr 2026-11-14 after the full `/show` run. Since T55/T56 the author's own
+  photos and video belong to the work and reach all four networks through `/work`. In a show they
+  duplicated the work, reached only Telegram and the site (video), mixed real people into a
+  "KI-generiertes Model" post and blocked the author with «Завершіть додавання власних медіа…».
+- Change (bot only):
+  1. `/show` no longer offers «Додати свої фото/відео»: drop `authenticKeyboard` from
+     `refreshKeyboard` (`show-preview.ts`), the authentic preview loop, the authentic gate and
+     `deps.authentic` call in `show-approval.ts`, the `own*` callbacks and photo/video `intake` in
+     `show-session.ts`, and the `createAuthenticShowStorage` wiring in `show-runtime.ts`. Delete
+     `show-authentic.ts` and `show-authentic-storage.ts` with their tests if nothing else uses them.
+  2. Keep a «Скасувати показ» button on every ready, unapproved show (today it appears only when own
+     media exist); keep its existing behaviour (state `failed`, `showCancelled`, session detached,
+     evidence retained) and the `owncancel` callback name so already sent buttons still work.
+  3. In-flight drafts that already hold `extras.showAuthentic`: ignore it. Preview does not resend
+     those files, approval no longer waits for the people answer and the frozen publication has no
+     authentic media. Old `own`/`ownremove.*`/`ownpeople.*`/`ownconfirm`/`owndone` callbacks answer
+     the existing stale text «Цей крок уже змінився. Відкрийте /show ще раз.».
+  4. Do NOT change `packages/core` (`showSchema.authentic`), the publisher, channels or the site:
+     published show `01M7CGZVW0PG0FQ7WDFDZQS3WG` and any frozen payload with authentic refs must still
+     parse, render and copy. The R2 `show-authentic/` prefix keeps its 30-day lifecycle rule.
+- Acceptance: a ready show shows the regenerate/refresh/cancel buttons and no own-media button;
+  approval of a show whose draft has unconfirmed `showAuthentic` succeeds and the publication has no
+  `authentic` media; a photo sent during a show session is not stored; core/publisher/site suites
+  pass unchanged.
+- Tests: preview keyboard (ready, failed, approved), cancel from the new button and from an old
+  `owncancel` button, approval with legacy `showAuthentic`, stale `own*` callbacks, photo in a show
+  session. Bot tests only, `--maxWorkers=2`.
