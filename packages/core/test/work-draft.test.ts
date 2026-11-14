@@ -95,11 +95,10 @@ describe('approved work job', () => {
       { size: 20_000_001 },
       { duration: 61 },
     ]) {
-      draft.extras['workVideo'] = { ...video, ...patch };
+      Object.assign(draft.extras, { workVideo: { ...video, ...patch } });
       expect(() => buildApprovedWorkJob(draft)).toThrow();
     }
-    draft.extras['workVideo'] = video;
-    draft.extras['workVideoEditing'] = true;
+    Object.assign(draft.extras, { workVideo: video, workVideoEditing: true });
     expect(() => buildApprovedWorkJob(draft)).toThrow();
   });
   it('omits video metadata from existing jobs', () => {

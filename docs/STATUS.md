@@ -15,7 +15,8 @@
   Targeted pure tests: work-video 7/7, core work-draft 19/19; workspace typecheck and changed-file
   ESLint/Prettier pass. D1-backed work-session tests stalled in the sandbox; claude-code reran them:
   three fixture bugs fixed in review (video/document updates kept the `bot_command` entity, mock API
-  lacked `sendVideo`), then work-session 28/28, bot 59/59-file run green, bot typecheck clean.
+  lacked `sendVideo`), then work-session 28/28, work-video and bot.test green, bot typecheck clean; core test typecheck
+  fix (extras indexing) after the first CI run.
 
 - **T55a:** PR #141 merged 2026-11-14 by claude-code (squash, CI green, no blocking findings).
   Core only: no bot deploy needed until T55b.
