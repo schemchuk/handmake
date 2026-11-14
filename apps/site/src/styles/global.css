@@ -317,8 +317,7 @@ a {
 }
 .entry img {
   width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
+  height: auto;
   background: color-mix(in srgb, var(--ink) 8%, var(--paper));
 }
 .entry time,
@@ -552,4 +551,63 @@ h3 {
   .roll-skin {
     background-position: 0 0;
   }
+}
+
+/* Handwriting and media sewn onto the cloth. */
+.hand {
+  display: block;
+  width: min(100%, 36rem);
+  aspect-ratio: 1890 / 1581;
+  background: var(--thread);
+  mask: url('/wordmark.svg') center / contain no-repeat;
+  -webkit-mask: url('/wordmark.svg') center / contain no-repeat;
+}
+.patch {
+  position: relative;
+  margin: 0;
+  rotate: var(--tilt, -0.7deg);
+  box-shadow: 0 2px 5px rgba(40, 30, 10, 0.28);
+  transition: rotate 0.25s ease;
+}
+.patch img,
+.patch video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.patch::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 2px dashed var(--paper);
+  pointer-events: none;
+}
+.entry:nth-child(even) .patch,
+.work-gallery > :nth-child(even),
+.work-gallery > :nth-child(even) .patch {
+  --tilt: 0.6deg;
+}
+.patch:hover,
+.patch:focus-within,
+a:hover .patch,
+a:focus-visible .patch {
+  rotate: 0deg;
+}
+.credit {
+  margin: 0.7rem 0 -0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .patch {
+    transition: none;
+  }
+}
+
+.work-gallery > figure {
+  margin: 0;
+  align-self: start;
+}
+.patch {
+  align-self: start;
 }

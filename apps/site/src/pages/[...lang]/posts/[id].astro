@@ -41,8 +41,8 @@ const [lead, ...rest] = paragraphs(text);
   <article class="wrap page">
     {
       photo && (
-        <figure class="page-figure">
-          <img src={mediaPath(post.id, photo)} alt={excerpt(text, 100)} />
+        <figure class="page-figure patch">
+          <img src={mediaPath(post.id, photo)} {...data.imageSizes.get(mediaPath(post.id, photo))} alt={excerpt(text, 100)} />
         </figure>
       )
     }

@@ -13,7 +13,7 @@ const { items, section, lang, data } = Astro.props;
     {items.map((item) => {
       const cover = portfolioCover(item);
       return <li class="entry"><a href={pagePath(lang, data.site.defaultLanguage, portfolioPage(section, item))}>
-        <WorkImage photo={data.workImages.get(workImageKey(cover.workId, cover.fileName))!} alt="" />
+        <figure class="patch"><WorkImage photo={data.workImages.get(workImageKey(cover.workId, cover.fileName))!} alt="" /></figure>
         <p class="entry-text">{portfolioTitle(item, lang)}</p>
       </a></li>;
     })}

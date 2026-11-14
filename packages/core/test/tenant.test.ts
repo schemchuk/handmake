@@ -8,6 +8,7 @@ import {
   channelsSchema,
   knownChannelKeys,
   TenantConfigError,
+  siteSchema,
 } from '../src/tenant';
 
 const realConfigPath = join(import.meta.dirname, '../../../config/tenants/faden-und-stimmung.yaml');
@@ -314,4 +315,24 @@ it('rejects Threads languages outside the tenant language set and unknown settin
   expect(
     channelsSchema.safeParse({ threads: { language: 'de', accessToken: 'bad' } }).success,
   ).toBe(false);
+});
+
+describe('wordmark path', () => {
+  const schema = siteSchema.shape.theme.shape.wordmark;
+  it('accepts an optional repository SVG', () => {
+    expect(schema.safeParse(undefined).success).toBe(true);
+    expect(schema.safeParse('config/tenants/assets/hand.svg').success).toBe(true);
+  });
+  it.each([
+    '../hand.svg',
+    '/hand.svg',
+    'assets/../hand.svg',
+    'https://example.invalid/hand.svg',
+    'C:\\hand.svg',
+    'hand.png',
+    'hand.svg?x',
+    'assets/%2e%2e/hand.svg',
+  ])('rejects %s', (value) => {
+    expect(schema.safeParse(value).success).toBe(false);
+  });
 });

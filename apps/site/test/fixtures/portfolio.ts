@@ -20,6 +20,7 @@ export async function createPortfolioFixture() {
   await mkdir(cache, { recursive: true });
   const root = await mkdtemp(path.join(cache, 'portfolio-'));
   const tenant = readTenantConfig(findRepoRoot(import.meta.dirname), 'faden-und-stimmung');
+  delete tenant.site!.theme.wordmark;
   tenant.id = 'fixture';
   tenant.site!.baseUrl = 'https://example.invalid';
   delete tenant.site!.profiles;

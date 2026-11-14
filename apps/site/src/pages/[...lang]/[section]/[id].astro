@@ -47,7 +47,7 @@ const [lead, ...rest] = paragraphs(version.description);
 <Base lang={lang} title={title} description={excerpt(version.description)} alternates={alternates} current={section}>
   <article class="wrap page">
     {work && <h1 class="visually-hidden">{title}</h1>}
-    <figure class="page-figure">
+    <figure class="page-figure patch">
       <WorkImage photo={data.workImages.get(workImageKey(cover.workId, cover.fileName))!} alt={title} eager />
     </figure>
     <div class="page-body page-body--with-figure">
@@ -65,14 +65,14 @@ const [lead, ...rest] = paragraphs(version.description);
   {work ? (
     <div class="wrap work-gallery">
       {work.photos.slice(1).map((file) => (
-        <WorkImage photo={data.workImages.get(workImageKey(work.id, file))!} alt={title} />
+        <figure class="patch"><WorkImage photo={data.workImages.get(workImageKey(work.id, file))!} alt={title} /></figure>
       ))}
       {work.video && <figure>
-        <video controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
+        <div class="patch"><video {...data.imageSizes.get(workVideoPath(work))} controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
           <source src={workVideoPath(work)} type="video/mp4" />
           <a href={workVideoPath(work)}>{title}</a>
-        </video>
-        <figcaption>{ui.authenticityLabel}</figcaption>
+        </video></div>
+        <figcaption class="credit">{ui.authenticityLabel}</figcaption>
       </figure>}
     </div>
   ) : (

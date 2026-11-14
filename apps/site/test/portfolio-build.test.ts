@@ -1,3 +1,4 @@
+import { structuralVideo } from './fixtures/video';
 import { execFile } from 'node:child_process';
 import { access, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -81,7 +82,7 @@ describe('portfolio fixture build', () => {
       };
       // Structural bytes test transport preservation; marker verification belongs to publication.
       const marked = await sharp(original).png().toBuffer();
-      const video = Buffer.from('structural-video-fixture');
+      const video = structuralVideo();
       await fixture.store.saveShow(show, [
         { fileName: 'authentic.jpg', data: original },
         { fileName: 'authentic.mp4', data: video },
@@ -131,6 +132,11 @@ describe('portfolio fixture build', () => {
           uk: { title: 'Гурток', what: 'Рукоділля', where: 'Ландсгут' },
         },
       };
+      fixture.tenant.site!.theme.wordmark = 'config/tenants/wordmark.svg';
+      await writeFile(
+        path.join(root, 'config/tenants/wordmark.svg'),
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1890 1581"><path fill="currentColor" d="M0 0h10v10z"/></svg>',
+      );
       await writeFile(
         path.join(root, 'config/tenants/fixture.yaml'),
         JSON.stringify(fixture.tenant),
@@ -142,6 +148,15 @@ describe('portfolio fixture build', () => {
         video,
       );
       const result = await build(root, dist);
+      const home = await html(dist, '');
+      expect(home).toMatch(
+        /<h1><span class="visually-hidden">[^<]+<\/span><span class="hand" aria-hidden="true"><\/span><\/h1>/,
+      );
+      expect(await readFile(path.join(dist, 'wordmark.svg'), 'utf8')).toContain('currentColor');
+      for (const tag of home.match(/<img\b[^>]*>/g) ?? []) {
+        expect(tag).toMatch(/width="\d+"/);
+        expect(tag).toMatch(/height="\d+"/);
+      }
       for (const route of ['', 'uk']) {
         const home = await html(dist, route);
         expect(home).toContain('class="roll-bar"');
@@ -213,7 +228,9 @@ describe('portfolio fixture build', () => {
       );
       const showUrl = `shows/${show.id.toLowerCase()}`;
       const showHtml = await html(dist, showUrl);
-      expect(showHtml.match(/<figcaption>KI-generiertes Model<\/figcaption>/g)).toHaveLength(4);
+      expect(showHtml.match(/<figcaption[^>]*>KI-generiertes Model<\/figcaption>/g)).toHaveLength(
+        4,
+      );
       expect(showHtml).toContain('(3/3)"');
       expect(showHtml).toContain('Fixture Persona');
       expect(showHtml).toContain(`/works/${ids.a.toLowerCase()}/`);
@@ -294,7 +311,7 @@ describe('portfolio fixture build', () => {
         expect(player![0]).toContain(`aria-label="${label}:`);
         expect(player![0]).toContain(`src="/work-media/${ids.a.toLowerCase()}/video.mp4"`);
         expect(player![0]).toContain('type="video/mp4"');
-        expect(page).toContain(`<figcaption>${label}</figcaption>`);
+        expect(page).toContain(`<figcaption class="credit">${label}</figcaption>`);
         expect(page!.lastIndexOf('b.png')).toBeLessThan(page!.indexOf('<video'));
       }
       expect(
@@ -428,7 +445,7 @@ describe('portfolio fixture build', () => {
 });
 
 it('excludes flagged posts, works, shows and their media from an indexable build and sitemap', async () => {
-  const { root, dist, store } = await createPortfolioFixture();
+  const { root, dist, store, tenant } = await createPortfolioFixture();
   try {
     const post: Post = {
       id: '01JBCA1B2C3D4E5F6G7H8J9K0M',
@@ -505,6 +522,8 @@ it('excludes flagged posts, works, shows and their media from an indexable build
     expect(sitemap).not.toContain('/collections/second/');
     for (const prefix of ['', 'uk/']) {
       const home = await html(dist, prefix);
+      expect(home).toContain(`<h1>${tenant.name}</h1>`);
+      expect(home).not.toContain('class="hand"');
       expect(home).not.toContain('Hidden fixture text');
       expect(home).not.toContain('noindex');
       await expect(

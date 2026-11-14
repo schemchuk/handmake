@@ -32,7 +32,7 @@ const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code,
 <Base lang={lang} title={data.tenant.name} alternates={alternates} current="home">
   <div class="wrap">
     <section class="hero">
-      <h1>{data.tenant.name}</h1>
+      <h1>{data.site.theme.wordmark ? <><span class="visually-hidden">{data.tenant.name}</span><span class="hand" aria-hidden="true"></span></> : data.tenant.name}</h1>
     </section>
     <Stitch />
     {latestShow && <section aria-label={ui.showsHeading}>
@@ -51,7 +51,7 @@ const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code,
             return (
               <li class="entry">
                 <a href={pagePath(lang, def, postPage(post.id))}>
-                  {photo && <img src={mediaPath(post.id, photo)} alt="" loading="lazy" />}
+                  {photo && <figure class="patch"><img src={mediaPath(post.id, photo)} {...data.imageSizes.get(mediaPath(post.id, photo))} alt="" loading="lazy" /></figure>}
                   <time datetime={post.date}>{date.format(new Date(post.date))}</time>
                   <p class="entry-text">{excerpt(text, 220)}</p>
                 </a>
