@@ -2410,11 +2410,16 @@ it becomes a task.
 - Tests: site build with and without a work video (site suites only).
 
 #### T55e — Instagram Reel, Facebook video, Threads carousel video (`channels`, `publisher`) · Depends on: T55c
-- Change: first check with the test accounts that Meta accepts the raw content URL for video
-  (`Content-Type`); if not, serve the video from the site domain after the site deploy and record the
-  choice in the architecture section. Then: Instagram `REELS` container with polling until
-  `FINISHED`; Facebook `/{page-id}/videos` with `file_url`; Threads `VIDEO` carousel item after the
-  photos. Separate ledger keys for Instagram and Facebook videos.
+- Finding 2026-11-14 (claude-code): raw GitHub serves `.mp4` as `application/octet-stream`
+  (`nosniff`); the site serves `video/mp4`, but only after the site deploy that follows publishing.
+  So Instagram and Facebook upload the bytes instead of a URL: Instagram `REELS` container with
+  `upload_type=resumable`, then the binary to `rupload.facebook.com/ig-api-upload/<container>`;
+  Facebook `/{page-id}/videos` multipart `source`. Threads accepts only `video_url`: use the raw URL;
+  the live test with the test accounts (after merge, by claude-code) decides whether it needs the
+  site URL instead, recorded in the architecture section.
+- Change: Instagram resumable Reel upload with status polling until `FINISHED`; Facebook multipart
+  video post; Threads `VIDEO` carousel item after the photos. Separate ledger keys
+  (`<workId>-video`, no colon) for Instagram and Facebook videos; Threads stays one entry.
 - Acceptance: a work with video publishes photos and video on all three networks; a failed video
   container retries without reposting the photos; works without video are unchanged.
 - Tests: mocked Graph/Threads API for container creation, status polling, retry and error paths.

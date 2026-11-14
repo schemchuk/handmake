@@ -923,12 +923,12 @@ does not transcode, and a codec Instagram rejects fails only that channel's vide
 
 Channels: the photo post keeps its current ledger key; the video is a second ledger entry
 (`<workId>:video` per channel), so a failed video never reposts photos. Telegram: `sendVideo` as a
-reply to the album. Instagram: a `REELS` container from the public video URL with the work caption.
-Facebook: `/{page-id}/videos` with `file_url` and the caption. Threads: the video is a `VIDEO`
-carousel item after the photos (a single entry, no second post). Meta fetches the video from the
-same public raw content URL as photos (`CONTENT_RAW_BASE_URL`); the Instagram task first checks
-that Meta accepts the raw URL's `Content-Type` for video and otherwise serves it from the site
-domain after the site deploy.
+reply to the album. Instagram: a `REELS` container (resumable upload) with the work caption.
+Facebook: `/{page-id}/videos` with a multipart `source` upload and the caption. Threads: the video
+is a `VIDEO` carousel item after the photos (a single entry, no second post). Raw GitHub serves
+`.mp4` as `application/octet-stream`, so Instagram (resumable upload to `rupload.facebook.com`)
+and Facebook upload the bytes; Threads only takes `video_url` and uses the raw URL unless the live
+test shows it needs the site URL (`video/mp4`, available after the site deploy).
 
 Site: the work page renders `<video controls playsinline preload="metadata">` from the copied
 file after the photos, with the "Originalarbeit" label; no autoplay, no external player.

@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T55d — site work video, PR open.
-- **Branch:** `feat/T55d-site-work-video`.
-- **Last commit:** this commit — feat(site): show the author's video on work pages (T55d).
-- **Next step:** claude-code merges after CI, then hands T55e to codex.
+- **Active agent:** codex.
+- **Current task:** T55e — Instagram Reel, Facebook video, Threads carousel video.
+- **Branch:** `feat/T55e-meta-work-video`.
+- **Last commit:** this commit — docs: record T55d merge, refine T55e upload path, hand to codex.
+- **Next step:** codex implements T55e (sandboxed: edit files only, mocked APIs; claude-code
+  reviews, commits, pushes, opens the PR, then runs the live test with the test accounts).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
@@ -38,6 +39,7 @@
   publisher/stores typechecks (including tests) and all changed-file ESLint/Prettier pass.
   No pull, commit or push; existing sandbox changes remain for claude-code review.
 
+- **T55d:** PR #144 merged 2026-11-14 by claude-code (squash, CI green, no findings). Site only.
 - **T55c:** PR #143 merged 2026-11-14 by claude-code with Volodymyr's OK (squash, CI green).
   Publisher only, no deploy. Work videos now reach the content store and Telegram.
 - **T55b:** PR #142 merged 2026-11-14 by claude-code with Volodymyr's OK (squash b7d0e70, CI green).
