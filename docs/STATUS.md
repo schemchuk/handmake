@@ -5,8 +5,7 @@
 - **Branch:** `main`.
 - **Last commit:** this commit — docs: record T60d merge, T60 done.
 - **Next step:** the live site shows the cloth look after the next publish run (site.yml is called
-  only from publish.yml). T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at
-  12:14Z; Volodymyr deploys. 2026-11-18 20:00 Berlin: first live contest closing without Facebook
+  only from publish.yml). T59 deployed by Volodymyr 2026-11-14 (Worker 7806cb04-432e-4607-855e-a509adb0eb9e). 2026-11-18 20:00 Berlin: first live contest closing without Facebook
   (logs on). Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
