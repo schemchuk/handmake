@@ -217,6 +217,21 @@ describe('portfolio fixture build', () => {
         expect(page).not.toContain('class="group"');
         expect(page).not.toContain('Austauschgruppe');
         expect(page).not.toContain('Група для обміну');
+        const language = route === 'kreis' ? 'de' : 'uk';
+        const otherLanguage = language === 'de' ? 'uk' : 'de';
+        const presentation = page.match(/<a\b[^>]*href="\/praesentation\/[^"]+"[^>]*>[^<]*<\/a>/g);
+        expect(presentation).toHaveLength(1);
+        expect(presentation![0]).toContain(`href="/praesentation/${language}.pdf"`);
+        expect(presentation![0]).toContain('class="button"');
+        expect(presentation![0]).toContain('type="application/pdf"');
+        expect(presentation![0]).not.toMatch(/\bdownload\b/);
+        expect(presentation![0]).toContain(
+          language === 'de' ? 'Präsentation ansehen (PDF)' : 'Переглянути презентацію (PDF)',
+        );
+        expect(page).not.toContain(`/praesentation/${otherLanguage}.pdf`);
+        expect(page.indexOf(presentation![0]!)).toBeGreaterThan(
+          page.indexOf('href="https://t.me/fixture_join"'),
+        );
       }
       await expect(access(path.join(dist, 'sitemap.xml'))).rejects.toThrow();
       expect(await readFile(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /');
