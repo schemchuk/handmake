@@ -80,7 +80,7 @@ site:
       ground: '#27313c'
       paper: '#e3ddcd'
       ink: '#283442'
-      muted: '#5c6470'
+      muted: '#59616d'
       thread: '#b3362b'
     fonts:
       display: Gabriela

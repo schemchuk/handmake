@@ -17,7 +17,7 @@ const title = legal === 'impressum' ? 'Impressum' : 'Datenschutzerklärung';
 const content = renderLegal(legal);
 ---
 <Base lang={lang} title={title} alternates={alternates}>
-  <article class="wrap page">
+  <article class="wrap page page--reading">
     {lang !== 'de' && <p>Юридично визначальною є німецька версія тексту.</p>}
     <div lang="de" set:html={content} />
   </article>

@@ -3,12 +3,13 @@
 - **Active agent:** codex.
 - **Current task:** T60d — remaining pages on the cloth (F40).
 - **Branch:** `feat/T60d-pages`.
-- **Last commit:** this commit — docs: record T60c merge, hand T60d to codex.
+- **Last commit:** this commit — feat: remaining pages on the cloth (T60d).
 - **Next step:** codex implements T60d (docs/03-tasks.md); claude-code reviews, opens the PR and merges.
   The live site picks up T60 changes on the next publish run (site.yml is called only from publish.yml).
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
 
 - **T60c:** PR #154 merged 2026-11-14 by claude-code (CI green). Handwritten name, uncropped
   sewn-on media with build-time dimensions. Site only, no bot deploy.
