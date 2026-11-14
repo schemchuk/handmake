@@ -85,10 +85,12 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install show media validation tools
+      - name: Install show and work video tools
         timeout-minutes: 10
         run: |
-          if jq -e '.kind == "show"' "$RUNNER_TEMP/payload.json" > /dev/null; then
+          # Shows validate media; works with an author video strip its metadata (F39).
+          if jq -e '.kind == "show" or (.kind == "work" and (.work.videoFileId // "") != "")' \
+            "$RUNNER_TEMP/payload.json" > /dev/null; then
             .github/scripts/install-ffmpeg.sh
           fi
 
