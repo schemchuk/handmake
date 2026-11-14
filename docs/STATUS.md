@@ -1,14 +1,18 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T60d — remaining pages on the cloth (F40).
-- **Branch:** `feat/T60d-pages`.
-- **Last commit:** this commit — feat: remaining pages on the cloth (T60d).
-- **Next step:** codex implements T60d (docs/03-tasks.md); claude-code reviews, opens the PR and merges.
-  The live site picks up T60 changes on the next publish run (site.yml is called only from publish.yml).
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Active agent:** none.
+- **Current task:** none (T60 cloth look done: PRs #152-#155).
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T60d merge, T60 done.
+- **Next step:** the live site shows the cloth look after the next publish run (site.yml is called
+  only from publish.yml). T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at
+  12:14Z; Volodymyr deploys. 2026-11-18 20:00 Berlin: first live contest closing without Facebook
+  (logs on). Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T60d:** PR #155 merged 2026-11-14 by claude-code (CI green). Reading pages, newsletter, contrast
+  (muted #59616d). Codex's out-of-scope rewrite of the gift PDF was reverted before commit.
 
 
 - **T60c:** PR #154 merged 2026-11-14 by claude-code (CI green). Handwritten name, uncropped

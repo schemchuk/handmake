@@ -2581,7 +2581,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests: schema for `wordmark`; home page renders both variants; image markup has dimensions.
 
 #### T60d — Remaining pages on the cloth
-- Status: planned.
+- Status: done (PR #155, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T60a, T60c
 - Change: circle, gift, newsletter form, legal pages, 404, show and work detail pages: spacing,
   heading scale, form controls and buttons restyled for the cloth (inputs as plain linen fields
