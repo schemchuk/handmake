@@ -52,6 +52,7 @@ import { parseDispatchPayload } from './payload';
 import { requiredEnv } from './required-env';
 import { loadTenantConfig } from './tenant-config';
 import { prepareWorkPublication } from './work-publication';
+import { prepareWorkVideo, deliverWorkVideo, MissingWorkVideoError } from './work-video';
 import { prepareShowPublication } from './show-publication';
 import { createPublicationMediaSource } from './show-media-source';
 
@@ -190,12 +191,44 @@ export async function runPublish(
   });
   const errorMessage = (error: unknown) =>
     entryIds.length ? 'Contest publication failed' : safeErrorMessage(error);
+  const notifier: Notifier =
+    deps.notifier ??
+    ({ notify: async (target, message) => log(`notify ${target}: ${message}`) } satisfies Notifier);
+  // An alert must never change the publish outcome.
+  const notify = async (target: NotifyTarget, message: string): Promise<void> => {
+    try {
+      await notifier.notify(target, message);
+    } catch (error) {
+      log(`notify ${target} failed: ${errorMessage(error)}`);
+    }
+  };
+
+  let workVideo: Uint8Array | undefined;
+  try {
+    workVideo = workPublication
+      ? await prepareWorkVideo(
+          workPublication.work,
+          payload.work?.videoFileId,
+          store,
+          deps.showMediaSource,
+          env,
+        )
+      : undefined;
+  } catch (error) {
+    await notify(
+      'author',
+      error instanceof MissingWorkVideoError
+        ? 'Не вдалося знайти відео для повторної публікації.'
+        : 'Не вдалося підготувати відео. Надішліть справне MP4/MOV до 60 секунд і 20 MB.',
+    );
+    throw error;
+  }
   const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
   if (showPublication) {
     await store.saveShow(showPublication.show, showPublication.media);
   } else if (workPublication) {
     if (workPublication.collection) await store.saveCollection(workPublication.collection);
-    await store.saveWork(workPublication.work, photos);
+    await store.saveWork(workPublication.work, photos, workVideo);
   } else {
     // Re-running on another day reuses the original post folder.
     const existing = await store.readPost(post.tenant, post.id);
@@ -212,18 +245,6 @@ export async function runPublish(
   const secrets: SecretResolver = deps.secrets ?? {
     resolve: async (name) => requiredEnv(name, env),
   };
-  const notifier: Notifier =
-    deps.notifier ??
-    ({ notify: async (target, message) => log(`notify ${target}: ${message}`) } satisfies Notifier);
-  // An alert must never change the publish outcome.
-  const notify = async (target: NotifyTarget, message: string): Promise<void> => {
-    try {
-      await notifier.notify(target, message);
-    } catch (error) {
-      log(`notify ${target} failed: ${errorMessage(error)}`);
-    }
-  };
-
   const previousLedger = await store.readLedger(post.tenant, post.id);
   let ledger = previousLedger ?? initLedger(post.tenant, post.id, post.channels, now);
   const delivered: Record<string, (number | string)[]> = {};
@@ -409,6 +430,35 @@ export async function runPublish(
       throw new PublishError(`channel "${channel}" delivery failed: ${message}`);
     }
     await persistLedger();
+  }
+
+  if (workPublication && workVideo && post.channels.includes('telegram')) {
+    try {
+      await deliverWorkVideo(
+        workPublication.work,
+        workVideo,
+        ledger,
+        registry.get('telegram'),
+        {
+          secrets,
+          settings: tenant.channels.telegram,
+          photos: photoBytes,
+          idempotencyBase: '',
+        },
+        store,
+        async (videoLedger) => {
+          await store.writeLedger(videoLedger);
+          await git.commit(
+            [path.join('content', 'ledger', `${videoLedger.postId}.json`)],
+            `content: update ledger ${videoLedger.postId}`,
+          );
+        },
+        now,
+      );
+    } catch (error) {
+      await notify('author', safeErrorMessage(error));
+      throw error;
+    }
   }
 
   await notify(

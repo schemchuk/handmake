@@ -1,13 +1,30 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T55c — publisher: download, strip, commit work video, Telegram reply.
+- **Active agent:** claude-code.
+- **Current task:** T55c — publisher work video, PR open, waiting for CI and Volodymyr's OK.
 - **Branch:** `feat/T55c-work-video-publish`.
-- **Last commit:** this commit — docs: record T55b merge and deploy, hand T55c to codex.
-- **Next step:** codex implements T55c (sandboxed: edit files only; claude-code reviews, runs the
-  tests the sandbox cannot, commits, pushes, opens the PR). Personal data: Volodymyr's OK before merge.
+- **Last commit:** this commit — feat(publisher): publish work video to site store and Telegram (T55c).
+- **Next step:** after CI and Volodymyr's OK (personal data), claude-code merges and hands T55d
+  (site) to codex. Publisher needs no deploy.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** none.
+- **Open questions for Volodymyr:** OK to merge T55c (personal data: author may appear in video)?
+
+- **T55c implementation/validation:** bounded 20 MB Telegram video download; reuse T53d lossless
+  remux/probe/metadata checks; store `video.mp4` with the work before channel delivery and reuse it
+  on retry. Telegram video replies to the recorded album with its own `<workId>-video` ledger;
+  failed video retries preserve photo delivery. Dry-run supports fresh and saved video. Store video
+  access validates tenant and rejects symlinks. Existing Telegram adapter reused unchanged.
+  Targeted publisher tests 29/29 (work-publish 20, authentic-media 2, Telegram media source 7),
+  stores git-works 13/13, all with `--maxWorkers=2`. Publisher/stores typechecks include tests;
+  changed-file ESLint/Prettier pass. No full suite, network, deployment, commit or push.
+
+- **T55c review fixes (codex, sandbox):** use filesystem-safe `<workId>-video` for the
+  video ledger and idempotency base. Regression checks the actual ledger paths contain no colon,
+  the committed video ledger path, and the idempotency base. Missing saved video still throws
+  `Published work video is missing` (including a missing file on disk); the author notification
+  now says the video could not be found for retry. Work-publish 21/21 with `--maxWorkers=2`;
+  publisher/stores typechecks (including tests) and all changed-file ESLint/Prettier pass.
+  No pull, commit or push; existing sandbox changes remain for claude-code review.
 
 - **T55b:** PR #142 merged 2026-11-14 by claude-code with Volodymyr's OK (squash b7d0e70, CI green).
   No migration, secrets or wrangler change. Bot deployed from clean `main`, Worker

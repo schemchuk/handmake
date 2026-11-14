@@ -37,6 +37,8 @@ export async function prepareWorkPublication(
     fileIds: payload.fileIds,
     versions: details.versions,
   });
+  if (details.videoPeople)
+    work.video = { fileName: 'video.mp4', provenance: 'human', people: details.videoPeople };
   const existingCollection = await store.readCollection(tenant.id, work.collection);
   const collection = details.newCollection
     ? collectionSchema.parse({

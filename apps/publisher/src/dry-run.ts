@@ -19,6 +19,7 @@ import { loadTenantConfig } from './tenant-config';
 import { prepareShowPublication } from './show-publication';
 import { createPublicationMediaSource } from './show-media-source';
 import { prepareWorkPublication } from './work-publication';
+import { prepareWorkVideo } from './work-video';
 
 export interface DryRunDeps {
   /** Synthetic names only; never reads the production endpoint. */
@@ -70,6 +71,15 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
       : undefined;
   const tempDir = deps.tempDir ?? (await mkdtemp(path.join(os.tmpdir(), 'handmake-dry-run-')));
 
+  const video = publication
+    ? await prepareWorkVideo(
+        publication.work,
+        payload.work?.videoFileId,
+        new GitRepoContentStore({ rootDir: root }),
+        deps.showMediaSource,
+        deps.env ?? process.env,
+      )
+    : undefined;
   const photos = await fetchAndProcessPhotos(
     payload.fileIds,
     deps.mediaSource,
@@ -94,7 +104,7 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
     await store.saveShow(showPublication.show, showPublication.media);
   } else if (publication) {
     if (publication.collection) await store.saveCollection(publication.collection);
-    await store.saveWork(publication.work, photos);
+    await store.saveWork(publication.work, photos, video);
   } else await store.savePost(post, photos);
 
   const postDir = showPublication
@@ -123,6 +133,8 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
             ...(canonical ? { canonical } : {}),
           },
         );
+
+  if (video && post.channels.includes('telegram')) ops.push({ kind: 'video', replyToOp: 0 });
 
   log(`post id: ${post.id}`);
   log(`tenant: ${post.tenant}`);

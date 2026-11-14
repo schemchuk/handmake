@@ -36,7 +36,7 @@ export class TelegramMediaSource implements MediaSource {
   }
 
   /** The same opaque file-id transport also preserves generated video and image bytes. */
-  async fetchMedia(ref: string): Promise<Uint8Array> {
+  async fetchMedia(ref: string, maxBytes = Infinity): Promise<Uint8Array> {
     const filePath = await this.#resolveFilePath(ref);
     const url = `${this.#apiBase}/file/bot${this.#token}/${filePath}`;
     const response = await this.#fetch(url, { redirect: 'follow' });
@@ -45,8 +45,25 @@ export class TelegramMediaSource implements MediaSource {
         `Telegram file download failed: HTTP ${response.status} for file "${filePath}"`,
       );
     }
-    const raw = new Uint8Array(await response.arrayBuffer());
-    return raw;
+    if (Number(response.headers.get('content-length')) > maxBytes) {
+      await response.body?.cancel();
+      throw new Error('Відео має бути до 20 MB.');
+    }
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('Telegram file download has no body');
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > maxBytes) {
+        await reader.cancel();
+        throw new Error('Відео має бути до 20 MB.');
+      }
+      chunks.push(value);
+    }
+    return Buffer.concat(chunks);
   }
 
   async #resolveFilePath(fileId: string): Promise<string> {
