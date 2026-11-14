@@ -38,10 +38,10 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
     {show.authentic && show.authentic.length > 0 && <section aria-labelledby="authentic-heading">
       <h2 id="authentic-heading">{ui.authenticityLabel}</h2>
       <div class="work-gallery">
-        {show.authentic.map((item, i) => <figure>
+        {show.authentic.map((item, i) => <figure class="patch">
           {item.kind === 'photo' ?
-            <img src={showMediaPath(show, item.fileName)} alt={`${ui.authenticityLabel}: ${title} (${i + 1}/${show.authentic.length})`} loading="lazy" style="width:100%;height:auto" /> :
-            <video controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
+            <img src={showMediaPath(show, item.fileName)} {...data.imageSizes.get(showMediaPath(show, item.fileName))} alt={`${ui.authenticityLabel}: ${title} (${i + 1}/${show.authentic.length})`} loading="lazy" style="width:100%;height:auto" /> :
+            <video {...data.imageSizes.get(showMediaPath(show, item.fileName))} controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
               <source src={showMediaPath(show, item.fileName)} type="video/mp4" />
               <a href={showMediaPath(show, item.fileName)}>{title}</a>
             </video>}
@@ -50,15 +50,16 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
     </section>}
     <div class="work-gallery">
       {show.images.map((image, i) => <figure>
-        <img src={showMediaPath(show, image.fileName)} alt={`${title} (${i + 1}/${show.images.length})`} loading="lazy" style="width:100%;height:auto" />
-        <figcaption>KI-generiertes Model</figcaption>
+        <div class="patch">
+        <img src={showMediaPath(show, image.fileName)} {...data.imageSizes.get(showMediaPath(show, image.fileName))} alt={`${title} (${i + 1}/${show.images.length})`} loading="lazy" style="width:100%;height:auto" /></div>
+        <figcaption class="credit">KI-generiertes Model</figcaption>
       </figure>)}
       <figure>
-        <video controls playsinline preload="metadata" aria-label={title} style="width:100%;height:auto">
+        <div class="patch"><video {...data.imageSizes.get(showMediaPath(show, show.video.fileName))} controls playsinline preload="metadata" aria-label={title} style="width:100%;height:auto">
           <source src={showMediaPath(show, show.video.fileName)} type="video/mp4" />
           <a href={showMediaPath(show, show.video.fileName)}>{title}</a>
-        </video>
-        <figcaption>KI-generiertes Model</figcaption>
+        </video></div>
+        <figcaption class="credit">KI-generiertes Model</figcaption>
       </figure>
     </div>
     <a class="back" href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a>

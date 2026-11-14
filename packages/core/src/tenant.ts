@@ -126,6 +126,13 @@ export const siteSchema = z
     defaultLanguage: languageCodeSchema,
     theme: z
       .object({
+        wordmark: z
+          .string()
+          .regex(
+            /^(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.svg$/,
+            'wordmark must be a repo-relative SVG path without traversal',
+          )
+          .optional(),
         colors: z
           .object({
             ground: hexColorSchema, // background behind the cloth

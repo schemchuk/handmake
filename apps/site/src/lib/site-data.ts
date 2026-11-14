@@ -5,9 +5,11 @@ import { parseTenantConfig } from '@handmake/core';
 import type { ContentStore, Post, SiteConfig, TenantConfig } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 
+import { imageDimensions, videoDimensions, type Dimensions } from './media-dimensions';
+import { mediaPath } from './paths';
 import { bundledFamilies } from './font-families';
-import { loadPortfolio } from './portfolio';
-import { loadShows } from './shows';
+import { loadPortfolio, workVideoPath } from './portfolio';
+import { loadShows, showMediaPath } from './shows';
 
 /** Post types that belong on the public blog; announcements, reminders and polls stay in channels. */
 export const siteVisibleTypes: ReadonlySet<Post['type']> = new Set(['free']);
@@ -23,6 +25,7 @@ export interface SiteData
   tenant: TenantConfig;
   site: SiteConfig;
   posts: SitePost[];
+  imageSizes: Map<string, Dimensions>;
   store: ContentStore & Pick<GitRepoContentStore, 'readWorkVideo'>;
   /** Search engines are kept out until the go-live checklist (T41) sets SITE_INDEXABLE=true. */
   indexable: boolean;
@@ -98,12 +101,53 @@ export function loadSiteData(): Promise<SiteData> {
     assertBundledFonts(tenant.site);
     const indexable = process.env.SITE_INDEXABLE === 'true';
     if (indexable) assertNoPlaceholders(tenant.site);
+    const posts = visiblePosts(await store.listPosts(tenant.id), tenant.languages);
+    const showData = await loadShows(store, tenant.id);
+    const imageSizes = new Map<string, Dimensions>();
+    for (const { post } of posts) {
+      for (const file of post.photos) {
+        imageSizes.set(
+          mediaPath(post.id, file),
+          await imageDimensions(await store.readPostPhoto(tenant.id, post.id, file)),
+        );
+      }
+    }
+    for (const show of showData.shows) {
+      for (const image of [
+        ...show.images,
+        ...(show.authentic ?? []).filter((item) => item.kind === 'photo'),
+      ]) {
+        imageSizes.set(
+          showMediaPath(show, image.fileName),
+          await imageDimensions(await store.readShowMedia(tenant.id, show.id, image.fileName)),
+        );
+      }
+    }
+    const portfolio = await loadPortfolio(store, tenant.id);
+    for (const work of portfolio.works) {
+      if (!work.video) continue;
+      const bytes = await store.readWorkVideo(tenant.id, work.id);
+      if (!bytes) throw new Error(`work ${work.id}: ${work.video.fileName} is absent`);
+      imageSizes.set(workVideoPath(work), videoDimensions(bytes));
+    }
+    for (const show of showData.shows) {
+      for (const video of [
+        show.video,
+        ...(show.authentic ?? []).filter((item) => item.kind === 'video'),
+      ]) {
+        imageSizes.set(
+          showMediaPath(show, video.fileName),
+          videoDimensions(await store.readShowMedia(tenant.id, show.id, video.fileName)),
+        );
+      }
+    }
     return {
       tenant,
       site: tenant.site,
-      posts: visiblePosts(await store.listPosts(tenant.id), tenant.languages),
-      ...(await loadPortfolio(store, tenant.id)),
-      ...(await loadShows(store, tenant.id)),
+      posts,
+      imageSizes,
+      ...portfolio,
+      ...showData,
       store,
       indexable,
     };

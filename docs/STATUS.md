@@ -3,7 +3,7 @@
 - **Active agent:** codex.
 - **Current task:** T60c — handwritten name and sewn-on media (F40).
 - **Branch:** `feat/T60c-name-patches`.
-- **Last commit:** this commit — docs: record T60b merge, hand T60c to codex.
+- **Last commit:** this commit — feat: handwritten name and sewn-on media (T60c).
 - **Next step:** codex implements T60c (docs/03-tasks.md, incl. review note from PR #153);
   claude-code reviews, opens the PR and merges; then T60d. The live site picks up T60 changes
   on the next publish run (site.yml is called only from publish.yml).
@@ -11,6 +11,7 @@
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
 
 - **T60b:** PR #153 merged 2026-11-14 by claude-code (CI green). Seam and turning roll; review note
   (needle offset) moved to T60c. Site only, no bot deploy.
