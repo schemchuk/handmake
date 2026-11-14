@@ -135,6 +135,12 @@ describe('portfolio fixture build', () => {
         path.join(root, 'config/tenants/fixture.yaml'),
         JSON.stringify(fixture.tenant),
       );
+      const workWithVideo = (await fixture.store.readWork('fixture', ids.a))!;
+      await fixture.store.saveWork(
+        { ...workWithVideo, video: { fileName: 'video.mp4', provenance: 'human', people: 'none' } },
+        [],
+        video,
+      );
       const result = await build(root, dist);
       for (const file of await readdir(dist, { recursive: true })) {
         if (!file.endsWith('.html')) continue;
@@ -257,6 +263,31 @@ describe('portfolio fixture build', () => {
       expect(de).toContain('Originalarbeit');
       expect(de).toContain('Literal &lt;b&gt;fixture&lt;/b&gt; text.');
       expect(de).not.toContain('<p>Literal <b>fixture</b> text.</p>');
+      for (const [page, label] of [
+        [de, 'Originalarbeit'],
+        [uk, 'Оригінальна робота'],
+      ]) {
+        const player = page!.match(/<video\b[\s\S]*?<\/video>/g);
+        expect(player).toHaveLength(1);
+        expect(player![0]).toContain('controls');
+        expect(player![0]).toContain('playsinline');
+        expect(player![0]).toContain('preload="metadata"');
+        expect(player![0]).not.toContain('autoplay');
+        expect(player![0]).toContain(`aria-label="${label}:`);
+        expect(player![0]).toContain(`src="/work-media/${ids.a.toLowerCase()}/video.mp4"`);
+        expect(player![0]).toContain('type="video/mp4"');
+        expect(page).toContain(`<figcaption>${label}</figcaption>`);
+        expect(page!.lastIndexOf('b.png')).toBeLessThan(page!.indexOf('<video'));
+      }
+      expect(
+        await readFile(path.join(dist, `work-media/${ids.a.toLowerCase()}/video.mp4`)),
+      ).toEqual(video);
+      for (const prefix of ['', 'uk/']) {
+        expect(await html(dist, `${prefix}works/${ids.c.toLowerCase()}`)).not.toContain('<video');
+      }
+      await expect(
+        access(path.join(dist, `work-media/${ids.c.toLowerCase()}/video.mp4`)),
+      ).rejects.toThrow();
       expect(de).toContain('srcset=');
       expect(de).toContain('width="1440"');
       expect(de).toContain('loading="lazy"');
@@ -299,9 +330,28 @@ describe('portfolio fixture build', () => {
         `uk/works/${ids.b.toLowerCase()}`,
       ]) {
         for (const [, href] of (await html(dist, route)).matchAll(/<a\b[^>]*href="(\/[^\"]*)"/g)) {
-          await expect(access(path.join(dist, href!, 'index.html'))).resolves.toBeUndefined();
+          await expect(
+            access(path.join(dist, href!, href!.endsWith('.mp4') ? '' : 'index.html')),
+          ).resolves.toBeUndefined();
         }
       }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('fails when a declared work video is missing', async () => {
+    const { root, dist, store } = await createPortfolioFixture();
+    try {
+      const work = (await store.readWork('fixture', ids.a))!;
+      await store.saveWork(
+        {
+          ...work,
+          video: { fileName: 'video.mp4', provenance: 'human', people: 'none' },
+        },
+        [],
+      );
+      await expect(build(root, dist)).rejects.toThrow('video.mp4');
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -385,7 +435,15 @@ it('excludes flagged posts, works, shows and their media from an indexable build
     await store.savePost(publicPost, []);
     for (const id of [ids.a, ids.b]) {
       const work = (await store.readWork('fixture', id))!;
-      await store.saveWork({ ...work, siteExcluded: true }, []);
+      await store.saveWork(
+        {
+          ...work,
+          siteExcluded: true,
+          video: { fileName: 'video.mp4', provenance: 'human', people: 'none' },
+        },
+        [],
+        Buffer.from('hidden video'),
+      );
     }
     const hiddenShow = JSON.parse(
       await readFile(

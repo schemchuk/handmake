@@ -23,7 +23,7 @@ export interface SiteData
   tenant: TenantConfig;
   site: SiteConfig;
   posts: SitePost[];
-  store: ContentStore;
+  store: ContentStore & Pick<GitRepoContentStore, 'readWorkVideo'>;
   /** Search engines are kept out until the go-live checklist (T41) sets SITE_INDEXABLE=true. */
   indexable: boolean;
 }

@@ -8,7 +8,7 @@ import Provenance from '../../../components/Provenance.astro';
 import { uiStrings } from '../../../lib/i18n';
 import { langParam, pagePath } from '../../../lib/paths';
 import {
-  portfolioCover, portfolioKey, portfolioLanguages, portfolioPage, portfolioTitle, workImageKey,
+  portfolioCover, portfolioKey, portfolioLanguages, portfolioPage, portfolioTitle, workImageKey, workVideoPath,
 } from '../../../lib/portfolio';
 import type { PortfolioItem, PortfolioSection } from '../../../lib/portfolio';
 import { loadSiteData } from '../../../lib/site-data';
@@ -67,6 +67,13 @@ const [lead, ...rest] = paragraphs(version.description);
       {work.photos.slice(1).map((file) => (
         <WorkImage photo={data.workImages.get(workImageKey(work.id, file))!} alt={title} />
       ))}
+      {work.video && <figure>
+        <video controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
+          <source src={workVideoPath(work)} type="video/mp4" />
+          <a href={workVideoPath(work)}>{title}</a>
+        </video>
+        <figcaption>{ui.authenticityLabel}</figcaption>
+      </figure>}
     </div>
   ) : (
     <section class="wrap">
