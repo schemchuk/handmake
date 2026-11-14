@@ -1,15 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T60 — cloth look for the site (F40, spec v12 draft): awaiting Volodymyr's review of spec and tasks.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: spec F40 cloth look, plan T60.
-- **Next step:** after Volodymyr's OK, claude-code hands T60a to codex (`feat/T60a-cloth-shell`), then
-  T60b, T60c, T60d in order. claude-code supplies the handwriting SVG before T60c (needs `potrace`).
-  T59 is merged (PR #151); its bot deploy is not recorded here, confirm with Volodymyr.
+- **Active agent:** codex.
+- **Current task:** T60a — theme tokens, typefaces, roll, cloth, fringe (F40, spec v12 approved).
+- **Branch:** `feat/T60a-cloth-shell`.
+- **Last commit:** this commit — docs: approve F40, hand T60a to codex.
+- **Next step:** codex implements T60a (docs/03-tasks.md, reference docs/design/site-cloth/index.html);
+  claude-code reviews, opens the PR and merges; then T60b, T60c, T60d in order. Handwriting SVG is in
+  `config/tenants/assets/faden-und-stimmung/wordmark.svg` (for T60c).
+  T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at 12:14Z; Volodymyr deploys.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-- **Blocked on:** Volodymyr's review of F40 and T60.
-- **Open questions for Volodymyr:** approve F40 (docs/01-spec.md) and T60a-d (docs/03-tasks.md).
+- **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none.
 
 - **T59 implementation/validation (codex, edit-only):** blank incoming comment text is
   skipped after advancing the watermark; blank pending rows stay `new` without drafting

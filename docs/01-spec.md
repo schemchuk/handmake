@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **v12 draft (2026-11-14), F40 awaits Volodymyr's review; v11 approved.**
+Status: **approved v12 (2026-11-14).**
 Previous: approved v11 (2026-11-14), v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v10 (v11) are listed in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
+Changes from v11 (v12) are listed in section 14-v12, from v10 (v11) in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -269,7 +269,7 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   the page language: Instagram first on German pages, Telegram first on Ukrainian pages. Links carry
   `rel="me"`, and the home page states the same profiles as schema.org `sameAs`. The newsletter stays
   the site's main call to action; profile links never appear in the header or on work cards.
-- **F40** Cloth look (v12 draft, interview round 2026-11-14). Every page of the site looks like an
+- **F40** Cloth look (v12, approved by Volodymyr 2026-11-14). Every page of the site looks like an
   unrolled scroll of homespun cloth, so the site reads as a craft workshop. Reference mockup:
   `docs/design/site-cloth/index.html` (home page; the other pages follow the same parts).
   - **Roll**: the header is a round bolt of cloth with the site name, navigation and language
@@ -553,7 +553,7 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14-v12. Changes from v11 (v12 draft, 2026-11-14)
+## 14-v12. Changes from v11 (v12, approved 2026-11-14)
 
 - New F40: the cloth look for every page of the site (roll header, linen cloth, sewn red seam,
   handwritten name, uncropped sewn-on photos, Gabriela and Onest, dark blue ground).

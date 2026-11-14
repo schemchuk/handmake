@@ -2563,9 +2563,10 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 
 #### T60c — Handwritten name and sewn-on media
 - Status: planned.
-- Owner: codex · Reviewer: claude-code · Depends on: T60a; the SVG asset from claude-code
-- Change: optional `site.theme.wordmark` (path of an SVG in the repo, alt text is the tenant
-  name). Home page `h1`: the tenant name as visually hidden text plus the asset as a CSS mask in
+- Owner: codex · Reviewer: claude-code · Depends on: T60a
+- Change: optional `site.theme.wordmark` (repo-relative path of an SVG; for faden-und-stimmung
+  `config/tenants/assets/faden-und-stimmung/wordmark.svg`, traced from the author's handwriting,
+  `fill="currentColor"`, viewBox 1890x1581; the accessible name is the tenant name). Home page `h1`: the tenant name as visually hidden text plus the asset as a CSS mask in
   the thread colour; without the asset, the name in the display typeface. `WorkImage`, feeds
   (`PortfolioFeed`, `ShowFeed`, home feed), work and show galleries and the work video: media keep
   their own aspect ratio (no `object-fit: cover` crop), carry `width` and `height` so the page does
