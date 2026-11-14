@@ -115,7 +115,8 @@ export class MetaGraphClient {
   ) {
     this.#redactErrors = redactErrors ?? false;
     this.#tokenError190AlwaysExpired = tokenError190AlwaysExpired ?? false;
-    this.#fetch = fetchImpl ?? fetch;
+    // Worker fetch must not receive the client as its receiver.
+    this.#fetch = fetchImpl ?? ((input, init) => fetch(input, init));
     this.#apiBase = apiBase ?? DEFAULT_API_BASE;
     this.#sleep = sleep ?? DEFAULT_SLEEP;
     this.#maxAttempts = maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
