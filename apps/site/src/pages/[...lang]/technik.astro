@@ -1,0 +1,64 @@
+---
+import { readFileSync } from 'node:fs';
+import Base from '../../layouts/Base.astro';
+import { decisionFiles, readLedgerStats } from '../../lib/making-of';
+import { videoDimensions } from '../../lib/media-dimensions';
+import { langParam, pagePath } from '../../lib/paths';
+import { findRepoRoot, loadSiteData } from '../../lib/site-data';
+
+export async function getStaticPaths() {
+  const { tenant, site } = await loadSiteData();
+  if (!site.makingOf) return [];
+  return tenant.languages.map((lang) => ({
+    params: { lang: langParam(lang, site.defaultLanguage) }, props: { lang },
+  }));
+}
+const { lang } = Astro.props;
+const { tenant, site } = await loadSiteData();
+const config = site.makingOf!;
+const texts = config.texts[lang]!;
+const stats = readLedgerStats(process.env.SITE_REPO_ROOT ?? findRepoRoot(process.cwd()), tenant.id);
+const size = videoDimensions(readFileSync(`${process.cwd()}/public/technik/demo.mp4`));
+const labels = lang === 'uk'
+  ? ['Публікацій', 'Успішних доставок у канали', 'Соцмереж']
+  : ['Veröffentlichte Inhalte', 'Erfolgreiche Kanalzustellungen', 'Netzwerke'];
+const alternates = Object.fromEntries(tenant.languages.map((code) => [code, pagePath(code, site.defaultLanguage, 'technik')]));
+const repoUrl = config.repoUrl.replace(/\/$/, '');
+---
+<Base lang={lang} title={texts.title} description={texts.intro} alternates={alternates}>
+  <div class="wrap page">
+    <div class="page-body making-of">
+      <h1>{texts.title}</h1>
+      <p class="lead">{texts.intro}</p>
+      <ol class="steps">{texts.steps.map((step) => <li>{step}</li>)}</ol>
+      <figure>
+        <video src="/technik/demo.mp4" muted loop playsinline controls preload="metadata" width={size.width} height={size.height}></video>
+        <figcaption>{lang === 'uk' ? 'Запис із приватного тестового каналу.' : 'Aufnahme aus dem privaten Testkanal.'}</figcaption>
+      </figure>
+      <dl class="numbers">{Object.values(stats).map((value, index) => <div><dt>{labels[index]}</dt><dd>{value}</dd></div>)}</dl>
+      <h2>{lang === 'uk' ? 'Технічні рішення' : 'Technische Entscheidungen'}</h2>
+      <ul>{texts.decisions.map((text, index) => <li>{text} {decisionFiles[index]!.map((file, i) => <>{i > 0 && ' · '}<a href={`${repoUrl}/blob/main/docs/decisions/${file}`} rel="noopener">ADR {file.slice(0, 3)}</a></>)}</li>)}</ul>
+      <section aria-labelledby="engineer">
+        <h2 id="engineer">{config.author}</h2>
+        <p>{config.role[lang]}</p>
+        <div class="contacts">
+          {config.contacts.map(({ kind, url }) => <a href={url} rel="me noopener">{kind === 'email' ? 'E-Mail' : kind === 'github' ? 'GitHub' : 'LinkedIn'}</a>)}
+          <a href={config.repoUrl} rel="noopener">{lang === 'uk' ? 'Код і документація' : 'Code und Dokumentation'}</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</Base>
+<style>
+  .making-of { overflow-wrap: break-word; }
+  .steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; padding-left: 1.4rem; }
+  figure { margin: 1.5rem 0; }
+  video { display: block; width: 100%; max-height: 25rem; object-fit: contain; height: auto; }
+  figcaption { color: var(--muted); font-size: .875rem; margin-top: .5rem; }
+  .numbers { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+  .numbers div { flex: 1 1 8rem; }
+  .numbers dt { color: var(--muted); font-size: .875rem; }
+  .numbers dd { margin: 0; font-size: 1.5rem; }
+  .contacts { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; }
+  @media (max-width: 40rem) { .steps { grid-template-columns: 1fr; } }
+</style>

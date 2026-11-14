@@ -244,7 +244,9 @@ describe('parseTenantConfig', () => {
     });
 
     it('rejects circle texts that miss a tenant language', () => {
-      const bad = realConfig().replace(/\n {6}uk:\n {8}title:[\s\S]*?where: [^\n]*/, '');
+      const config = parseTenantConfig(realConfig());
+      delete config.site!.circle!.texts.uk;
+      const bad = JSON.stringify(config);
       expect(() => parseTenantConfig(bad)).toThrowError(/circle\.texts/);
     });
 
@@ -349,5 +351,38 @@ describe('wordmark path', () => {
     'assets/%2e%2e/hand.svg',
   ])('rejects %s', (value) => {
     expect(schema.safeParse(value).success).toBe(false);
+  });
+});
+
+describe('making-of configuration', () => {
+  it('accepts all supported contact kinds and an absent making-of section', () => {
+    const config = parseTenantConfig(realConfig());
+    config.site!.makingOf!.contacts = [
+      { kind: 'github', url: 'https://github.com/fixture' },
+      { kind: 'linkedin', url: 'https://www.linkedin.com/in/fixture' },
+      { kind: 'email', url: 'mailto:fixture@example.invalid' },
+    ];
+    expect(parseTenantConfig(JSON.stringify(config)).site!.makingOf!.contacts).toHaveLength(3);
+    delete config.site!.makingOf;
+    expect(parseTenantConfig(JSON.stringify(config)).site!.makingOf).toBeUndefined();
+  });
+  it.each([
+    ['github', 'http://github.com/fixture'],
+    ['linkedin', 'javascript:alert(1)'],
+    ['email', 'https://example.invalid'],
+    ['email', 'data:text/plain,fixture'],
+    ['github', 'mailto:fixture@example.invalid'],
+    ['other', 'https://example.invalid'],
+  ])('rejects %s contact with %s', (kind, url) => {
+    const config = JSON.parse(JSON.stringify(parseTenantConfig(realConfig())));
+    config.site.makingOf.contacts = [{ kind, url }];
+    expect(() => parseTenantConfig(JSON.stringify(config))).toThrow();
+  });
+  it('rejects missing localized text or role', () => {
+    for (const field of ['texts', 'role'] as const) {
+      const config = parseTenantConfig(realConfig());
+      delete config.site!.makingOf![field].uk;
+      expect(() => parseTenantConfig(JSON.stringify(config))).toThrow();
+    }
   });
 });

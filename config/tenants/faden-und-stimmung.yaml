@@ -63,6 +63,48 @@ announcements:
 # Theme "Lookbook": cool white paper, near-black ink, grey meta text,
 # madder-red running-stitch dividers; one wide grotesk for everything.
 site:
+  makingOf:
+    author: Volodymyr Shemchuk
+    role:
+      de: Konzept, Architektur und Umsetzung
+      uk: Концепція, архітектура й реалізація
+    repoUrl: https://github.com/schemchuk/handmake
+    contacts:
+      - kind: github
+        url: https://github.com/schemchuk
+      - kind: linkedin
+        url: https://www.linkedin.com/in/volodymyr-shemchuk-0521a32b6/
+      - kind: email
+        url: mailto:shemchukaga@gmail.com
+    texts:
+      de:
+        title: Website & Technik
+        intro: 'Die Autorin schreibt einen ukrainischen Text und schickt Fotos an einen Telegram-Bot. Alles Weitere läuft automatisch: Übersetzung ins Deutsche, ihre Freigabe, Veröffentlichung auf Telegram, Instagram, Facebook und Threads und auf dieser Website in zwei Sprachen.'
+        steps:
+          - Foto und ukrainischer Text an den Bot
+          - Übersetzung ins Deutsche
+          - Eine Freigabe, vier Netzwerke
+          - Derselbe Inhalt auf der Website
+        decisions:
+          - Erneute Ausführung überspringt bereits veröffentlichte Kanäle.
+          - Jedes Netzwerk ist ein eigener, austauschbarer Adapter.
+          - Daten und Schnittstellen sind für weitere Gruppen vorbereitet.
+          - Die Autorin prüft die KI-Übersetzung vor der Freigabe.
+          - Die Website entsteht aus derselben Inhaltsquelle.
+      uk:
+        title: Як зроблено сайт
+        intro: 'Авторка пише текст українською й надсилає фото в Telegram-бот. Далі все автоматично: переклад німецькою, її підтвердження, публікація в Telegram, Instagram, Facebook і Threads та на цьому сайті двома мовами.'
+        steps:
+          - Фото й український текст у бот
+          - Переклад німецькою
+          - Одне підтвердження, чотири мережі
+          - Те саме на сайті
+        decisions:
+          - Повторний запуск пропускає вже опубліковані канали.
+          - Кожна мережа підключається окремим адаптером.
+          - Дані й інтерфейси готові до інших груп і блогерів.
+          - Авторка перевіряє ШІ-переклад перед підтвердженням.
+          - Сайт збирається з того самого джерела, що й дописи.
   profiles:
     - network: instagram
       url: https://www.instagram.com/fadenundstimmung/

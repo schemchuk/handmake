@@ -2618,7 +2618,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   author agreed to a footer link. Volodymyr agreed to show his name and contacts. The page is a
   1–2 screen showcase; depth stays in the public GitHub README.
 - Config: optional `site.makingOf` in `packages/core/src/tenant.ts` and the tenant YAML:
-  `author` (`Volodymyr Schemchuk`), `role` per language, `repoUrl`
+  `author` (`Volodymyr Shemchuk`), `role` per language, `repoUrl`
   (`https://github.com/schemchuk/handmake`), `contacts`: list of `{ kind: github | linkedin | email,
   url }` (`https`-only for github/linkedin, `mailto:` for email; the loader rejects anything else),
   and `texts.de` / `texts.uk` (title, intro, steps, decisions). Real values: GitHub

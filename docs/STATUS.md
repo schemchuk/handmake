@@ -1,14 +1,20 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T62 making-of page (docs/03-tasks.md).
+- **Active agent:** claude-code.
+- **Current task:** T62 making-of page, PR open, review by claude-code.
 - **Branch:** `feat/T62-making-of`.
-- **Last commit:** this commit — docs: add T62 making-of task, hand to codex.
-- **Next step:** codex implements T62 edit-only; claude-code reviews, commits, opens the PR and
-  merges. Volodymyr to send his LinkedIn URL and e-mail for `site.makingOf.contacts`. T61's link goes
-  live with the next publish run. 2026-11-18 20:00 Berlin: first live contest closing without Facebook.
-- **Blocked on:** nothing.
+- **Last commit:** feat: add making-of page with author contacts (T62).
+- **Next step:** merge T62 after green CI (site + core, no bot deploy); T61 and T62 go live with the
+  next publish run. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T62 validation (codex):** core `test/tenant.test.ts` 56/56; site
+  `test/making-of.test.ts` and `test/making-of-build.test.ts` 3/3, all with `--maxWorkers=2`.
+  Core/site typechecks and local 68-page build pass. Fixture builds verify both languages,
+  contacts, ADR links, local muted video, every page's footer, sitemap and optional-page absence.
+  Pure ledger statistics include tenant isolation and pending/failed entries. Real config has only
+  GitHub contact; LinkedIn/e-mail remain fixture-only. No Git writes, network or deployment.
 
 - **T61:** PR #156 merged 2026-11-14 by claude-code (CI green). Circle presentation PDFs (DE/UK)
   linked per language on the circle page. Site only, no bot deploy.

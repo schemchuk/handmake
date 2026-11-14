@@ -101,6 +101,32 @@ const baseUrlSchema = z.string().superRefine((value, ctx) => {
 
 const httpsUrlSchema = z.url({ protocol: /^https$/ });
 
+const makingOfSchema = z
+  .object({
+    author: z.string().min(1),
+    role: z.record(languageCodeSchema, z.string().min(1)),
+    repoUrl: httpsUrlSchema,
+    contacts: z.array(
+      z.discriminatedUnion('kind', [
+        z.object({ kind: z.literal('github'), url: httpsUrlSchema }).strict(),
+        z.object({ kind: z.literal('linkedin'), url: httpsUrlSchema }).strict(),
+        z.object({ kind: z.literal('email'), url: z.url({ protocol: /^mailto$/ }) }).strict(),
+      ]),
+    ),
+    texts: z.record(
+      languageCodeSchema,
+      z
+        .object({
+          title: z.string().min(1),
+          intro: z.string().min(1),
+          steps: z.array(z.string().min(1)).length(4),
+          decisions: z.array(z.string().min(1)).length(5),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
 /**
  * Website section (ADR 011, ADR 016). Optional: a tenant may use the bot and
  * channels without a site; the site build refuses a tenant without it.
@@ -110,6 +136,7 @@ const httpsUrlSchema = z.url({ protocol: /^https$/ });
 export const siteSchema = z
   .object({
     baseUrl: baseUrlSchema,
+    makingOf: makingOfSchema.optional(),
     profiles: z
       .array(
         z
@@ -284,6 +311,20 @@ export const tenantConfigSchema = z
           path: ['site', 'circle', 'texts'],
           message: `site.circle.texts must have exactly the tenant languages [${config.languages.join(', ')}], got [${textLangs.join(', ')}]`,
         });
+      }
+    }
+    if (site?.makingOf) {
+      for (const field of ['texts', 'role'] as const) {
+        if (
+          Object.keys(site.makingOf[field]).sort().join(',') !==
+          [...config.languages].sort().join(',')
+        ) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['site', 'makingOf', field],
+            message: `makingOf.${field} must have exactly the tenant languages`,
+          });
+        }
       }
     }
     const instagram = config.channels.instagram;
