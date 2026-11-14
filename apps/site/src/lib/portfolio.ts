@@ -4,6 +4,9 @@ import type { Collection, ContentStore, Work } from '@handmake/core';
 
 import { excerpt } from './text';
 
+export const workVideoPath = (work: Work) =>
+  `/work-media/${work.id.toLowerCase()}/${work.video!.fileName}`;
+
 export type PortfolioItem = Work | Collection;
 export type PortfolioSection = 'works' | 'collections';
 export interface WorkImage {

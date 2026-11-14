@@ -1,13 +1,25 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T55d — site work page video (`site`).
+- **Active agent:** claude-code.
+- **Current task:** T55d — site work video, PR open.
 - **Branch:** `feat/T55d-site-work-video`.
-- **Last commit:** this commit — docs: record T55c merge, hand T55d to codex.
-- **Next step:** codex implements T55d (sandboxed: edit files only; claude-code reviews, commits,
-  pushes, opens the PR). Then T55e.
+- **Last commit:** this commit — feat(site): show the author's video on work pages (T55d).
+- **Next step:** claude-code merges after CI, then hands T55e to codex.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T55d implementation/validation:** static MP4 route reads declared work video through the
+  tenant-scoped store, preserves bytes and serves video/mp4; excluded works expose no video route.
+  Work details render the video after photos with localized authenticity caption, accessible label,
+  controls/playsinline/metadata preload and fallback link. No autoplay or external player.
+  Fixture builds cover DE/UK, unchanged video-free works, byte preservation, hidden media and
+  missing video. Site typecheck includes tests; changed TypeScript ESLint/Prettier and diff checks
+  pass. Targeted Vitest (--maxWorkers=2): portfolio/site-data 18/18; final build tests 5/7,
+  including video/no-video and build-policy cases. Two negative builds fail their message assertions
+  because sandbox Astro child errors have empty stdout/stderr (missing video and malformed work);
+  claude-code reran portfolio-build outside the sandbox: 7/7. No build or test stalled.
+  Prettier cannot parse Astro in this repo (no Astro plugin); markup follows the show page.
+  No network, pull, commit, push or deploy; files left for claude-code review.
 
 - **T55c implementation/validation:** bounded 20 MB Telegram video download; reuse T53d lossless
   remux/probe/metadata checks; store `video.mp4` with the work before channel delivery and reuse it
