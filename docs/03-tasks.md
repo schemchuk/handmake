@@ -2490,7 +2490,7 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   session. Bot tests only, `--maxWorkers=2`.
 
 ### T58 — Bind `fetch` in `MetaGraphClient` (`channels`, F34 live bug)
-- Status: done (PR #150, merged 2026-11-14).
+- Status: done (PR #150, merged and deployed 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T49b
 - Why: found 2026-11-14 in Worker logs. Every 15-minute cron logs `comment collection failed:
   instagram` and `…: facebook`; prod D1 has zero comment rows and no watermarks although both
@@ -2510,7 +2510,7 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   tests only, `--maxWorkers=2`.
 
 ### T59 — Skip comments without text in collection (`bot`, F34 live follow-up)
-- Status: done (PR #151, merged 2026-11-14).
+- Status: done (PR #151, merged and deployed 2026-11-14, Worker `3c932b61`).
 - Owner: codex · Reviewer: claude-code · Depends on: T58
 - Why: after T58 (2026-11-14) one Facebook comment has an empty `message` and no `from` (a
   sticker/photo comment; Meta withholds the author without App Review). The drafter's request

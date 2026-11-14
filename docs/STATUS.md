@@ -6,7 +6,6 @@
 - **Last commit:** this commit — docs: record T60c merge, hand T60d to codex.
 - **Next step:** codex implements T60d (docs/03-tasks.md); claude-code reviews, opens the PR and merges.
   The live site picks up T60 changes on the next publish run (site.yml is called only from publish.yml).
-  T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at 12:14Z; Volodymyr deploys.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
@@ -31,6 +30,12 @@
   `--maxWorkers=2`; the D1 sandbox stalled without test results and was interrupted, so
   tests remain unverified. No Git commands, network calls or deployment.
 
+- **T59:** PR #151 squash-merged 2026-11-14 by claude-code (CI green). Bot-only, no migration;
+  bot deployed by Volodymyr 2026-11-14 15:27 EET from a clean `main` worktree, Worker
+  `3c932b61-08d4-456f-8f2b-7c290aab9e08`; 15:30 tick logged no errors. Incident: deploy
+  `964d60d1` (15:00 EET) bundled uncommitted T60 core changes and broke every cron with
+  `invalid tenant config at site.theme.colors.rule`. Deploy the bot only from a clean tree
+  or a separate worktree, never from a branch switch carrying uncommitted changes.
 - **T58:** PR #150 squash-merged 2026-11-14 by claude-code (CI green). Channels-only, no
   migration; bot deployed by Volodymyr 2026-11-14 14:15 EET, Worker
   `6080ff0c-c178-4ebc-af91-31ee8294ee99`. Live: 14:15 tick stored IG 2 / FB 3 comments, cards
@@ -58,7 +63,7 @@
 - **Full `/show` run 2026-11-14:** show `01M7CGZVW0PG0FQ7WDFDZQS3WG` (work `01M7CH07KE5PY7KGSAN2354KZ2`)
   published to site (5 media byte-equal), Telegram 68-73, Instagram, Facebook, Threads; cost EUR 1.10
   (video regenerated once). Findings: own-media step blocked the author (→ T57), IG/FB comment
-  collection fails every cron tick: unbound `fetch` in `MetaGraphClient` (→ T58).
+  collection failed every cron tick: unbound `fetch` in `MetaGraphClient` (fixed, T58/T59 deployed).
 
 - **T56 implementation/validation (codex, edit-only sandbox):** neutral pending-video prompt
   hides publish; malformed work/video keeps the setup error. Stale publishing drafts offer
