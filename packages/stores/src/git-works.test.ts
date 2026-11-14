@@ -138,3 +138,20 @@ describe('Git work layout and failure handling', () => {
     expect(await readdir(outside)).toEqual([]);
   });
 });
+
+it('stores declared video beside the work and guards tenant and symlink access', async () => {
+  const video = new Uint8Array([1, 2, 3]);
+  await expect(store.saveWork(work, [], video)).rejects.toThrow('declared');
+  const withVideo: Work = {
+    ...work,
+    video: { fileName: 'video.mp4', provenance: 'human', people: 'none' },
+  };
+  await store.saveWork(withVideo, [], video);
+  expect(await store.readWorkVideo(work.tenant, work.id)).toEqual(video);
+  expect(await store.readWorkVideo('other', work.id)).toBeUndefined();
+  const target = path.join(root, 'content/works', work.id, 'video.mp4');
+  await rm(target);
+  await symlink(path.join(root, 'outside.mp4'), target);
+  await expect(store.readWorkVideo(work.tenant, work.id)).rejects.toThrow('symlink');
+  await expect(store.saveWork(withVideo, [], video)).rejects.toThrow('symlink');
+});

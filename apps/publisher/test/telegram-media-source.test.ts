@@ -89,3 +89,13 @@ describe('TelegramMediaSource', () => {
     await expect(failure).rejects.not.toThrow(new RegExp(TOKEN));
   });
 });
+
+it.each([true, false])('bounds video downloads with content-length=%s', async (declared) => {
+  const { fetchImpl } = fakeFetch((url) =>
+    url.includes('/getFile')
+      ? okGetFile('video.mp4')
+      : new Response(new Uint8Array(11), { headers: declared ? { 'content-length': '11' } : {} }),
+  );
+  const source = new TelegramMediaSource({ token: TOKEN, fetchImpl });
+  await expect(source.fetchMedia('video', 10)).rejects.toThrow('20 MB');
+});

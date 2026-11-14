@@ -1,10 +1,12 @@
+import { TelegramAdapter } from '@handmake/channels';
+import { deliverWorkVideo } from '../src/work-video';
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { ChannelRegistry, parseCollection, parseWork } from '@handmake/core';
+import { ChannelRegistry, idempotencyBase, parseCollection, parseWork } from '@handmake/core';
 import type { Collection, PublishedCallbackBody, WorkPublication } from '@handmake/core';
 import { FakeChannelAdapter, FakeNotifier } from '@handmake/core/testing';
 import { GitRepoContentStore } from '@handmake/stores';
@@ -318,4 +320,188 @@ it('retries a failed completion callback without announcing the work twice', asy
   await run({ registry });
   expect(adapter.deliveries).toHaveLength(1);
   expect(callback.send).toHaveBeenCalledTimes(2);
+});
+
+it('stores cleaned video, replies after photos, and retries only the failed video', async () => {
+  const file = path.join(root, 'input.mov');
+  await exec('ffmpeg', [
+    '-v',
+    'error',
+    '-f',
+    'lavfi',
+    '-i',
+    'color=s=16x16:r=1',
+    '-t',
+    '1',
+    '-c:v',
+    'libx264',
+    '-threads',
+    '1',
+    '-metadata',
+    'location=+48.5+012.1/',
+    file,
+  ]);
+  current.work!.videoFileId = 'opaque-video';
+  current.work!.videoPeople = 'author';
+  current.work!.channels = ['telegram'];
+  const videoSource = { fetchMedia: vi.fn(async () => new Uint8Array(await readFile(file))) };
+  const adapter = new FakeChannelAdapter({
+    key: 'telegram',
+    renderImpl: () => [
+      { kind: 'mediaGroup', photoIndexes: [0] },
+      { kind: 'message', text: 'DE', lang: 'de', replyToOp: 0 },
+    ],
+  });
+  const registry = new ChannelRegistry();
+  registry.register(adapter);
+  await writeFile(payloadPath, JSON.stringify(current));
+  const initialDry = await runDryRun(payloadPath, {
+    root,
+    tempDir: path.join(root, 'first-dry'),
+    mediaSource: source,
+    showMediaSource: videoSource,
+    env: {},
+    logger: () => {},
+  });
+  expect(initialDry.work?.video?.people).toBe('author');
+  expect((await readFile(path.join(initialDry.postDir, 'video.mp4'))).length).toBeGreaterThan(0);
+  expect(await store.readWork(tenantId, id)).toBeUndefined();
+  videoSource.fetchMedia.mockClear();
+  const original = adapter.deliver.bind(adapter);
+  const deliver = vi.spyOn(adapter, 'deliver');
+  deliver.mockImplementation(async (ops, ctx, progress) => {
+    if (ctx.video) throw new Error('video unavailable');
+    return original(ops, ctx, progress);
+  });
+  await expect(run({ registry, showMediaSource: videoSource })).rejects.toThrow('відео');
+  expect((await store.readWork(tenantId, id))?.video).toEqual({
+    fileName: 'video.mp4',
+    provenance: 'human',
+    people: 'author',
+  });
+  const saved = await store.readWorkVideo(tenantId, id);
+  expect(saved?.length).toBeGreaterThan(0);
+  expect(await store.readLedger(tenantId, `${id}-video`)).toMatchObject({
+    channels: { telegram: { status: 'failed' } },
+  });
+  const ledgerPaths = (await readdir(path.join(root, 'content/ledger'))).map((name) =>
+    path.join('content', 'ledger', name),
+  );
+  expect(ledgerPaths).toContain(path.join('content', 'ledger', `${id}-video.json`));
+  expect(ledgerPaths.every((ledgerPath) => !ledgerPath.includes(':'))).toBe(true);
+  expect(git.commit).toHaveBeenCalledWith(
+    [path.join('content', 'ledger', `${id}-video.json`)],
+    expect.any(String),
+  );
+  deliver.mockImplementation(original);
+  await run({ registry, showMediaSource: videoSource });
+  const call = deliver.mock.calls.at(-1)!;
+  expect(call[0][1]).toEqual({ kind: 'video', replyToOp: 0 });
+  expect(call[2]).toMatchObject({
+    startAt: 1,
+    knownIds: [(await store.readLedger(tenantId, id))!.channels.telegram!.remoteIds[0]],
+  });
+  expect(call[1].video).toEqual(saved);
+  expect(call[1].idempotencyBase).toBe(idempotencyBase(tenantId, `${id}-video`, 'telegram'));
+  expect(videoSource.fetchMedia).toHaveBeenCalledTimes(1);
+  const count = deliver.mock.calls.length;
+  await run({ registry, showMediaSource: videoSource });
+  expect(deliver).toHaveBeenCalledTimes(count);
+  await writeFile(payloadPath, JSON.stringify(current));
+  const dry = await runDryRun(payloadPath, {
+    root,
+    tempDir: path.join(root, 'dry-video'),
+    mediaSource: source,
+    env: {},
+    logger: () => {},
+  });
+  expect(dry.ops.at(-1)).toEqual({ kind: 'video', replyToOp: 0 });
+  expect(await readFile(path.join(dry.postDir, 'video.mp4'))).toEqual(Buffer.from(saved!));
+});
+
+it('informs the author when the saved video cannot be found for retry', async () => {
+  const result = await run();
+  await store.saveWork(
+    { ...result.work!, video: { fileName: 'video.mp4', provenance: 'human', people: 'none' } },
+    [],
+  );
+  current.work!.videoFileId = 'opaque-video';
+  current.work!.videoPeople = 'none';
+  const notifier = new FakeNotifier();
+  git.commit.mockClear();
+  await expect(run({ notifier })).rejects.toThrow('Published work video is missing');
+  expect(notifier.messages).toEqual([
+    { target: 'author', message: 'Не вдалося знайти відео для повторної публікації.' },
+  ]);
+  expect(git.commit).not.toHaveBeenCalled();
+});
+
+it('rejects a long video before writing content or committing and informs the author', async () => {
+  const file = path.join(root, 'long.mp4');
+  await exec('ffmpeg', [
+    '-v',
+    'error',
+    '-f',
+    'lavfi',
+    '-i',
+    'color=s=16x16:r=1',
+    '-t',
+    '61',
+    '-c:v',
+    'libx264',
+    '-threads',
+    '1',
+    file,
+  ]);
+  current.work!.videoFileId = 'long';
+  current.work!.videoPeople = 'none';
+  const notifier = new FakeNotifier();
+  await expect(
+    run({
+      notifier,
+      showMediaSource: { fetchMedia: async () => new Uint8Array(await readFile(file)) },
+    }),
+  ).rejects.toThrow('60');
+  expect(git.commit).not.toHaveBeenCalled();
+  expect(await store.readWork(tenantId, id)).toBeUndefined();
+  expect(await store.readCollection(tenantId, 'fixture')).toBeUndefined();
+  expect(notifier.messages).toHaveLength(1);
+});
+
+it('uploads the Telegram video as a reply to the recorded album and skips a completed ledger', async () => {
+  const result = await run();
+  const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
+    const form = init!.body as FormData;
+    expect(JSON.parse(String(form.get('reply_parameters')))).toEqual({ message_id: 101 });
+    expect(form.get('video')).toBeInstanceOf(Blob);
+    return Response.json({ ok: true, result: { message_id: 102 } });
+  });
+  const adapter = new TelegramAdapter({ token: 'fixture', fetchImpl });
+  const ledger = {
+    tenantId,
+    postId: id,
+    channels: {
+      telegram: { status: 'done' as const, remoteIds: [101, 103], updatedAt: work.date },
+    },
+  };
+  const context = {
+    photos: [],
+    settings: { channelId: 'CHAT' },
+    secrets: { resolve: async () => 'chat' },
+    idempotencyBase: '',
+  };
+  const persist = async (value: import('@handmake/core').PublishLedger) => store.writeLedger(value);
+  for (let i = 0; i < 2; i++)
+    await deliverWorkVideo(
+      result.work!,
+      new Uint8Array([1]),
+      ledger,
+      adapter,
+      context,
+      store,
+      persist,
+      new Date(),
+    );
+  expect(fetchImpl).toHaveBeenCalledTimes(1);
+  expect(String(fetchImpl.mock.calls[0]![0])).toContain('/sendVideo');
 });

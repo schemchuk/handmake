@@ -67,11 +67,12 @@ export class GitWorkContentStore {
     return work;
   }
 
-  async saveWork(input: Work, photos: PhotoFile[]): Promise<void> {
+  async saveWork(input: Work, photos: PhotoFile[], video?: Uint8Array): Promise<void> {
     const work = workSchema.parse(input);
     for (const photo of photos) {
       if (!work.photos.includes(photo.fileName)) throw new Error('photo must be declared by work');
     }
+    if (video && !work.video) throw new Error('video must be declared by work');
     const existing = await this.#work(work.id);
     if (existing && existing.tenant !== work.tenant)
       throw new Error('work belongs to another tenant');
@@ -80,12 +81,19 @@ export class GitWorkContentStore {
     for (const photo of photos) {
       await writeFile(await this.#location('works', work.id, 'photos', photo.fileName), photo.data);
     }
+    if (video) await writeFile(await this.#location('works', work.id, work.video!.fileName), video);
     await writeFile(await this.#location('works', work.id, 'index.md'), serializeWork(work));
   }
 
   async readWork(tenantId: string, id: string): Promise<Work | undefined> {
     const work = await this.#work(id);
     return work?.tenant === tenantId ? work : undefined;
+  }
+
+  async readWorkVideo(tenantId: string, id: string): Promise<Uint8Array | undefined> {
+    const work = await this.readWork(tenantId, id);
+    if (!work?.video) return undefined;
+    return new Uint8Array(await readFile(await this.#location('works', id, work.video.fileName)));
   }
 
   async listWorks(tenantId: string): Promise<Work[]> {
