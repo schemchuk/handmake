@@ -2371,7 +2371,7 @@ it becomes a task.
   (limit rules).
 
 ### T55 — Author's own video in a work (F39, spec v11)
-- Status: T55a-T55e2 merged 2026-11-14 (PRs #141-#146); live test on the test accounts pending.
+- Status: done. T55a-T55e2 merged 2026-11-14 (PRs #141-#146, CI fix #147); first live work with video published 2026-11-14.
 - Spec v11 approved 2026-11-14 (Volodymyr). Architecture: docs/02-architecture.md
   "Author's work video". Split into T55a-T55e, each one PR under ~400 changed non-test lines.
   All: **Owner: codex · Reviewer: claude-code**. T55b and T55c process personal data (the author

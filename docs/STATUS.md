@@ -1,11 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T55e2 — Facebook and Threads work video, PR open, waiting for CI and Volodymyr's OK.
-- **Branch:** `feat/T55e2-fb-threads-work-video`.
-- **Last commit:** this commit — feat(channels): publish work video to Facebook and Threads (T55e2).
-- **Next step:** after CI and Volodymyr's OK, claude-code merges; then the live test of a work with
-  video on the test accounts (Threads raw `video_url` decides raw vs site URL).
+- **Active agent:** none.
+- **Current task:** none.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record first live work with author video (F39).
+- **Next step:** the next task is the one Volodymyr names, for a fresh session.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
 
