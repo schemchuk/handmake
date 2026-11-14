@@ -142,6 +142,7 @@ export function mockTelegramApi(bot: Bot<AppContext>): SentCall[] {
     if (
       method === 'sendMessage' ||
       method === 'sendPhoto' ||
+      method === 'sendVideo' ||
       method === 'editMessageCaption' ||
       method === 'editMessageText'
     ) {

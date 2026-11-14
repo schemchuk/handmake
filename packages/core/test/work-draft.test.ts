@@ -66,13 +66,42 @@ describe('approved work job', () => {
       expect(draft).toEqual(before);
     },
   );
-  it.each([{ videoFileId: '' }, { videoPeople: 'participant' }])(
-    'rejects invalid publication video metadata %j',
-    (patch) => {
-      const job = buildApprovedWorkJob(ready());
-      expect(workPublicationSchema.safeParse({ ...job.work, ...patch }).success).toBe(false);
-    },
-  );
+  it.each([
+    { videoFileId: '' },
+    { videoPeople: 'participant' },
+    { videoFileId: 'video' },
+    { videoPeople: 'none' },
+  ])('rejects invalid publication video metadata %j', (patch) => {
+    const job = buildApprovedWorkJob(ready());
+    expect(workPublicationSchema.safeParse({ ...job.work, ...patch }).success).toBe(false);
+  });
+  it('blocks unfinished, unconfirmed or invalid draft videos before dispatch', () => {
+    const draft = ready();
+    const video = {
+      fileId: 'video',
+      size: 20_000_000,
+      duration: 60,
+      people: 'author',
+      confirmed: true,
+    };
+    Object.assign(draft.extras, { workVideo: video });
+    expect(buildApprovedWorkJob(draft).work).toMatchObject({
+      videoFileId: 'video',
+      videoPeople: 'author',
+    });
+    for (const patch of [
+      { confirmed: false },
+      { people: undefined },
+      { size: 20_000_001 },
+      { duration: 61 },
+    ]) {
+      draft.extras['workVideo'] = { ...video, ...patch };
+      expect(() => buildApprovedWorkJob(draft)).toThrow();
+    }
+    draft.extras['workVideo'] = video;
+    draft.extras['workVideoEditing'] = true;
+    expect(() => buildApprovedWorkJob(draft)).toThrow();
+  });
   it('omits video metadata from existing jobs', () => {
     const job = buildApprovedWorkJob(ready());
     expect(job.work).not.toHaveProperty('videoFileId');
