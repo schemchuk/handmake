@@ -285,8 +285,13 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     if (action === 'publish') {
       // Consent first (F10: no identifiable faces without written consent);
       // the confirm button re-reads the draft and claims it atomically.
-      if (stored.draft.state !== 'ready') {
-        await ctx.reply(texts.publishNotReadyText);
+      const stalePublishing =
+        stored.draft.state === 'publishing' &&
+        new Date(stored.draft.updatedAt).getTime() < publishingStaleCutoff(new Date()).getTime();
+      if (stored.draft.state !== 'ready' && !stalePublishing) {
+        await ctx.reply(
+          stored.draft.state === 'publishing' ? texts.draftBusyText : texts.publishNotReadyText,
+        );
         return;
       }
       await ctx.reply(texts.publishConsentText, {

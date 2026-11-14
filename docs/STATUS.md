@@ -1,13 +1,20 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T56 — work video preview and publish retry UX (`bot`).
+- **Active agent:** claude-code.
+- **Current task:** T56 — PR open.
 - **Branch:** `feat/T56-work-video-ux`.
-- **Last commit:** this commit — docs: add T56, hand to codex.
-- **Next step:** codex implements T56 (sandboxed: edit files only; claude-code reruns D1 tests,
-  reviews, commits, pushes, opens the PR, merges after CI and deploys the bot).
+- **Last commit:** this commit — feat(bot): clearer work video preview and publish retry (T56).
+- **Next step:** claude-code merges after CI and deploys the bot from clean `main`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
+
+- **T56 implementation/validation (codex, edit-only sandbox):** neutral pending-video prompt
+  hides publish; malformed work/video keeps the setup error. Stale publishing drafts offer
+  consent and retain atomic reclaim on confirm; fresh publishing replies busy. Preview tests
+  43/43 pass (`--maxWorkers=2`); bot typecheck includes tests; changed-file ESLint, Prettier
+  and diff checks pass. Combined preview/bot Vitest stalled without results in the D1 sandbox
+  and was interrupted; D1-backed bot tests, including ready/fresh/stale/published/collecting
+  consent and redispatch regressions, require reviewer execution. No network or Git writes.
 
 - **T55e2 implementation/validation (codex, edit-only sandbox):** Facebook multipart MP4
   `source` with photo caption, shared per-call retries, separate `<workId>-video` ledger via
@@ -400,6 +407,8 @@
   pending migrations); bot deployed by Volodymyr from clean `main`, Worker
   `7d463a14-6b3a-439e-8dc1-552e0354bc89`. Live `/entry` not yet tried.
 - **Open questions for Volodymyr:** none.
+- **Review note T56 (non-blocking, for the next bot task):** preview detects the unconfirmed
+  video by comparing the error message string; export a typed error or predicate from core.
 - **Decision 2026-11-11 (Volodymyr):** `entryConsentText` keeps the feminine form; no rewording.
 - **Decision 2026-11-11 (Volodymyr):** the 90-day name-deletion promise in the consent text stays;
   until T32 ships, names are deleted manually in D1.
