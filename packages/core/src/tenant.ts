@@ -128,10 +128,11 @@ export const siteSchema = z
       .object({
         colors: z
           .object({
-            paper: hexColorSchema, // page background
+            ground: hexColorSchema, // background behind the cloth
+            paper: hexColorSchema, // cloth background
             ink: hexColorSchema, // main text
             muted: hexColorSchema, // secondary text, captions, meta
-            rule: hexColorSchema, // dividers and decorative lines
+            thread: hexColorSchema, // dividers and decorative lines
           })
           .strict(),
         fonts: z

@@ -243,12 +243,12 @@ importers:
 
   apps/site:
     dependencies:
-      '@fontsource-variable/familjen-grotesk':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@fontsource-variable/onest':
         specifier: ^5.3.1
         version: 5.3.1
+      '@fontsource/gabriela':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@handmake/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -794,11 +794,11 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@fontsource-variable/familjen-grotesk@5.3.0':
-    resolution: {integrity: sha512-R9W0xEZRIHUV658cuOGRMAIcqX1QJ8p5/W6Boooa6zAw1BAozU//mr8C0VNggSE26/VHPwj2XNyMAG6yUJmjxA==}
-
   '@fontsource-variable/onest@5.3.1':
     resolution: {integrity: sha512-xaaw6G4HDB2/RczsWLD/2bnib4ykmQlTlBUN3GOEOiyErilZukQWVJG95h9zwAy0i8KY+QzDa+COPfqhI72Acw==}
+
+  '@fontsource/gabriela@5.3.0':
+    resolution: {integrity: sha512-9Z2cMJIu/nzStTu8gX2NrSRRITw+4uJvlXwf7QKuLPyCpCsqalRs9VaSryqhfPNDAijqvYXSGfnjPMSTHEe1Pg==}
 
   '@grammyjs/types@5.0.0':
     resolution: {integrity: sha512-iq1Qrq1iPKkB8yAa0qSuIURMZOCuqTY5pWy5gHpCeL1oQ+GPadGhw/cDTVE8waJwuCzacUzuIjRv1sESvk7u7A==}
@@ -3366,9 +3366,9 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@fontsource-variable/familjen-grotesk@5.3.0': {}
-
   '@fontsource-variable/onest@5.3.1': {}
+
+  '@fontsource/gabriela@5.3.0': {}
 
   '@grammyjs/types@5.0.0': {}
 

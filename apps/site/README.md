@@ -54,9 +54,9 @@ Astro 6 is used because Astro 7 needs Node >= 22.23.4 and this repo runs on 22.2
 
 ## Fonts
 
-Familjen Grotesk (Latin) and Onest (Cyrillic, because Familjen Grotesk has none) are self-hosted via
-`@fontsource-variable/*`; no font CDN is contacted (GDPR). `fonts.display` and `fonts.body` in the
-tenant config name the preferred family; the bundled faces always load behind it.
+Gabriela (display) and Onest (body), each with Latin and Cyrillic subsets, are self-hosted via
+`@fontsource/gabriela` and `@fontsource-variable/onest`; no font CDN is contacted (GDPR). `fonts.display` and `fonts.body` in the
+tenant config name the preferred family; both configured families must be bundled.
 
 ## CI deploy
 

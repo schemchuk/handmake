@@ -5,7 +5,7 @@ import { parseTenantConfig } from '@handmake/core';
 import type { ContentStore, Post, SiteConfig, TenantConfig } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 
-import { bundledLatinFamily } from './font-families';
+import { bundledFamilies } from './font-families';
 import { loadPortfolio } from './portfolio';
 import { loadShows } from './shows';
 
@@ -64,9 +64,9 @@ export function visiblePosts(posts: Post[], tenantLanguages: string[]): SitePost
 /** A configured family without bundled files would silently fall back; fail the build instead. */
 export function assertBundledFonts(site: SiteConfig): void {
   for (const family of new Set([site.theme.fonts.display, site.theme.fonts.body])) {
-    if (family !== bundledLatinFamily) {
+    if (!bundledFamilies.some((bundled) => bundled === family)) {
       throw new Error(
-        `font "${family}" is not bundled; add its files to apps/site/src/lib/fonts.ts (bundled: ${bundledLatinFamily})`,
+        `font "${family}" is not bundled; add its files to apps/site/src/lib/fonts.ts (bundled: ${bundledFamilies.join(', ')})`,
       );
     }
   }
