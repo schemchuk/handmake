@@ -439,7 +439,7 @@ describe('FacebookAdapter', () => {
     ).rejects.toThrowError(/feed post returned a malformed result/);
   });
 
-  it('rejects non-mediaGroup ops, replies, empty and oversized groups', async () => {
+  it('rejects unsupported ops, replies, empty and oversized groups', async () => {
     const adapter = adapterWith(graphHandler());
 
     await expect(
@@ -447,7 +447,7 @@ describe('FacebookAdapter', () => {
         [{ kind: 'message', text: 'Hallo!', lang: 'de' }],
         makeCtx({ photoUrls: PHOTO_URLS }),
       ),
-    ).rejects.toThrowError(/only mediaGroup ops/);
+    ).rejects.toThrowError(/only mediaGroup\/video ops/);
     await expect(
       adapter.deliver([onePhotoOp({ replyToOp: 0 })], makeCtx({ photoUrls: [PHOTO_1] })),
     ).rejects.toThrowError(/replyToOp is not supported/);
@@ -487,4 +487,75 @@ describe('FacebookAdapter', () => {
       }),
     ).rejects.toThrowError(/invalid progress/);
   });
+});
+
+describe('Facebook work video', () => {
+  const video = new Uint8Array([0, 1, 255, 42]);
+  const op: SendOperation = { kind: 'video', caption: 'Originalarbeit' };
+  it('uploads unchanged multipart source and caption and persists the accepted id', async () => {
+    const { fetchImpl, requests } = fakeFetch(() => jsonResponse({ id: 'video-1' }));
+    const adapter = new FacebookAdapter({ fetchImpl });
+    const persisted: RemoteId[] = [];
+    expect(
+      await adapter.deliver([op], makeCtx({ video }), {
+        startAt: 0,
+        knownIds: [],
+        onDelivered: async (_, id) => {
+          persisted.push(id);
+        },
+      }),
+    ).toEqual(['video-1']);
+    expect(persisted).toEqual(['video-1']);
+    expect(new URL(requests[0]!.url).pathname).toBe(`/v21.0/${PAGE_ID}/videos`);
+    const source = requests[0]!.form!.get('source') as Blob;
+    expect(source.type).toBe('video/mp4');
+    expect(new Uint8Array(await source.arrayBuffer())).toEqual(video);
+    expect(requests[0]!.form!.get('description')).toBe('Originalarbeit');
+    await adapter.deliver([op], makeCtx(), {
+      startAt: 1,
+      knownIds: ['video-1'],
+      onDelivered: async () => {},
+    });
+    expect(requests).toHaveLength(1);
+  });
+  it.each(['rate', 'token'])('retries a rejected %s upload at the call level', async (failure) => {
+    let uploads = 0;
+    const { fetchImpl, requests } = fakeFetch((req) => {
+      if (req.url.includes('/oauth/access_token'))
+        return jsonResponse({ access_token: REFRESHED_TOKEN });
+      if (++uploads === 1)
+        return failure === 'rate'
+          ? jsonResponse({ error: { code: 4 } }, 429)
+          : jsonResponse({ error: { code: 190, error_subcode: 463 } }, 400);
+      return jsonResponse({ id: 'video-2' });
+    });
+    await new FacebookAdapter({ fetchImpl, sleep: sleepNoop }).deliver([op], makeCtx({ video }));
+    expect(uploads).toBe(2);
+    expect(requests.filter((r) => r.form).every((r) => r.form!.get('source') instanceof Blob)).toBe(
+      true,
+    );
+    if (failure === 'token')
+      expect(new URL(requests.at(-1)!.url).searchParams.get('access_token')).toBe(REFRESHED_TOKEN);
+  });
+  it('rejects missing bytes before uploading and does not retry ambiguous failures', async () => {
+    const { fetchImpl, requests } = fakeFetch(() => {
+      throw new Error('transport unavailable');
+    });
+    const adapter = new FacebookAdapter({ fetchImpl });
+    await expect(
+      adapter.deliver([onePhotoOp(), op], makeCtx({ photoUrls: PHOTO_URLS })),
+    ).rejects.toThrow(/bytes/);
+    expect(requests).toHaveLength(0);
+    await expect(adapter.deliver([op], makeCtx({ video }))).rejects.toThrow(/request failed/);
+    expect(requests).toHaveLength(1);
+  });
+  it.each([{}, { id: 3 }, { error: { code: 100 } }])(
+    'rejects malformed/error upload results %j',
+    async (result) => {
+      const { fetchImpl } = fakeFetch(() => jsonResponse(result));
+      await expect(
+        new FacebookAdapter({ fetchImpl }).deliver([op], makeCtx({ video })),
+      ).rejects.toThrow();
+    },
+  );
 });

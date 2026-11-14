@@ -35,6 +35,8 @@ export type SendOperation =
       photoIndexes: number[];
       caption?: string;
       captionLang?: string;
+      /** Include the context video as the final carousel item. */
+      includeVideo?: boolean;
       replyToOp?: number;
     }
   | { kind: 'video'; videoSource?: 'authentic'; replyToOp?: number; caption?: string }
@@ -190,6 +192,8 @@ export interface DeliverContext {
   photoUrls?: string[];
   /** Approved marked video bytes; adapters must upload without re-encoding. */
   video?: Uint8Array;
+  /** Public HTTPS URL for adapters that pull video instead of uploading bytes. */
+  videoUrl?: string;
   /** Authentic video reply, uploaded before the generated video. */
   authenticVideo?: Uint8Array;
 }

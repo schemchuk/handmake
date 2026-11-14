@@ -171,7 +171,7 @@ export class MetaGraphClient {
     auth: MetaAuthState,
     method: 'GET' | 'POST',
     pathAndQuery: string,
-    params?: Record<string, unknown>,
+    params?: Record<string, unknown> | FormData,
   ): Promise<unknown> {
     const [path, queryString] = pathAndQuery.split('?');
     const query = new URLSearchParams(queryString);
@@ -179,8 +179,12 @@ export class MetaGraphClient {
     const url = `${this.#apiBase}${path}?${query}`;
     const init: RequestInit = { method };
     if (method === 'POST') {
-      init.headers = { 'Content-Type': 'application/json' };
-      init.body = JSON.stringify(params ?? {});
+      if (params instanceof FormData) {
+        init.body = params;
+      } else {
+        init.headers = { 'Content-Type': 'application/json' };
+        init.body = JSON.stringify(params ?? {});
+      }
     }
 
     let response: Response;

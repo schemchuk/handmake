@@ -575,7 +575,65 @@ it('retries only the Instagram Reel with its caption and separate channel ledger
   ]);
 });
 
-it('wires the Instagram work caption and resumes only its failed Reel', async () => {
+it.each(['instagram', 'facebook'])(
+  'wires the %s caption and resumes only its failed video',
+  async (channel) => {
+    await writeFile(
+      path.join(root, 'config/tenants/faden-und-stimmung.yaml'),
+      await readFile(new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url)),
+    );
+    const file = path.join(root, 'input.mp4');
+    await exec('ffmpeg', [
+      '-v',
+      'error',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=s=16x16:r=1',
+      '-t',
+      '1',
+      '-c:v',
+      'libx264',
+      '-threads',
+      '1',
+      file,
+    ]);
+    current.work!.channels = [channel];
+    current.work!.videoFileId = 'opaque-video';
+    current.work!.videoPeople = 'none';
+    const videoSource = { fetchMedia: vi.fn(async () => new Uint8Array(await readFile(file))) };
+    const adapter = new FakeChannelAdapter({
+      key: channel,
+      renderImpl: () => [{ kind: 'mediaGroup', photoIndexes: [0], caption: 'Work caption' }],
+    });
+    const registry = new ChannelRegistry();
+    registry.register(adapter);
+    const original = adapter.deliver.bind(adapter);
+    const deliver = vi.spyOn(adapter, 'deliver').mockImplementation(async (ops, ctx, progress) => {
+      if (ctx.video) throw new Error('fixture upload rejected');
+      return original(ops, ctx, progress);
+    });
+    const overrides = {
+      ...deps(),
+      registry,
+      showMediaSource: videoSource,
+      env: { ...deps().env, CONTENT_RAW_BASE_URL: 'https://raw.example/content' },
+    };
+    await expect(run(overrides)).rejects.toThrow('відео');
+    expect((await store.readLedger(tenantId, id))?.channels[channel]?.status).toBe('done');
+    deliver.mockImplementation(original);
+    await run(overrides);
+    expect(deliver.mock.calls.at(-1)![0]).toEqual([{ kind: 'video', caption: 'Work caption' }]);
+    expect(deliver.mock.calls.at(-1)![2]).toMatchObject({ startAt: 0, knownIds: [] });
+    expect(videoSource.fetchMedia).toHaveBeenCalledTimes(1);
+    expect(deliver.mock.calls.filter(([ops]) => ops[0]?.kind === 'mediaGroup')).toHaveLength(1);
+    const count = deliver.mock.calls.length;
+    await run(overrides);
+    expect(deliver).toHaveBeenCalledTimes(count);
+  },
+);
+
+it('keeps the Threads work video last in a single carousel ledger entry', async () => {
   await writeFile(
     path.join(root, 'config/tenants/faden-und-stimmung.yaml'),
     await readFile(new URL('../../../config/tenants/faden-und-stimmung.yaml', import.meta.url)),
@@ -596,36 +654,49 @@ it('wires the Instagram work caption and resumes only its failed Reel', async ()
     '1',
     file,
   ]);
-  current.work!.channels = ['instagram'];
+
+  current.work!.channels = ['threads'];
   current.work!.videoFileId = 'opaque-video';
   current.work!.videoPeople = 'none';
   const videoSource = { fetchMedia: vi.fn(async () => new Uint8Array(await readFile(file))) };
-  const adapter = new FakeChannelAdapter({
-    key: 'instagram',
-    renderImpl: () => [{ kind: 'mediaGroup', photoIndexes: [0], caption: 'Work caption' }],
+  const { createThreadsAdapter } = await import('@handmake/channels');
+  let created = 100;
+  let rejectVideo = true;
+  const writes: URLSearchParams[] = [];
+  const fetchImpl = vi.fn<typeof fetch>(async (_input, init) => {
+    if (init?.method === 'GET') return new Response(JSON.stringify({ status: 'FINISHED' }));
+    const params = new URLSearchParams(String(init?.body));
+    writes.push(params);
+    if (rejectVideo && params.get('media_type') === 'VIDEO')
+      return new Response(JSON.stringify({ error: { code: 100 } }), { status: 400 });
+    return new Response(JSON.stringify({ id: String(++created) }));
   });
   const registry = new ChannelRegistry();
-  registry.register(adapter);
-  const original = adapter.deliver.bind(adapter);
-  const deliver = vi.spyOn(adapter, 'deliver').mockImplementation(async (ops, ctx, progress) => {
-    if (ctx.video) throw new Error('fixture upload rejected');
-    return original(ops, ctx, progress);
-  });
+  registry.register(createThreadsAdapter({ fetchImpl }));
   const overrides = {
     ...deps(),
     registry,
     showMediaSource: videoSource,
-    env: { ...deps().env, CONTENT_RAW_BASE_URL: 'https://raw.example/content' },
+    secrets: {
+      resolve: async (name: string) => (name === 'THREADS_USER_ID' ? '123' : 'fixture-token'),
+    },
+    env: { ...deps().env, CONTENT_RAW_BASE_URL: 'https://raw.example/repo' },
   };
-  await expect(run(overrides)).rejects.toThrow('відео');
-  expect((await store.readLedger(tenantId, id))?.channels.instagram?.status).toBe('done');
-  deliver.mockImplementation(original);
+  await expect(run(overrides)).rejects.toThrow();
+  expect((await store.readLedger(tenantId, id))?.channels.threads?.status).toBe('failed');
+  expect(writes.some((p) => p.has('creation_id'))).toBe(false);
+  rejectVideo = false;
   await run(overrides);
-  expect(deliver.mock.calls.at(-1)![0]).toEqual([{ kind: 'video', caption: 'Work caption' }]);
-  expect(deliver.mock.calls.at(-1)![2]).toMatchObject({ startAt: 0, knownIds: [] });
+  const video = writes.filter((p) => p.get('media_type') === 'VIDEO').at(-1)!;
+  expect(video.get('video_url')).toBe(`https://raw.example/repo/content/works/${id}/video.mp4`);
+  expect(writes.filter((p) => p.has('creation_id'))).toHaveLength(1);
+  expect((await store.readLedger(tenantId, id))?.channels.threads).toMatchObject({
+    status: 'done',
+    remoteIds: [String(created)],
+  });
+  expect(await store.readLedger(tenantId, `${id}-video`)).toBeUndefined();
+  const count = fetchImpl.mock.calls.length;
+  await run(overrides);
+  expect(fetchImpl).toHaveBeenCalledTimes(count);
   expect(videoSource.fetchMedia).toHaveBeenCalledTimes(1);
-  expect(deliver.mock.calls.filter(([ops]) => ops[0]?.kind === 'mediaGroup')).toHaveLength(1);
-  const count = deliver.mock.calls.length;
-  await run(overrides);
-  expect(deliver).toHaveBeenCalledTimes(count);
 });

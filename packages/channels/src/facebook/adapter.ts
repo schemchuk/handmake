@@ -50,13 +50,14 @@ export class FacebookAdapterError extends Error {
 }
 
 type MediaGroupOp = Extract<SendOperation, { kind: 'mediaGroup' }>;
+type FacebookOp = MediaGroupOp | Extract<SendOperation, { kind: 'video' }>;
 
 /**
  * Facebook Page ChannelAdapter (T26b, F33): `render` delegates to
  * renderFacebook; `deliver` talks to the Pages API — one photo goes out as
  * a single published photo post, 2-10 photos as unpublished uploads plus
- * one feed post attaching them (`attached_media`). Only `mediaGroup` ops
- * are deliverable; video is a later task.
+ * one feed post attaching them (`attached_media`). Video ops upload a multipart
+ * source directly to the Page videos edge.
  *
  * Like Instagram, Facebook has no native idempotency keys for posts, so
  * the ledger-driven resume (`progress.startAt` / `progress.knownIds`,
@@ -159,11 +160,13 @@ export class FacebookAdapter implements ChannelAdapter {
       // anything at the network, so a bad op fails the deliver without
       // orphan unpublished photos; the validated pairs are reused for
       // sending (each op is checked once).
-      const pending: Array<{ op: MediaGroupOp; urls: string[] }> = [];
+      const pending: Array<{ op: FacebookOp; urls: string[] }> = [];
       for (let index = start; index < ops.length; index++) {
         const op = ops[index]!;
         this.#assertOp(op);
-        pending.push({ op, urls: metaPhotoUrls('Facebook', op, ctx) });
+        if (op.kind === 'video' && !ctx.video?.length)
+          throw new FacebookAdapterError('Facebook video op requires video bytes');
+        pending.push({ op, urls: op.kind === 'video' ? [] : metaPhotoUrls('Facebook', op, ctx) });
       }
 
       for (const [i, { op, urls }] of pending.entries()) {
@@ -182,12 +185,19 @@ export class FacebookAdapter implements ChannelAdapter {
     return ids;
   }
 
-  #assertOp(op: SendOperation): asserts op is MediaGroupOp {
-    if (op.kind !== 'mediaGroup') {
-      throw new FacebookAdapterError(`Facebook supports only mediaGroup ops, got "${op.kind}"`);
+  #assertOp(op: SendOperation): asserts op is FacebookOp {
+    if (op.kind !== 'mediaGroup' && op.kind !== 'video') {
+      throw new FacebookAdapterError(
+        `Facebook supports only mediaGroup/video ops, got "${op.kind}"`,
+      );
     }
     if (op.replyToOp !== undefined) {
       throw new FacebookAdapterError('replyToOp is not supported by Facebook');
+    }
+    if (op.kind === 'video') {
+      if (op.videoSource !== undefined)
+        throw new FacebookAdapterError('Facebook does not support alternate video sources');
+      return;
     }
     if (op.photoIndexes.length === 0) {
       throw new FacebookAdapterError('mediaGroup op has no photos to send');
@@ -206,7 +216,7 @@ export class FacebookAdapter implements ChannelAdapter {
    * unpublished uploads it already created instead of re-uploading them.
    */
   async #sendWithRetry(
-    op: MediaGroupOp,
+    op: FacebookOp,
     urls: string[],
     pageId: string,
     auth: MetaAuthState,
@@ -217,6 +227,23 @@ export class FacebookAdapter implements ChannelAdapter {
       this.#refreshToken(auth, ctx),
     );
 
+    if (op.kind === 'video') {
+      // Direct Page video posts return their published id; no container publish step.
+      // Record that id immediately, even while Facebook processes playback versions.
+      const published = (await call(() => {
+        const form = new FormData();
+        form.set(
+          'source',
+          new Blob([new Uint8Array(ctx.video!)], { type: 'video/mp4' }),
+          'video.mp4',
+        );
+        if (op.caption !== undefined) form.set('description', op.caption);
+        return this.#graph.call(auth, 'POST', `/${pageId}/videos`, form);
+      })) as { id?: unknown };
+      if (typeof published.id !== 'string' || !published.id)
+        throw new FacebookAdapterError('Facebook video post returned a malformed result');
+      return published.id;
+    }
     if (urls.length === 1) {
       const published = (await call(() =>
         this.#createPhoto(pageId, auth, {
