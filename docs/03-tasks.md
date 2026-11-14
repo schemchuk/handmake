@@ -2593,7 +2593,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests: existing site tests stay green; the newsletter markup test still passes.
 
 ### T61 — Circle presentation on the site (`site`)
-- Status: in progress.
+- Status: done (PR #156, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Context: Volodymyr asked (2026-11-14) to put the circle presentation on the site, each language
   version on its own language. Two 7-page 16:9 PDFs (circle, works, site, networks, how publishing

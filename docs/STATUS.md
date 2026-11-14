@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T61 circle presentation on the site, PR open, review by claude-code.
-- **Branch:** `feat/T61-presentation`.
-- **Last commit:** feat: link circle presentation per language (T61).
-- **Next step:** merge T61 after green CI (site only, no bot deploy); the link goes live with the
-  next publish run (site.yml is called only from publish.yml). 2026-11-18 20:00 Berlin: first live
-  contest closing without Facebook (logs on). Otherwise the next task is the one Volodymyr names.
+- **Active agent:** none.
+- **Current task:** none (T61 done: PR #156).
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T61 merge.
+- **Next step:** the presentation link on /kreis/ and /uk/kreis/ goes live with the next publish run
+  (site.yml is called only from publish.yml). 2026-11-18 20:00 Berlin: first live contest closing
+  without Facebook (logs on). Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T61:** PR #156 merged 2026-11-14 by claude-code (CI green). Circle presentation PDFs (DE/UK)
+  linked per language on the circle page. Site only, no bot deploy.
 
 - **T60d:** PR #155 merged 2026-11-14 by claude-code (CI green). Reading pages, newsletter, contrast
   (muted #59616d). Codex's out-of-scope rewrite of the gift PDF was reverted before commit.
