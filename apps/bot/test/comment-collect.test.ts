@@ -74,6 +74,51 @@ it('recovers pending drafts independently of the advanced API watermark', async 
   expect(s.send).toHaveBeenCalledTimes(1);
   vi.restoreAllMocks();
 });
+it.each(['', ' \t\n '])('skips blank incoming text %j while advancing the watermark', async (text) => {
+  const s = await setup();
+  s.options.capabilities = { facebook: s.capability };
+  vi.mocked(s.capability.listComments).mockResolvedValue([{ ...comment, text, handle: '' }]);
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await runCommentCollect(now, s.options);
+    expect(await s.store.get('tenant', 'facebook', comment.id)).toBeNull();
+    expect(await s.store.getWatermark('tenant', 'facebook')).toEqual(now);
+    expect(s.options.drafterFor).not.toHaveBeenCalled();
+    expect(s.draft).not.toHaveBeenCalled();
+    expect(s.send).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
+  } finally {
+    log.mockRestore();
+  }
+});
+it.each(['', ' \t\n '])('leaves an existing blank row %j new without drafting', async (text) => {
+  const s = await setup();
+  s.options.capabilities = { facebook: s.capability };
+  vi.mocked(s.capability.listComments).mockResolvedValue([]);
+  await s.store.collect({
+    tenantId: 'tenant',
+    network: 'facebook',
+    id: comment.id,
+    postId: 'p1',
+    handle: '',
+    text,
+    commentCreatedAt: comment.createdAt,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await runCommentCollect(now, s.options);
+    await runCommentCollect(now, s.options);
+    expect((await s.store.get('tenant', 'facebook', comment.id))?.status).toBe('new');
+    expect(s.options.drafterFor).not.toHaveBeenCalled();
+    expect(s.draft).not.toHaveBeenCalled();
+    expect(s.send).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
+  } finally {
+    log.mockRestore();
+  }
+});
 it.each([false, true])('retries confirmed rejection only (ambiguous=%s)', async (ambiguous) => {
   const s = await setup();
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});

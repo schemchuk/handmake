@@ -10,6 +10,13 @@
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
+- **T59 implementation/validation (codex, edit-only):** blank incoming comment text is
+  skipped after advancing the watermark; blank pending rows stay `new` without drafting
+  or error logging. Added empty/whitespace regressions for incoming and stored Facebook
+  comments. Bot typecheck passes. Only `test/comment-collect.test.ts` was run with
+  `--maxWorkers=2`; the D1 sandbox stalled without test results and was interrupted, so
+  tests remain unverified. No Git commands, network calls or deployment.
+
 - **T58:** PR #150 squash-merged 2026-11-14 by claude-code (CI green). Channels-only, no
   migration; bot deployed by Volodymyr 2026-11-14 14:15 EET, Worker
   `6080ff0c-c178-4ebc-af91-31ee8294ee99`. Live: 14:15 tick stored IG 2 / FB 3 comments, cards
