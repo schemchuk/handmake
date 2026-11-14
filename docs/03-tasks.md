@@ -2439,6 +2439,7 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   Retain the parent acceptance criteria and post-merge live-test gate.
 
 ### T56 — Work video preview and publish retry UX (`bot`, T55 live follow-up)
+- Status: done (PR #148, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T55
 - Why: two findings from the first live work with video (2026-11-14).
 - Change:

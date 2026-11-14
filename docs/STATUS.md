@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T56 — PR open.
-- **Branch:** `feat/T56-work-video-ux`.
-- **Last commit:** this commit — feat(bot): clearer work video preview and publish retry (T56).
-- **Next step:** claude-code merges after CI and deploys the bot from clean `main`.
+- **Active agent:** none.
+- **Current task:** none.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T56 merge and deploy.
+- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+  Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
 
