@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T55e1 — Instagram work Reel, PR open, waiting for CI and Volodymyr's OK.
-- **Branch:** `feat/T55e-meta-work-video`.
-- **Last commit:** this commit — feat(channels): publish work video as Instagram Reel (T55e1).
-- **Next step:** after CI and Volodymyr's OK (personal data), claude-code merges and hands T55e2
-  (Facebook, Threads) to codex; live test with the test accounts after T55e2.
+- **Active agent:** codex.
+- **Current task:** T55e2 — Facebook and Threads work video.
+- **Branch:** `feat/T55e2-fb-threads-work-video`.
+- **Last commit:** this commit — docs: record T55e1 merge, hand T55e2 to codex.
+- **Next step:** codex implements T55e2 (sandboxed: edit files only; claude-code reviews, commits,
+  pushes, opens the PR); then the live test with the test accounts.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** OK to merge T55e1 (author's video to Instagram)?
+- **Open questions for Volodymyr:** none.
 
 - **T55e1 implementation/validation (codex, sandbox):** Instagram REELS resumable binary upload,
   bounded FINISHED polling, caption from the photo operation, per-call upload 429/190 retries,
@@ -57,6 +57,8 @@
   publisher/stores typechecks (including tests) and all changed-file ESLint/Prettier pass.
   No pull, commit or push; existing sandbox changes remain for claude-code review.
 
+- **T55e1:** PR #145 merged 2026-11-14 by claude-code with Volodymyr's OK (squash, CI green).
+  Channels/publisher only, no bot deploy.
 - **T55d:** PR #144 merged 2026-11-14 by claude-code (squash, CI green, no findings). Site only.
 - **T55c:** PR #143 merged 2026-11-14 by claude-code with Volodymyr's OK (squash, CI green).
   Publisher only, no deploy. Work videos now reach the content store and Telegram.
