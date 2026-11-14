@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T55c — publisher work video, PR open, waiting for CI and Volodymyr's OK.
-- **Branch:** `feat/T55c-work-video-publish`.
-- **Last commit:** this commit — feat(publisher): publish work video to site store and Telegram (T55c).
-- **Next step:** after CI and Volodymyr's OK (personal data), claude-code merges and hands T55d
-  (site) to codex. Publisher needs no deploy.
+- **Active agent:** codex.
+- **Current task:** T55d — site work page video (`site`).
+- **Branch:** `feat/T55d-site-work-video`.
+- **Last commit:** this commit — docs: record T55c merge, hand T55d to codex.
+- **Next step:** codex implements T55d (sandboxed: edit files only; claude-code reviews, commits,
+  pushes, opens the PR). Then T55e.
 - **Blocked on:** nothing.
-- **Open questions for Volodymyr:** OK to merge T55c (personal data: author may appear in video)?
+- **Open questions for Volodymyr:** none.
 
 - **T55c implementation/validation:** bounded 20 MB Telegram video download; reuse T53d lossless
   remux/probe/metadata checks; store `video.mp4` with the work before channel delivery and reuse it
@@ -26,9 +26,11 @@
   publisher/stores typechecks (including tests) and all changed-file ESLint/Prettier pass.
   No pull, commit or push; existing sandbox changes remain for claude-code review.
 
+- **T55c:** PR #143 merged 2026-11-14 by claude-code with Volodymyr's OK (squash, CI green).
+  Publisher only, no deploy. Work videos now reach the content store and Telegram.
 - **T55b:** PR #142 merged 2026-11-14 by claude-code with Volodymyr's OK (squash b7d0e70, CI green).
   No migration, secrets or wrangler change. Bot deployed from clean `main`, Worker
-  `ed2d1672-e3aa-4c93-9f64-0aa73d3e0ce6`. Until T55c the publisher ignores the work video.
+  `ed2d1672-e3aa-4c93-9f64-0aa73d3e0ce6`.
 - **T55b implementation/validation:** versioned optional video controls after photos, metadata limits,
   document resend hint, replace/remove/skip, people confirmation, video preview and approved job
   metadata. T55a review note: publication metadata requires both video fields or neither.
