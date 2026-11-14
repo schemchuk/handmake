@@ -1,4 +1,3 @@
-import { createAuthenticShowStorage } from './show-authentic-storage';
 import { createShowFinish } from './show-finish';
 import { dispatchShowBackfill } from './show-backfill';
 import { createShowApproval } from './show-approval';
@@ -70,7 +69,6 @@ export function createShowRuntime(env: Env) {
     ...transport,
     approval: createShowApproval({
       drafts,
-      authentic: createAuthenticShowStorage(bucket, env.TELEGRAM_BOT_TOKEN),
       backfill: async (stored) => {
         const { tenantId, draftId } = stored.draft;
         // Recovery jobs can prepare existing outputs but cannot authorize provider calls.

@@ -20,9 +20,6 @@ let db: D1Database;
 let store: ReturnType<typeof createD1DraftStore>;
 let approval: ReturnType<typeof createShowApproval>;
 let ctx: AppContext;
-const authentic = vi.fn(async (_stored: unknown) => [
-  { fileName: 'authentic.jpg', ref: 'show-authentic:v1:fixture:show:opaque' },
-]);
 const reply = vi.fn(async (_text: string, _options?: unknown) => ({}));
 const upload = vi.fn(async (file: InputFile) => ({
   document: {
@@ -94,7 +91,6 @@ beforeEach(async () => {
   } as unknown as AppContext;
   approval = createShowApproval({
     drafts: store,
-    authentic,
     works: { readWork: async () => work, listWorks: async () => [work] },
     verified: {
       get: async (scope) => {
@@ -388,48 +384,7 @@ it.each([false, true])(
   },
 );
 
-it.each([false, true])(
-  'requires confirmed authentic media and transports it into the proposal (confirmed: %s)',
-  async (confirmed) => {
-    await approval.present(ctx, (await store.get(tenant, id))!);
-    const proposed = (await store.get(tenant, id))!;
-    await store.updateShow(
-      {
-        ...proposed.draft,
-        extras: {
-          ...proposed.draft.extras,
-          showAuthentic: {
-            editing: !confirmed,
-            confirmed,
-            people: 'both',
-            items: [{ fileId: 'private', fileName: 'authentic.jpg', kind: 'photo', size: 100 }],
-          },
-        },
-      },
-      proposed.version,
-    );
-    const current = (await store.get(tenant, id))!;
-    expect(await approval.approve(ctx, current, String(current.version))).toBeUndefined();
-    upload.mockClear();
-    await approval.present(ctx, current);
-    if (confirmed) {
-      expect(upload).toHaveBeenCalledTimes(4);
-      const job = await approve();
-      expect(job?.kind).toBe('show');
-      expect(JSON.stringify(job)).not.toContain('private');
-      expect(JSON.stringify(job)).not.toContain('tg-');
-      if (job?.kind === 'show')
-        expect(job.show.show.authentic).toEqual([
-          { fileName: 'authentic.jpg', kind: 'photo', provenance: 'human', people: 'both' },
-        ]);
-      return;
-    }
-    expect(upload).not.toHaveBeenCalled();
-    expect((await store.get(tenant, id))!.draft.state).toBe('ready');
-  },
-);
-
-it('reports authentic storage failure without granting a proposal', async () => {
+it.each([false, true])('ignores legacy own media (confirmed: %s)', async (confirmed) => {
   const s = await stored();
   await store.updateShow(
     {
@@ -437,70 +392,80 @@ it('reports authentic storage failure without granting a proposal', async () => 
       extras: {
         ...s.draft.extras,
         showAuthentic: {
-          editing: false,
-          confirmed: true,
-          people: 'none',
-          items: [{ fileId: 'private', fileName: 'authentic.jpg', kind: 'photo', size: 3 }],
+          editing: true,
+          confirmed,
+          items: [{ fileId: 'private', fileName: 'authentic.jpg', kind: 'photo', size: 100 }],
         },
       },
     },
     s.version,
   );
-  authentic.mockRejectedValueOnce(new Error('unavailable'));
   await present();
-  expect(upload).not.toHaveBeenCalled();
-  expect((await stored()).draft.extras['showProposal']).toBeUndefined();
-  expect(reply.mock.calls.at(-1)?.[0]).toContain('Не вдалося зберегти');
+  expect(upload).toHaveBeenCalledTimes(4);
+  expect(ctx.replyWithPhoto).not.toHaveBeenCalled();
+  expect(ctx.replyWithVideo).not.toHaveBeenCalled();
+  const job = await approve();
+  expect(job?.kind).toBe('show');
+  if (job?.kind === 'show') {
+    expect(job.show.show.authentic ?? []).toEqual([]);
+    expect(job.show.media).toHaveLength(4);
+  }
+  expect(JSON.stringify(job)).not.toContain('private');
+  expect(JSON.stringify(job)).not.toContain('authentic.jpg');
 });
 
-it('hides authentic input after approval', async () => {
+it('hides cancellation after approval', async () => {
   await present();
   await approve();
-  const keyboard = refreshKeyboard(await stored(), botTexts);
-  expect(JSON.stringify(keyboard)).not.toContain(':own:');
+  expect(JSON.stringify(refreshKeyboard(await stored(), botTexts))).not.toContain(':own');
 });
 
-it('rejects approval with a proposal but no people answer', async () => {
+it('removes own media from a legacy proposal before freezing approval', async () => {
   await present();
   const s = await stored();
+  const proposal = structuredClone(s.draft.extras['showProposal'] as PublishJob);
+  if (proposal.kind !== 'show') throw new Error('expected show');
+  proposal.show.show.authentic = [
+    { fileName: 'own.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+  ];
+  proposal.show.media.push({ fileName: 'own.jpg', ref: 'show-authentic:v1:fixture:show:opaque' });
   await store.updateShow(
     {
       ...s.draft,
       extras: {
         ...s.draft.extras,
-        showAuthentic: { editing: false, confirmed: true, items: [{ fileName: 'authentic.jpg' }] },
+        showProposal: proposal,
         showProposalVersion: s.version + 1,
+        showAuthentic: { editing: true, confirmed: false, items: [{ fileId: 'private' }] },
       },
     },
     s.version,
   );
-  const current = await stored();
-  expect(await approval.approve(ctx, current, String(current.version))).toBeUndefined();
-  expect((await stored()).draft.state).toBe('ready');
+  const job = await approve();
+  expect(job?.kind).toBe('show');
+  if (job?.kind !== 'show') throw new Error('expected show');
+  expect(job.show.show).not.toHaveProperty('authentic');
+  expect(job.show.media).toHaveLength(4);
+  expect((await stored()).draft.extras['showApproved']).toEqual(job);
 });
 
-it('reports a stale step separately when the draft changes during authentic storage', async () => {
+it('keeps already frozen legacy approvals unchanged on retry', async () => {
+  await present();
+  await approve();
+  await store.revertPublishing(tenant, id, new Date());
   const s = await stored();
-  await store.updateShow(
-    {
-      ...s.draft,
-      extras: {
-        ...s.draft.extras,
-        showAuthentic: {
-          editing: false,
-          confirmed: true,
-          people: 'none',
-          items: [{ fileId: 'private', fileName: 'authentic.jpg', kind: 'photo', size: 3 }],
-        },
-      },
-    },
-    s.version,
-  );
-  authentic.mockImplementationOnce(async () => {
-    const current = await stored();
-    await store.updateShow({ ...current.draft }, current.version);
-    return [{ fileName: 'authentic.jpg', ref: 'show-authentic:v1:fixture:show:opaque' }];
-  });
-  await expect(present()).rejects.toThrow('stale');
-  expect(reply.mock.calls.flat().join(' ')).not.toContain('Не вдалося зберегти');
+  const frozen = structuredClone(s.draft.extras['showApproved'] as PublishJob);
+  if (frozen.kind !== 'show') throw new Error('expected show');
+  frozen.show.show.authentic = [
+    { fileName: 'own.jpg', kind: 'photo', provenance: 'human', people: 'none' },
+  ];
+  frozen.show.media.push({ fileName: 'own.jpg', ref: 'show-authentic:v1:fixture:show:opaque' });
+  await db
+    .prepare('UPDATE drafts SET extras = ? WHERE tenant_id = ? AND id = ?')
+    .bind(JSON.stringify({ ...s.draft.extras, showApproved: frozen }), tenant, id)
+    .run();
+  const current = await stored();
+  expect(
+    await approval.approve(ctx, current, String(current.draft.extras['showApprovalVersion'])),
+  ).toEqual(frozen);
 });

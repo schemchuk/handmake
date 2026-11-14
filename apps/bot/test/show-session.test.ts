@@ -824,28 +824,49 @@ it('offers work selection again after discarding the awaited work', async () => 
   expect((await get(showId))!.draft.extras['showSelection']).toMatchObject({ workId: work.id });
 });
 
-it('collects authentic album media in the active ready session with stale callback protection', async () => {
+it.each(['own', 'ownremove.0', 'ownpeople.both', 'ownconfirm', 'owndone'])(
+  'rejects retired %s callbacks without changing the draft',
+  async (action) => {
+    const id = await completedShow('ready');
+    const stored = (await get(id))!;
+    await press(`show:${id}:${action}:${stored.version}`);
+    expect(await get(id)).toEqual(stored);
+    expect(sentTexts(calls).at(-1)).toBe('Цей крок уже змінився. Відкрийте /show ще раз.');
+  },
+);
+
+it('does not store a photo in a ready show with legacy own-media input', async () => {
   const id = await completedShow('ready');
+  const before = (await get(id))!;
+  await drafts.updateShow(
+    {
+      ...before.draft,
+      extras: {
+        ...before.draft.extras,
+        showAuthentic: { editing: true, confirmed: false, items: [] },
+      },
+    },
+    before.version,
+  );
   const stored = (await get(id))!;
-  await press(`show:${id}:own:${stored.version}`);
   await bot.handleUpdate(photoUpdate(11, ['authentic-one']));
-  const added = (await get(id))!;
-  expect(added.draft.extras['showAuthentic']).toMatchObject({
-    items: [{ kind: 'photo', fileName: 'authentic-photo-1.jpg' }],
-    confirmed: false,
-  });
-  await press(`show:${id}:ownpeople.both:${stored.version}`);
-  expect(await get(id)).toEqual(added);
-  await press(`show:${id}:ownpeople.both:${added.version}`);
-  const people = (await get(id))!;
-  await press(`show:${id}:ownconfirm:${people.version}`);
-  const confirmed = (await get(id))!;
-  await press(`show:${id}:owndone:${confirmed.version}`);
-  expect((await get(id))!.draft.extras['showAuthentic']).toMatchObject({
-    editing: false,
-    people: 'both',
-    confirmed: true,
-  });
-  expect(start).not.toHaveBeenCalled();
+  expect(await get(id)).toEqual(stored);
   expect(runner.jobs).toEqual([]);
+});
+
+it.each([false, true])('cancels from a %s legacy button with evidence retained', async (legacy) => {
+  const id = await completedShow('ready');
+  await send('/show');
+  const before = (await get(id))!;
+  const action = legacy ? `show:${id}:owncancel:${before.version}` : button('owncancel');
+  await press(`show:${id}:owncancel:${before.version - 1}`);
+  expect(await get(id)).toEqual(before);
+  await press(action);
+  const cancelled = (await get(id))!;
+  expect(cancelled.draft.state).toBe('failed');
+  expect(cancelled.draft.extras['showCancelled']).toBe(true);
+  expect(cancelled.draft.extras['show']).toEqual(before.draft.extras['show']);
+  expect((await session())?.draftId).toBeNull();
+  await press(action);
+  expect(await get(id)).toEqual(cancelled);
 });
