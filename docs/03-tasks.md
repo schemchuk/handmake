@@ -2437,3 +2437,22 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   Depends on T55e1. Facebook multipart `source` and separate video ledger; Threads final
   VIDEO carousel item with raw `video_url`, one ledger entry. Mocked transport/retry tests.
   Retain the parent acceptance criteria and post-merge live-test gate.
+
+### T56 — Work video preview and publish retry UX (`bot`, T55 live follow-up)
+- Owner: codex · Reviewer: claude-code · Depends on: T55
+- Why: two findings from the first live work with video (2026-11-14).
+- Change:
+  1. While the work video is unconfirmed (`extras.workVideoEditing` or a video without
+     `people`/`confirmed`), `buildApprovedWorkJob` throws and `apps/bot/src/preview.ts` reports it as
+     a broken work setup inside «❌ Допис не проходить ліміти каналів: Обери, як буде представлено
+     роботу». Show instead a neutral line «Підтвердіть відео: оберіть, хто в кадрі, і натисніть
+     «У кадрі лише авторка і/або Володимир».» (new `texts` entry), without the ❌ blocked text; keep
+     the publish button hidden as now. A genuinely broken setup keeps today's text.
+  2. `draft:<id>:publish` (bot.ts) answers «Публікувати можна лише готову чернетку» for a draft
+     stuck in `publishing` longer than `publishingStaleMs`. For such a stale draft show the consent
+     step like for `ready`, so `publish:confirm` reclaims it (the claim already handles stale rows).
+     A fresh `publishing` draft answers `draftBusyText`; other states keep `publishNotReadyText`.
+- Acceptance: the preview during the video people step has no ❌ line; pressing «🚀 Опублікувати»
+  on a stale publishing draft leads to the consent step and a re-dispatch; a fresh one says busy.
+- Tests: preview with unconfirmed video, broken work setup unchanged; publish on ready / fresh
+  publishing / stale publishing / published drafts.

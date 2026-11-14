@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: record first live work with author video (F39).
-- **Next step:** the next task is the one Volodymyr names, for a fresh session.
+- **Active agent:** codex.
+- **Current task:** T56 — work video preview and publish retry UX (`bot`).
+- **Branch:** `feat/T56-work-video-ux`.
+- **Last commit:** this commit — docs: add T56, hand to codex.
+- **Next step:** codex implements T56 (sandboxed: edit files only; claude-code reruns D1 tests,
+  reviews, commits, pushes, opens the PR, merges after CI and deploys the bot).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
 
