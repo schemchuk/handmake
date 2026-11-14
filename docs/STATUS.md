@@ -1,13 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T55a — implementation complete; awaiting claude-code review.
-- **Branch:** `feat/T55a-work-video-contract`.
-- **Last commit:** this commit — feat(core): add optional work video contract (T55a).
-- **Next step:** claude-code merges the T55a PR after CI is green, then hands T55b to codex.
+- **Active agent:** codex.
+- **Current task:** T55b — `/work` step «Додати відео» (`bot`), docs/03-tasks.md.
+- **Branch:** `feat/T55b-work-video-step`.
+- **Last commit:** this commit — docs: record T55a merge, hand T55b to codex.
+- **Next step:** codex implements T55b incl. the T55a review note (sandboxed: edit files only;
+  claude-code reviews, commits, pushes, opens the PR). Personal data: Volodymyr's OK before merge.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 
+- **T55a:** PR #141 merged 2026-11-14 by claude-code (squash, CI green, no blocking findings).
+  Core only: no bot deploy needed until T55b.
 - **T55a implementation/validation:** optional human MP4 video metadata on works; optional
   `videoFileId`/`videoPeople` in work publication metadata, preserved through draft approval.
   Core tests pass (329/329, `vitest run --maxWorkers=2`); core typecheck, changed-file ESLint
