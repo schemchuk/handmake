@@ -1,20 +1,18 @@
 # STATUS
 
 - **Active agent:** codex.
-- **Current task:** T60c — handwritten name and sewn-on media (F40).
-- **Branch:** `feat/T60c-name-patches`.
-- **Last commit:** this commit — feat: handwritten name and sewn-on media (T60c).
-- **Next step:** codex implements T60c (docs/03-tasks.md, incl. review note from PR #153);
-  claude-code reviews, opens the PR and merges; then T60d. The live site picks up T60 changes
-  on the next publish run (site.yml is called only from publish.yml).
-  T59 deployed by Volodymyr 2026-11-14 13:27Z from a clean `main` worktree, Worker
-  `3c932b61-08d4-456f-8f2b-7c290aab9e08`; 13:30Z tick logged no errors. Incident: deploy
-  `964d60d1` (13:00Z) bundled uncommitted T60 core changes and broke every cron with
-  `invalid tenant config at site.theme.colors.rule`. Deploy the bot only from a clean tree
-  or a separate worktree, never from a branch switch carrying uncommitted changes.
+- **Current task:** T60d — remaining pages on the cloth (F40).
+- **Branch:** `feat/T60d-pages`.
+- **Last commit:** this commit — docs: record T60c merge, hand T60d to codex.
+- **Next step:** codex implements T60d (docs/03-tasks.md); claude-code reviews, opens the PR and merges.
+  The live site picks up T60 changes on the next publish run (site.yml is called only from publish.yml).
+  T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at 12:14Z; Volodymyr deploys.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T60c:** PR #154 merged 2026-11-14 by claude-code (CI green). Handwritten name, uncropped
+  sewn-on media with build-time dimensions. Site only, no bot deploy.
 
 
 - **T60b:** PR #153 merged 2026-11-14 by claude-code (CI green). Seam and turning roll; review note

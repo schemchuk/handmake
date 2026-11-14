@@ -2562,7 +2562,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   function that maps scroll position to the sewn length (clamped at both ends).
 
 #### T60c — Handwritten name and sewn-on media
-- Status: planned.
+- Status: done (PR #154, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T60a
 - Review notes from PR #153: the needle box is 22x126 px for a 22x92 viewBox, so the drawing is
   centred ~17 px below the seam end; size it by `aspect-ratio: 22 / 92` (or a matching height) so the
