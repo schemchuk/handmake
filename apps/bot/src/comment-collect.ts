@@ -114,6 +114,7 @@ async function collectNetwork(
         if (watermark === undefined || created > watermark.getTime()) {
           watermark = new Date(created);
         }
+        if (comment.text.trim() === '') continue;
         await options.store.collect({
           tenantId,
           network,
@@ -129,6 +130,7 @@ async function collectNetwork(
     }
   } finally {
     for (const row of await options.store.listPendingDrafts(tenantId, network)) {
+      if (row.text.trim() === '') continue;
       const created = Date.parse(row.commentCreatedAt);
       if (!Number.isFinite(created) || created < cutoff) continue;
       try {
