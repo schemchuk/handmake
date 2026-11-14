@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
-- **Branch:** `main`.
+- **Active agent:** codex.
+- **Current task:** T58 — bind `fetch` in `MetaGraphClient` (IG/FB comment collection fails in the Worker).
+- **Branch:** `feat/T58-meta-fetch-binding`.
 - **Last commit:** this commit — docs: drop answered T55e2 question.
-- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Next step:** codex implements T58 (docs/03-tasks.md) on `feat/T58-meta-fetch-binding`; then
+  claude-code reviews, merges and deploys the bot. 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
@@ -25,7 +26,7 @@
 - **Full `/show` run 2026-11-14:** show `01M7CGZVW0PG0FQ7WDFDZQS3WG` (work `01M7CH07KE5PY7KGSAN2354KZ2`)
   published to site (5 media byte-equal), Telegram 68-73, Instagram, Facebook, Threads; cost EUR 1.10
   (video regenerated once). Findings: own-media step blocked the author (→ T57), IG/FB comment
-  collection fails every 30 min (open).
+  collection fails every cron tick: unbound `fetch` in `MetaGraphClient` (→ T58).
 
 - **T56 implementation/validation (codex, edit-only sandbox):** neutral pending-video prompt
   hides publish; malformed work/video keeps the setup error. Stale publishing drafts offer

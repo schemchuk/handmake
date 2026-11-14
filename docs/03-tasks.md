@@ -2488,3 +2488,23 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
 - Tests: preview keyboard (ready, failed, approved), cancel from the new button and from an old
   `owncancel` button, approval with legacy `showAuthentic`, stale `own*` callbacks, photo in a show
   session. Bot tests only, `--maxWorkers=2`.
+
+### T58 — Bind `fetch` in `MetaGraphClient` (`channels`, F34 live bug)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: T49b
+- Why: found 2026-11-14 in Worker logs. Every 15-minute cron logs `comment collection failed:
+  instagram` and `…: facebook`; prod D1 has zero comment rows and no watermarks although both
+  accounts have comments. `MetaGraphClient` stores the global as `this.#fetch = fetchImpl ?? fetch`
+  and calls `this.#fetch(url, init)`, so workerd throws `Illegal invocation` (reproduced in
+  Miniflare). Node (publisher, tests) does not care, which is why CI and publishing pass. Threads
+  wraps fetch in an arrow and works. The same path feeds Instagram contest votes in poll closing
+  (next live closing 2026-11-18).
+- Change: in `packages/channels/src/meta/graph.ts` default to an unbound call, e.g.
+  `fetchImpl ?? ((input, init) => fetch(input, init))`. Check the other default-`fetch` sites in
+  `packages/channels/src` (`meta/token.ts`, Instagram upload, Threads) and change any that call
+  the global as a method of an object; leave plain-variable calls as they are.
+- Acceptance: with no `fetchImpl`, a `MetaGraphClient` call invokes the global `fetch` with
+  `this` undefined/global, not the client.
+- Tests: a channels unit test that stubs `globalThis.fetch` with a function that throws when
+  `this` is not `undefined`/`globalThis`, then runs one `call()` without `fetchImpl`. Channels
+  tests only, `--maxWorkers=2`.
