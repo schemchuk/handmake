@@ -901,3 +901,34 @@ the caption adds the "generated from image N" line only when authentic photos ex
 videos as replies to the album, authentic first; Instagram, Facebook and Threads copy photos only.
 Personal data note: these files may show the author or Volodymyr (their consent, spec Q18); PRs
 T53b-T53d process personal data and need Volodymyr's OK before merge.
+
+### Author's work video (T55, F39, spec v11 draft)
+
+Schema: `workSchema` gets an optional `video: { fileName, provenance: human, people: none | author |
+operator | both }`; `fileName` is an MP4 name (`video.mp4`) stored in the work folder
+`content/works/<id>/video.mp4`, disjoint from photo names. Old works stay valid without it.
+
+Intake (bot): the `/work` session gets an optional step after the photos. The draft stores the
+Telegram `video` file id, size and duration from the message (at most 60 s and 20 MB, checked before
+approval; documents are refused because they carry no duration), the people answer and the
+confirmation that nobody else appears. The `kind: work` publish job carries `videoFileId` and
+`videoPeople` beside `fileIds`; no bytes in the Worker, no R2 staging (the same transport as work
+photos, ADR 005). No AI call, no cost booking.
+
+Publisher: downloads the video through `getFile` with a 20 MB streaming limit, strips metadata with
+the T53d remux (`apps/publisher/src/authentic-media.ts`: `ffmpeg -map_metadata -1 -c copy -movflags
++faststart`, duration probe, post-strip check), and commits it with the photos before any channel
+call. Retry reads the committed file. Telegram clients send videos as H.264 by default; the publisher
+does not transcode, and a codec Instagram rejects fails only that channel's video entry.
+
+Channels: the photo post keeps its current ledger key; the video is a second ledger entry
+(`<workId>:video` per channel), so a failed video never reposts photos. Telegram: `sendVideo` as a
+reply to the album. Instagram: a `REELS` container from the public video URL with the work caption.
+Facebook: `/{page-id}/videos` with `file_url` and the caption. Threads: the video is a `VIDEO`
+carousel item after the photos (a single entry, no second post). Meta fetches the video from the
+same public raw content URL as photos (`CONTENT_RAW_BASE_URL`); the Instagram task first checks
+that Meta accepts the raw URL's `Content-Type` for video and otherwise serves it from the site
+domain after the site deploy.
+
+Site: the work page renders `<video controls playsinline preload="metadata">` from the copied
+file after the photos, with the "Originalarbeit" label; no autoplay, no external player.

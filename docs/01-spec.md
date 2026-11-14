@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v10 (2026-11-13).**
-Previous: approved v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
+Status: **v11 draft (2026-11-14), F39 waits for Volodymyr's approval; the rest is approved v10.**
+Previous: approved v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v9 (v10) are listed in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
+Changes from v10 (v11) are listed in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -206,6 +206,28 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     re-encoded beyond that, the same rule as for marked bytes.
   - **Retry and removal.** Publishing stays idempotent (F11). Removing an authentic item after
     publishing follows the existing show correction path; channel posts are not edited automatically.
+- **F39** Author's own video in a work (v11 draft, 2026-11-14). A `/work` work may carry one short
+  video of the real work taken by the author, published on the site and in every channel without
+  any AI generation. This is how the author publishes her own video instead of a generated one.
+  - **What and how many.** 0-1 video per work, next to its 1-N photos (photos stay required: the
+    site cards and collection covers use them). MP4/MOV sent to the bot as a Telegram video, at most
+    60 s and 20 MB (Bot API download limit); longer or larger clips and files sent as documents are
+    refused with a clear message. Same people rule as F37: only the author and Volodymyr may appear,
+    confirmed with a button before approval.
+  - **Hand-over (UX).** In the `/work` session, after the photos, one optional step «Додати відео» /
+    «Пропустити». The preview shows the video; the author can replace or remove it before approval.
+    No AI call is made on the video, so it costs nothing (F32).
+  - **Labelling.** The video is authentic media: "Оригінальна робота" / "Originalarbeit" (F36), no AI
+    marker.
+  - **Where it goes.** Site: the work page shows the video after the photos (`<video controls
+    playsinline>`, no autoplay, no third-party player). Telegram: the photo album, then the video as a
+    reply to it (same rule as show videos). Instagram: the photo carousel, then the video as a Reel
+    with the same caption. Facebook: the photo post, then the video as a Page video post with the same
+    caption. Threads: the video is the last item of the photo carousel. Publishing stays idempotent
+    (F11): the photo post and the video post are separate ledger entries.
+  - **Storage.** The video lives in the work's content folder as `video` (`fileName`, `provenance:
+    human`, `people`); location and camera metadata are removed by a lossless remux, never
+    re-encoded (same rule as F37).
 - **F32** AI cost budget per tenant: a monthly target of 20 EUR with a 5 EUR tolerance. At 20 EUR the
   operator is warned; at 25 EUR new shows wait until next month. Every AI call (text, image, video) is
   booked in the ledger with its cost. The operator has a cost command (spent this month, per show, per
@@ -501,6 +523,15 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
   that address (required practice in Germany).
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
+
+## 14-v11. Changes from v10 (v11 draft, 2026-11-14)
+
+- New F39: the author's own video (0-1, at most 60 s / 20 MB) in a `/work` work, added in an optional
+  step, published on the site and in all four channels without AI generation; only the author and
+  Volodymyr may appear; metadata stripped by remux.
+- Architecture impact (for T55 tasks): work schema gets an optional `video`; bot `/work` session step;
+  publisher downloads, strips and commits the video; site work page; Telegram reply, Instagram Reel,
+  Facebook video post, Threads carousel item.
 
 ## 14-v10. Changes from v9 (v10, approved 2026-11-13)
 

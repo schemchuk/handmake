@@ -2369,3 +2369,51 @@ it becomes a task.
 - Tests: core tenant schema test for the empty list and the non-https URL; keep the site-data
   loader rejection tests green (adjust the expected message if needed); core and site suites only
   (limit rules).
+
+### T55 — Author's own video in a work (F39, spec v11 draft)
+- Waits for Volodymyr's approval of F39 (spec v11). Architecture: docs/02-architecture.md
+  "Author's work video". Split into T55a-T55e, each one PR under ~400 changed non-test lines.
+  All: **Owner: codex · Reviewer: claude-code**. T55b and T55c process personal data (the author
+  may appear): Volodymyr's OK in chat before merge.
+
+#### T55a — Work video contract (`core`)
+- Change: optional `video` on `workSchema` (`fileName` `*.mp4`, `provenance: human`, `people`);
+  work publication payload gets optional `videoFileId` and `videoPeople`; round trip.
+- Acceptance: all existing work fixtures parse unchanged; a non-mp4 name, a name equal to a photo
+  and a non-human provenance are rejected.
+- Tests: schema cases above, serialize/parse round trip.
+
+#### T55b — `/work` step «Додати відео» (`bot`) · Depends on: T55a
+- Change: optional step after photos: accept one Telegram `video` (≤60 s, ≤20 MB, checked from
+  message metadata), refuse documents with a UA hint to resend as video; replace/remove; people
+  answer and the confirmation «У кадрі лише авторка і/або Володимир»; preview shows the video;
+  approval puts `videoFileId`/`videoPeople` into the job. Skipping keeps today's flow byte-for-byte.
+- Acceptance: approval is impossible with an unconfirmed people answer or an over-limit video; a
+  stale callback after replace is rejected.
+- Tests: session flow, limits, replace/remove, skip path, stale callbacks.
+
+#### T55c — Publisher: download, strip, commit, Telegram reply (`publisher`, `channels`) · Depends on: T55a
+- Change: download via `getFile` (20 MB limit), reuse the T53d remux/probe/post-strip check, commit
+  `video.mp4` with the photos; Telegram sends it with `sendVideo` as a reply to the album under a
+  separate ledger key; dry-run support.
+- Acceptance: a fixture with a QuickTime location tag comes out clean, streams unchanged; a >60 s
+  video fails with an author-visible reason and no partial commit; retry does not resend photos or
+  video.
+- Tests: fixtures above, idempotent retry, dry-run, Telegram reply order.
+
+#### T55d — Site work page video (`site`) · Depends on: T55a
+- Change: copy `video.mp4` into the build and render it after the photos with the "Originalarbeit"
+  label, `controls playsinline preload="metadata"`, no autoplay; works without video unchanged.
+- Acceptance: DE and UK pages of a fixture work show the video; build policy still passes.
+- Tests: site build with and without a work video (site suites only).
+
+#### T55e — Instagram Reel, Facebook video, Threads carousel video (`channels`, `publisher`) · Depends on: T55c
+- Change: first check with the test accounts that Meta accepts the raw content URL for video
+  (`Content-Type`); if not, serve the video from the site domain after the site deploy and record the
+  choice in the architecture section. Then: Instagram `REELS` container with polling until
+  `FINISHED`; Facebook `/{page-id}/videos` with `file_url`; Threads `VIDEO` carousel item after the
+  photos. Separate ledger keys for Instagram and Facebook videos.
+- Acceptance: a work with video publishes photos and video on all three networks; a failed video
+  container retries without reposting the photos; works without video are unchanged.
+- Tests: mocked Graph/Threads API for container creation, status polling, retry and error paths.
+
