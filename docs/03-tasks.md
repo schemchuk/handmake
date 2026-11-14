@@ -2508,3 +2508,19 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
 - Tests: a channels unit test that stubs `globalThis.fetch` with a function that throws when
   `this` is not `undefined`/`globalThis`, then runs one `call()` without `fetchImpl`. Channels
   tests only, `--maxWorkers=2`.
+
+### T59 — Skip comments without text in collection (`bot`, F34 live follow-up)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: T58
+- Why: after T58 (2026-11-14) one Facebook comment has an empty `message` and no `from` (a
+  sticker/photo comment; Meta withholds the author without App Review). The drafter's request
+  schema rejects blank text before any paid call, the row is reopened to `new`, and every
+  15-minute tick logs `comment drafting failed: facebook` until the 30-day retention.
+- Change (`apps/bot/src/comment-collect.ts` only): a comment whose `text.trim()` is empty is not
+  stored (it still advances the watermark), and the pending-drafts loop skips rows with blank
+  text without calling the drafter or logging an error. No migration; the existing prod row
+  stays `new` and is removed by retention.
+- Acceptance: a tick with a blank-text comment stores nothing for it, sends no card, logs no
+  error and advances the watermark; an existing blank `new` row is not drafted.
+- Tests: `comment-collect` cases for a blank incoming comment and a blank stored row. Bot tests
+  only, `--maxWorkers=2`.
