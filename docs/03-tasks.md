@@ -2531,7 +2531,7 @@ colours, proportions and motion). Split into four PRs, each under ~400 changed n
 each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot deploy.
 
 #### T60a — Theme tokens, typefaces, roll, cloth, fringe
-- Status: planned.
+- Status: done (PR #152, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Change: `site.theme.colors` in `packages/core/src/tenant.ts` and the tenant YAML become
   `ground` `#27313c`, `paper` `#e3ddcd` (the cloth), `ink` `#283442`, `muted` `#5c6470`, `thread`
