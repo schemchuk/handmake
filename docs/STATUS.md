@@ -1,10 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T60 cloth look done: PRs #152-#155).
-- **Branch:** `main`.
+- **Active agent:** codex.
+- **Current task:** T61 circle presentation on the site.
+- **Branch:** `feat/T61-presentation` (PDFs already committed by claude-code).
 - **Last commit:** this commit — docs: record T60d merge, T60 done.
-- **Next step:** the live site shows the cloth look after the next publish run (site.yml is called
+- **Next step:** codex implements T61 (docs/03-tasks.md) on `feat/T61-presentation`, edit-only;
+  claude-code reviews, commits, opens the PR and merges. Then: the live site shows the cloth look after the next publish run (site.yml is called
   only from publish.yml). T59 deployed by Volodymyr 2026-11-14 (Worker 7806cb04-432e-4607-855e-a509adb0eb9e). 2026-11-18 20:00 Berlin: first live contest closing without Facebook
   (logs on). Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** nothing.

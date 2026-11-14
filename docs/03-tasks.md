@@ -2591,3 +2591,22 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   to the PR); contrast of text and controls meets WCAG AA; the newsletter form still submits to
   the configured action with the same field names.
 - Tests: existing site tests stay green; the newsletter markup test still passes.
+
+### T61 — Circle presentation on the site (`site`)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Context: Volodymyr asked (2026-11-14) to put the circle presentation on the site, each language
+  version on its own language. Two 7-page 16:9 PDFs (circle, works, site, networks, how publishing
+  works, QR codes for Telegram and Instagram) are committed by claude-code on the task branch:
+  `apps/site/public/praesentation/de.pdf` and `apps/site/public/praesentation/uk.pdf`. Do not
+  regenerate or edit the PDFs.
+- Change: the circle page (`/kreis/`, `/uk/kreis/`) gets a link to the presentation in the page's
+  language only (German page → `de.pdf`, Ukrainian page → `uk.pdf`), placed after the facts and
+  join button, styled like the existing buttons. Strings in `apps/site/src/lib/i18n.ts`
+  (DE: „Präsentation ansehen (PDF)“, UK: «Переглянути презентацію (PDF)»). The PDF path comes from
+  one small helper keyed by language; a language without a PDF shows no link.
+- Acceptance: each language page links its own PDF and never the other; the link opens the PDF in
+  the browser (no `download` attribute) with a `type="application/pdf"` hint; no request leaves the
+  site's origin; layout holds at 320 and 1280 px.
+- Tests: site build test asserts `/kreis/` links `/praesentation/de.pdf` and `/uk/kreis/` links
+  `/praesentation/uk.pdf`, and neither links the other. Site tests only, `--maxWorkers=2`.
