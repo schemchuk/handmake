@@ -902,7 +902,7 @@ videos as replies to the album, authentic first; Instagram, Facebook and Threads
 Personal data note: these files may show the author or Volodymyr (their consent, spec Q18); PRs
 T53b-T53d process personal data and need Volodymyr's OK before merge.
 
-### Author's work video (T55, F39, spec v11 draft)
+### Author's work video (T55, F39, spec v11)
 
 Schema: `workSchema` gets an optional `video: { fileName, provenance: human, people: none | author |
 operator | both }`; `fileName` is an MP4 name (`video.mp4`) stored in the work folder

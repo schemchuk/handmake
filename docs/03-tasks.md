@@ -2370,8 +2370,8 @@ it becomes a task.
   loader rejection tests green (adjust the expected message if needed); core and site suites only
   (limit rules).
 
-### T55 — Author's own video in a work (F39, spec v11 draft)
-- Waits for Volodymyr's approval of F39 (spec v11). Architecture: docs/02-architecture.md
+### T55 — Author's own video in a work (F39, spec v11)
+- Spec v11 approved 2026-11-14 (Volodymyr). Architecture: docs/02-architecture.md
   "Author's work video". Split into T55a-T55e, each one PR under ~400 changed non-test lines.
   All: **Owner: codex · Reviewer: claude-code**. T55b and T55c process personal data (the author
   may appear): Volodymyr's OK in chat before merge.

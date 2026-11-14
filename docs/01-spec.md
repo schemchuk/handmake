@@ -2,7 +2,7 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **v11 draft (2026-11-14), F39 waits for Volodymyr's approval; the rest is approved v10.**
+Status: **approved v11 (2026-11-14).**
 Previous: approved v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
 Changes from v10 (v11) are listed in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
@@ -206,7 +206,7 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     re-encoded beyond that, the same rule as for marked bytes.
   - **Retry and removal.** Publishing stays idempotent (F11). Removing an authentic item after
     publishing follows the existing show correction path; channel posts are not edited automatically.
-- **F39** Author's own video in a work (v11 draft, 2026-11-14). A `/work` work may carry one short
+- **F39** Author's own video in a work (v11, approved by Volodymyr 2026-11-14). A `/work` work may carry one short
   video of the real work taken by the author, published on the site and in every channel without
   any AI generation. This is how the author publishes her own video instead of a generated one.
   - **What and how many.** 0-1 video per work, next to its 1-N photos (photos stay required: the
@@ -524,7 +524,7 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
 
-## 14-v11. Changes from v10 (v11 draft, 2026-11-14)
+## 14-v11. Changes from v10 (v11, approved 2026-11-14)
 
 - New F39: the author's own video (0-1, at most 60 s / 20 MB) in a `/work` work, added in an optional
   step, published on the site and in all four channels without AI generation; only the author and

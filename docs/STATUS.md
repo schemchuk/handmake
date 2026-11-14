@@ -1,12 +1,13 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none.
+- **Active agent:** codex.
+- **Current task:** T55a — work video contract (`core`), docs/03-tasks.md.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: spec F39 author's work video (v11 draft).
-- **Next step:** after Volodymyr approves F39 (spec v11), T55a to codex.
-- **Blocked on:** Volodymyr's approval of F39 / T55 plan.
-- **Open questions for Volodymyr:** approve F39 (own video in `/work`, docs/01-spec.md)?
+- **Last commit:** this commit — docs: approve spec v11 (F39), hand T55a to codex.
+- **Next step:** codex implements T55a on `feat/T55a-work-video-contract` (sandboxed run: edit
+  files only; claude-code reviews, commits, pushes and opens the PR). Then T55b.
+- **Blocked on:** nothing.
+- **Open questions for Volodymyr:** none.
 
 - **T34:** done 2026-11-13, PR #140 squash-merged by claude-code; docs only, no bot deploy.
   Reassigned to Codex by Volodymyr in chat 2026-11-13; reviewer claude-code.
