@@ -1,5 +1,122 @@
 {
   "tenantId": "faden-und-stimmung",
   "postId": "01M7CGZVW0PG0FQ7WDFDZQS3WG",
-  "channels": {}
+  "channels": {
+    "telegram": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-14T08:30:00.544Z"
+    },
+    "instagram": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-14T08:30:00.544Z"
+    },
+    "facebook": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-14T08:30:00.544Z"
+    },
+    "threads": {
+      "status": "pending",
+      "remoteIds": [],
+      "updatedAt": "2026-11-14T08:30:00.544Z"
+    }
+  },
+  "showCopyPlan": {
+    "version": 1,
+    "mediaHashes": [
+      "b0b547494153d43f3bb3e494f2208816d3d30aae256c892d68829592046de715",
+      "de00fa90ffe38b36e603fa177439a72f48bfc943da68c388a1d31fa20bdfe321",
+      "2272df6d7859b4dbeba23de490de9d2032958204c88694a03fc0f34d64376ffd",
+      "b520441f32617a101b1dddd4bdc1ad1d60277331e1fb395557be58bd4ad0b734",
+      "20862e50d9c2ed3df084cb08c35d606d77c398300cd455e826e8258d07678aca"
+    ],
+    "channels": {
+      "telegram": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Теплі слідки для дому. Допоможуть комфортно почуватися у власних стінах.\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота\nhttps://fadenundstimmung.de/uk/shows/01m7cgzvw0pg0fq7wdfdzqs3wg/",
+            "captionLang": "uk"
+          },
+          {
+            "kind": "video",
+            "videoSource": "authentic",
+            "replyToOp": 0
+          },
+          {
+            "kind": "video",
+            "replyToOp": 0
+          },
+          {
+            "kind": "message",
+            "text": "Warme Hausschuhsocken für zu Hause. Damit fühlt man sich in den eigenen vier Wänden wohl.\n\nKI-generiertes Model\nOriginalarbeit\nhttps://fadenundstimmung.de/shows/01m7cgzvw0pg0fq7wdfdzqs3wg/\n\nKanal abonnieren: https://t.me/Faden_und_Stimmung",
+            "lang": "de",
+            "replyToOp": 0
+          }
+        ],
+        "settings": {
+          "channelId": "TELEGRAM_CHANNEL_ID",
+          "joinUrl": "https://t.me/Faden_und_Stimmung"
+        }
+      },
+      "instagram": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Warme Hausschuhsocken für zu Hause. Damit fühlt man sich in den eigenen vier Wänden wohl.\n\nKI-generiertes Model\nOriginalarbeit",
+            "captionLang": "de"
+          }
+        ],
+        "settings": {
+          "language": "de"
+        }
+      },
+      "facebook": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Warme Hausschuhsocken für zu Hause. Damit fühlt man sich in den eigenen vier Wänden wohl.\n\nKI-generiertes Model\nOriginalarbeit\nhttps://fadenundstimmung.de/shows/01m7cgzvw0pg0fq7wdfdzqs3wg/",
+            "captionLang": "de"
+          }
+        ],
+        "settings": {
+          "language": "de"
+        }
+      },
+      "threads": {
+        "operations": [
+          {
+            "kind": "mediaGroup",
+            "photoIndexes": [
+              0,
+              1,
+              2
+            ],
+            "caption": "Warme Hausschuhsocken für zu Hause. Damit fühlt man sich in den eigenen vier Wänden wohl.\n\nKI-generiertes Model\nOriginalarbeit\nhttps://fadenundstimmung.de/shows/01m7cgzvw0pg0fq7wdfdzqs3wg/",
+            "captionLang": "de"
+          }
+        ],
+        "settings": {
+          "language": "de"
+        }
+      }
+    }
+  }
 }
