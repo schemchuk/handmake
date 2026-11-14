@@ -2459,7 +2459,7 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   publishing / stale publishing / published drafts.
 
 ### T57 — Remove the own-media step from `/show` (`bot`, F37 withdrawn)
-- Status: todo.
+- Status: done (PR #149, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T53, T55
 - Why: decided by Volodymyr 2026-11-14 after the full `/show` run. Since T55/T56 the author's own
   photos and video belong to the work and reach all four networks through `/work`. In a show they

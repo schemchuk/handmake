@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code (review of T57).
-- **Current task:** T57 — remove the own-media step from `/show`.
-- **Branch:** `feat/t57-show-no-own-media`.
-- **Last commit:** this commit — feat: remove own-media step from /show (T57).
-- **Next step:** CI on the T57 PR, then claude-code merges and deploys the bot;
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Active agent:** none.
+- **Current task:** none.
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T57 merge.
+- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`;
+  the auto-mode classifier blocked claude-code). 2026-11-18 20:00 Berlin: first live contest
+  closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** OK to merge T55e2 (author's video to Facebook and Threads)?
 
+- **T57:** PR #149 squash-merged 2026-11-14 by claude-code (CI green). Bot-only, no migration;
+  bot deploy pending (Volodymyr).
 - **T57 implementation/validation (codex):** removed own-media input, preview and storage wiring
   from `/show`; ready unapproved shows retain cancel (`owncancel`). Legacy `own*` actions are
   stale, legacy draft media are ignored, unfrozen proposals drop authentic refs, and frozen
