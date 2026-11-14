@@ -2510,7 +2510,7 @@ Implement only T55e1 in this session; leave T55e2 for a fresh task session.
   tests only, `--maxWorkers=2`.
 
 ### T59 — Skip comments without text in collection (`bot`, F34 live follow-up)
-- Status: in progress.
+- Status: done (PR #151, merged 2026-11-14).
 - Owner: codex · Reviewer: claude-code · Depends on: T58
 - Why: after T58 (2026-11-14) one Facebook comment has an empty `message` and no `from` (a
   sticker/photo comment; Meta withholds the author without App Review). The drafter's request
