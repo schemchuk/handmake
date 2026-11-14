@@ -3,7 +3,7 @@
 - **Active agent:** codex.
 - **Current task:** T60b — sewn seam and turning roll (F40).
 - **Branch:** `feat/T60b-seam-roll`.
-- **Last commit:** this commit — docs: record T60a merge, hand T60b to codex.
+- **Last commit:** this commit — feat: sewn seam and turning roll (T60b).
 - **Next step:** codex implements T60b (docs/03-tasks.md, reference docs/design/site-cloth/index.html);
   claude-code reviews, opens the PR and merges; then T60c, T60d. The live site picks up T60 changes
   on the next publish run (site.yml is called only from publish.yml).
@@ -11,6 +11,7 @@
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
 
 - **T60a:** PR #152 merged 2026-11-14 by claude-code (squash c285b11, CI green). Review found and
   codex fixed: data: textures rejected by the build policy (moved to public/textures), brand name in

@@ -2564,6 +2564,9 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 #### T60c — Handwritten name and sewn-on media
 - Status: planned.
 - Owner: codex · Reviewer: claude-code · Depends on: T60a
+- Review notes from PR #153: the needle box is 22x126 px for a 22x92 viewBox, so the drawing is
+  centred ~17 px below the seam end; size it by `aspect-ratio: 22 / 92` (or a matching height) so the
+  thread meets the last stitch.
 - Change: optional `site.theme.wordmark` (repo-relative path of an SVG; for faden-und-stimmung
   `config/tenants/assets/faden-und-stimmung/wordmark.svg`, traced from the author's handwriting,
   `fill="currentColor"`, viewBox 1890x1581; the accessible name is the tenant name). Home page `h1`: the tenant name as visually hidden text plus the asset as a CSS mask in

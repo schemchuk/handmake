@@ -7,6 +7,8 @@ import { loadSiteData } from './src/lib/site-data';
 // (see src/lib/site-data.ts), so only the trailing-slash policy is fixed here.
 export default defineConfig({
   output: 'static',
+  // Keep processed scripts external, including small progressive enhancements.
+  vite: { build: { assetsInlineLimit: 0 } },
   integrations: [
     {
       name: 'site-publication-policy',

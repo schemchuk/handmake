@@ -1,0 +1,68 @@
+<div class="seam" aria-hidden="true"></div>
+<svg class="needle" viewBox="0 0 22 92" aria-hidden="true" focusable="false">
+  <path d="M11 0 C4 8 17 12 11 21" fill="none" stroke="var(--thread)" stroke-width="2.4" stroke-linecap="round" />
+  <path d="M11 14 C14.2 14 14.6 20 14 30 L11.6 90 L11 92 L10.4 90 L8 30 C7.4 20 7.8 14 11 14 Z" fill="#444b54" />
+  <path d="M10 26 L10.7 86" stroke="#c9d0d6" stroke-width="1" stroke-linecap="round" />
+  <ellipse cx="11" cy="21" rx="1.3" ry="4" fill="var(--paper)" />
+  <path d="M11 17.5 v7" stroke="var(--thread)" stroke-width="1.6" />
+</svg>
+
+<script>
+  import { sewnLength } from '../lib/sewn-length';
+
+  const cloth = document.querySelector<HTMLElement>('.cloth');
+  const skin = document.querySelector<HTMLElement>('.roll-skin');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let queued = false;
+  const sew = () => {
+    queued = false;
+    if (!cloth) return;
+    if (motion.matches) {
+      cloth.style.removeProperty('--sewn');
+      skin?.style.removeProperty('--turn');
+      return;
+    }
+    const rect = cloth.getBoundingClientRect();
+    cloth.style.setProperty('--sewn', `${sewnLength(rect.top, rect.height, innerHeight)}px`);
+    skin?.style.setProperty('--turn', `${Math.round(scrollY * 0.45)}px`);
+  };
+  const ask = () => {
+    if (!queued) {
+      queued = true;
+      requestAnimationFrame(sew);
+    }
+  };
+  addEventListener('scroll', ask, { passive: true });
+  addEventListener('resize', ask);
+  motion.addEventListener('change', ask);
+  if (cloth) new ResizeObserver(ask).observe(cloth);
+  sew();
+</script>
+
+<style>
+  .seam {
+    position: absolute;
+    left: calc(var(--pad) / 2 - 1.5px);
+    top: 0;
+    width: 3px;
+    height: var(--sewn, max(0px, calc(100% - 150px)));
+    background: repeating-linear-gradient(to bottom, transparent 0 3px, var(--thread) 3px 16px, transparent 16px 26px);
+    pointer-events: none;
+  }
+  .needle {
+    position: absolute;
+    left: calc(var(--pad) / 2);
+    top: var(--sewn, max(0px, calc(100% - 150px)));
+    width: min(22px, calc(var(--pad) - 8px));
+    height: 126px;
+    translate: -50% -5px;
+    rotate: 7deg;
+    transform-origin: 50% 0;
+    pointer-events: none;
+    filter: drop-shadow(2px 3px 2px rgba(40, 30, 10, 0.35));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .seam { height: max(0px, calc(100% - 150px)); }
+    .needle { top: max(0px, calc(100% - 150px)); }
+  }
+</style>

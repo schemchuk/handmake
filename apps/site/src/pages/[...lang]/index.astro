@@ -34,7 +34,7 @@ const alternates = Object.fromEntries(data.tenant.languages.map((code) => [code,
     <section class="hero">
       <h1>{data.tenant.name}</h1>
     </section>
-    <Stitch draw />
+    <Stitch />
     {latestShow && <section aria-label={ui.showsHeading}>
       <h2><a href={pagePath(lang, def, 'shows')}>{ui.showsHeading}</a></h2>
       <ShowFeed shows={[latestShow]} lang={lang} data={data} />

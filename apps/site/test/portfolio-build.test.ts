@@ -147,6 +147,16 @@ describe('portfolio fixture build', () => {
         expect(home).toContain('class="roll-bar"');
         expect(home).toContain('class="roll"');
         expect(home).toContain('id="main" class="cloth"');
+        expect(home).toMatch(/class="seam"[^>]*aria-hidden="true"/);
+        expect(home).toMatch(/class="needle"[^>]*aria-hidden="true"/);
+        const seamScript = home.match(
+          /<script type="module" src="(\/_astro\/[^"]+\.js)"><\/script>/,
+        );
+        expect(seamScript).not.toBeNull();
+        const script = await readFile(path.join(dist, seamScript![1]!), 'utf8');
+        expect(script).toContain('--sewn');
+        expect(script).toContain('--turn');
+        expect(home).not.toContain('stitch--draw');
         expect(home).toContain('class="fringe" aria-hidden="true"');
         expect(home).toContain('name="theme-color" content="#27313c"');
       }
