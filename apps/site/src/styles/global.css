@@ -1,3 +1,10 @@
+:root {
+  --ground-ink: #c8c2b2;
+  --cloth-shade: color-mix(in srgb, var(--paper) 80%, #6b5b32);
+  --weft: 92, 80, 54;
+  --cloth-w: min(100% - 2.6rem, 60rem);
+  --pad: clamp(1.4rem, 7vw, 5.5rem);
+}
 *,
 *::before,
 *::after {
@@ -5,10 +12,10 @@
 }
 
 html {
-  background: var(--paper);
+  background: var(--ground);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 100%;
+  font-size: 112.5%;
   line-height: 1.55;
   -webkit-text-size-adjust: 100%;
 }
@@ -37,12 +44,13 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--thread);
   outline-offset: 3px;
 }
 
 .wrap {
-  width: min(100% - 2.5rem, 78rem);
+  width: 100%;
+  min-width: 0;
   margin-inline: auto;
 }
 
@@ -59,41 +67,206 @@ a {
   top: 1rem;
 }
 
-/* header */
-.site-header {
+.roll-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--ground);
+  padding-top: 0.6rem;
+}
+.roll {
+  position: relative;
+  width: calc(var(--cloth-w) + 1.1rem);
+  margin-inline: auto;
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem 2rem;
-  padding-block: 1.25rem;
+  gap: 0.1rem 1.5rem;
+  padding: 1.25rem clamp(1.6rem, 4.5vw, 3rem) 1.35rem;
+  border-radius: 1.15rem / 50%;
+  background: linear-gradient(
+    180deg,
+    #6c644f 0%,
+    #a39a82 9%,
+    #d6cfbc 24%,
+    #f7f3e7 41%,
+    #ebe5d5 54%,
+    #c4bba5 74%,
+    #8d846d 90%,
+    #5d5542 100%
+  );
+  box-shadow: 0 0.5rem 0.9rem -0.2rem rgba(0, 0, 0, 0.55);
+}
+.roll > :not(.roll-skin, .peg) {
+  position: relative;
+}
+/* Static cloth surface; scroll-driven turning belongs to T60b. */
+.roll-skin {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    url('/textures/roll-skin-slubs.svg') 0 0,
+    repeating-linear-gradient(90deg, rgba(var(--weft), 0.1) 0 1px, transparent 1px 3px);
+}
+/* wound layers showing at both ends */
+.roll-skin::before,
+.roll-skin::after {
+  content: '';
+  position: absolute;
+  top: -4%;
+  bottom: -4%;
+  width: 2.1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--weft), 0.5);
+  box-shadow:
+    inset 0 0 0 0.22rem transparent,
+    inset 0 0 0 calc(0.22rem + 1px) rgba(var(--weft), 0.32),
+    inset 0 0 0 0.5rem transparent,
+    inset 0 0 0 calc(0.5rem + 1px) rgba(var(--weft), 0.2);
+}
+.roll-skin::before {
+  left: -1.2rem;
+}
+.roll-skin::after {
+  right: -1.2rem;
+}
+/* the wooden rod the cloth is wound on */
+.peg {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  width: 0.62rem;
+  height: 1.05rem;
+  background: linear-gradient(180deg, #4a321c, #b08453 38%, #86623b 62%, #38250f);
+}
+.peg--l {
+  right: calc(100% - 0.12rem);
+  border-radius: 45% 0 0 45%;
+}
+.peg--r {
+  left: calc(100% - 0.12rem);
+  border-radius: 0 45% 45% 0;
+}
+/* shadow the roll casts on the cloth */
+.roll-bar::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  translate: -50% 0;
+  width: var(--cloth-w);
+  height: 1.4rem;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(38, 28, 10, 0.34),
+    rgba(38, 28, 10, 0.1) 45%,
+    transparent
+  );
 }
 .wordmark {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.3rem;
   text-decoration: none;
 }
 .nav {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.1rem 1.3rem;
   align-items: baseline;
 }
 .nav a {
   text-decoration: none;
-  padding-block: 0.25rem;
+  padding-block: 0.15rem;
 }
-.nav a[aria-current='page'] {
+.nav a:hover {
   text-decoration: underline;
+  text-decoration-color: var(--thread);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+.nav {
+  margin-left: auto;
+}
+@media (max-width: 40rem) {
+  .roll {
+    padding: 0.6rem 1rem;
+    column-gap: 0.4rem;
+  }
+  .wordmark {
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .wordmark,
+  .nav a,
+  .langs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    min-width: 24px;
+  }
+  .roll .langs {
+    gap: 0.3rem;
+    font-size: 0.75rem;
+  }
+  .nav {
+    order: 3;
+    width: 100%;
+    margin: 0;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 0.2rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
 }
 .langs {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   color: var(--muted);
+  font-size: 0.9rem;
 }
-.langs a[aria-current='true'] {
+.langs [aria-current] {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+/* ── the cloth ── */
+.cloth {
+  position: relative;
+  width: var(--cloth-w);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 3rem) var(--pad) clamp(3rem, 7vw, 5rem);
+  background-color: var(--paper);
+  background-image:
+    url('/textures/cloth-weave-horizontal.svg'), url('/textures/cloth-weave-vertical.svg'),
+    repeating-linear-gradient(0deg, rgba(var(--weft), 0.1) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(var(--weft), 0.08) 0 1px, transparent 1px 3px);
+  box-shadow: 0 0 2.5rem rgba(0, 0, 0, 0.35);
+}
+/* selvedge: the tighter woven edge on both sides */
+.cloth::before,
+.cloth::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0.5rem;
+  background:
+    repeating-linear-gradient(0deg, rgba(var(--weft), 0.28) 0 1px, transparent 1px 2px),
+    rgba(var(--weft), 0.14);
+}
+.cloth::before {
+  left: 0;
+}
+.cloth::after {
+  right: 0;
 }
 
 /* running stitch */
@@ -101,7 +274,7 @@ a {
   display: block;
   width: 100%;
   height: 6px;
-  color: var(--rule);
+  color: var(--thread);
   overflow: visible;
 }
 .stitch line {
@@ -129,11 +302,11 @@ a {
 .hero h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(3.4rem, 14vw, 12rem);
-  line-height: 0.88;
-  letter-spacing: -0.045em;
-  max-width: 9ch;
+  font-weight: 400;
+  font-size: clamp(1.7rem, 6vw, 3.5rem);
+  overflow-wrap: normal;
+  line-height: 1.2;
+  max-width: 100%;
   text-wrap: balance;
 }
 
@@ -142,8 +315,8 @@ a {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
   row-gap: clamp(3rem, 8vw, 6rem);
   padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(3rem, 8vw, 6rem);
 }
@@ -170,20 +343,24 @@ a {
 .entry-text {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.35rem, 3.2vw, 2.1rem);
+  font-weight: 400;
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
   line-height: 1.2;
-  letter-spacing: -0.015em;
   text-wrap: pretty;
 }
 .entry a:hover .entry-text,
 .entry a:focus-visible .entry-text {
   text-decoration: underline;
   text-decoration-thickness: 2px;
-  text-decoration-color: var(--rule);
+  text-decoration-color: var(--thread);
   text-underline-offset: 0.18em;
 }
 @media (min-width: 52rem) {
+  .feed,
+  .page {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 1.5rem;
+  }
   .entry:nth-child(3n + 1) {
     grid-column: 1 / span 7;
   }
@@ -203,8 +380,8 @@ a {
 .page {
   padding-block: clamp(1.5rem, 5vw, 3.5rem) clamp(3rem, 8vw, 6rem);
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
 }
 .page > * {
   grid-column: 1 / -1;
@@ -239,18 +416,16 @@ a {
 }
 .page-body .lead {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 400;
   font-size: clamp(1.5rem, 3.6vw, 2.4rem);
   line-height: 1.2;
-  letter-spacing: -0.015em;
 }
 .page-body h1 {
   margin: 0 0 1.5rem;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(2.4rem, 8vw, 5.5rem);
-  line-height: 0.95;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.2;
   text-wrap: balance;
 }
 .back {
@@ -279,7 +454,7 @@ a {
   font-weight: 600;
 }
 .button:hover {
-  background: var(--rule);
+  background: var(--thread);
 }
 
 .group {
@@ -291,19 +466,46 @@ a {
 .group h2 {
   margin: 0 0 1.1rem;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 400;
   font-size: clamp(1.6rem, 4vw, 2.2rem);
   line-height: 1.1;
-  letter-spacing: -0.02em;
+}
+
+.fringe {
+  width: var(--cloth-w);
+  margin-inline: auto;
+  height: 4.2rem;
+  background:
+    repeating-linear-gradient(90deg, var(--paper) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 7px,
+      var(--cloth-shade) 7px 8.5px,
+      transparent 8.5px 13px
+    );
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, rgba(0, 0, 0, 0.55) 75%, transparent);
+  mask-image: linear-gradient(180deg, #000 40%, rgba(0, 0, 0, 0.55) 75%, transparent);
+}
+.hem {
+  width: var(--cloth-w);
+  margin-inline: auto;
+  height: 0.7rem;
+  background: repeating-linear-gradient(90deg, var(--cloth-shade) 0 3px, var(--paper) 3px 5px);
 }
 
 .site-footer {
-  padding-block: 2rem 2.5rem;
-  color: var(--muted);
+  width: var(--cloth-w);
+  margin-inline: auto;
+  padding: 1.5rem 0.25rem 3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  color: var(--ground-ink);
   font-size: 0.9rem;
 }
-.site-footer .stitch {
-  margin-bottom: 1.25rem;
+.site-footer :first-child {
+  margin-right: auto;
+  font-family: var(--font-display);
 }
 
 .visually-hidden {
@@ -319,7 +521,7 @@ a {
 .portfolio-heading {
   margin-block: 2rem 0;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 7vw, 5.5rem);
+  font-size: clamp(1.9rem, 4vw, 3rem);
   line-height: 1.05;
 }
 .work-gallery {
@@ -331,15 +533,29 @@ a {
 .work-gallery img {
   width: 100%;
 }
-@media (max-width: 40rem) {
-  .nav {
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-  }
-}
 
 .profiles {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.cloth > *,
+.roll > *,
+.page > * {
+  min-width: 0;
+}
+.cloth {
+  overflow-wrap: anywhere;
+}
+.site-footer {
+  overflow-wrap: anywhere;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.22;
 }

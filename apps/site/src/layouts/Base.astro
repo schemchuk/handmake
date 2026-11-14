@@ -1,7 +1,6 @@
 ---
 import JoinChannel from '../components/JoinChannel.astro';
 import '../styles/global.css';
-import Stitch from '../components/Stitch.astro';
 import { fontFaceCss, fontStack } from '../lib/fonts';
 import { uiStrings } from '../lib/i18n';
 import { absoluteUrl, pagePath } from '../lib/paths';
@@ -37,7 +36,8 @@ const style = [
   `--paper:${colors.paper}`,
   `--ink:${colors.ink}`,
   `--muted:${colors.muted}`,
-  `--rule:${colors.rule}`,
+  `--ground:${colors.ground}`,
+  `--thread:${colors.thread}`,
   `--font-display:${fontStack(fonts.display)}`,
   `--font-body:${fontStack(fonts.body)}`,
 ].join(';');
@@ -70,13 +70,16 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <meta property="og:site_name" content={tenant.name} />
     <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
-    <meta name="theme-color" content={colors.paper} />
+    <meta name="theme-color" content={colors.ground} />
     <style is:inline set:html={fontFaceCss()}></style>
   </head>
   <body>
     <a class="skip" href="#main">{ui.skip}</a>
-    <div class="wrap">
-      <header class="site-header">
+    <div class="roll-bar">
+      <header class="roll">
+        <span class="roll-skin" aria-hidden="true"></span>
+        <span class="peg peg--l" aria-hidden="true"></span>
+        <span class="peg peg--r" aria-hidden="true"></span>
         <a class="wordmark" href={pagePath(lang, def)}>{tenant.name}</a>
         <nav class="nav" aria-label="Main">
           <a href={pagePath(lang, def, 'shows')} aria-current={current === 'shows' ? 'page' : undefined}>{ui.showsHeading}</a>
@@ -87,26 +90,27 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
               {ui.navCircle}
             </a>
           )}
-          <div class="langs" role="group" aria-label={ui.language}>
-            {
-              [def, ...tenant.languages.filter((code) => code !== def)].filter((code) => alternates[code]).map((code) => {
-                const href = alternates[code]!;
-                return (
-                  <a href={href} hreflang={code} lang={code} aria-current={code === lang ? 'true' : undefined}>
-                    {code.toUpperCase()}
-                  </a>
-                );
-              })
-            }
-          </div>
         </nav>
+        <div class="langs" role="group" aria-label={ui.language}>
+          {
+            [def, ...tenant.languages.filter((code) => code !== def)].filter((code) => alternates[code]).map((code) => {
+              const href = alternates[code]!;
+              return (
+                <a href={href} hreflang={code} lang={code} aria-current={code === lang ? 'true' : undefined}>
+                  {code.toUpperCase()}
+                </a>
+              );
+            })
+          }
+        </div>
       </header>
     </div>
-    <main id="main">
+    <main id="main" class="cloth">
       <slot />
     </main>
-    <footer class="wrap site-footer">
-      <Stitch />
+    <div class="hem" aria-hidden="true"></div>
+    <div class="fringe" aria-hidden="true"></div>
+    <footer class="site-footer">
       <span>{tenant.name}</span>
       {profiles ? (
         <nav class="profiles" aria-label={ui.profiles}>

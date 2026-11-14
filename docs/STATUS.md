@@ -3,14 +3,37 @@
 - **Active agent:** codex.
 - **Current task:** T60a — theme tokens, typefaces, roll, cloth, fringe (F40, spec v12 approved).
 - **Branch:** `feat/T60a-cloth-shell`.
-- **Last commit:** this commit — docs: approve F40, hand T60a to codex.
-- **Next step:** codex implements T60a (docs/03-tasks.md, reference docs/design/site-cloth/index.html);
-  claude-code reviews, opens the PR and merges; then T60b, T60c, T60d in order. Handwriting SVG is in
+- **Last commit:** this commit — feat: cloth shell for the site (T60a).
+- **Next step:** claude-code reviewed T60a (browser check 320/1280 px, site 61/61, core tenant 38/38);
+  PR open, merge after CI; then T60b, T60c, T60d in order. Handwriting SVG is in
   `config/tenants/assets/faden-und-stimmung/wordmark.svg` (for T60c).
   T59 (PR #151, merged 12:42Z) is NOT deployed: last bot deploy 6080ff0c at 12:14Z; Volodymyr deploys.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+
+- **T60a implementation/validation (codex, edit-only):** added ground/cloth/thread theme
+  tokens (removed `rule`), self-hosted Gabriela and Onest for Latin/Cyrillic, and the static
+  roll, woven cloth with selvedges, hem/fringe and ground footer. Updated heading scale,
+  font validation, schema/font regressions and bilingual build-smoke assertions. No T60b-d.
+  Core tests: 332/332 pass (`--maxWorkers=2`, initial validation). Review fixes move
+  all three inline SVG textures into same-origin `public/textures/` assets without
+  changing build-policy.ts, and use a per-family fallback table with a regression test.
+  Previous test failures are resolved per Volodymyr; claude-code's browser review found
+  three blocking 320 px layout issues. Follow-up CSS uses one zero-gap column below
+  52rem for feed/page grids, clamps cloth side padding to 1.4rem minimum, and keeps
+  the mobile wordmark/language row and four-link navigation row compact with 24px
+  minimum tap targets. The home heading uses a 1.7rem minimum and normal word wrapping.
+  Font-metric calculation at 320px (18px root): cloth content 222.8px; “Stimmung”
+  152.5px; roll content 257px; wordmark/languages/gap 228.2px; DE/UK navigation
+  235.6/221.1px; roll including top padding approximately 82.2px. Browser recheck
+  remains required; these are calculations, not measured browser results.
+  CSS formatting and diff whitespace checks pass. Site tests rerun with
+  `pnpm -C apps/site test --maxWorkers=2`: 59/61 pass in this sandbox; the two
+  negative portfolio fixture tests again receive no child-build diagnostics (expected
+  missing-video/malformed-work text). No test or build-policy changes in this follow-up.
+  Startup pull refused the dirty tree; no commits, push or deployment (user requested
+  edit-only). T60b-d remain out of scope.
 
 - **T59 implementation/validation (codex, edit-only):** blank incoming comment text is
   skipped after advancing the watermark; blank pending rows stay `new` without drafting

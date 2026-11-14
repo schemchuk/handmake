@@ -11,8 +11,8 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@fontsource-variable/familjen-grotesk": "^5.3.0",
     "@fontsource-variable/onest": "^5.3.1",
+    "@fontsource/gabriela": "^5.3.0",
     "@handmake/core": "workspace:*",
     "@handmake/stores": "workspace:*",
     "astro": "^6.4.8",

@@ -142,6 +142,14 @@ describe('portfolio fixture build', () => {
         video,
       );
       const result = await build(root, dist);
+      for (const route of ['', 'uk']) {
+        const home = await html(dist, route);
+        expect(home).toContain('class="roll-bar"');
+        expect(home).toContain('class="roll"');
+        expect(home).toContain('id="main" class="cloth"');
+        expect(home).toContain('class="fringe" aria-hidden="true"');
+        expect(home).toContain('name="theme-color" content="#27313c"');
+      }
       for (const file of await readdir(dist, { recursive: true })) {
         if (!file.endsWith('.html')) continue;
         const page = await readFile(path.join(dist, file), 'utf8');

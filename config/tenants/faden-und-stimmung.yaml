@@ -76,13 +76,14 @@ site:
     formAction: https://d2c04417.sibforms.com/serve/MUIFANZ2KTD7DrH6FXtIYdhL5lv5Olz9vYwkGcbbejUlT3kvUGgNAa1blz-Ef3XyHWmKhmMuREDoIiIxKbgOTvs-gUrwVf4OBvzgEqt-xkWV9qe7STw7XoOD6a1U35HlsyDKyfJtw42ynwHCwVgJZ-06SGnjWR8KPPuufg3f7xh8hHSFOUXChnorbAdKAWgqFsU3NtEuLHAubfFHew==
   theme:
     colors:
-      paper: '#F0F0EC'
-      ink: '#1A1B20'
-      muted: '#6F7077'
-      rule: '#B3362B'
+      ground: '#27313c'
+      paper: '#e3ddcd'
+      ink: '#283442'
+      muted: '#5c6470'
+      thread: '#b3362b'
     fonts:
-      display: Familjen Grotesk
-      body: Familjen Grotesk
+      display: Gabriela
+      body: Onest
   # The /kreis/ page; "when" comes from meetingSchedule.
   circle:
     # Public Telegram channel (confirmed by Volodymyr 2026-11-02).

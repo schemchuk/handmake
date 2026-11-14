@@ -164,12 +164,13 @@ describe('parseTenantConfig', () => {
       expect(site?.baseUrl).toBe('https://fadenundstimmung.de');
       expect(site?.defaultLanguage).toBe('de');
       expect(site?.theme.colors).toEqual({
-        paper: '#F0F0EC',
-        ink: '#1A1B20',
-        muted: '#6F7077',
-        rule: '#B3362B',
+        paper: '#e3ddcd',
+        ground: '#27313c',
+        ink: '#283442',
+        muted: '#5c6470',
+        thread: '#b3362b',
       });
-      expect(site?.theme.fonts).toEqual({ display: 'Familjen Grotesk', body: 'Familjen Grotesk' });
+      expect(site?.theme.fonts).toEqual({ display: 'Gabriela', body: 'Onest' });
       expect(Object.keys(site?.circle?.texts ?? {}).sort()).toEqual(['de', 'uk']);
     });
 
@@ -185,7 +186,7 @@ describe('parseTenantConfig', () => {
           '  baseUrl: https://woll.example',
           '  defaultLanguage: de',
           '  theme:',
-          '    colors: { paper: "#FFFFFF", ink: "#000000", muted: "#777777", rule: "#123456" }',
+          '    colors: { ground: "#27313c", paper: "#FFFFFF", ink: "#000000", muted: "#777777", thread: "#123456" }',
           '    fonts: { display: Inter, body: Inter }',
           'featureFlags:',
         ].join('\n'),
@@ -214,16 +215,16 @@ describe('parseTenantConfig', () => {
     });
 
     it('rejects a colour that is not #RRGGBB', () => {
-      const bad = realConfig().replace("paper: '#F0F0EC'", 'paper: white');
+      const bad = realConfig().replace("paper: '#e3ddcd'", 'paper: white');
       expect(() => parseTenantConfig(bad)).toThrowError(/colour/);
     });
 
-    it('rejects an unknown theme key', () => {
+    it('rejects the removed rule theme key', () => {
       const bad = realConfig().replace(
-        "      rule: '#B3362B'",
-        "      rule: '#B3362B'\n      accent: '#000000'",
+        "      thread: '#b3362b'",
+        "      thread: '#b3362b'\n      rule: '#000000'",
       );
-      expect(() => parseTenantConfig(bad)).toThrowError(/accent/);
+      expect(() => parseTenantConfig(bad)).toThrowError(/rule/);
     });
 
     it('rejects circle texts that miss a tenant language', () => {
