@@ -100,7 +100,7 @@ describe('runDryRun', () => {
     expect(result.ops[0]).toMatchObject({
       caption:
         'Тестовий допис (T09).\n\nОригінальна робота\n\n' +
-        'Більше на сайті: https://fadenundstimmung.de/uk/posts/01jdryrnt000000000000000bc/',
+        'Більше на сайті: https://fadenundstimmung.de/uk/posts/01jdryrnt000000000000000bc/?s=tg',
     });
     expect(result.photoCount).toBe(2);
     expect(result.postDir).toBe(
