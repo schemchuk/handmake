@@ -1,0 +1,78 @@
+name: Dependabot auto-merge
+
+# Merges Dependabot npm PRs with minor/patch updates once CI has passed on the
+# PR's exact head commit, and tells the operator in Telegram. Major updates are
+# left open for review (they can change behaviour, e.g. astro 6 -> 7).
+# GitHub Actions updates are never merged here: they change .github/workflows/,
+# which is a sensitive area (AGENTS.md) and GITHUB_TOKEN cannot merge them anyway.
+# No PR code is checked out or executed: only PR metadata is read.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-automerge-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/npm_and_yarn/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Decide and merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          OPERATOR_CHAT_ID: ${{ secrets.OPERATOR_CHAT_ID }}
+        run: |
+          set -euo pipefail
+          notify() {
+            curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${OPERATOR_CHAT_ID}" \
+              --data-urlencode "text=$1" > /dev/null || echo "Telegram notification failed" >&2
+          }
+          pr=$(gh api "repos/${GH_REPO}/pulls?state=open&head=${GH_REPO%%/*}:${HEAD_BRANCH}" --jq '.[0] // empty')
+          if [ -z "$pr" ]; then echo "No open PR for this branch"; exit 0; fi
+          number=$(jq -r .number <<<"$pr")
+          author=$(jq -r .user.login <<<"$pr")
+          head_repo=$(jq -r .head.repo.full_name <<<"$pr")
+          pr_sha=$(jq -r .head.sha <<<"$pr")
+          title=$(jq -r .title <<<"$pr")
+          url=$(jq -r .html_url <<<"$pr")
+          if [ "$author" != 'dependabot[bot]' ] || [ "$head_repo" != "$GH_REPO" ]; then
+            echo "Not a Dependabot PR from this repository"; exit 0
+          fi
+          # CI must have passed on the commit we merge, not on an older push.
+          if [ "$pr_sha" != "$HEAD_SHA" ]; then echo "PR head moved since this CI run"; exit 0; fi
+
+          kind=manual
+          if [[ "$HEAD_BRANCH" == dependabot/npm_and_yarn/minor-and-patch-* ]]; then
+            kind=auto # the group only ever contains minor and patch updates (dependabot.yml)
+          elif [[ "$title" =~ from\ v?([0-9]+)\.([0-9]+)[^\ ]*\ to\ v?([0-9]+)\.([0-9]+) ]]; then
+            from_major=${BASH_REMATCH[1]} from_minor=${BASH_REMATCH[2]}
+            to_major=${BASH_REMATCH[3]} to_minor=${BASH_REMATCH[4]}
+            if [ "$from_major" = "$to_major" ] && { [ "$from_major" != 0 ] || [ "$from_minor" = "$to_minor" ]; }; then
+              kind=auto
+            fi
+          fi
+
+          if [ "$kind" = manual ]; then
+            echo "Major or unparsed update: left for review"
+            notify "Dependabot: потрібен ваш перегляд (мажорне оновлення, CI зелений): ${title} ${url}"
+            exit 0
+          fi
+          gh pr merge "$number" --squash --delete-branch --match-head-commit "$HEAD_SHA"
+          notify "Dependabot: злито автоматично після зеленого CI: ${title} ${url}"
