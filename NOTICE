@@ -1,0 +1,23 @@
+Scope of the MIT License
+
+The MIT License in LICENSE covers the source code of this repository only
+(apps/*/src, packages/*, scripts, configuration and tests).
+
+It does NOT cover the creative content of "Faden und Stimmung". All rights to
+that content are reserved by the content author named in the Impressum at
+https://fadenundstimmung.de/impressum/. This includes in particular:
+
+- content/                      photos, videos and texts of works, posts and shows,
+                                including AI-assisted images derived from them
+- apps/site/public/geschenk/    embroidery pattern (PDF)
+- apps/site/public/praesentation/, apps/site/public/technik/
+- docs/assets/                  demo recordings
+- docs/design/                  wordmark and design material
+
+The legal texts in docs/legal/ are based on third-party generators and are
+not licensed for reuse under MIT; see the source notes in those texts.
+
+No part of this content may be copied, published or used commercially without
+the author's prior written permission.
+
+Third-party components (fonts, npm packages) keep their own licenses.
