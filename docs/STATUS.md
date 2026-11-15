@@ -1,5 +1,15 @@
 # STATUS
 
+- **Active agent:** codex (T64b).
+- **Current task:** T64b — `?s=` source tags in Telegram/Threads site links (`docs/03-tasks.md` T64b).
+- **Branch:** `t64b-source-tags`.
+- **Last commit:** this commit — docs: record T64a deploy, hand T64b to codex.
+- **Next step:** codex implements T64b only (not T64c), runs only touched tests with
+  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64c.
+  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Blocked on:** no implementation blocker; browser layout verification remains for review.
+- **Open questions for Volodymyr:** none.
+
 - **T64a live 2026-11-15 15:30 EET:** migration 0023 applied on prod D1 (Volodymyr's OK); PR #160
   merged; Site run 43719304487 uploaded the Functions bundle and `_routes.json` (deployment
   `c86dfa61`). Live check: `/?s=qr` and `/works/` with a t.me referrer were counted as `qr`/`tg`,
@@ -10,16 +20,6 @@
   `public/_routes.json` excludes static assets from Functions invocations. Core 38/38, site
   54/54 (`site-visits`, `legal`), site typecheck pass. Needs Volodymyr: OK for the legal text and
   workflow change, then migration 0023 on prod D1 before the site deploy.
-
-- **Active agent:** codex (T64b).
-- **Current task:** T64b — `?s=` source tags in Telegram/Threads site links (`docs/03-tasks.md` T64b).
-- **Branch:** `t64b-source-tags`.
-- **Last commit:** this commit — docs: record T64a deploy, hand T64b to codex.
-- **Next step:** codex implements T64b only (not T64c), runs only touched tests with
-  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64c.
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-- **Blocked on:** no implementation blocker; browser layout verification remains for review.
-- **Open questions for Volodymyr:** none.
 
 - **T64a validation (codex, 2026-11-15):**
   `pnpm --config.verifyDepsBeforeRun=false -C packages/core exec vitest run test/site-visits.test.ts --maxWorkers=2`
