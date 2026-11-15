@@ -18,7 +18,7 @@
     "@handmake/channels": "workspace:*",
     "@handmake/core": "workspace:*",
     "@handmake/stores": "workspace:*",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {

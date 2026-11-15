@@ -5,3 +5,14 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+
+  # npm dependencies: one grouped PR per week for minor/patch updates; security
+  # updates arrive separately as soon as an advisory is published.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ['minor', 'patch']
