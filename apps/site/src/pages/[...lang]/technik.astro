@@ -25,7 +25,7 @@ const labels = lang === 'uk'
 const alternates = Object.fromEntries(tenant.languages.map((code) => [code, pagePath(code, site.defaultLanguage, 'technik')]));
 const repoUrl = config.repoUrl.replace(/\/$/, '');
 ---
-<Base lang={lang} title={texts.title} description={texts.intro} alternates={alternates}>
+<Base lang={lang} title={texts.title} description={texts.intro} alternates={alternates} image="/technik/og.jpg">
   <div class="wrap page">
     <div class="page-body making-of">
       <h1>{texts.title}</h1>

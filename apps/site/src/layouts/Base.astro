@@ -15,9 +15,11 @@ interface Props {
   alternates: Record<string, string>;
   /** Which nav entry is current. */
   current?: 'shows' | 'home' | 'circle' | 'works' | 'collections';
+  /** Site-relative path of the link-preview image (1200×627), e.g. '/technik/og.jpg'. */
+  image?: string;
 }
 
-const { lang, title, description, alternates, current } = Astro.props;
+const { lang, title, description, alternates, current, image } = Astro.props;
 const data = await loadSiteData();
 const { tenant, site } = data;
 const ui = uiStrings(lang);
@@ -71,6 +73,10 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <meta property="og:site_name" content={tenant.name} />
     <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    {self && <meta property="og:url" content={absoluteUrl(site.baseUrl, self)} />}
+    {image && <meta property="og:image" content={absoluteUrl(site.baseUrl, image)} />}
+    {image && <meta name="twitter:card" content="summary_large_image" />}
     <meta name="theme-color" content={colors.ground} />
     <style is:inline set:html={fontFaceCss()}></style>
   </head>
