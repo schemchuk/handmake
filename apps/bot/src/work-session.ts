@@ -22,7 +22,7 @@ type Menu = { kind: Work['kind']; slugs: string[]; version: number; creating?: b
 export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOptions) {
   const { texts, drafts } = options;
   const settings = options.work;
-  const video = createWorkVideo(drafts);
+  const video = createWorkVideo(drafts, settings?.logError);
   const replyPreview = async (ctx: AppContext, stored: StoredDraft) => {
     const preview = await buildTenantPreview(
       stored.draft,

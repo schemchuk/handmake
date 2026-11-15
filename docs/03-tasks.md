@@ -2658,7 +2658,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   the page or link. Site and core tests only, `--maxWorkers=2`.
 
 ### T63 — Robust work-video intake from Telegram Desktop (`bot`)
-- Status: open.
+- Status: implemented; awaiting claude-code review.
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Context: live run 2026-11-15. A 49 s, 7.4 MB MP4 sent from Telegram Desktop as a video (not a file)
   was rejected with „Файл має бути до 20 МБ, відео — до 60 секунд.“; the same flow from the phone

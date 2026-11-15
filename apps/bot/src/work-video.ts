@@ -21,6 +21,7 @@ export function workVideoKeyboard(stored: StoredDraft) {
       [button(video ? 'Замінити відео' : 'Додати відео', 'add')],
       ...(video ? [[button('Видалити відео', 'remove')]] : [[button('Пропустити', 'skip')]]),
     ];
+  if (!video) return [[button('Скасувати', 'remove')]];
   return [
     ...(['none', 'author', 'operator', 'both'] as const).map((people, i) => [
       button(
@@ -34,7 +35,14 @@ export function workVideoKeyboard(stored: StoredDraft) {
 }
 
 /** Versioned edits are private draft metadata, never media bytes or paid AI input. */
-export function createWorkVideo(drafts: D1DraftStore) {
+export function createWorkVideo(
+  drafts: D1DraftStore,
+  logError: (operation: string, error: unknown, tenantId: string) => void = (
+    operation,
+    error,
+    tenantId,
+  ) => console.error(operation, { tenantId, error }),
+) {
   const save = (stored: StoredDraft, extras: Draft['extras']) =>
     drafts.updateWork(
       {
@@ -94,20 +102,62 @@ export function createWorkVideo(drafts: D1DraftStore) {
       )
         return false;
       const video = ctx.msg?.video;
+      let size = video?.file_size;
+      const reject = async (message: string, paths: string[]) => {
+        // Explicit metadata only: never log Telegram objects, file ids or API errors.
+        logError(
+          'work video rejected',
+          new Error(
+            JSON.stringify({
+              mimeType: video?.mime_type ?? ctx.msg?.document?.mime_type ?? null,
+              size: size ?? null,
+              duration: video?.duration ?? null,
+              paths,
+            }),
+          ),
+          ctx.tenantId,
+        );
+        await ctx.reply(message);
+      };
       if (ctx.msg?.document)
-        await ctx.reply('Надішліть MP4/MOV як відео, щоб перевірити тривалість до завантаження.');
+        await reject('Надішліть MP4/MOV як відео, щоб перевірити тривалість до завантаження.', [
+          'document',
+        ]);
       else if (!video || !['video/mp4', 'video/quicktime'].includes(video.mime_type ?? ''))
-        await ctx.reply('Надішліть відео MP4/MOV.');
+        await reject('Надішліть відео MP4/MOV.', [video ? 'mime_type' : 'video']);
       else {
+        if (size === undefined) {
+          try {
+            size = (await ctx.api.getFile(video.file_id)).file_size;
+          } catch {
+            // API exceptions may contain file ids or tokens; log only our metadata below.
+          }
+        }
         const parsed = workDraftVideoSchema.safeParse({
           fileId: video.file_id,
-          size: video.file_size,
+          size,
           duration: video.duration,
           confirmed: false,
         });
-        if (!parsed.success) await ctx.reply('Файл має бути до 20 МБ, відео — до 60 секунд.');
-        else if (!(await save(stored, { ...stored.draft.extras, workVideo: parsed.data })))
-          await ctx.reply(stale);
+        if (!parsed.success) {
+          const paths = parsed.error.issues.map((issue) => issue.path.join('.'));
+          if (video.duration === undefined || video.duration === 0)
+            await reject(
+              'Telegram не передав тривалість відео. Надішліть його ще раз або з телефона.',
+              paths,
+            );
+          else if (size === undefined)
+            await reject(
+              'Telegram не передав розмір відео. Надішліть його ще раз або з телефона.',
+              paths,
+            );
+          else
+            await reject(
+              `Файл має бути до 20 МБ, відео — до 60 секунд. Отримано: ${(size / 1_000_000).toFixed(1)} МБ, ${video.duration} с.`,
+              paths,
+            );
+        } else if (!(await save(stored, { ...stored.draft.extras, workVideo: parsed.data })))
+          await reject(stale, ['version']);
         else return true;
       }
       return true;

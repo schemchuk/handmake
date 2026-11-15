@@ -26,9 +26,14 @@ function fixture() {
     reply: vi.fn(),
     replyWithVideo: vi.fn(),
   } as unknown as AppContext;
-  const handler = createWorkVideo(drafts);
+  const logError = vi.fn();
+  const getFile = vi.fn(async () => ({ file_size: undefined as number | undefined }));
+  Object.assign(ctx, { api: { getFile } });
+  const handler = createWorkVideo(drafts, logError);
   return {
     ctx,
+    logError,
+    getFile,
     update,
     read: () => stored,
     handler,
@@ -86,4 +91,83 @@ it('rejects documents, foreign chats and lost CAS updates', async () => {
   f.ctx.chat!.type = 'private';
   f.update.mockResolvedValueOnce(false);
   expect(await f.action('skip')).toBe(false);
+});
+
+it('resolves missing size through getFile without downloading media', async () => {
+  const f = fixture();
+  await f.action('add');
+  delete f.ctx.msg!.video!.file_size;
+  f.getFile.mockResolvedValueOnce({ file_size: 7_400_000 });
+  await f.intake();
+  expect(f.getFile).toHaveBeenCalledWith('video');
+  expect(f.read().draft.extras['workVideo']).toMatchObject({ size: 7_400_000 });
+  expect(f.logError).not.toHaveBeenCalled();
+});
+it.each([undefined, 0])('explains missing duration %s', async (duration) => {
+  const f = fixture();
+  await f.action('add');
+  Object.assign(f.ctx.msg!.video!, { duration });
+  await f.intake();
+  expect(f.ctx.reply).toHaveBeenLastCalledWith(
+    'Telegram не передав тривалість відео. Надішліть його ще раз або з телефона.',
+  );
+  expect(f.read().draft.extras['workVideo']).toBeUndefined();
+  expect(f.logError).toHaveBeenCalledWith('work video rejected', expect.any(Error), 'tenant');
+  expect(JSON.parse(f.logError.mock.calls[0]![1].message)).toEqual({
+    mimeType: 'video/mp4',
+    size: 20_000_000,
+    duration: duration ?? null,
+    paths: ['duration'],
+  });
+});
+it.each([false, true])('explains unavailable size when getFile fails: %s', async (fails) => {
+  const f = fixture();
+  await f.action('add');
+  delete f.ctx.msg!.video!.file_size;
+  if (fails) f.getFile.mockRejectedValueOnce(new Error('private-file-id'));
+  await f.intake();
+  expect(f.ctx.reply).toHaveBeenLastCalledWith(expect.stringContaining('не передав розмір'));
+  expect(f.read().draft.extras['workVideo']).toBeUndefined();
+  const metadata = JSON.parse(f.logError.mock.calls[0]![1].message);
+  expect(metadata.paths).toEqual(['size']);
+  expect(metadata.size).toBeNull();
+  expect(JSON.stringify(f.logError.mock.calls)).not.toContain('private-file-id');
+});
+it('names actual over-limit values and logs only validation metadata', async () => {
+  const f = fixture();
+  await f.action('add');
+  Object.assign(f.ctx.msg!.video!, {
+    file_id: 'private-file-id',
+    file_size: 24_000_000,
+    duration: 72,
+  });
+  await f.intake();
+  expect(f.ctx.reply).toHaveBeenLastCalledWith(
+    'Файл має бути до 20 МБ, відео — до 60 секунд. Отримано: 24.0 МБ, 72 с.',
+  );
+  expect(f.getFile).not.toHaveBeenCalled();
+  expect(JSON.parse(f.logError.mock.calls[0]![1].message)).toEqual({
+    mimeType: 'video/mp4',
+    size: 24_000_000,
+    duration: 72,
+    paths: ['size', 'duration'],
+  });
+});
+it('offers only cancellation until a video is stored', async () => {
+  const f = fixture();
+  await f.action('add');
+  expect(workVideoKeyboard(f.read())).toEqual([
+    [
+      {
+        text: 'Скасувати',
+        callback_data: 'work:work:video.remove:2',
+      },
+    ],
+  ]);
+  await f.intake();
+  expect(
+    workVideoKeyboard(f.read())
+      .flat()
+      .map((button) => button.text),
+  ).toContain('Ніхто');
 });

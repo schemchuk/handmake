@@ -1,14 +1,23 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T63 (work-video intake from Telegram Desktop, see 03-tasks.md).
+- **Active agent:** claude-code.
+- **Current task:** T63 in review (PR open).
 - **Branch:** `main`.
 - **Last commit:** this commit — docs: record bot redeploy after T62 config break.
-- **Next step:** codex implements T63 exactly as written in docs/03-tasks.md (edit-only; claude-code
-  reviews, commits, opens the PR). Live run 2026-11-15: `/work` with own video published to TG
-  (79–81), IG, FB, Threads and the site; `/show` skipped by Volodymyr (no duplicate posts).
+- **Next step:** claude-code reviews T63 edits, commits and opens the task PR. After merge,
+  redeploy the bot (no migration). Live run 2026-11-15 before this fix: `/work` with own video
+  published to TG (79–81), IG, FB, Threads and the site; `/show` skipped by Volodymyr.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T63 validation (codex, 2026-11-15):**
+  `pnpm -C apps/bot exec vitest run test/work-video.test.ts test/preview.test.ts --maxWorkers=2`
+  passed: 2 files, 57/57 tests. Only touched bot test files were run; no typecheck, build or
+  broader suite. Tests cover getFile size fallback, unavailable size/API failure, missing/zero
+  duration, actual over-limit values, rejection metadata, cancellation-only intake keyboard and
+  no confirmation line before video storage. Rejections use the existing error logger with
+  metadata only; no media bytes are downloaded. No Git commands or deployment. Edits remain
+  uncommitted for reviewer handoff; Telegram Desktop live verification remains after redeploy.
 
 - **Bot redeploy 2026-11-15 10:46 EET (Volodymyr, clean `main`):** Worker
   `0a530c3b-edae-4b89-a040-185eb8da1c02`. The previous Worker `7806cb04` (deployed 2026-11-14
