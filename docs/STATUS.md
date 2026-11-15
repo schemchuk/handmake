@@ -1,14 +1,16 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T63 in review (PR open).
+- **Active agent:** none.
+- **Current task:** none (T63 done: PR #158, bot deployed).
 - **Branch:** `main`.
 - **Last commit:** this commit — docs: record bot redeploy after T62 config break.
-- **Next step:** claude-code reviews T63 edits, commits and opens the task PR. After merge,
-  redeploy the bot (no migration). Live run 2026-11-15 before this fix: `/work` with own video
-  published to TG (79–81), IG, FB, Threads and the site; `/show` skipped by Volodymyr.
+- **Next step:** live check of T63: send a work video from Telegram Desktop with logs on.
+  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T63:** PR #158 squash-merged 2026-11-15 by claude-code (CI green). Bot deployed by Volodymyr
+  2026-11-15 13:45 EET from clean `main` `caf0476`, Worker `a554c3dd-31fc-4dd0-9929-9f8a571c2bef`.
 
 - **T63 validation (codex, 2026-11-15):**
   `pnpm -C apps/bot exec vitest run test/work-video.test.ts test/preview.test.ts --maxWorkers=2`
