@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** none.
-- **Current task:** none (legal audit fixes: PR #163 merged, site deployed).
+- **Current task:** none (audit fixes: legal PR #163, security PR #165 merged, site deployed).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record legal audit fixes.
+- **Last commit:** this commit — docs: record security hardening.
 - **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
@@ -11,9 +11,13 @@
 
 - **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
   (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT
-  covers code only) merged with Volodymyr's OK; site redeployed (run 43736256054). Open from the
-  audit: astro 7 / sharp 0.35.5 upgrades, `main` branch protection, Dependabot security updates,
-  site security headers (`_headers`).
+  covers code only) merged with Volodymyr's OK; site redeployed (run 43736256054).
+- **Security hardening 2026-11-15:** PR #165 merged with Volodymyr's OK (astro 7.4.12, sharp
+  0.35.5, pnpm overrides for miniflare/typescript-estree pins, `_headers` with HSTS/CSP, CI
+  `pnpm audit --audit-level high`, weekly npm Dependabot). Repo settings: Dependabot alerts and
+  security updates on, ruleset `protect-main` (no force-push/deletion). Site redeployed (run
+  43740186143), live headers verified. Node >=22.23.4 required (astro 7). Remaining risk:
+  `GITHUB_DISPATCH_TOKEN` has Contents write; a workflow_dispatch-only token would remove it.
 
 - **T64c:** PR #162 squash-merged 2026-11-15; migration 0024 applied on prod D1 and bot deployed
   by Volodymyr 15:56 EET from `main` `b113ffe`, Worker `713dc7c5-957b-4ec1-90d3-41f509260269`.
