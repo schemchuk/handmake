@@ -29,4 +29,5 @@ channel keys and outcomes, surviving draft deletion. No text, photos, names,
 chat IDs or user IDs are copied. Existing history is not backfilled: old edits
 and ready times cannot be reconstructed reliably. Workflow averages include only
 drafts created and observed ready after migration; the report gives their sample size.
-No audience tracking, external analytics or participant records are added.
+No audience tracking, external analytics or participant records are added. The site block
+(T64c) reads only the daily aggregate `site_visits` counters (no visitor identifiers).

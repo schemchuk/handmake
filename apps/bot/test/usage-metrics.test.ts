@@ -132,7 +132,17 @@ it('allows private operator reports only, scopes the query and sanitizes failure
     editsPerPost: 1,
     deliverySuccessRate: 0.5,
   });
+  const siteStats = vi.fn().mockResolvedValue({
+    days: 28,
+    total: 4,
+    previous: 2,
+    internal: 0,
+    sources: [{ label: 'tg', views: 4 }],
+    pages: [],
+    countries: [],
+  });
   const bot = createBot({
+    siteStats,
     token: 'TEST_TOKEN',
     drafts: createD1DraftStore(await makeD1()),
     resolveTenant: (id) => (id === 11 ? 'one' : undefined),
@@ -152,6 +162,8 @@ it('allows private operator reports only, scopes the query and sanitizes failure
   expect(usage).not.toHaveBeenCalled();
   await bot.handleUpdate(textUpdate(11, '/stats'));
   expect(usage).toHaveBeenCalledExactlyOnceWith('one', expect.any(Date));
+  expect(siteStats).toHaveBeenCalledExactlyOnceWith('one', expect.any(Date));
+  expect(sentTexts(calls).at(-1)).toContain('Сайт (28 днів)');
   expect(sentTexts(calls).at(-1)).toContain('Успішні доставки: 50.0%');
   usage.mockRejectedValueOnce(new Error('private backend detail'));
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});

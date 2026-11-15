@@ -1,7 +1,7 @@
 import { createDraft } from '@handmake/core';
 import { describe, expect, it } from 'vitest';
 
-import { createApp, secretTokenHeader, secretsEqual } from '../src/composition';
+import { createApp, cleanupCron, secretTokenHeader, secretsEqual } from '../src/composition';
 import { createD1DraftStore } from '../src/draft-store';
 import type { Env } from '../src/env';
 import { createProcessedUpdateTracker } from '../src/processed-updates';
@@ -319,3 +319,30 @@ it.each([false, true])(
     }
   },
 );
+
+it('wires site reports and retention to the daily cleanup cron', async () => {
+  const db = await makeD1();
+  const app = createApp(makeEnv({ DB: db }), botTexts);
+  const calls = mockTelegramApi(app.bot);
+  await db
+    .prepare(
+      "INSERT INTO site_visits VALUES ('faden-und-stimmung', '2026-11-15', '/', 'tg', 'DE', 9)",
+    )
+    .run();
+  await db
+    .prepare("INSERT INTO site_visits VALUES ('other', '2020-01-01', '/', 'tg', 'DE', 1)")
+    .run();
+  await app.scheduled({
+    cron: cleanupCron,
+    scheduledTime: Date.parse('2026-11-16T03:29:00Z'),
+  } as ScheduledEvent);
+  expect(sentTexts(calls)).toEqual([expect.stringContaining('Перегляди: 9')]);
+  expect(
+    await db.prepare("SELECT * FROM site_visits WHERE tenant_id = 'other'").first(),
+  ).toBeNull();
+  await app.scheduled({
+    cron: cleanupCron,
+    scheduledTime: Date.parse('2026-11-16T03:29:00Z'),
+  } as ScheduledEvent);
+  expect(sentTexts(calls)).toHaveLength(1);
+});

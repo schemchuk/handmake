@@ -1,14 +1,44 @@
 # STATUS
 
-- **Active agent:** claude-code (T64b review).
-- **Current task:** T64b — `?s=` source tags in Telegram/Threads site links (`docs/03-tasks.md` T64b).
-- **Branch:** `t64b-source-tags`.
-- **Last commit:** this commit — docs: record T64a deploy, hand T64b to codex.
-- **Next step:** codex implements T64b only (not T64c), runs only touched tests with
-  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64c.
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Active agent:** claude-code (T64c review).
+- **Current task:** T64c — site block in `/stats`, Monday weekly report, 400-day retention (`docs/03-tasks.md` T64c).
+- **Branch:** `t64c-site-stats`.
+- **Last commit:** this commit — feat(bot): site block in /stats and weekly report (T64c).
+- **Next step:** merge T64c after CI, apply migration 0024 on prod D1, then bot redeploy
+  (Volodymyr: `cd apps/bot && pnpm exec wrangler deploy`). 2026-11-18 20:00 Berlin: first live
+  contest closing without Facebook (logs on).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T64c implementation / validation (codex, 2026-11-15, uncommitted):** added the tenant-scoped
+  site block to private `/stats`, Monday seven-day reports from the daily cleanup cron, and
+  deletion of site counters strictly older than 400 UTC days. Reports use completed UTC days,
+  compare the previous equal window, exclude internal traffic from source percentages, and split
+  long source lists into Telegram-sized messages. Added migration `0024_site_stats_reports.sql`
+  (not applied): one ISO-week claim per tenant, atomically acquired before delivery. This prevents
+  concurrent/retried sends; ambiguous or partial delivery is not retried until the next week.
+  Delivery failures are isolated by chat/tenant and logs contain no request or recipient data.
+- **T64c checks:** `pnpm --config.verifyDepsBeforeRun=false -C apps/bot run typecheck` passed.
+  Attempted only touched test files with
+  `pnpm --config.verifyDepsBeforeRun=false -C apps/bot exec vitest run test/site-stats.test.ts test/usage-metrics.test.ts test/composition.test.ts --maxWorkers=2`.
+  Interrupted after all five usage-metrics tests timed out during local D1 initialization;
+  this run did not complete. Direct Miniflare initialization confirmed sandbox
+  `listen EPERM: operation not permitted 127.0.0.1`. D1-backed aggregation, Monday/concurrent
+  deduplication, ISO-week rollover, retention, tenant isolation and composition tests remain
+  unverified and need rerunning where localhost binding is allowed. Pure formatting and message
+  splitting passed 2/2 with
+  `pnpm --config.verifyDepsBeforeRun=false -C apps/bot exec vitest run test/site-stats.test.ts -t 'preserves all source lines|formats totals' --maxWorkers=2`.
+  Changed TypeScript files were formatted. No Git commands, deployment or remote migrations ran;
+  all edits remain uncommitted for claude-code review. Migration 0024 must be applied before deploy.
+
+- **T64b:** PR #161 squash-merged 2026-11-15 (CI green; publisher tests updated for `?s=tg`). Bot
+  deployed by Volodymyr 2026-11-15 15:45 EET from clean `main` `82df24e`, Worker
+  `cb1f9325-7636-44e4-8ec6-1ddbb7b10015` (the claude-code deploy was blocked by the classifier).
+
+- **T64c review (claude-code, 2026-11-15):** site stats cron wrapped in try/catch so it can never
+  block the daily cleanup; weekly report sent with `disable_notification` (03:29 UTC); sources
+  shown by name (Telegram, Threads, …, „напряму / без джерела“). Bot `site-stats`, `composition`,
+  `usage-metrics` 29/29 locally (D1 tests ran outside codex's sandbox); bot typecheck pass.
 
 - **T64b review (claude-code, 2026-11-15):** Facebook links were missed in the task text; added
   `fb` in `facebook/render.ts` and the bot preview (`preview.ts`). Channels facebook-render 29/29,
