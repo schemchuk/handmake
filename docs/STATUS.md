@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code (T64c review).
-- **Current task:** T64c — site block in `/stats`, Monday weekly report, 400-day retention (`docs/03-tasks.md` T64c).
-- **Branch:** `t64c-site-stats`.
-- **Last commit:** this commit — feat(bot): site block in /stats and weekly report (T64c).
-- **Next step:** merge T64c after CI, apply migration 0024 on prod D1, then bot redeploy
-  (Volodymyr: `cd apps/bot && pnpm exec wrangler deploy`). 2026-11-18 20:00 Berlin: first live
-  contest closing without Facebook (logs on).
+- **Active agent:** none.
+- **Current task:** none (T64 done: PRs #160–#162, site and bot deployed).
+- **Branch:** `main`.
+- **Last commit:** this commit — docs: record T64c deploy.
+- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+  Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T64c:** PR #162 squash-merged 2026-11-15; migration 0024 applied on prod D1 and bot deployed
+  by Volodymyr 15:56 EET from `main` `b113ffe`, Worker `713dc7c5-957b-4ec1-90d3-41f509260269`.
+  First weekly report Monday 2026-11-16 03:29 UTC (near empty).
 
 - **T64c implementation / validation (codex, 2026-11-15, uncommitted):** added the tenant-scoped
   site block to private `/stats`, Monday seven-day reports from the daily cleanup cron, and

@@ -2683,7 +2683,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Deploy: bot redeploy after merge (claude-code/Volodymyr), no migration.
 
 ### T64 — Cookieless site visit counts and traffic sources (`site`, `bot`, F25)
-- Status: open (planned 2026-11-15).
+- Status: done (PRs #160–#162, deployed 2026-11-15).
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Context: Volodymyr wants visitor counts and where visitors come from, without personal data. The
   Cloudflare free plan dashboard shows requests, approximate unique visitors and countries, but no
