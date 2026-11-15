@@ -1,3 +1,4 @@
+import { formatSiteStats, reportMessages, type SiteSummary } from './site-stats';
 import { formatUsage, type UsageSummary } from './usage-metrics';
 import { registerAuthorEntries, type AuthorEntriesStore } from './author-entries';
 import {
@@ -33,6 +34,7 @@ import type { ShowSessionOptions } from './show-session';
 
 export interface CreateBotOptions {
   token: string;
+  siteStats?: (tenant: string, now: Date) => Promise<SiteSummary>;
   usage?: (tenant: string, now: Date) => Promise<UsageSummary>;
   entries?: EntrySessionStore;
   authorEntries?: AuthorEntriesStore;
@@ -101,11 +103,15 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   bot.command('stats', async (ctx) => {
     if (ctx.chat?.type !== 'private') return;
     try {
-      await ctx.reply(
+      const now = new Date();
+      const blocks = [
         options.usage
-          ? formatUsage(await options.usage(ctx.tenantId, new Date()))
+          ? formatUsage(await options.usage(ctx.tenantId, now))
           : 'Статистика поки недоступна.',
-      );
+      ];
+      if (options.siteStats)
+        blocks.push(formatSiteStats(await options.siteStats(ctx.tenantId, now)));
+      for (const message of reportMessages(blocks.join('\n\n'))) await ctx.reply(message);
     } catch {
       console.error('Usage report failed');
       await ctx.reply('Не вдалося отримати статистику. Спробуй /stats пізніше.');

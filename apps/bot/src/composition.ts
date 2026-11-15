@@ -1,3 +1,4 @@
+import { runSiteStatsCron, siteSummary } from './site-stats';
 import { usageSummary } from './usage-metrics';
 import { runPollClosingCron } from './poll-closing-runtime';
 import { createEntrySessionStore } from './entry-session';
@@ -192,6 +193,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       const shows = createShowRuntime(env);
       bot = createBot({
         token: env.TELEGRAM_BOT_TOKEN,
+        siteStats: (tenant, now) => siteSummary(env.DB, tenant, now),
         usage: (tenant, now) => usageSummary(env.DB, tenant, now),
         pollResults: {
           logError,
@@ -333,6 +335,17 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // cron (as in tests) counts as the cleanup cron and never fetches
       // tenant config.
       if (event.cron === undefined || event.cron === cleanupCron) {
+        // Site stats must never block the cleanup below.
+        try {
+          await runSiteStatsCron(
+            env.DB,
+            new Date(event.scheduledTime),
+            parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+            (chat, text) => this.bot.api.sendMessage(chat, text, { disable_notification: true }),
+          );
+        } catch {
+          console.error('Site stats cron failed');
+        }
         const retentionMs = draftRetentionDays * 24 * 60 * 60 * 1000;
         const updates = createProcessedUpdateTracker(env.DB);
         const updateRetentionMs = processedUpdateRetentionDays * 24 * 60 * 60 * 1000;
