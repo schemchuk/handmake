@@ -609,9 +609,9 @@
 - **Blocked on:** nothing for T48: H15 done 2026-11-11 (Brevo account, domain auth, sender, list, lead-magnet PDF). T26c unblocked: Threads secrets are in GitHub Secrets since 2026-11-09.
 - **Open questions for Volodymyr:** author should reread the changed analytics paragraph in the Datenschutzerklärung; draft
   retention policy remains open; idea "real model show without AI label" recorded under Later in
-  docs/03-tasks.md, needs a spec decision. T49c go-live (before the first live comment collect):
-  the Instagram System User token must carry `instagram_manage_comments`, and the F34
-  reader-data paragraph must be added to the Datenschutzerklärung (draft in T49c3, marked for review).
+  docs/03-tasks.md, needs a spec decision. F34 closed 2026-11-15: Volodymyr confirmed the
+  comments paragraph in the Datenschutzerklärung; he waived the live per-network reply check
+  (do not raise it again). The Instagram token scope `instagram_manage_comments` is his own check.
 - **T49b validation (PR #98):** channels 205/205 (22 new comments tests — list posts
   /comments/reply per network, watermark as unix `since`, paging bound + early stop,
   malformed pages/reply, per-call 429 retry + exhaustion, 190 refresh once per run,
