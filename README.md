@@ -115,3 +115,9 @@ installation with tenant-aware architecture, not a hosted multi-tenant product.
 
 [Operations](docs/operations.md) · [MVP acceptance](docs/e2e-mvp.md) ·
 [Current acceptance](docs/e2e-v7.md) · [Tasks](docs/03-tasks.md) · [ADRs](docs/decisions/)
+
+## License
+
+The source code is MIT-licensed ([LICENSE](LICENSE)). Photos, videos, texts, the embroidery
+pattern and other creative content are not: all rights are reserved by the content author.
+See [NOTICE](NOTICE) for the exact scope.
