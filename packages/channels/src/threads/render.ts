@@ -67,7 +67,7 @@ export function renderThreads(post: Post, value: unknown): SendOperation[] {
     const origin = new URL(canonical.baseUrl);
     if (origin.protocol !== 'https:' || origin.origin !== canonical.baseUrl)
       throw new ThreadsRenderError('Threads canonical baseUrl must be an HTTPS origin');
-    text += `\n\n${canonicalUrl(canonical, canonical.section, post.id, language)}`;
+    text += `\n\n${canonicalUrl(canonical, canonical.section, post.id, language, 'th')}`;
   }
   return operation(text, post.photos, language);
 }
@@ -83,6 +83,6 @@ export function renderThreadsShow(show: Show, context: ShowRenderContext): SendO
   const origin = new URL(context.site.baseUrl);
   if (origin.protocol !== 'https:' || origin.origin !== context.site.baseUrl)
     throw new ThreadsRenderError('Threads show baseUrl must be an HTTPS origin');
-  const url = canonicalUrl(context.site, 'shows', show.id, language);
+  const url = canonicalUrl(context.site, 'shows', show.id, language, 'th');
   return operation(`${description}\n\n${disclosure}\n${url}`, photos, language);
 }

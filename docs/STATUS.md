@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** codex (T64b).
+- **Active agent:** claude-code (T64b review).
 - **Current task:** T64b — `?s=` source tags in Telegram/Threads site links (`docs/03-tasks.md` T64b).
 - **Branch:** `t64b-source-tags`.
 - **Last commit:** this commit — docs: record T64a deploy, hand T64b to codex.
@@ -9,6 +9,23 @@
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T64b review (claude-code, 2026-11-15):** Facebook links were missed in the task text; added
+  `fb` in `facebook/render.ts` and the bot preview (`preview.ts`). Channels facebook-render 29/29,
+  bot preview 43/43; core, channels and bot typecheck pass. Bot redeploy needed after merge.
+
+- **T64b validation (codex, 2026-11-15):** implemented optional source attribution in
+  `canonicalUrl`; Telegram post/work/show links use `?s=tg`, Threads use `?s=th`.
+  Calls without a source keep clean URLs for site navigation and canonical metadata.
+  `pnpm --config.verifyDepsBeforeRun=false -C packages/core exec vitest run test/canonical-url.test.ts --maxWorkers=2`
+  passed 18/18; `pnpm --config.verifyDepsBeforeRun=false -C packages/channels exec vitest run test/render.test.ts test/show.test.ts test/threads.test.ts --maxWorkers=2`
+  passed 99/99; final `show.test.ts` rerun passed 15/15 after strengthening the excluded-link
+  assertion. Only these four touched test files ran. Coverage includes exact localized
+  post/work/show URLs, optional source tags, query encoding, excluded content and message limits
+  including tags. Core/channels typechecks passed with
+  `pnpm --config.verifyDepsBeforeRun=false -C <package> run typecheck`; changed TypeScript
+  formatting passed. No Git commands or deployment ran; edits remain uncommitted for review.
+  T64c remains untouched. Profile, QR and newsletter source links remain Volodymyr's manual step.
 
 - **T64a live 2026-11-15 15:30 EET:** migration 0023 applied on prod D1 (Volodymyr's OK); PR #160
   merged; Site run 43719304487 uploaded the Functions bundle and `_routes.json` (deployment

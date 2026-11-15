@@ -370,7 +370,7 @@ export function buildPreview(
       if (post.type === 'free' && canonical?.links) {
         lines.push(
           texts.previewFacebookLink(
-            canonicalUrl(canonical, canonical.section, post.id, facebookCaption.lang),
+            canonicalUrl(canonical, canonical.section, post.id, facebookCaption.lang, 'fb'),
           ),
         );
       }

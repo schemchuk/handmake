@@ -10,15 +10,17 @@ import type { SiteConfig, TenantConfig } from './tenant';
 
 export type CanonicalSection = 'posts' | 'works' | 'shows';
 
-/** Canonical absolute URL of one published item in one language. */
+/** Absolute item URL; omit source for canonical metadata and site-internal links. */
 export function canonicalUrl(
   site: Pick<SiteConfig, 'baseUrl' | 'defaultLanguage'>,
   section: CanonicalSection,
   id: string,
   lang: string,
+  source?: string,
 ): string {
   const prefix = lang === site.defaultLanguage ? '' : `/${lang}`;
-  return `${site.baseUrl}${prefix}/${section}/${id.toLowerCase()}/`;
+  const url = `${site.baseUrl}${prefix}/${section}/${id.toLowerCase()}/`;
+  return source === undefined ? url : `${url}?s=${encodeURIComponent(source)}`;
 }
 
 /**

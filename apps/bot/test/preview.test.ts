@@ -317,7 +317,7 @@ describe('Facebook preview section (T26b, F33)', () => {
     });
     expect(preview.text).toContain('📘 Facebook (DE,');
     expect(preview.text).toContain(
-      'посилання в підписі (клікабельне): https://fadenundstimmung.de/posts/draft/',
+      'посилання в підписі (клікабельне): https://fadenundstimmung.de/posts/draft/?s=fb',
     );
   });
 
