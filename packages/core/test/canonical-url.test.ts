@@ -27,6 +27,25 @@ describe('canonicalUrl', () => {
     );
   });
 
+  it.each(['tg', 'th', 'ig', 'fb', 'gh', 'li', 'nl', 'qr'])(
+    'adds source %s only when requested, preserving the clean canonical URL',
+    (source) => {
+      for (const section of ['posts', 'works', 'shows'] as const) {
+        for (const lang of ['de', 'uk']) {
+          const clean = canonicalUrl(site, section, 'ITEM', lang);
+          expect(canonicalUrl(site, section, 'ITEM', lang, source)).toBe(`${clean}?s=${source}`);
+          expect(new URL(clean).search).toBe('');
+        }
+      }
+    },
+  );
+
+  it('encodes source values as a single query parameter', () => {
+    const url = new URL(canonicalUrl(site, 'posts', 'ITEM', 'de', 'tg&extra=#value'));
+    expect([...url.searchParams]).toEqual([['s', 'tg&extra=#value']]);
+    expect(url.hash).toBe('');
+  });
+
   it('lowercases the id, so the URL is known before the site rebuild', () => {
     const url = canonicalUrl(site, 'posts', '01M5YZZH801VCJN4RFEFQRW6NW', 'uk');
     expect(url).toContain('/uk/posts/01m5yzzh801vcjn4rfefqrw6nw/');

@@ -106,7 +106,7 @@ function canonicalLine(lang: string, canonical: CanonicalLinkSettings, id: strin
   if (!intro) {
     throw new FacebookRenderError(`unsupported canonical footer language: "${lang}"`);
   }
-  return `${intro} ${canonicalUrl(canonical, canonical.section, id, lang)}`;
+  return `${intro} ${canonicalUrl(canonical, canonical.section, id, lang, 'fb')}`;
 }
 
 /**

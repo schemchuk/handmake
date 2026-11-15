@@ -33,14 +33,14 @@ describe('show rendering', () => {
       kind: 'mediaGroup',
       photoIndexes: [0, 1, 2],
       captionLang: 'de',
-      caption: `Fixture DE\n\nKI-generiertes Model\nOriginalarbeit\nhttps://craft.example/shows/${show.id.toLowerCase()}/`,
+      caption: `Fixture DE\n\nKI-generiertes Model\nOriginalarbeit\nhttps://craft.example/shows/${show.id.toLowerCase()}/?s=tg`,
     });
     expect(ops[1]).toEqual({ kind: 'video', replyToOp: 0 });
     expect(ops[2]).toEqual({
       kind: 'message',
       lang: 'uk',
       replyToOp: 0,
-      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота\nhttps://craft.example/uk/shows/${show.id.toLowerCase()}/`,
+      text: `Fixture UA\n\nМодель згенерована ШІ (KI-generiertes Model)\nОригінальна робота\nhttps://craft.example/uk/shows/${show.id.toLowerCase()}/?s=tg`,
     });
     expect(renderTelegramShow(show, { ...context, languages: ['uk', 'uk'] })[0]).toMatchObject({
       captionLang: 'uk',

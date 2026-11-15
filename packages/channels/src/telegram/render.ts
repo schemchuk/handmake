@@ -105,7 +105,7 @@ function canonicalLine(lang: string, canonical: CanonicalLinkSettings, id: strin
   if (!intro) {
     throw new TelegramRenderError(`unsupported canonical footer language: "${lang}"`);
   }
-  return `${intro} ${canonicalUrl(canonical, canonical.section, id, lang)}`;
+  return `${intro} ${canonicalUrl(canonical, canonical.section, id, lang, 'tg')}`;
 }
 
 /**
@@ -239,7 +239,7 @@ export function renderTelegram(post: Post, settings?: unknown): SendOperation[] 
 export function renderTelegramShow(show: Show, context: ShowRenderContext): SendOperation[] {
   const authenticPhotos = (show.authentic ?? []).filter((item) => item.kind === 'photo');
   const photos = [...authenticPhotos, ...show.images];
-  const { baseUrl, defaultLanguage } = context.site;
+  const { baseUrl } = context.site;
   const origin = new URL(baseUrl);
   if (origin.protocol !== 'https:' || origin.origin !== baseUrl) {
     throw new TelegramRenderError('show site baseUrl must be an HTTPS origin');
@@ -264,7 +264,7 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
   ];
   for (const [index, lang] of languages.entries()) {
     if (!/^[a-z]{2}$/.test(lang)) throw new TelegramRenderError('invalid show language');
-    const path = `${lang === defaultLanguage ? '' : `/${lang}`}/shows/${show.id.toLowerCase()}/`;
+    const url = canonicalUrl(context.site, 'shows', show.id, lang, 'tg');
     const disclosure = showDisclosure(lang, authenticPhotos.length);
     if (!disclosure) throw new TelegramRenderError(`unsupported show disclosure language: ${lang}`);
     // A site-excluded (test) show's page is never built, so the copy must
@@ -272,7 +272,7 @@ export function renderTelegramShow(show: Show, context: ShowRenderContext): Send
     const text = appendFooter(
       show.siteExcluded
         ? `${show.versions[lang]!.description}\n\n${disclosure}`
-        : `${show.versions[lang]!.description}\n\n${disclosure}\n${baseUrl}${path}`,
+        : `${show.versions[lang]!.description}\n\n${disclosure}\n${url}`,
       lang,
       context.settings,
     );

@@ -1,21 +1,42 @@
 # STATUS
 
+- **Active agent:** claude-code (T64b review).
+- **Current task:** T64b — `?s=` source tags in Telegram/Threads site links (`docs/03-tasks.md` T64b).
+- **Branch:** `t64b-source-tags`.
+- **Last commit:** this commit — docs: record T64a deploy, hand T64b to codex.
+- **Next step:** codex implements T64b only (not T64c), runs only touched tests with
+  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64c.
+  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Blocked on:** no implementation blocker; browser layout verification remains for review.
+- **Open questions for Volodymyr:** none.
+
+- **T64b review (claude-code, 2026-11-15):** Facebook links were missed in the task text; added
+  `fb` in `facebook/render.ts` and the bot preview (`preview.ts`). Channels facebook-render 29/29,
+  bot preview 43/43; core, channels and bot typecheck pass. Bot redeploy needed after merge.
+
+- **T64b validation (codex, 2026-11-15):** implemented optional source attribution in
+  `canonicalUrl`; Telegram post/work/show links use `?s=tg`, Threads use `?s=th`.
+  Calls without a source keep clean URLs for site navigation and canonical metadata.
+  `pnpm --config.verifyDepsBeforeRun=false -C packages/core exec vitest run test/canonical-url.test.ts --maxWorkers=2`
+  passed 18/18; `pnpm --config.verifyDepsBeforeRun=false -C packages/channels exec vitest run test/render.test.ts test/show.test.ts test/threads.test.ts --maxWorkers=2`
+  passed 99/99; final `show.test.ts` rerun passed 15/15 after strengthening the excluded-link
+  assertion. Only these four touched test files ran. Coverage includes exact localized
+  post/work/show URLs, optional source tags, query encoding, excluded content and message limits
+  including tags. Core/channels typechecks passed with
+  `pnpm --config.verifyDepsBeforeRun=false -C <package> run typecheck`; changed TypeScript
+  formatting passed. No Git commands or deployment ran; edits remain uncommitted for review.
+  T64c remains untouched. Profile, QR and newsletter source links remain Volodymyr's manual step.
+
+- **T64a live 2026-11-15 15:30 EET:** migration 0023 applied on prod D1 (Volodymyr's OK); PR #160
+  merged; Site run 43719304487 uploaded the Functions bundle and `_routes.json` (deployment
+  `c86dfa61`). Live check: `/?s=qr` and `/works/` with a t.me referrer were counted as `qr`/`tg`,
+  `DE`; both test rows were deleted afterwards. The CI token could bind D1 to Pages.
+
 - **T64a review (claude-code, 2026-11-15):** middleware now imports `@handmake/core/site-visits`
   (new subpath export) instead of the whole core: Functions bundle 1.09 MB → 189 KB (`tldts`).
   `public/_routes.json` excludes static assets from Functions invocations. Core 38/38, site
   54/54 (`site-visits`, `legal`), site typecheck pass. Needs Volodymyr: OK for the legal text and
   workflow change, then migration 0023 on prod D1 before the site deploy.
-
-- **Active agent:** claude-code (T64a review).
-- **Current task:** T64a implemented, uncommitted — Pages middleware counter, migration 0023, Datenschutz text; awaiting review.
-- **Branch:** `t64-site-analytics`.
-- **Last commit:** this commit — docs: add T64 site analytics, hand T64a to codex.
-- **Next step:** claude-code reviews the uncommitted T64a changes. Workflow and legal changes
-  require Volodymyr's explicit approval before merge. Volodymyr applies migration 0023 after
-  review, before production rollout. T64b/T64c remain untouched; retention cleanup belongs to T64c.
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-- **Blocked on:** no implementation blocker; browser layout verification remains for review.
-- **Open questions for Volodymyr:** none.
 
 - **T64a validation (codex, 2026-11-15):**
   `pnpm --config.verifyDepsBeforeRun=false -C packages/core exec vitest run test/site-visits.test.ts --maxWorkers=2`

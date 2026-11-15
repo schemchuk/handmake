@@ -306,9 +306,9 @@ const canonicalSettings = {
   },
 };
 const deCanonicalLine =
-  'Mehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/';
+  'Mehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/?s=tg';
 const ukCanonicalLine =
-  'Більше на сайті: https://fadenundstimmung.de/uk/posts/01jbca1b2c3d4e5f6g7h8j9k0m/';
+  'Більше на сайті: https://fadenundstimmung.de/uk/posts/01jbca1b2c3d4e5f6g7h8j9k0m/?s=tg';
 
 describe('canonical footer (T40, F31)', () => {
   it('appends the per-language line to a free post, linking to its site page', () => {
@@ -334,10 +334,10 @@ describe('canonical footer (T40, F31)', () => {
     };
     const ops = renderTelegram(makePost({ photos: [] }), settings);
     expect(ops[0]).toMatchObject({
-      text: 'Привіт!\n\nБільше на сайті: https://fadenundstimmung.de/uk/works/01jbca1b2c3d4e5f6g7h8j9k0m/',
+      text: 'Привіт!\n\nБільше на сайті: https://fadenundstimmung.de/uk/works/01jbca1b2c3d4e5f6g7h8j9k0m/?s=tg',
     });
     expect(ops[1]).toMatchObject({
-      text: 'Hallo!\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0m/',
+      text: 'Hallo!\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0m/?s=tg',
     });
   });
 

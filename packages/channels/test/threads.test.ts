@@ -70,7 +70,7 @@ describe('Threads rendering', () => {
       {
         kind: 'mediaGroup',
         photoIndexes: [0, 1],
-        caption: `${post.texts.de}\n\nOriginalarbeit\n\nhttps://craft.example/posts/${post.id.toLowerCase()}/`,
+        caption: `${post.texts.de}\n\nOriginalarbeit\n\nhttps://craft.example/posts/${post.id.toLowerCase()}/?s=th`,
         captionLang: 'de',
       },
     ]);
@@ -80,9 +80,22 @@ describe('Threads rendering', () => {
     )[0]!;
     expect(op).toMatchObject({
       kind: 'message',
-      text: expect.stringContaining(`/de/works/${post.id.toLowerCase()}/`),
+      text: expect.stringContaining(`/de/works/${post.id.toLowerCase()}/?s=th`),
     });
   });
+  it('counts the source tag at the exact 500-byte boundary', () => {
+    const initial = renderThreads({ ...post, photos: [], texts: { de: 'x' } }, settings)[0]!;
+    if (initial.kind !== 'message') throw new Error('expected message');
+    const body = 'x'.repeat(500 - threadsTextLength(initial.text) + 1);
+    const op = renderThreads({ ...post, photos: [], texts: { de: body } }, settings)[0]!;
+    if (op.kind !== 'message') throw new Error('expected message');
+    expect(threadsTextLength(op.text)).toBe(500);
+    expect(op.text).toMatch(/\/\?s=th$/);
+    expect(() =>
+      renderThreads({ ...post, photos: [], texts: { de: `${body}x` } }, settings),
+    ).toThrow(/500/);
+  });
+
   it('includes the footer in the 500-byte budget and never silently rewrites text', () => {
     expect(
       renderThreads({ ...post, texts: { de: 'x'.repeat(484) } }, { language: 'de' }),
@@ -126,7 +139,10 @@ describe('Threads rendering', () => {
       languages: ['de', 'uk'],
     };
     const op = renderThreadsShow(show, ctx)[0];
-    expect(op).toMatchObject({ kind: 'mediaGroup', caption: expect.stringContaining('/shows/') });
+    expect(op).toMatchObject({
+      kind: 'mediaGroup',
+      caption: expect.stringContaining(`/shows/${show.id.toLowerCase()}/?s=th`),
+    });
     expect(op?.kind === 'mediaGroup' && op.caption).toMatch(/KI|AI/);
     expect(renderThreadsShow({ ...show, siteExcluded: true }, ctx)).toEqual([]);
     show.versions.de!.description = 'x'.repeat(501);

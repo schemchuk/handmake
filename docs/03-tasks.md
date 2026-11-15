@@ -2729,7 +2729,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 
 #### T64b — Source tags in our own links (`core`, `channels`)
 - `canonicalUrl` gets an optional `source` argument that appends `?s=<tag>`; the Telegram renderer
-  uses `tg` (posts, works, shows), Threads `th`. Site-internal links and `rel=canonical`/`og:url`
+  uses `tg` (posts, works, shows), Threads `th`, Facebook `fb` (and the bot's Facebook preview line). Site-internal links and `rel=canonical`/`og:url`
   stay untagged (canonical keeps search engines on the clean URL). Existing messages are immutable
   and stay untagged. Update the renderer tests that assert exact URLs.
 - Human (Volodymyr): profile links on Instagram, Facebook, Threads, GitHub, LinkedIn →

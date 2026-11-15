@@ -121,7 +121,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
     const ops = renderFacebook(makePost(), { ...settings, canonical });
     expect(ops[0]).toMatchObject({
       caption:
-        'Hallo!\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/',
+        'Hallo!\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/posts/01jbca1b2c3d4e5f6g7h8j9k0m/?s=fb',
     });
   });
 
@@ -132,7 +132,7 @@ describe('renderFacebook: caption with the canonical link (F33)', () => {
     });
     expect(ops[0]).toMatchObject({
       caption:
-        'Hallo!\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0w/',
+        'Hallo!\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/works/01jbca1b2c3d4e5f6g7h8j9k0w/?s=fb',
     });
   });
 

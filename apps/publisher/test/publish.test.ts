@@ -498,11 +498,11 @@ describe('runPublish', () => {
     expect(onAdapter.deliveries[0]!.ops[0]).toMatchObject({
       caption:
         'Тестовий допис (T10).\n\nОригінальна робота\n\n' +
-        `Більше на сайті: https://fadenundstimmung.de/uk/posts/${lowerId}/`,
+        `Більше на сайті: https://fadenundstimmung.de/uk/posts/${lowerId}/?s=tg`,
     });
     expect(onAdapter.deliveries[0]!.ops[1]).toMatchObject({
       text:
-        `Testbeitrag (T10).\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/posts/${lowerId}/\n` +
+        `Testbeitrag (T10).\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/posts/${lowerId}/?s=tg\n` +
         'Kanal abonnieren: https://t.me/Faden_und_Stimmung',
     });
 
@@ -577,11 +577,11 @@ describe('runPublish', () => {
     expect(ops[0]).toMatchObject({
       caption:
         'Тестовий допис (T10).\n\nОригінальна робота\n\n' +
-        `Більше на сайті: https://fadenundstimmung.de/uk/works/${lowerId}/`,
+        `Більше на сайті: https://fadenundstimmung.de/uk/works/${lowerId}/?s=tg`,
     });
     expect(ops[1]).toMatchObject({
       text:
-        `Testbeitrag (T10).\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/works/${lowerId}/\n` +
+        `Testbeitrag (T10).\n\nOriginalarbeit\n\nMehr auf der Website: https://fadenundstimmung.de/works/${lowerId}/?s=tg\n` +
         'Kanal abonnieren: https://t.me/Faden_und_Stimmung',
     });
   });
