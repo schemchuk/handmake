@@ -1,13 +1,19 @@
 # STATUS
 
 - **Active agent:** none.
-- **Current task:** none (T64 done: PRs #160–#162, site and bot deployed).
+- **Current task:** none (legal audit fixes: PR #163 merged, site deployed).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T64c deploy.
+- **Last commit:** this commit — docs: record legal audit fixes.
 - **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
+  (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT
+  covers code only) merged with Volodymyr's OK; site redeployed (run 43736256054). Open from the
+  audit: astro 7 / sharp 0.35.5 upgrades, `main` branch protection, Dependabot security updates,
+  site security headers (`_headers`).
 
 - **T64c:** PR #162 squash-merged 2026-11-15; migration 0024 applied on prod D1 and bot deployed
   by Volodymyr 15:56 EET from `main` `b113ffe`, Worker `713dc7c5-957b-4ec1-90d3-41f509260269`.
