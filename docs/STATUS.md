@@ -3,13 +3,18 @@
 - **Active agent:** none.
 - **Current task:** none (T62 done: PR #157).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record T62 merge.
+- **Last commit:** this commit — docs: record bot redeploy after T62 config break.
 - **Next step:** T61 (presentation link) and T62 (/technik/ making-of page) go live with the next
   publish run (site.yml is called only from publish.yml). 2026-11-18 20:00 Berlin: first live
   contest closing without Facebook (logs on). Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 
+- **Bot redeploy 2026-11-15 10:46 EET (Volodymyr, clean `main`):** Worker
+  `0a530c3b-edae-4b89-a040-185eb8da1c02`. The previous Worker `7806cb04` (deployed 2026-11-14
+  15:57 EET, unrecorded) predated T62's `site.makingOf` schema, so the runtime-fetched tenant
+  config failed strict parsing: `/show` answered "Покази вимкнені…" and config-reading crons were
+  at risk. Rule: any merge that adds tenant config keys needs a bot redeploy in the same step.
 - **T62 validation (codex):** core `test/tenant.test.ts` 56/56; site
   `test/making-of.test.ts` and `test/making-of-build.test.ts` 3/3, all with `--maxWorkers=2`.
   Core/site typechecks and local 68-page build pass. Fixture builds verify both languages,
