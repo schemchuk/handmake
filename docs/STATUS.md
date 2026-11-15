@@ -4,10 +4,15 @@
 - **Current task:** none (T63 done: PR #158, bot deployed).
 - **Branch:** `main`.
 - **Last commit:** this commit — docs: record bot redeploy after T62 config break.
-- **Next step:** live check of T63: send a work video from Telegram Desktop with logs on.
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+  Otherwise the next task is the one Volodymyr names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T63 live check 2026-11-15 13:54–13:58 EET:** Telegram Desktop video was rejected because it
+  lasts 60.6 s (Telegram reports 61 > 60), not because of size; the new log line showed
+  `paths:["duration"]`. The 59 s trim was accepted; the people buttons appear only after storage.
+  Test draft `01M7FGNV…` was rejected by Volodymyr (no publication).
 
 - **T63:** PR #158 squash-merged 2026-11-15 by claude-code (CI green). Bot deployed by Volodymyr
   2026-11-15 13:45 EET from clean `main` `caf0476`, Worker `a554c3dd-31fc-4dd0-9929-9f8a571c2bef`.
