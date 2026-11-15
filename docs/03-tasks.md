@@ -2681,3 +2681,69 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   missing/zero duration → specific text; over-limit → text with values; keyboard while editing
   without video has no people buttons; preview without video has no confirmation line.
 - Deploy: bot redeploy after merge (claude-code/Volodymyr), no migration.
+
+### T64 — Cookieless site visit counts and traffic sources (`site`, `bot`, F25)
+- Status: open (planned 2026-11-15).
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Context: Volodymyr wants visitor counts and where visitors come from, without personal data. The
+  Cloudflare free plan dashboard shows requests, approximate unique visitors and countries, but no
+  referrers or paths. Telegram and the in-app browsers of Instagram/Facebook often send no
+  `Referer`, so source tags in our own links are the main signal. Rules: no browser script, no
+  cookie, no storage on the device (§25 TDDDG), no IP, no user agent, no per-visit rows; only daily
+  aggregate counters. Unique visitors are not counted (that needs an identifier); the Cloudflare
+  dashboard stays the source for that.
+- Data model (bot D1 `handmake-bot`, migration `0023_site_visits.sql`):
+  `site_visits(tenant_id, day TEXT 'YYYY-MM-DD' UTC, path, source, country, views INTEGER,
+  PRIMARY KEY (tenant_id, day, path, source, country))`, written with
+  `INSERT … ON CONFLICT DO UPDATE SET views = views + 1`. Retention: rows older than 400 days are
+  deleted by the existing daily cron (T64c).
+- Source rules (one pure function in `packages/core`, unit-tested): `?s=` wins if it is one of
+  `tg, th, ig, fb, gh, li, nl, qr`; else the `Referer` host maps to `tg` (t.me, telegram.*,
+  web.telegram.org), `ig` (instagram.com, l.instagram.com), `fb` (facebook.com, l/m/lm.facebook.com),
+  `th` (threads.net, threads.com), `search` (google.*, bing.com, duckduckgo.com, ecosia.org,
+  yandex.*), `internal` (own origin), otherwise `other:<registrable host>` (max 64 chars, lowercase,
+  no path/query); no `Referer` → `direct`. Paths are normalized: no query/fragment, max 200 chars,
+  unknown/404 paths stored as `/404`.
+
+#### T64a — Pages middleware counter and Datenschutz text (`site`)
+- `apps/site/functions/_middleware.ts` (Pages Functions): after `next()`, count only `GET`,
+  status 200, `content-type` `text/html`, and not `/media/`, `/show-media/`, `/work-media/`, assets.
+  Skip obvious bots (user agent matches `bot|crawl|spider|slurp|preview|facebookexternalhit|
+  telegrambot|whatsapp` — checked, never stored). Country from `request.cf.country` (or `XX`).
+  The write runs in `context.waitUntil`, failures are swallowed (logged without request data); the
+  response is never delayed or changed. Tenant id comes from a Pages env var `TENANT_ID`.
+- Bindings: `apps/site/wrangler.toml` with `pages_build_output_dir = "dist"`, D1 binding `DB` to
+  `handmake-bot`, var `TENANT_ID`. Change `site.yml` to deploy from `apps/site` so Wrangler picks up
+  `functions/` and the config; keep the pinned Wrangler. The build's external-resource check stays.
+- Migration `apps/bot/migrations/0023_site_visits.sql` (applied on prod D1 by Volodymyr after review).
+- Datenschutz: in `docs/legal/services.de.html` under Cloudflare, replace the zone-statistics
+  sentence with a short paragraph: on page requests we count, per day, the page path, a coarse
+  source (link tag or the referring website's domain), and the country derived by Cloudflare; IP
+  address, browser data and identifiers are not stored, no cookies or scripts are used, nothing is
+  stored on the device; only totals are kept, at most 400 days; legal basis Art. 6 Abs. 1 S. 1
+  lit. f DSGVO (interest in knowing which channels lead to the site). Update F25 wording in
+  `docs/01-spec.md` and the analytics paragraph in `apps/site/README.md`.
+- Tests (only touched files, `--maxWorkers=2`): source/path functions (all mappings, `s` priority,
+  invalid `s` ignored, length limits); middleware counts an HTML 200, skips non-HTML, non-200,
+  POST, media paths and bots, never throws when D1 fails; legal test still finds the insertion.
+
+#### T64b — Source tags in our own links (`core`, `channels`)
+- `canonicalUrl` gets an optional `source` argument that appends `?s=<tag>`; the Telegram renderer
+  uses `tg` (posts, works, shows), Threads `th`. Site-internal links and `rel=canonical`/`og:url`
+  stay untagged (canonical keeps search engines on the clean URL). Existing messages are immutable
+  and stay untagged. Update the renderer tests that assert exact URLs.
+- Human (Volodymyr): profile links on Instagram, Facebook, Threads, GitHub, LinkedIn →
+  `https://fadenundstimmung.de/?s=ig` (`fb`, `th`, `gh`, `li`); QR codes on printed brochures
+  → `?s=qr`; newsletter links → `?s=nl`.
+
+#### T64c — Site block in `/stats` and weekly report (`bot`)
+- `/stats` gets a „Сайт (28 днів)“ block for the tenant: total views, views by source (sorted,
+  with %), top 5 pages, top 5 countries, and the same total for the previous 28 days. `internal`
+  is shown separately („переходи всередині сайту“) and excluded from the source percentages.
+- Weekly push on Monday from the existing daily cron (`29 3 * * *`): the same block for the last 7
+  days, sent to the tenant allow-list chats used for `/stats`; idempotent per tenant and ISO week
+  (store the last sent week in D1 so a cron retry does not resend). The same cron deletes
+  `site_visits` rows older than 400 days.
+- Tests (only touched files, `--maxWorkers=2`): aggregation and formatting, empty data text,
+  Monday-only send, no resend in the same week, retention delete, tenant isolation.
+- Deploy: bot redeploy after merge; migration 0023 must already be applied (T64a).

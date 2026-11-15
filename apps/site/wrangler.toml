@@ -1,0 +1,12 @@
+name = "fadenundstimmung"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-26"
+
+[vars]
+TENANT_ID = "faden-und-stimmung"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "handmake-bot"
+database_id = "4cae8a3e-9869-4dad-a2b8-ab046365999e"
+migrations_dir = "../bot/migrations"

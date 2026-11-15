@@ -60,7 +60,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # Use the lockfile-pinned Wrangler without changing the working directory.
+        # Keep the lockfile-pinned Wrangler; discover Pages config and functions here.
+        working-directory: apps/site
         run: |
           export PATH="$GITHUB_WORKSPACE/apps/bot/node_modules/.bin:$PATH"
-          wrangler pages deploy apps/site/dist --project-name fadenundstimmung --branch main
+          wrangler pages deploy dist --project-name fadenundstimmung --branch main

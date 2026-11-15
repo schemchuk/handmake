@@ -343,9 +343,12 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
 ### Funnel and audience (phase 3)
 - **F25** Weekly audience metrics per channel (follower and subscriber counts, per-post reach where the
   API provides it) are collected without any personal data and shown to the operator and author.
-  Until then: Cloudflare server-side zone traffic statistics for the site (no script, no device
-  access, no consent banner; changed 2026-11-04 from the Web Analytics beacon because of §25 TDDDG)
-  and manual Telegram view counts per post.
+  Site metrics use cookieless server-side daily page-view counters by tenant, normalized path,
+  coarse source (approved link tag or referring domain) and Cloudflare-derived country, retained
+  for at most 400 days. No IP, browser data, identifiers, per-visit rows, scripts or device storage
+  are retained/used for this counter (§25 TDDDG); it does not count unique visitors. Cloudflare
+  zone statistics remain the source for approximate unique visitors. Telegram post views remain
+  manual until channel metrics are integrated.
 - **F26** Each channel and the site link to each other (cross-promotion), configured per tenant.
 - **F27** Email capture: a sign-up form on the site via a ready email service with double opt-in
   (EU hosting and a data processing agreement). Addresses live only in that service, never in the

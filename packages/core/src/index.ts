@@ -23,3 +23,4 @@ export * from './contest';
 export * from './contest-tally';
 
 export * from './edit-receipt';
+export * from './site-visits';

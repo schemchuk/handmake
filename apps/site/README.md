@@ -116,9 +116,21 @@ upload the generated site as a CI artifact or paste its legal pages into PR comm
 The published legal pages necessarily disclose the supplied contact information.
 
 Every Astro build checks generated HTML and CSS for external resources; only our
-origin is allowed. Ordinary external links in legal texts are allowed. Statistics
-come from Cloudflare zone traffic data without a browser script; keep Pages Web
-Analytics disabled and verify the deployed page has no beacon. Root `404.html`
+origin is allowed. Ordinary external links in legal texts are allowed. Pages middleware counts
+human GET HTML 200 responses in D1 as daily totals by `TENANT_ID`, path, coarse source
+(approved `s` tag or referring domain) and Cloudflare country. No IP, browser data,
+identifiers or individual visit rows are stored; no cookies, scripts or device storage
+are used. Bot user agents are checked only to skip obvious bots. D1 writes run in
+`waitUntil`; failures log a fixed message without request data and leave responses unchanged.
+Cloudflare zone statistics remain the source for approximate unique visitors. Keep Pages Web
+Analytics disabled and verify the deployed page has no beacon.
+
+Deploy from `apps/site` so the pinned Wrangler loads `functions/` and `wrangler.toml`.
+Volodymyr must apply bot migration `0023_site_visits.sql` to `handmake-bot` after review
+and before enabling the counter in production. Review the Datenschutz addition before
+publication. Retention is at most 400 days; the cleanup cron is implemented in T64c
+and must be available before any stored rows reach that age. T64a does not add reports
+or source tags to published links. Root `404.html`
 disables Pages' SPA fallback; localized `/uk/404/` is also available.
 
 Go-live checklist (record evidence in the T41 PR):
