@@ -1,12 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T62 done: PR #157).
+- **Active agent:** codex.
+- **Current task:** T63 (work-video intake from Telegram Desktop, see 03-tasks.md).
 - **Branch:** `main`.
 - **Last commit:** this commit — docs: record bot redeploy after T62 config break.
-- **Next step:** T61 (presentation link) and T62 (/technik/ making-of page) go live with the next
-  publish run (site.yml is called only from publish.yml). 2026-11-18 20:00 Berlin: first live
-  contest closing without Facebook (logs on). Otherwise the next task is the one Volodymyr names.
+- **Next step:** codex implements T63 exactly as written in docs/03-tasks.md (edit-only; claude-code
+  reviews, commits, opens the PR). Live run 2026-11-15: `/work` with own video published to TG
+  (79–81), IG, FB, Threads and the site; `/show` skipped by Volodymyr (no duplicate posts).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 

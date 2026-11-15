@@ -2656,3 +2656,28 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests: schema accepts/rejects contacts; ledger-stats function; build test for both pages (title,
   contact links, ADR links, video) and the footer link; a tenant without `makingOf` builds without
   the page or link. Site and core tests only, `--maxWorkers=2`.
+
+### T63 — Robust work-video intake from Telegram Desktop (`bot`)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Context: live run 2026-11-15. A 49 s, 7.4 MB MP4 sent from Telegram Desktop as a video (not a file)
+  was rejected with „Файл має бути до 20 МБ, відео — до 60 секунд.“; the same flow from the phone
+  passed (58 s, 11.9 MB). Telegram's `Video.file_size` is optional, and `duration` can come as 0; the
+  schema (`packages/core/src/work-draft.ts` `workDraftVideoSchema`) requires both positive. Nothing
+  was logged, so the failing field is unknown.
+- Fix in `apps/bot/src/work-video.ts` `intake`:
+  1. If `file_size` is missing, call `ctx.api.getFile(file_id)` and use its `file_size`; if still
+     missing, reject with a clear text. Never download the bytes in the Worker.
+  2. If `duration` is missing or 0, reply with a specific text („Telegram не передав тривалість
+     відео. Надішліть його ще раз або з телефона.“), not the size/duration limit text.
+  3. Real limit violations keep the existing text but name the actual values (e.g. „72 с“, „24 МБ“).
+  4. Log every rejection through the existing `settings.logError`/console path with tenant id,
+     mime type, size, duration and the failing zod path; no file id, no user content.
+- UI loop: after „Додати відео“ and before a video arrives, `workVideoKeyboard` must not show the
+  people buttons or the confirm button, only „Скасувати“ (action `remove`); the preview must not show
+  `workVideoConfirmationText` while no `workVideo` exists. People buttons appear only once a video is
+  stored.
+- Tests (bot, only the touched files, `--maxWorkers=2`): missing `file_size` resolved via getFile;
+  missing/zero duration → specific text; over-limit → text with values; keyboard while editing
+  without video has no people buttons; preview without video has no confirmation line.
+- Deploy: bot redeploy after merge (claude-code/Volodymyr), no migration.
