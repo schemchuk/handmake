@@ -1,9 +1,9 @@
 # STATUS
 
 - **Active agent:** none.
-- **Current task:** none (audit fixes: legal PR #163, security PR #165 merged, site deployed).
+- **Current task:** none (audit fixes: PRs #163, #165, #170 merged, site deployed).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record security hardening.
+- **Last commit:** this commit — docs: record Dependabot automation.
 - **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
@@ -18,6 +18,13 @@
   security updates on, ruleset `protect-main` (no force-push/deletion). Site redeployed (run
   43740186143), live headers verified. Node >=22.23.4 required (astro 7). Remaining risk:
   `GITHUB_DISPATCH_TOKEN` has Contents write; a workflow_dispatch-only token would remove it.
+- **Dependabot automation 2026-11-15:** PR #170 merged with Volodymyr's OK. Minor/patch npm PRs
+  auto-merge after green CI on the exact head SHA; majors stay open; operator gets Telegram
+  messages. Daily `dependency-audit.yml` alerts on high/critical. First auto-merge: #166
+  (`cc66559`, incl. `@anthropic-ai/sdk` 1.8.0) — **bot not redeployed yet**: auto-merged
+  updates reach the Worker only with the next `pnpm -C apps/bot run deploy`. Open majors for
+  review: #164 (astro 7.4.7, superseded by #165), #167 (@types/node 26), #168
+  (workers-types 5, wanted by wrangler peer), #169 (typescript 6).
 
 - **T64c:** PR #162 squash-merged 2026-11-15; migration 0024 applied on prod D1 and bot deployed
   by Volodymyr 15:56 EET from `main` `b113ffe`, Worker `713dc7c5-957b-4ec1-90d3-41f509260269`.
