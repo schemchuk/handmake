@@ -32,6 +32,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Fails on any known high/critical advisory in the lockfile, dev tools included.
+      - name: Dependency audit
+        run: pnpm audit --audit-level high
+
       - name: Check formatting
         run: pnpm format:check
 
