@@ -1,0 +1,59 @@
+name: Daily dependency audit
+
+# Audits the lockfile on main every day and alerts the operator in Telegram when
+# a high or critical advisory appears, so a new vulnerability is noticed even
+# without new commits. Nothing is installed or executed from the repository.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 12.14.0
+
+      - name: Audit and alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          OPERATOR_CHAT_ID: ${{ secrets.OPERATOR_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ALERTS_URL: ${{ github.server_url }}/${{ github.repository }}/security/dependabot
+        run: |
+          set -uo pipefail
+          notify() {
+            curl -sf -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${OPERATOR_CHAT_ID}" \
+              --data-urlencode "text=$1" > /dev/null || echo "Telegram notification failed" >&2
+          }
+          report=$(pnpm audit --json 2>/dev/null)
+          if ! counts=$(jq -er '.metadata.vulnerabilities | "\(.critical) \(.high)"' <<<"$report" 2>/dev/null); then
+            notify "Щоденний аудит залежностей не вдався (немає звіту): ${RUN_URL}"
+            exit 1
+          fi
+          read -r critical high <<<"$counts"
+          echo "critical=${critical} high=${high}"
+          if [ "$critical" -gt 0 ] || [ "$high" -gt 0 ]; then
+            list=$(jq -r '[.advisories[] | select(.severity == "critical" or .severity == "high")
+              | "• \(.severity): \(.module_name) — \(.title)"] | unique | .[:8] | join("\n")' <<<"$report")
+            notify "$(printf 'Вразливості в залежностях main: критичних %s, високих %s.\n%s\n\nDependabot зазвичай відкриває PR з виправленням: %s\nЗвіт: %s' \
+              "$critical" "$high" "$list" "$ALERTS_URL" "$RUN_URL")"
+            exit 1
+          fi
