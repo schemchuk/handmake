@@ -1,14 +1,37 @@
 # STATUS
 
-- **Active agent:** codex (T64a).
-- **Current task:** T64a — Pages middleware visit counter, migration 0023, Datenschutz text (`docs/03-tasks.md` T64).
+- **T64a review (claude-code, 2026-11-15):** middleware now imports `@handmake/core/site-visits`
+  (new subpath export) instead of the whole core: Functions bundle 1.09 MB → 189 KB (`tldts`).
+  `public/_routes.json` excludes static assets from Functions invocations. Core 38/38, site
+  54/54 (`site-visits`, `legal`), site typecheck pass. Needs Volodymyr: OK for the legal text and
+  workflow change, then migration 0023 on prod D1 before the site deploy.
+
+- **Active agent:** claude-code (T64a review).
+- **Current task:** T64a implemented, uncommitted — Pages middleware counter, migration 0023, Datenschutz text; awaiting review.
 - **Branch:** `t64-site-analytics`.
 - **Last commit:** this commit — docs: add T64 site analytics, hand T64a to codex.
-- **Next step:** codex implements T64a only (not T64b/c), runs only touched tests with
-  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64b, T64c.
+- **Next step:** claude-code reviews the uncommitted T64a changes. Workflow and legal changes
+  require Volodymyr's explicit approval before merge. Volodymyr applies migration 0023 after
+  review, before production rollout. T64b/T64c remain untouched; retention cleanup belongs to T64c.
   2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T64a validation (codex, 2026-11-15):**
+  `pnpm --config.verifyDepsBeforeRun=false -C packages/core exec vitest run test/site-visits.test.ts --maxWorkers=2`
+  passed 38/38; `pnpm --config.verifyDepsBeforeRun=false -C apps/site exec vitest run test/site-visits.test.ts test/legal.test.ts --maxWorkers=2`
+  passed 54/54. Only these three touched test files ran. Tests cover source mappings/tag priority,
+  registrable domains, bounded paths/sources, HTML filtering, bot/media/asset exclusion, fallback
+  country, unchanged responses before D1 completion, synchronous/asynchronous D1 failures with
+  data-free logs, legal insertion and real in-memory SQLite migration/upsert/tenant isolation.
+  Core/site typechecks and changed-code ESLint pass. Changed TS/JSON/workflow files were formatted;
+  lockfile YAML and dependency entries verified. The first legal run exposed a stale T49c3 draft
+  assertion; corrected to assert its absence. Registry access failed (DNS); tldts 7.0.30 and its
+  core dependency were restored from local npm cache with SHA-512 verification, with registry
+  dependency/integrity entries added to the manifest/lockfile. Frozen network installation was
+  not verified; CI must check it. Disabled pnpm's pre-run install after its read-only store-lock
+  warning. No Git commands, build, deployment, production migration or broader tests ran.
+  Edits remain uncommitted as requested. Legal wording awaits review; 400-day deletion is T64c.
 
 - **T63 live check 2026-11-15 13:54–13:58 EET:** Telegram Desktop video was rejected because it
   lasts 60.6 s (Telegram reports 61 > 60), not because of size; the new log line showed

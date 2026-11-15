@@ -18,7 +18,10 @@ describe('legal publication policy', () => {
     expect(privacy).toContain('Erstellt mit kostenlosem Datenschutz-Generator');
     expect(privacy).toContain('Kommentare auf unseren Social-Media-Beiträgen');
     expect(privacy).not.toContain('<strong>Zur rechtlichen Prüfung:</strong>');
-    expect(privacy).toContain('T49c3 DRAFT');
+    expect(privacy).not.toContain('T49c3 DRAFT');
+    expect(privacy).toContain('Bei Seitenaufrufen zählen wir pro Tag den Seitenpfad');
+    expect(privacy).toContain('höchstens 400 Tage');
+    expect(privacy).toContain('keine Informationen auf dem Endgerät gespeichert');
     expect(privacy).toContain('Telegram-Gruppe «Faden und Stimmung · Austausch»');
     const additions = privacy.indexOf('id="mServices"');
     expect(additions).toBeGreaterThan(privacy.indexOf('id="m136"'));

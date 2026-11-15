@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/_astro/*",
+    "/media/*",
+    "/show-media/*",
+    "/work-media/*",
+    "/textures/*",
+    "/robots.txt",
+    "/sitemap*",
+    "/wordmark.svg",
+    "/*.pdf"
+  ]
+}
