@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** claude-code (T64b review).
-- **Current task:** T64b — `?s=` source tags in Telegram/Threads site links (`docs/03-tasks.md` T64b).
-- **Branch:** `t64b-source-tags`.
-- **Last commit:** this commit — docs: record T64a deploy, hand T64b to codex.
-- **Next step:** codex implements T64b only (not T64c), runs only touched tests with
-  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64c.
-  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+- **Active agent:** codex (T64c).
+- **Current task:** T64c — site block in `/stats`, Monday weekly report, 400-day retention (`docs/03-tasks.md` T64c).
+- **Branch:** `t64c-site-stats`.
+- **Last commit:** this commit — docs: record T64b merge, hand T64c to codex.
+- **Next step:** codex implements T64c only, runs only touched tests with `--maxWorkers=2`
+  and typecheck, leaves edits uncommitted and records validation here. Bot redeploy after T64b
+  merge is pending (Volodymyr). 2026-11-18 20:00 Berlin: first live contest closing without Facebook.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
+
+- **T64b:** PR #161 squash-merged 2026-11-15 (CI green; publisher tests updated for `?s=tg`). Bot
+  redeploy from clean `main` pending — the claude-code deploy was blocked by the classifier.
 
 - **T64b review (claude-code, 2026-11-15):** Facebook links were missed in the task text; added
   `fb` in `facebook/render.ts` and the bot preview (`preview.ts`). Channels facebook-render 29/29,
