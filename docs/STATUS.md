@@ -611,7 +611,8 @@
   retention policy remains open; idea "real model show without AI label" recorded under Later in
   docs/03-tasks.md, needs a spec decision. F34 closed 2026-11-15: Volodymyr confirmed the
   comments paragraph in the Datenschutzerklärung; he waived the live per-network reply check
-  (do not raise it again). The Instagram token scope `instagram_manage_comments` is his own check.
+  (do not raise it again). The Instagram token (local `.env`, System User, never expires) carries
+  `instagram_manage_comments` (debug_token, 2026-11-15).
 - **T49b validation (PR #98):** channels 205/205 (22 new comments tests — list posts
   /comments/reply per network, watermark as unix `since`, paging bound + early stop,
   malformed pages/reply, per-call 429 retry + exhaustion, 190 refresh once per run,
