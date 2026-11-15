@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T63 done: PR #158, bot deployed).
-- **Branch:** `main`.
-- **Last commit:** this commit — docs: record bot redeploy after T62 config break.
-- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-  Otherwise the next task is the one Volodymyr names.
+- **Active agent:** codex (T64a).
+- **Current task:** T64a — Pages middleware visit counter, migration 0023, Datenschutz text (`docs/03-tasks.md` T64).
+- **Branch:** `t64-site-analytics`.
+- **Last commit:** this commit — docs: add T64 site analytics, hand T64a to codex.
+- **Next step:** codex implements T64a only (not T64b/c), runs only touched tests with
+  `--maxWorkers=2`, leaves edits uncommitted and records validation here. Then T64b, T64c.
+  2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 
