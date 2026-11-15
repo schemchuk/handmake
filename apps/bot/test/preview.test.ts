@@ -581,7 +581,6 @@ describe('work video confirmation preview (T56)', () => {
   };
 
   it.each([
-    { workVideoEditing: true },
     { workVideo: { fileId: 'video', size: 1000, duration: 10, confirmed: false } },
     { workVideo: { fileId: 'video', size: 1000, duration: 10, confirmed: true } },
     {
@@ -595,6 +594,17 @@ describe('work video confirmation preview (T56)', () => {
     );
     expect(preview.text).toContain(botTexts.workVideoConfirmationText);
     expect(preview.text).not.toContain('❌');
+    expect(preview.text).not.toContain(botTexts.workSetupText);
+    expect(JSON.stringify(preview.keyboard)).not.toContain(':publish');
+  });
+
+  it('hides confirmation and publication while waiting for a video', () => {
+    const preview = buildPreview(
+      { ...draft, extras: { ...draft.extras, workVideoEditing: true } },
+      botTexts,
+      now,
+    );
+    expect(preview.text).not.toContain(botTexts.workVideoConfirmationText);
     expect(preview.text).not.toContain(botTexts.workSetupText);
     expect(JSON.stringify(preview.keyboard)).not.toContain(':publish');
   });

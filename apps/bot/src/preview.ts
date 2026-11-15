@@ -306,7 +306,8 @@ export function buildPreview(
     lines.push('');
   }
 
-  if (videoConfirmationPending) lines.push(texts.workVideoConfirmationText, '');
+  if (videoConfirmationPending && draft.extras['workVideo'])
+    lines.push(texts.workVideoConfirmationText, '');
 
   const ukText = uk ?? '';
   lines.push(texts.previewUkLabel(ukText.length));
