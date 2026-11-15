@@ -3,7 +3,7 @@
 - **Active agent:** none.
 - **Current task:** none (audit fixes: PRs #163, #165, #170 merged, site deployed).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record bot deploy and Dependabot triage.
+- **Last commit:** this commit — docs: record TypeScript 6 upgrade.
 - **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
   Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
@@ -24,7 +24,8 @@
   (`cc66559`, incl. `@anthropic-ai/sdk` 1.8.0); bot redeployed by Volodymyr, Worker
   `6b8e0b83-4f6d-448e-8642-7c7044f143ad`. Auto-merged updates reach the Worker only with the next
   manual deploy. Triage: #168 (workers-types 5) merged `8098d87` (types only, no deploy); #167
-  (@types/node 26) closed, major ignored; open: #164 (superseded astro), #169 (typescript 6).
+  (@types/node 26) closed, major ignored; #169 superseded by #171 (TypeScript 6, explicit
+  `types: ["node"]` in tsconfig.base.json, workers-types ^5.20261114.1; peers clean). Open: #164.
 
 - **T64c:** PR #162 squash-merged 2026-11-15; migration 0024 applied on prod D1 and bot deployed
   by Volodymyr 15:56 EET from `main` `b113ffe`, Worker `713dc7c5-957b-4ec1-90d3-41f509260269`.
