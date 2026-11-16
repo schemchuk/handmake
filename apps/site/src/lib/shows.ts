@@ -1,4 +1,13 @@
-import type { ContentStore, Show, ShowContentStore } from '@handmake/core';
+import type { ContentStore, Show, ShowContentStore, Work } from '@handmake/core';
+
+import { workVideoPath } from './portfolio';
+
+export function showOriginalVideo(show: Show, works: Work[]): string | undefined {
+  const legacy = show.authentic?.find((item) => item.kind === 'video');
+  if (legacy) return showMediaPath(show, legacy.fileName);
+  const work = works.find((work) => work.id === show.workId && work.tenant === show.tenant);
+  return work?.video ? workVideoPath(work) : undefined;
+}
 
 export const showPage = (show: Show) => `shows/${show.id.toLowerCase()}`;
 export const showMediaPath = (show: Show, file: string) =>

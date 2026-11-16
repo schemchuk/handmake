@@ -2749,7 +2749,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Deploy: bot redeploy after merge; migration 0023 must already be applied (T64a).
 
 ### T65 — Show page reuses the linked work's video (`site`)
-- Status: open.
+- Status: done (merged 2026-11-16).
 - Owner: codex · Reviewer: claude-code · Depends on: T55, T57
 - Why: Volodymyr 2026-11-16: in `/show` the author cannot add her original video (removed in T57).
   She wants it on the site show page only, not in Telegram or the networks (no duplicate posts:

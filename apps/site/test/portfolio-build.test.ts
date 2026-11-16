@@ -104,6 +104,7 @@ describe('portfolio fixture build', () => {
         ...untranslatedShow,
         id: '01JBCA1B2C3D4E5F6G7H8J9K1C',
         date: '2026-11-02T12:00:00Z',
+        workId: ids.c,
         versions: { de: show.versions.de! },
       };
       await fixture.store.saveShow(germanShow, [
@@ -147,6 +148,28 @@ describe('portfolio fixture build', () => {
         [],
         video,
       );
+      const crossLanguageWork = (await fixture.store.readWork('fixture', ids.b))!;
+      await fixture.store.saveWork(
+        {
+          ...crossLanguageWork,
+          versions: { uk: crossLanguageWork.versions.uk! },
+          video: { fileName: 'original.mp4', provenance: 'human', people: 'none' },
+        },
+        [],
+        video,
+      );
+      const crossLanguageShow = {
+        ...show,
+        id: '01JBCA1B2C3D4E5F6G7H8J9K1D',
+        date: '2026-11-01T12:00:00Z',
+        workId: ids.b,
+        authentic: [show.authentic![0]!],
+      };
+      await fixture.store.saveShow(crossLanguageShow, [
+        { fileName: 'authentic.jpg', data: original },
+        ...show.images.map(({ fileName }) => ({ fileName, data: marked })),
+        { fileName: show.video.fileName, data: video },
+      ]);
       const result = await build(root, dist);
       const home = await html(dist, '');
       expect(home).toMatch(
@@ -284,16 +307,41 @@ describe('portfolio fixture build', () => {
         expect(page.indexOf('authentic.jpg')).toBeLessThan(page.indexOf('image-1.png'));
         const block = page
           .split('<section aria-labelledby="authentic-heading">')[1]!
-          .split('</section>')[0];
+          .split('</section>')[0]!;
         expect(block).not.toContain('KI-generiertes');
         expect(block).toContain('alt=');
         expect(block).toContain('authentic.mp4');
+        expect(block.match(/<video\b/g)).toHaveLength(1);
+        expect(block).not.toContain('/work-media/');
       }
       expect(await html(dist, `shows/${germanShow.id.toLowerCase()}`)).not.toContain(
         'authentic-heading',
       );
-      expect(await html(dist, `uk/shows/${untranslatedShow.id.toLowerCase()}`)).not.toContain(
-        'authentic-heading',
+      for (const prefix of ['', 'uk/']) {
+        const page = await html(dist, `${prefix}shows/${crossLanguageShow.id.toLowerCase()}`);
+        const block = page
+          .split('<section aria-labelledby="authentic-heading">')[1]!
+          .split('</section>')[0]!;
+        expect(block).toContain('authentic.jpg');
+        expect(block).toContain(`src="/work-media/${ids.b.toLowerCase()}/original.mp4"`);
+        expect(block.match(/<video\b/g)).toHaveLength(1);
+        expect(block).not.toContain('KI-generiertes');
+      }
+      const inheritedPage = await html(dist, `uk/shows/${untranslatedShow.id.toLowerCase()}`);
+      const inheritedBlock = inheritedPage
+        .split('<section aria-labelledby="authentic-heading">')[1]!
+        .split('</section>')[0]!;
+      expect(inheritedBlock).toContain('Оригінальна робота');
+      expect(inheritedBlock).toContain(`src="/work-media/${ids.a.toLowerCase()}/video.mp4"`);
+      expect(inheritedBlock).toContain('controls');
+      expect(inheritedBlock).toContain('playsinline');
+      expect(inheritedBlock).toContain('preload="metadata"');
+      expect(inheritedBlock).toContain('aria-label="Оригінальна робота:');
+      expect(inheritedBlock).toContain('<a href="/work-media/');
+      expect(inheritedBlock).not.toContain('KI-generiertes');
+      expect(inheritedBlock.match(/<video\b/g)).toHaveLength(1);
+      expect(inheritedPage.indexOf('authentic-heading')).toBeLessThan(
+        inheritedPage.indexOf('image-1.png'),
       );
       expect(
         await readFile(path.join(dist, `show-media/${show.id.toLowerCase()}/authentic.jpg`)),
