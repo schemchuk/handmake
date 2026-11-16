@@ -48,6 +48,12 @@ jobs:
       show_id: ${{ steps.routing.outputs.show_id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history: the publisher pull-rebases its content commits onto a moving main;
+          # a shallow clone has no merge base and stops mid-rebase. `main`, not the dispatch
+          # commit, so a rerun sees ledgers pushed by the earlier attempt.
+          ref: main
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
