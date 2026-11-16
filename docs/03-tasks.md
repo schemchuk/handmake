@@ -2747,3 +2747,29 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests (only touched files, `--maxWorkers=2`): aggregation and formatting, empty data text,
   Monday-only send, no resend in the same week, retention delete, tenant isolation.
 - Deploy: bot redeploy after merge; migration 0023 must already be applied (T64a).
+
+### T65 — Show page reuses the linked work's video (`site`)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: T55, T57
+- Why: Volodymyr 2026-11-16: in `/show` the author cannot add her original video (removed in T57).
+  She wants it on the site show page only, not in Telegram or the networks (no duplicate posts:
+  Meta ranks reposted own content lower). Every show has a `workId`, and the work video from
+  `/work` is already people-confirmed and published on the work page, so the site reuses it.
+  No bot, core, publisher or channel change.
+- Change (`apps/site` only):
+  1. `apps/site/src/pages/[...lang]/shows/[id].astro`: find the linked work by `show.workId`
+     regardless of language for the video. If the show has no authentic video (`show.authentic`
+     without `kind: 'video'`) and the work has `video`, render it in the «Originalarbeit»
+     (`ui.authenticityLabel`) section, before the generated images, with the same `<video>` markup
+     as the work page (`workVideoPath(work)`, `data.imageSizes`, `controls playsinline
+     preload="metadata"`, aria-label with the label and title, fallback link). Legacy authentic
+     photos keep rendering; a legacy authentic video wins over the work video (never two).
+  2. Put the selection in a small pure helper in `apps/site/src/lib/shows.ts` (e.g.
+     `showOriginalVideo(show, works)` returning the src or undefined) so it is unit-tested.
+  3. The work video must not get the «KI-generiertes Model» caption.
+- Acceptance: a show whose work has a video shows it under «Originalarbeit» on every language page
+  of the show; a show whose work has no video renders as today; the legacy show with authentic
+  media renders as today; build and external-resource check pass.
+- Tests (`apps/site`, only touched files, `--maxWorkers=2`): helper cases (work video, no video,
+  missing work, legacy authentic video wins); a build fixture check if one exists for shows.
+- Deploy: site deploy via the usual `site.yml` run after merge.

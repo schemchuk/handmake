@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (audit fixes: PRs #163, #165, #170 merged, site deployed).
+- **Active agent:** codex.
+- **Current task:** T65 (show page reuses the linked work's video).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: record TypeScript 6 upgrade.
-- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-  Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
+- **Last commit:** this commit — docs: add T65 (show page reuses work video).
+- **Next step:** codex: implement T65 from docs/03-tasks.md (site only), leave the diff
+  uncommitted for claude-code review. Then: 2026-11-18 20:00 Berlin first live contest closing
+  without Facebook (logs on). Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`).
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 
