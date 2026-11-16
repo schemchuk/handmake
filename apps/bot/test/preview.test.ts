@@ -656,3 +656,23 @@ describe('work video confirmation preview (T56)', () => {
     expect(JSON.stringify(preview.keyboard)).not.toContain(':publish');
   });
 });
+
+it.each(['uk', 'de'])(
+  'previews anonymous Instagram and Threads ballot captions in %s',
+  (language) => {
+    const draft = {
+      ...createDraft('tenant', 'draft', now),
+      state: 'ready' as const,
+      type: 'wotw-poll' as const,
+      texts: { uk: 'Secret name', de: 'Secret name' },
+      photoRefs: ['one', 'two', 'three'],
+      extras: { poll: { question: 'Favorite?', options: ['No 1', 'No 2', 'No 3'] } },
+    };
+    const preview = buildPreview(draft, botTexts, now, undefined, { language }, undefined, false, {
+      language,
+    });
+    const label = language === 'uk' ? 'Робота № 3' : 'Werk Nr. 3';
+    expect(preview.text.split(label)).toHaveLength(3);
+    expect(preview.text).toContain(language === 'uk' ? 'звичайними цифрами' : 'normalen Ziffern');
+  },
+);

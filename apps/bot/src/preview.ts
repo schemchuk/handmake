@@ -345,14 +345,16 @@ export function buildPreview(
       lines.push(
         texts.previewInstagramHeader(instagramCaption.lang, instagramCaption.caption.length),
       );
-      lines.push(
-        // Slice by code points, not UTF-16 units: an emoji astral of the
-        // window edge would otherwise split into a lone surrogate (PR #93
-        // review note). Array.from iterates code points.
-        texts.previewInstagramWindow(
-          Array.from(instagramCaption.caption).slice(0, instagramCaptionWindow).join(''),
-        ),
-      );
+      if (post.type === 'wotw-poll') lines.push(instagramCaption.caption);
+      else
+        lines.push(
+          // Slice by code points, not UTF-16 units: an emoji astral of the
+          // window edge would otherwise split into a lone surrogate (PR #93
+          // review note). Array.from iterates code points.
+          texts.previewInstagramWindow(
+            Array.from(instagramCaption.caption).slice(0, instagramCaptionWindow).join(''),
+          ),
+        );
     } else if (instagramSkip !== undefined) {
       lines.push('');
       lines.push(texts.previewInstagramSkip(instagramSkip));

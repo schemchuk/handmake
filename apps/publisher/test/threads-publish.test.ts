@@ -308,11 +308,10 @@ describe('runPublish with Threads enabled (T26c)', () => {
     ).toBe(true);
   });
 
-  it('fails Instagram when the one pre-delivery push is rejected; Threads resumes on the next run', async () => {
-    // One push per run happens at the FIRST Meta preparation (Instagram,
-    // first in the tenant order). Its rejection fails Instagram before any
-    // Instagram network write; Threads stays pending and delivers on the
-    // resume run, whose own push covers it.
+  it('fails Instagram when the first pre-delivery push is rejected; Threads still delivers', async () => {
+    // The first Meta preparation (Instagram) pushes; its rejection fails Instagram before any
+    // Instagram network write. Since T66 a failed channel no longer stops later ones: Threads
+    // retries the push and delivers in the same run; the re-run resumes only Instagram.
     git.push.mockRejectedValueOnce(new Error('push rejected'));
 
     const env = {
@@ -323,22 +322,20 @@ describe('runPublish with Threads enabled (T26c)', () => {
     await expect(runPost(basePayload, env)).rejects.toThrow(PublishError);
 
     expect(instagram.contexts).toHaveLength(0);
-    expect(threads.contexts).toHaveLength(0);
+    expect(threads.contexts).toHaveLength(1);
     let ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
     expect(ledger.channels['telegram']!.status).toBe('done');
     expect(ledger.channels['instagram']!.status).toBe('failed');
     expect(ledger.channels['instagram']!.error).toMatch(/push rejected/);
-    expect(ledger.channels['threads']!.status).not.toBe('done');
+    expect(ledger.channels['threads']!.status).toBe('done');
     expect(notifier.messages.some((m) => m.target === 'operator')).toBe(true);
 
-    // Resume: the re-run pushes once and delivers both Meta channels.
     const resumed = await runPost(basePayload, env);
     expect(resumed.delivered['instagram']).toEqual(['instagram-remote-0']);
-    expect(resumed.delivered['threads']).toEqual(['threads-remote-0']);
+    expect(threads.contexts).toHaveLength(1);
     ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
     expect(ledger.channels['instagram']!.status).toBe('done');
     expect(ledger.channels['threads']!.status).toBe('done');
-    expect(git.push).toHaveBeenCalledTimes(2);
   });
 
   it('skips Threads on a re-run via the ledger and does not deliver again', async () => {

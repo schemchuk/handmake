@@ -62,6 +62,7 @@ export class MetaGraphError extends Error {
   constructor(
     message: string,
     readonly rejected = false,
+    readonly graphCode?: number,
   ) {
     super(message);
     this.name = 'MetaGraphError';
@@ -231,6 +232,7 @@ export class MetaGraphClient {
       throw new MetaGraphError(
         `${this.network} ${path} failed: ${displayMessage ?? `HTTP ${response.status}`}`,
         response.status >= 400 && response.status < 500,
+        code,
       );
     }
     return parsed;

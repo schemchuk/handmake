@@ -14,6 +14,7 @@ import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 
 import { buildPostFromPayload } from './build-post';
 import { fetchAndProcessPhotos } from './photos';
+import { numberBallotPhotos } from './photos/number';
 import { parseDispatchPayload } from './payload';
 import { loadTenantConfig } from './tenant-config';
 import { prepareShowPublication } from './show-publication';
@@ -80,7 +81,7 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
         deps.env ?? process.env,
       )
     : undefined;
-  const photos = await fetchAndProcessPhotos(
+  let photos = await fetchAndProcessPhotos(
     payload.fileIds,
     deps.mediaSource,
     deps.env ?? process.env,
@@ -90,6 +91,7 @@ export async function runDryRun(payloadPath: string, deps: DryRunDeps = {}): Pro
     showPublication?.post ??
     publication?.post ??
     buildPostFromPayload(payload, tenant, { now: deps.now, newId: deps.newId });
+  if (post.type === 'wotw-poll') photos = await numberBallotPhotos(photos);
   const store = new GitRepoContentStore({ rootDir: tempDir });
   if (showPublication) {
     const sourceStore = new GitRepoContentStore({ rootDir: root });

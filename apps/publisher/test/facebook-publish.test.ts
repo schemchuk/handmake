@@ -3,7 +3,13 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { renderFacebook, renderInstagram, renderTelegram } from '@handmake/channels';
+import {
+  createFacebookAdapter,
+  renderFacebook,
+  renderInstagram,
+  renderTelegram,
+  renderThreads,
+} from '@handmake/channels';
 import { ChannelRegistry, showSchema } from '@handmake/core';
 import type {
   ChannelAdapter,
@@ -21,7 +27,7 @@ import { GitRepoContentStore, postFolderName } from '@handmake/stores';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 
-import { runPublish, PublishError } from '../src/publish';
+import { runPublish, PublishError, contestErrorCode } from '../src/publish';
 import { runCopyShow } from '../src/copy-show';
 import type { DispatchPayload } from '../src/payload';
 import { markingFixtures } from './fixtures/show-marking';
@@ -316,11 +322,8 @@ describe('runPublish with Facebook enabled (T26b)', () => {
     ).toBe(true);
   });
 
-  it('fails Instagram when the one pre-delivery push is rejected; Facebook resumes on the next run', async () => {
-    // One push per run happens at the FIRST Meta preparation (Instagram,
-    // first in the tenant order). Its rejection fails Instagram before any
-    // Instagram network write; Facebook stays pending and delivers on the
-    // resume run, whose own push covers it.
+  it('continues to Facebook after an Instagram preparation failure', async () => {
+    // A rejected first push must not prevent Facebook from trying its own preparation.
     git.push.mockRejectedValueOnce(new Error('push rejected'));
 
     const env = {
@@ -331,22 +334,22 @@ describe('runPublish with Facebook enabled (T26b)', () => {
     await expect(runPost(basePayload, env)).rejects.toThrow(PublishError);
 
     expect(instagram.contexts).toHaveLength(0);
-    expect(facebook.contexts).toHaveLength(0);
+    expect(facebook.contexts).toHaveLength(1);
     let ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
     expect(ledger.channels['telegram']!.status).toBe('done');
     expect(ledger.channels['instagram']!.status).toBe('failed');
     expect(ledger.channels['instagram']!.error).toMatch(/push rejected/);
-    expect(ledger.channels['facebook']!.status).not.toBe('done');
+    expect(ledger.channels['facebook']!.status).toBe('done');
     expect(notifier.messages.some((m) => m.target === 'operator')).toBe(true);
 
-    // Resume: the re-run pushes once and delivers both Meta channels.
+    // Resume retries Instagram and skips the successful Facebook delivery.
     const resumed = await runPost(basePayload, env);
     expect(resumed.delivered['instagram']).toEqual(['instagram-remote-0']);
-    expect(resumed.delivered['facebook']).toEqual(['facebook-remote-0']);
+    expect(resumed.skipped).toContain('facebook');
     ledger = (await new GitRepoContentStore({ rootDir: root }).readLedger(tenantId, draftId))!;
     expect(ledger.channels['instagram']!.status).toBe('done');
     expect(ledger.channels['facebook']!.status).toBe('done');
-    expect(git.push).toHaveBeenCalledTimes(2);
+    expect(git.push).toHaveBeenCalledTimes(3);
   });
 
   it('skips Facebook on a re-run via the ledger and does not deliver again', async () => {
@@ -483,4 +486,98 @@ describe('runCopyShow with Facebook enabled (T26b)', () => {
     const ledger = result.ledger;
     expect(ledger.channels['facebook']!.status).toBe('done');
   });
+});
+
+it('delivers a stored-shape three-entry ballot through the real Facebook album adapter', async () => {
+  const stored = await readFile(new URL('./fixtures/ballot-post.md', import.meta.url), 'utf8');
+  const ids = [...stored.matchAll(/\{entry:([^}]+)\}/g)].slice(0, 3).map((match) => match[1]!);
+  const requests: Record<string, unknown>[] = [];
+  const facebook = createFacebookAdapter({
+    fetchImpl: async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return Response.json({ id: `remote-${requests.length}` });
+    },
+  });
+  const threads = new RecordingAdapter('threads', renderThreads);
+  const registry = new ChannelRegistry();
+  for (const adapter of [telegram, instagram, facebook, threads]) registry.register(adapter);
+  const configPath = path.join(root, 'config', 'tenants', 'faden-und-stimmung.yaml');
+  await writeFile(configPath, await readFile(realTenantConfig, 'utf8'));
+  const source = await mediaSource();
+  source.photos.set('file-3', await jpeg(800, 600));
+  const payloadPath = path.join(root, 'payload.json');
+  await writeFile(
+    payloadPath,
+    JSON.stringify({
+      ...basePayload,
+      type: 'wotw-poll',
+      fileIds: ['file-1', 'file-2', 'file-3'],
+      texts: {
+        uk: ids.map((id) => `{entry:${id}}`).join('\n'),
+        de: ids.map((id) => `{entry:${id}}`).join('\n'),
+      },
+      poll: { question: 'Favorite?', options: ['No 1', 'No 2', 'No 3'] },
+    }),
+  );
+  const logs: string[] = [];
+  const deps = {
+    root,
+    now,
+    registry,
+    git,
+    notifier,
+    mediaSource: source,
+    env: {
+      CONTENT_RAW_BASE_URL: 'https://raw.example/base',
+      PUBLISH_CALLBACK_URL: 'https://fixture.test/callback',
+      NAMES_ENDPOINT_SECRET: 'fixture',
+    },
+    fetchImpl: (async () =>
+      Response.json(Object.fromEntries(ids.map((id) => [id, null])))) as typeof fetch,
+    secrets: { resolve: async () => 'fixture-secret' },
+    logger: (line: string) => logs.push(line),
+  };
+  const result = await runPublish(payloadPath, deps);
+  expect(Object.keys(result.delivered)).toEqual(['telegram', 'instagram', 'facebook', 'threads']);
+  expect(requests).toHaveLength(4);
+  expect(requests.slice(0, 3).every((request) => request.published === false)).toBe(true);
+  expect(requests[3]!.attached_media).toHaveLength(3);
+  expect(JSON.stringify(requests)).not.toContain('{entry:');
+  expect(threads.contexts[0]!.photos).toEqual(telegram.contexts[0]!.photos);
+  const folder = postFolderName(result.post);
+  const committed = await readFile(path.join(root, 'content/posts', folder, 'photo-1.jpg'));
+  expect(committed).toEqual(Buffer.from(telegram.contexts[0]!.photos[0]!));
+  // The actual adapter receives a rejected album request; Threads must still run.
+  const retryRoot = await freshDir('handmake-ballot-retry-');
+  await mkdir(path.join(retryRoot, 'config/tenants'), { recursive: true });
+  await writeFile(
+    path.join(retryRoot, 'config/tenants/faden-und-stimmung.yaml'),
+    await readFile(realTenantConfig, 'utf8'),
+  );
+  const failing = createFacebookAdapter({
+    fetchImpl: async () =>
+      Response.json(
+        { error: { code: 200, message: 'Secret name https://example.test/?access_token=secret' } },
+        { status: 403 },
+      ),
+  });
+  const failedRegistry = new ChannelRegistry();
+  for (const adapter of [telegram, instagram, failing, threads]) failedRegistry.register(adapter);
+  await expect(
+    runPublish(payloadPath, { ...deps, root: retryRoot, registry: failedRegistry }),
+  ).rejects.toThrow(PublishError);
+  const ledger = (await new GitRepoContentStore({ rootDir: retryRoot }).readLedger(
+    tenantId,
+    draftId,
+  ))!;
+  expect(ledger.channels.facebook!.status).toBe('failed');
+  expect(ledger.channels.threads!.status).toBe('done');
+  expect(logs.join('\n')).toContain('FacebookAdapterError code=200');
+  expect(logs.join('\n')).not.toMatch(/Secret name|access_token/);
+});
+
+it('never includes arbitrary error names or messages in contest diagnostics', () => {
+  const error = new Error('https://example.test/?token=secret Private name');
+  error.name = 'Private name';
+  expect(contestErrorCode(error)).toBe('Error');
 });
