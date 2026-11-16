@@ -66,8 +66,9 @@
       "updatedAt": "2026-11-16T12:01:54.365Z"
     },
     "facebook": {
-      "status": "pending",
+      "status": "failed",
       "remoteIds": [],
+      "error": "Contest publication failed",
       "updatedAt": "2026-11-16T12:01:50.555Z"
     },
     "threads": {
