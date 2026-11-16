@@ -80,7 +80,13 @@ export function createGitCommitter(options: GitCommitterOptions): GitCommitter {
     },
     async push(ref) {
       for (let attempt = 1; ; attempt++) {
-        await git(['pull', '--rebase', 'origin', ref]);
+        try {
+          await git(['pull', '--rebase', 'origin', ref]);
+        } catch (error) {
+          // Never leave the checkout mid-rebase: later ledger commits would all fail.
+          await git(['rebase', '--abort']).catch(() => undefined);
+          throw error;
+        }
         try {
           await git(['push', 'origin', `HEAD:${ref}`]);
           return;
