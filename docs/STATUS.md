@@ -1,11 +1,14 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T66 merged; re-running the week 2026-11-09 ballot.
+- **Active agent:** none.
+- **Current task:** none (week 2026-11-09 ballot live on Telegram, Instagram, Facebook, Threads).
 - **Branch:** `main`.
-- **Last commit:** fix: numbered contest ballot on all networks (T66).
-- **Next step:** T66 after-merge steps (content cleanup, D1 reset, one-off opening). Check the
-  Facebook ballot delivery log line `delivery failed (FacebookAdapterError code=…)` if it fails again.
+- **Last commit:** docs: record contest ballot re-run.
+- **Next step:** 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
+  `01M7JAGNR0AY284B9EAK4FT4W7`, publish run of 14:00 UTC, all four channels delivered); check votes
+  from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
+  rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
+  entries of week 2026-11-16 are `withdrawn`.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
