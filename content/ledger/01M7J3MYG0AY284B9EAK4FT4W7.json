@@ -3,9 +3,6 @@
   "postId": "01M7J3MYG0AY284B9EAK4FT4W7",
   "channels": {
     "telegram": {
-      "status": "pending",
-      "remoteIds": [],
-      "updatedAt": "2026-11-16T12:01:50.555Z",
       "editPlan": {
         "version": 1,
         "type": "wotw-poll",
@@ -54,7 +51,14 @@
             "replyToOp": 0
           }
         ]
-      }
+      },
+      "status": "done",
+      "remoteIds": [
+        82,
+        85,
+        86
+      ],
+      "updatedAt": "2026-11-16T12:01:54.335Z"
     },
     "instagram": {
       "status": "pending",
