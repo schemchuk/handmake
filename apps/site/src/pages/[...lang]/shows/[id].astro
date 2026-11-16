@@ -5,7 +5,7 @@ import type { Show } from '@handmake/core';
 import Base from '../../../layouts/Base.astro';
 import Provenance from '../../../components/Provenance.astro';
 import { loadSiteData } from '../../../lib/site-data';
-import { showPage, showMediaPath } from '../../../lib/shows';
+import { showPage, showMediaPath, showOriginalVideo } from '../../../lib/shows';
 import { langParam, pagePath } from '../../../lib/paths';
 import { uiStrings } from '../../../lib/i18n';
 import { excerpt, paragraphs } from '../../../lib/text';
@@ -23,6 +23,8 @@ const ui = uiStrings(lang);
 const version = show.versions[lang]!;
 const title = excerpt(version.description, 60);
 const work = data.works.find((work) => work.id === show.workId && work.versions[lang]);
+const originalVideo = showOriginalVideo(show, data.works);
+const inheritedVideo = originalVideo && !show.authentic?.some((item) => item.kind === 'video');
 const alternates = Object.fromEntries(data.tenant.languages.filter((code) => show.versions[code]).map((code) => [code, pagePath(code, def, showPage(show))]));
 ---
 <Base lang={lang} title={title} description={excerpt(version.description)} alternates={alternates} current="shows">
@@ -35,17 +37,24 @@ const alternates = Object.fromEntries(data.tenant.languages.filter((code) => sho
       {show.model && <p>{show.model.name}</p>}
       {work && <p><a href={pagePath(lang, def, `works/${work.id.toLowerCase()}`)}>{ui.authenticityLabel}</a></p>}
     </div>
-    {show.authentic && show.authentic.length > 0 && <section aria-labelledby="authentic-heading">
+    {(show.authentic?.length || originalVideo) && <section aria-labelledby="authentic-heading">
       <h2 id="authentic-heading">{ui.authenticityLabel}</h2>
       <div class="work-gallery">
-        {show.authentic.map((item, i) => <figure class="patch">
+        {show.authentic?.map((item, i) => <figure class="patch">
           {item.kind === 'photo' ?
-            <img src={showMediaPath(show, item.fileName)} {...data.imageSizes.get(showMediaPath(show, item.fileName))} alt={`${ui.authenticityLabel}: ${title} (${i + 1}/${show.authentic.length})`} loading="lazy" style="width:100%;height:auto" /> :
+            <img src={showMediaPath(show, item.fileName)} {...data.imageSizes.get(showMediaPath(show, item.fileName))} alt={`${ui.authenticityLabel}: ${title} (${i + 1}/${show.authentic!.length})`} loading="lazy" style="width:100%;height:auto" /> :
             <video {...data.imageSizes.get(showMediaPath(show, item.fileName))} controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
               <source src={showMediaPath(show, item.fileName)} type="video/mp4" />
               <a href={showMediaPath(show, item.fileName)}>{title}</a>
             </video>}
         </figure>)}
+        {inheritedVideo && <figure>
+          <div class="patch"><video {...data.imageSizes.get(originalVideo)} controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
+            <source src={originalVideo} type="video/mp4" />
+            <a href={originalVideo}>{title}</a>
+          </video></div>
+          <figcaption class="credit">{ui.authenticityLabel}</figcaption>
+        </figure>}
       </div>
     </section>}
     <div class="work-gallery">

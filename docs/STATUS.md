@@ -1,12 +1,11 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T65 (show page reuses the linked work's video).
+- **Active agent:** none.
+- **Current task:** none (T65 merged: show pages on the site show the linked work's video).
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: add T65 (show page reuses work video).
-- **Next step:** codex: implement T65 from docs/03-tasks.md (site only), leave the diff
-  uncommitted for claude-code review. Then: 2026-11-18 20:00 Berlin first live contest closing
-  without Facebook (logs on). Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`).
+- **Last commit:** feat(site): show page reuses the linked work's video (T65).
+- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
+  Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 
