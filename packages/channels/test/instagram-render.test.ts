@@ -71,14 +71,11 @@ describe('renderInstagram: skips (site-worthy items only)', () => {
     expect(instagramSkipReason(post)).toBe('no-photos');
   });
 
-  it.each(['announcement', 'reminder', 'wotw-poll', 'wotw-result'] as const)(
-    'skips a %s post',
-    (type) => {
-      const post = makePost({ type });
-      expect(renderInstagram(post, settings)).toEqual([]);
-      expect(instagramSkipReason(post)).toBe('not-site-worthy');
-    },
-  );
+  it.each(['announcement', 'reminder', 'wotw-result'] as const)('skips a %s post', (type) => {
+    const post = makePost({ type });
+    expect(renderInstagram(post, settings)).toEqual([]);
+    expect(instagramSkipReason(post)).toBe('not-site-worthy');
+  });
 
   it('skips a site-excluded (test) post', () => {
     const post = makePost({ siteExcluded: true });

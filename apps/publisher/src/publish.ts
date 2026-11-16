@@ -50,6 +50,7 @@ import {
   prepareInstagramDelivery,
 } from './instagram-delivery';
 import { fetchAndProcessPhotos } from './photos';
+import { numberBallotPhotos } from './photos/number';
 import { createPublishCallbackSender } from './publish-callback';
 import type { PublishCallbackSender } from './publish-callback';
 import { parseDispatchPayload } from './payload';
@@ -134,6 +135,23 @@ function safeErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** Only fixed classes and numeric API codes are safe for contest diagnostics. */
+export function contestErrorCode(error: unknown): string {
+  const allowed = new Set([
+    'FacebookAdapterError',
+    'InstagramAdapterError',
+    'ThreadsAdapterError',
+    'TelegramAdapterError',
+    'FacebookRenderError',
+    'InstagramRenderError',
+    'ThreadsRenderError',
+  ]);
+  const name = error instanceof Error && allowed.has(error.name) ? error.name : 'Error';
+  const code =
+    error instanceof Error ? (error as Error & { graphCode?: unknown }).graphCode : undefined;
+  return `${name}${typeof code === 'number' && Number.isSafeInteger(code) ? ` code=${code}` : ''}`;
+}
+
 /**
  * Publish (T10): payload -> post -> content store (git commit) -> deliver
  * every pending channel through the registry, updating the ledger after
@@ -194,7 +212,9 @@ export async function runPublish(
     now,
   });
   const errorMessage = (error: unknown) =>
-    entryIds.length ? 'Contest publication failed' : safeErrorMessage(error);
+    post.type === 'wotw-poll' || post.type === 'wotw-result' || entryIds.length
+      ? 'Contest publication failed'
+      : safeErrorMessage(error);
   const notifier: Notifier =
     deps.notifier ??
     ({ notify: async (target, message) => log(`notify ${target}: ${message}`) } satisfies Notifier);
@@ -227,7 +247,9 @@ export async function runPublish(
     );
     throw error;
   }
-  const photos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
+  const processedPhotos = await fetchAndProcessPhotos(payload.fileIds, deps.mediaSource, env);
+  const photos =
+    post.type === 'wotw-poll' ? await numberBallotPhotos(processedPhotos) : processedPhotos;
   if (showPublication) {
     await store.saveShow(showPublication.show, showPublication.media);
   } else if (workPublication) {
@@ -278,6 +300,7 @@ export async function runPublish(
   // puts Instagram before Facebook): the first opted-in preparation pushes,
   // later ones skip the no-op second push (PR #96 review note 4).
   let contentPushed = false;
+  const failures: string[] = [];
   const channelOperations = new Map<string, SendOperation[]>();
   for (const channel of post.channels) {
     let entry = ledger.channels[channel];
@@ -348,7 +371,13 @@ export async function runPublish(
         );
       }
     } catch (error) {
-      throw new Error(errorMessage(error));
+      const message = errorMessage(error);
+      log(`channel ${channel}: render failed (${contestErrorCode(error)})`);
+      ledger = markFailed(ledger, channel, message, now);
+      await persistLedger();
+      await notify('operator', `publish render failed on ${channel}: ${message}`);
+      failures.push(`channel "${channel}" render failed: ${message}`);
+      continue;
     }
     if (channel === 'threads' && workVideo) {
       ops = ops.map((op) => (op.kind === 'mediaGroup' ? { ...op, includeVideo: true } : op));
@@ -443,10 +472,14 @@ export async function runPublish(
         'operator',
         `publish failed for ${post.tenant}/${post.id} on ${channel}: ${message}`,
       );
-      throw new PublishError(`channel "${channel}" delivery failed: ${message}`);
+      log(`channel ${channel}: delivery failed (${contestErrorCode(error)})`);
+      failures.push(`channel "${channel}" delivery failed: ${message}`);
+      continue;
     }
     await persistLedger();
   }
+
+  if (failures.length) throw new PublishError(failures.join('; '));
 
   if (workPublication && workVideo) {
     for (const channel of post.channels.filter(

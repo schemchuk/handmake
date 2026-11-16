@@ -1,14 +1,17 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T66 (contest ballot: numbered photos, IG/Threads carousels, Facebook failure).
+- **Active agent:** claude-code.
+- **Current task:** T66 merged; re-running the week 2026-11-09 ballot.
 - **Branch:** `main`.
-- **Last commit:** this commit — docs: add T66 (contest ballot fixes).
-- **Next step:** codex: implement T66 from docs/03-tasks.md, leave the diff uncommitted for
-  claude-code review. Then the T66 after-merge steps (re-run the week 2026-11-09 ballot) before
-  2026-11-18 20:00 Berlin.
-- **Blocked on:** no implementation blocker; browser layout verification remains for review.
+- **Last commit:** fix: numbered contest ballot on all networks (T66).
+- **Next step:** T66 after-merge steps (content cleanup, D1 reset, one-off opening). Check the
+  Facebook ballot delivery log line `delivery failed (FacebookAdapterError code=…)` if it fails again.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
+- **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
+  bot preview 45/45; typecheck for all three packages, changed-code ESLint and diff whitespace
+  checks pass. Initial preview assertions exposed the truncated Instagram caption and were
+  fixed; vector digits remove host-font/cache dependence. Browser thumbnail review remains.
 
 - **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
   (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT

@@ -1,3 +1,4 @@
+import { ballotCaption } from '../ballot';
 import { appendAuthenticity } from '../authenticity';
 import type {
   ChannelCapabilities,
@@ -53,7 +54,7 @@ import { showDisclosure } from '../show-disclosures';
  * Multi-photo items go out as one carousel (2-10 photos); every carousel
  * image is framed 4:5 (1080x1350, padded, never cutting the work —
  * `instagramCarouselFrame`) by the publisher before delivery. Instagram
- * receives only site-worthy items: a post without photos, a non-`free` type
+ * receives free posts and contest ballots: a post without photos, another type
  * and a site-excluded (test) post all render to zero operations
  * (`instagramSkipReason` says which case a caller has). Shows render to one
  * image-carousel op; the video is not copied (Reels is a later task). The
@@ -96,7 +97,7 @@ export type InstagramSkip = 'no-photos' | 'not-site-worthy' | 'site-excluded';
 
 export function instagramSkipReason(post: Post): InstagramSkip | undefined {
   if (post.photos.length === 0) return 'no-photos';
-  if (post.type !== 'free') return 'not-site-worthy';
+  if (post.type !== 'free' && post.type !== 'wotw-poll') return 'not-site-worthy';
   if (post.siteExcluded) return 'site-excluded';
   return undefined;
 }
@@ -162,7 +163,11 @@ export function renderInstagram(post: Post, settings?: unknown): SendOperation[]
   const parsed = parseInstagramChannelSettings(settings);
   // Skipped posts render to zero ops: the publisher marks the channel done
   // with no remote ids and the preview shows the reason.
+  if (post.type === 'wotw-poll' && !post.siteExcluded && post.photos.length === 0)
+    throw new InstagramRenderError('Ballot requires 2–10 photos');
   if (instagramSkipReason(post)) return [];
+  if (post.type === 'wotw-poll' && post.photos.length < 2)
+    throw new InstagramRenderError('Instagram ballot requires 2–10 photos');
   if (post.photos.length > instagramMaxPhotos) {
     throw new InstagramRenderError(
       `Instagram allows at most ${instagramMaxPhotos} photos per carousel; post has ${post.photos.length}`,
@@ -174,7 +179,13 @@ export function renderInstagram(post: Post, settings?: unknown): SendOperation[]
     );
   }
   const caption = buildInstagramCaption(
-    appendAuthenticity(post.texts[parsed.language]!, parsed.language, true),
+    appendAuthenticity(
+      post.type === 'wotw-poll'
+        ? ballotCaption(post, parsed.language)
+        : post.texts[parsed.language]!,
+      parsed.language,
+      true,
+    ),
   );
   return [
     {

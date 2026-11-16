@@ -43,7 +43,10 @@ export const facebookPageAccessTokenSecret = 'FACEBOOK_PAGE_ACCESS_TOKEN';
 // they live in ../meta/token and are re-exported by the package index.
 
 export class FacebookAdapterError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly graphCode?: number,
+  ) {
     super(message);
     this.name = 'FacebookAdapterError';
   }
@@ -179,7 +182,8 @@ export class FacebookAdapter implements ChannelAdapter {
     } catch (error) {
       // Transport failures surface under this adapter's public error class;
       // validation and persistence errors pass through unchanged.
-      if (error instanceof MetaGraphError) throw new FacebookAdapterError(error.message);
+      if (error instanceof MetaGraphError)
+        throw new FacebookAdapterError(error.message, error.graphCode);
       throw error;
     }
     return ids;

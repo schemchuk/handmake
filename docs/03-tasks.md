@@ -2775,7 +2775,8 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Deploy: site deploy via the usual `site.yml` run after merge.
 
 ### T66 — Contest ballot: numbered photos, Instagram/Threads carousels, Facebook failure (`publisher`, `channels`)
-- Status: open.
+- Status: done (merged 2026-11-16); the live Facebook cause shows up in the next ballot run log
+  (run 43862855030 logs hold only the masked message).
 - Owner: codex · Reviewer: claude-code · Depends on: T31, T31e
 - Why: first live ballot 2026-11-16 (post `01M7J3MYG0AY284B9EAK4FT4W7`, publish run 43862855030).
   (1) Telegram got the album, poll and DE text, but the photos carry no numbers, so readers cannot
@@ -2811,6 +2812,16 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   closing collection reads the Instagram/Threads deliveries unchanged.
 - Tests (only touched suites, `--maxWorkers=2`): number overlay, IG/Threads ballot render UA/DE and
   limits, preview captions, Facebook ballot delivery case, error logging without secrets.
+- Implementation evidence (codex, 2026-11-16, uncommitted): numbered original bytes and shared
+  anonymous IG/Threads captions are implemented, including full Instagram ballot preview.
+  Per-channel failures are persisted and aggregated after all channels have been attempted;
+  the success callback remains blocked on any failure. Safe Facebook Graph codes survive the
+  adapter wrapper; contest diagnostics never print API messages or arbitrary error names.
+  A stored-shape three-entry payload passes local delivery through the real Facebook album
+  adapter with mocked HTTP. A rejected Facebook request still allows Threads to finish.
+  The original live Facebook cause is NOT established: the ledger discarded its error and
+  GitHub run logs could not be fetched (network access to api.github.com unavailable). Do not
+  treat the mocked failure code as the production cause or this task as fully complete.
 - After merge (claude-code): Volodymyr deletes Telegram messages 82–86 of the first ballot by hand;
   claude-code removes post/ledger `01M7J3MYG0AY284B9EAK4FT4W7` from `content/`, resets the D1 draft
   and the `poll_openings` row for week 2026-11-09 and re-runs the one-off opening (config time

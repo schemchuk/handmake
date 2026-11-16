@@ -1,3 +1,4 @@
+import { ballotCaption } from '../ballot';
 import { appendAuthenticity } from '../authenticity';
 import {
   canonicalUrl,
@@ -39,7 +40,11 @@ export function assertThreadsText(text: string): void {
     );
 }
 export function threadsSkipReason(post: Post): 'not-site-worthy' | 'site-excluded' | undefined {
-  return post.siteExcluded ? 'site-excluded' : post.type !== 'free' ? 'not-site-worthy' : undefined;
+  return post.siteExcluded
+    ? 'site-excluded'
+    : post.type !== 'free' && post.type !== 'wotw-poll'
+      ? 'not-site-worthy'
+      : undefined;
 }
 function operation(text: string, photos: unknown[], language: string): SendOperation[] {
   assertThreadsText(text);
@@ -58,12 +63,16 @@ function operation(text: string, photos: unknown[], language: string): SendOpera
 }
 export function renderThreads(post: Post, value: unknown): SendOperation[] {
   const { language, canonical } = parseThreadsSettings(value);
+  if (post.type === 'wotw-poll' && !post.siteExcluded && post.photos.length === 0)
+    throw new ThreadsRenderError('Ballot requires 2–10 photos');
   if (threadsSkipReason(post)) return [];
-  let text = post.texts[language];
+  if (post.type === 'wotw-poll' && (post.photos.length < 2 || post.photos.length > 10))
+    throw new ThreadsRenderError('Threads ballot requires 2–10 photos');
+  let text = post.type === 'wotw-poll' ? ballotCaption(post, language) : post.texts[language];
   if (text === undefined)
     throw new ThreadsRenderError(`Threads language "${language}" has no text`);
   text = appendAuthenticity(text, language, post.photos.length > 0);
-  if (canonical?.links) {
+  if (canonical?.links && post.type !== 'wotw-poll') {
     const origin = new URL(canonical.baseUrl);
     if (origin.protocol !== 'https:' || origin.origin !== canonical.baseUrl)
       throw new ThreadsRenderError('Threads canonical baseUrl must be an HTTPS origin');
