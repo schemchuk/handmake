@@ -2773,3 +2773,45 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests (`apps/site`, only touched files, `--maxWorkers=2`): helper cases (work video, no video,
   missing work, legacy authentic video wins); a build fixture check if one exists for shows.
 - Deploy: site deploy via the usual `site.yml` run after merge.
+
+### T66 — Contest ballot: numbered photos, Instagram/Threads carousels, Facebook failure (`publisher`, `channels`)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: T31, T31e
+- Why: first live ballot 2026-11-16 (post `01M7J3MYG0AY284B9EAK4FT4W7`, publish run 43862855030).
+  (1) Telegram got the album, poll and DE text, but the photos carry no numbers, so readers cannot
+  tell which photo is No 1..N. (2) Instagram and Threads rendered zero ops: `instagramSkipReason`
+  and `threadsSkipReason` skip every non-`free` type, although F19 (v7) and T31c/T31d expect a
+  numbered carousel there and the closing already reads comment votes from those deliveries.
+  (3) Facebook delivery failed; `apps/publisher/src/publish.ts` masks every contest error as
+  «Contest publication failed», so the cause is unknown. Volodymyr 2026-11-16: keep Facebook in the
+  ballot publication (not a vote source, T31e) until he decides otherwise.
+- Change:
+  1. Numbered photos (`apps/publisher`): for `wotw-poll` posts, after `fetchAndProcessPhotos` and
+     before `savePost`, burn the candidate number (1..N in entry order) into each photo with sharp:
+     large, high-contrast badge in a corner, readable on phone thumbnails, no other text, no names.
+     The committed photos (used by Meta raw URLs) and Telegram bytes are the numbered ones. Pure
+     function with unit tests (dimensions unchanged, deterministic output, N up to 10). Other post
+     types unchanged.
+  2. Instagram and Threads ballots (`packages/channels`): `wotw-poll` renders one carousel of all
+     candidate photos in entry order with the channel-language caption: generated ballot intro
+     asking for a plain digit comment (reuse the T31d1 UA/DE wording), then `Робота № 1`… /
+     `Werk Nr. 1`… lines. No display names, no `{entry:…}` placeholders (names are Telegram-only by
+     consent). Authenticity line as on other posts. `wotw-result` keeps being skipped for now.
+     Respect each network's carousel limits (2..10). Author preview (`apps/bot/src/preview.ts`)
+     shows the same captions.
+  3. Facebook: find and fix the cause of the ballot delivery failure (reproduce with the stored
+     payload shape / dry-run). Keep the contest error text free of names, but log a safe error
+     class/code (no tokens, URLs with tokens or names) so the next failure is diagnosable.
+     Facebook ballot text: it currently invites voting «in Telegram or Instagram»; keep that now
+     that Instagram really gets the ballot.
+  4. A failing channel must not stop later channels of the same publish where today it aborts the
+     run before Threads; if that is a larger change, report it instead of doing it.
+- Acceptance: a 3-entry ballot dry-run produces numbered photos, a Telegram album+poll, an
+  Instagram carousel, a Threads carousel and a Facebook album, all without names outside Telegram;
+  closing collection reads the Instagram/Threads deliveries unchanged.
+- Tests (only touched suites, `--maxWorkers=2`): number overlay, IG/Threads ballot render UA/DE and
+  limits, preview captions, Facebook ballot delivery case, error logging without secrets.
+- After merge (claude-code): Volodymyr deletes Telegram messages 82–86 of the first ballot by hand;
+  claude-code removes post/ledger `01M7J3MYG0AY284B9EAK4FT4W7` from `content/`, resets the D1 draft
+  and the `poll_openings` row for week 2026-11-09 and re-runs the one-off opening (config time
+  change and revert) before Wednesday 2026-11-18 20:00 Berlin.

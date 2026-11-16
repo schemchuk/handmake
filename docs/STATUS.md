@@ -1,11 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (T65 merged: show pages on the site show the linked work's video).
+- **Active agent:** codex.
+- **Current task:** T66 (contest ballot: numbered photos, IG/Threads carousels, Facebook failure).
 - **Branch:** `main`.
-- **Last commit:** feat(site): show page reuses the linked work's video (T65).
-- **Next step:** 2026-11-18 20:00 Berlin: first live contest closing without Facebook (logs on).
-  Volodymyr: tagged profile links (`?s=ig|fb|th|gh|li`). Otherwise the next task is the one he names.
+- **Last commit:** this commit — docs: add T66 (contest ballot fixes).
+- **Next step:** codex: implement T66 from docs/03-tasks.md, leave the diff uncommitted for
+  claude-code review. Then the T66 after-merge steps (re-run the week 2026-11-09 ballot) before
+  2026-11-18 20:00 Berlin.
 - **Blocked on:** no implementation blocker; browser layout verification remains for review.
 - **Open questions for Volodymyr:** none.
 
