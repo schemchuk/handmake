@@ -489,13 +489,7 @@ describe('runCopyShow with Facebook enabled (T26b)', () => {
 });
 
 it('delivers a stored-shape three-entry ballot through the real Facebook album adapter', async () => {
-  const stored = await readFile(
-    new URL(
-      './fixtures/ballot-post.md',
-      import.meta.url,
-    ),
-    'utf8',
-  );
+  const stored = await readFile(new URL('./fixtures/ballot-post.md', import.meta.url), 'utf8');
   const ids = [...stored.matchAll(/\{entry:([^}]+)\}/g)].slice(0, 3).map((match) => match[1]!);
   const requests: Record<string, unknown>[] = [];
   const facebook = createFacebookAdapter({
