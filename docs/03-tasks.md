@@ -2881,8 +2881,8 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
      are dropped. A pure function turns duration + idle intervals + options into a plan: kept
      segments, speed factor (kept duration / (length - finale)), audio stretch. If
      `--audio-from` is missing, pick the start of the longest non-silent stretch.
-  3. Render: trim+concat kept segments, `setpts` speed-up, 30 fps, scale to 1080 px long side
-     keeping aspect; video bitrate = (19 MB * 8 / output length) - audio bitrate, capped at a sane
+  3. Render: trim+concat kept segments, `setpts` speed-up, 30 fps, scale to 1080 px on the SHORT side (fix 2026-11-17; never upscale)
+     keeping aspect; loudnorm target I=-16 LUFS, TP=-1.5; video bitrate = (19 MB * 8 / output length) - audio bitrate, capped at a sane
      max; H.264 + AAC 128k, `-movflags +faststart`, `-map_metadata -1`. Audio: original stream of the
      sped-up part dropped; the chosen stretch at normal speed, `afade` in/out, `loudnorm`; finale
      keeps its own audio; music mixed per options. If the result is > 20 MB or > 60 s, re-render
