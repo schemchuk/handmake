@@ -2864,7 +2864,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Deploy: site deploy via the usual `site.yml` run after merge.
 
 ### T68 — Process reel from a long recording (`reel`, F41)
-- Status: open.
+- Status: done (merged 2026-11-17, PR #176).
 - Owner: codex · Reviewer: claude-code · Depends on: F39
 - Why: Volodymyr 2026-11-17: sewing-machine work takes an hour or more, a `/work` video may be at
   most 60 s / 20 MB. He wants the speed-up automated on his computer, with real sound, instead of

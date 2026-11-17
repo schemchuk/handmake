@@ -1,11 +1,10 @@
 # STATUS
 
-- **Active agent:** claude-code (T68 review/merge).
-- **Current task:** T68 (process reel CLI `apps/reel`, F41), PR open.
-- **Branch:** `feat/t68-process-reel`.
-- **Last commit:** feat(reel): process reel from a long recording (T68).
-- **Next step:** merge T68 after green CI (implemented by Codex, review fixes: short-side
-  scaling, loudnorm -16 LUFS, downscaled analysis, h:mm:ss). Reminder: 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
+- **Active agent:** none.
+- **Current task:** none (week 2026-11-09 ballot live; closes 2026-11-18 20:00 Berlin).
+- **Branch:** `main`.
+- **Last commit:** feat(reel): process reel from a long recording (T68) (#176).
+- **Next step:** T68 merged (PR #176, `624a344`; local CLI, no deploy). 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
   `01M7JAGNR0AY284B9EAK4FT4W7`, publish run of 14:00 UTC, all four channels delivered); check votes
   from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
   rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
