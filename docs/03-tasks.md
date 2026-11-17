@@ -2862,3 +2862,43 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   → original entry; work video with show → show entry with `hasOriginalVideo`, no original entry;
   `siteExcluded` work or missing language → no entry; sort order across kinds).
 - Deploy: site deploy via the usual `site.yml` run after merge.
+
+### T68 — Process reel from a long recording (`reel`, F41)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: F39
+- Why: Volodymyr 2026-11-17: sewing-machine work takes an hour or more, a `/work` video may be at
+  most 60 s / 20 MB. He wants the speed-up automated on his computer, with real sound, instead of
+  editing by hand. He runs it himself for now.
+- Change: a new workspace package `apps/reel` (private, not deployed, no runtime dependencies
+  beyond Node; calls the system `ffmpeg`/`ffprobe` via `child_process.execFile`, never a shell
+  string). Root script `pnpm reel <input> [options]`.
+  1. Options: `--length <s>` (default 30, max 55), `--finale <mm:ss>` (2-4 s at normal speed at the
+     end), `--audio-from <mm:ss>` (start of the normal-speed sound), `--music <file>` and
+     `--music-volume <0..1>` (mix under; `--music-only` replaces the recording's sound), `--out
+     <file>` (default `<input>-reel.mp4` next to the input; never overwrite without `--force`).
+  2. Analysis (pure planning separated from ffmpeg I/O): `freezedetect` for still video and
+     `silencedetect` for silence on the input; idle = intersection of both, only stretches >= 4 s
+     are dropped. A pure function turns duration + idle intervals + options into a plan: kept
+     segments, speed factor (kept duration / (length - finale)), audio stretch. If
+     `--audio-from` is missing, pick the start of the longest non-silent stretch.
+  3. Render: trim+concat kept segments, `setpts` speed-up, 30 fps, scale to 1080 px long side
+     keeping aspect; video bitrate = (19 MB * 8 / output length) - audio bitrate, capped at a sane
+     max; H.264 + AAC 128k, `-movflags +faststart`, `-map_metadata -1`. Audio: original stream of the
+     sped-up part dropped; the chosen stretch at normal speed, `afade` in/out, `loudnorm`; finale
+     keeps its own audio; music mixed per options. If the result is > 20 MB or > 60 s, re-render
+     once at 720 px; still too big → clear error.
+  4. Output: print the kept/dropped minutes, speed factor, size, duration and the reminder (in
+     Ukrainian): listen before sending, no voices of other people, no radio/TV music. Errors
+     (missing ffmpeg, unreadable input, finale/audio time outside the recording, input shorter
+     than the target) give a clear message and exit code 1.
+  5. Docs: a short `apps/reel/README.md` (in English) with the phone → Saved Messages → computer →
+     `pnpm reel` → `/work` flow, and a line in `docs/operations.md`.
+- Acceptance: a 10-minute generated test recording with still/silent stretches becomes a reel of
+  the requested length, without the idle stretches, <= 20 MB, H.264/AAC, no metadata, with the
+  finale at normal speed and normal-speed sound; the bot accepts its size/duration limits.
+- Tests (`apps/reel`, `--maxWorkers=2`): pure planner cases (no idle, idle at start/middle/end,
+  short idle kept, finale, too-short input, audio pick); bitrate math; option parsing; one
+  ffmpeg integration test on a small `lavfi`-generated clip (testsrc + sine with still/silent
+  parts, under 30 s), skipped with a message when `ffmpeg` is absent (CI installs it).
+- Size: if over ~400 non-test lines, split into T68a (planner + analysis) and T68b (render +
+  audio) before coding.

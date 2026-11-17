@@ -303,6 +303,25 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   - Acceptance: home, shows (list and page), works and collections (list and page), post, circle,
     gift, legal and 404 pages in both languages use the look and pass the rules above at 390 px
     and 1280 px widths.
+- **F41** Process reel from a long recording (Volodymyr, 2026-11-17, T68). A local command on
+  Volodymyr's computer turns a long phone recording of the work in progress (up to hours, several
+  GB) into a short reel that fits F39 (at most 60 s and 20 MB), which he then sends through `/work`
+  as today. The raw recording never goes through the bot (Bot API download limit 20 MB); he moves it
+  from the phone to the computer himself (e.g. Telegram "Saved Messages").
+  - **Pauses.** A moment counts as work when the frame changes or the sewing machine is audible;
+    stretches with neither (still frame and silence) longer than a few seconds are dropped. The
+    rest is sped up evenly to the target length (default 30 s). An optional finale of 2-4 s at
+    normal speed (start time given by hand) shows the finished piece.
+  - **Sound.** The sped-up original sound is always dropped. Under the reel goes a stretch of the
+    recording's own sound at normal speed (start time by hand, or picked automatically from a work
+    stretch), with fade-in/out and loudness normalization; the finale keeps its own sound. An
+    optional licensed music file may replace or be mixed under it. No AI, no network, no cost.
+  - **People and rights (author's responsibility).** The command cannot tell voices, radio or TV
+    from machine noise. It prints a reminder to listen to the result before sending: no voices of
+    other people (personal data, F37 people rule) and no background music (rights). The `/work`
+    people confirmation still applies.
+  - **Output.** MP4 (H.264/AAC), 1080 px on the long side (720 px fallback), bitrate computed to stay
+    under 20 MB, metadata removed. Not part of the bot, publisher or CI pipeline.
 - **F24** Collections and works are content types in the content store, created through the bot like
   posts (the author sends photos and a short note; AI drafts the description; she approves).
 

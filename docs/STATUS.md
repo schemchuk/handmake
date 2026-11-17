@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** none.
+- **Active agent:** codex (T68).
 - **Current task:** none (week 2026-11-09 ballot live on Telegram, Instagram, Facebook, Threads).
 - **Branch:** `main`.
 - **Last commit:** docs: record contest ballot re-run.
@@ -9,7 +9,8 @@
   from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
   rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
   entries of week 2026-11-16 are `withdrawn`. T67 (original videos in the site Shows feed) merged as PR #175
-  (`f72a773`); site deploy `site.yml` awaits a manual run by Volodymyr.
+  (`f72a773`); site deployed (run 44073190578). Codex: implement T68 (docs/03-tasks.md,
+  process reel CLI `apps/reel`) on branch `feat/t68-process-reel`; claude-code reviews, commits, PRs.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
