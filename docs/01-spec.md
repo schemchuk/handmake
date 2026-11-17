@@ -320,7 +320,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     from machine noise. It prints a reminder to listen to the result before sending: no voices of
     other people (personal data, F37 people rule) and no background music (rights). The `/work`
     people confirmation still applies.
-  - **Output.** MP4 (H.264/AAC), 1080 px on the long side (720 px fallback), bitrate computed to stay
+  - **Output.** MP4 (H.264/AAC), 1080 px on the short side (720 px fallback; a vertical phone clip
+    becomes 1080x1920), loudness about -16 LUFS for phones, bitrate computed to stay
     under 20 MB, metadata removed. Not part of the bot, publisher or CI pipeline.
 - **F24** Collections and works are content types in the content store, created through the bot like
   posts (the author sends photos and a short note; AI drafts the description; she approves).

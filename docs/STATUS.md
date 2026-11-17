@@ -1,16 +1,16 @@
 # STATUS
 
-- **Active agent:** codex (T68).
-- **Current task:** none (week 2026-11-09 ballot live on Telegram, Instagram, Facebook, Threads).
-- **Branch:** `main`.
-- **Last commit:** docs: record contest ballot re-run.
-- **Next step:** 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
+- **Active agent:** claude-code (T68 review/merge).
+- **Current task:** T68 (process reel CLI `apps/reel`, F41), PR open.
+- **Branch:** `feat/t68-process-reel`.
+- **Last commit:** feat(reel): process reel from a long recording (T68).
+- **Next step:** merge T68 after green CI (implemented by Codex, review fixes: short-side
+  scaling, loudnorm -16 LUFS, downscaled analysis, h:mm:ss). Reminder: 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
   `01M7JAGNR0AY284B9EAK4FT4W7`, publish run of 14:00 UTC, all four channels delivered); check votes
   from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
   rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
   entries of week 2026-11-16 are `withdrawn`. T67 (original videos in the site Shows feed) merged as PR #175
-  (`f72a773`); site deployed (run 44073190578). Codex: implement T68 (docs/03-tasks.md,
-  process reel CLI `apps/reel`) on branch `feat/t68-process-reel`; claude-code reviews, commits, PRs.
+  (`f72a773`); site deployed (run 44073190578). Claude-code reviews, commits and opens the T68 PR.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,

@@ -4,6 +4,9 @@ Commands below run from the repository root unless stated otherwise. This runboo
 an isolated Telegram test installation first; optional networks, public site and AI shows have
 separate rollout requirements. It does not authorize production changes.
 
+For local long-recording preparation before `/work`, use `pnpm reel <input> [options]`; see
+[Local process reels](../apps/reel/README.md) for transfer, audio review and size limits.
+
 ## Deploy a test installation from scratch
 
 ### 1. Prepare isolated accounts and source
