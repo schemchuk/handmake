@@ -2,6 +2,7 @@
 export interface UiStrings {
   showsHeading: string;
   noShows: string;
+  originalVideo: string;
   authenticityLabel: string;
   skip: string;
   worksHeading: string;
@@ -32,6 +33,7 @@ const strings: Record<string, UiStrings> = {
   de: {
     showsHeading: 'Shows',
     noShows: 'Noch keine Shows.',
+    originalVideo: 'Originalvideo',
     authenticityLabel: 'Originalarbeit',
     skip: 'Zum Inhalt springen',
     worksHeading: 'Arbeiten',
@@ -61,6 +63,7 @@ const strings: Record<string, UiStrings> = {
   uk: {
     showsHeading: 'Покази',
     noShows: 'Поки що немає показів.',
+    originalVideo: 'Оригінальне відео',
     authenticityLabel: 'Оригінальна робота',
     skip: 'Перейти до вмісту',
     worksHeading: 'Роботи',

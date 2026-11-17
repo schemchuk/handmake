@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** none.
+- **Active agent:** claude-code (T67 review/merge).
 - **Current task:** none (week 2026-11-09 ballot live on Telegram, Instagram, Facebook, Threads).
 - **Branch:** `main`.
 - **Last commit:** docs: record contest ballot re-run.
@@ -8,8 +8,8 @@
   `01M7JAGNR0AY284B9EAK4FT4W7`, publish run of 14:00 UTC, all four channels delivered); check votes
   from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
   rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
-  entries of week 2026-11-16 are `withdrawn`. Queued: T67 (original videos in the site Shows
-  feed, Owner codex), handoff on Volodymyr's go.
+  entries of week 2026-11-16 are `withdrawn`. T67 (original videos in the site Shows feed) implemented by Codex on
+  `feat/t67-shows-original-videos`; claude-code merges after green CI, then site deploy.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
