@@ -8,7 +8,8 @@
   `01M7JAGNR0AY284B9EAK4FT4W7`, publish run of 14:00 UTC, all four channels delivered); check votes
   from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
   rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
-  entries of week 2026-11-16 are `withdrawn`.
+  entries of week 2026-11-16 are `withdrawn`. Queued: T67 (original videos in the site Shows
+  feed, Owner codex), handoff on Volodymyr's go.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,

@@ -2826,3 +2826,39 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   claude-code removes post/ledger `01M7J3MYG0AY284B9EAK4FT4W7` from `content/`, resets the D1 draft
   and the `poll_openings` row for week 2026-11-09 and re-runs the one-off opening (config time
   change and revert) before Wednesday 2026-11-18 20:00 Berlin.
+
+### T67 — Original videos in the site Shows feed (`site`, F39)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: T55, T65
+- Why: Volodymyr 2026-11-17: the Shows tab lists only generated shows, so the author's own videos
+  from `/work` are missing there. Agreed: one Shows feed, no second tab (a near-empty second tab
+  looks abandoned and splits one piece across two places); clearly different labels; each piece
+  appears once; the video stays on the work page. Today two works have a video
+  (`01M7FEEB2XK5XHKBREZHXWW9GJ`, `01M7CS7ZE12W9RYQZVQ2PRYRG6`), neither has a show.
+  No bot, core, publisher or channel change; no content change.
+- Change (`apps/site` only):
+  1. `apps/site/src/lib/shows.ts`: a pure helper (e.g. `showsFeed(data, lang)`) returning a
+     date-sorted list of `{ kind: 'show', show, hasOriginalVideo }` and `{ kind: 'original', work }`
+     entries, newest first (show `date` / work `date`, ties by id). An `original` entry exists only
+     for a visible work (not `siteExcluded`, has a version in `lang`) that has `video` and no
+     visible show with that `workId` (same tenant). `hasOriginalVideo` reuses
+     `showOriginalVideo(show, works)`.
+  2. `apps/site/src/components/ShowFeed.astro`: render both kinds. Show cards stay as today
+     ("KI-generiertes Model"), plus a small "Originalvideo" / "Оригінальне відео" note when
+     `hasOriginalVideo`. Original cards: work cover photo (`portfolioCover`), a play mark over it,
+     the label "Originalvideo" / "Оригінальне відео" (new `ui` strings in `lib/i18n.ts`) styled
+     distinctly from the AI caption (own colour token or icon, not only text; readable in both
+     themes), work date and title/excerpt; the link goes to the work page anchored at the video
+     (`#video`).
+  3. Work page (`[section]/[id].astro`): give the video `<figure>` `id="video"`. Nothing else on the
+     work page changes.
+  4. `shows/index.astro`: use the new feed; the empty-state text shows only when both kinds are
+     empty.
+- Acceptance: the Shows page in every language lists the two works above as original-video cards
+  with the distinct label, between shows by date; clicking one opens the work page at its video;
+  a work with both a show and a video appears once (show card with the note); generated show cards
+  look as today; build and external-resource check pass.
+- Tests (`apps/site`, only touched files, `--maxWorkers=2`): helper cases (work video without show
+  → original entry; work video with show → show entry with `hasOriginalVideo`, no original entry;
+  `siteExcluded` work or missing language → no entry; sort order across kinds).
+- Deploy: site deploy via the usual `site.yml` run after merge.

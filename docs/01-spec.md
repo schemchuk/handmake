@@ -227,6 +227,13 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
     with the same caption. Facebook: the photo post, then the video as a Page video post with the same
     caption. Threads: the video is the last item of the photo carousel. Publishing stays idempotent
     (F11): the photo post and the video post are separate ledger entries.
+  - **In the site Shows feed (Volodymyr, 2026-11-17, T67).** The Shows page is one feed of generated
+    shows and the author's original videos; no second tab. Each card carries a clearly visible,
+    distinct label: generated shows keep "KI-generiertes Model", original videos get
+    "Originalvideo" / "Оригінальне відео" with its own colour or icon. A piece appears once: a
+    work with a show gets no extra card (its show card notes that an original video exists, and the
+    show page already plays it, T65); a work with a video but no show gets an original-video card
+    that links to the video on the work page. The video stays on the work page.
   - **Storage.** The video lives in the work's content folder as `video` (`fileName`, `provenance:
     human`, `people`); location and camera metadata are removed by a lossless remux, never
     re-encoded (same rule as F37).
