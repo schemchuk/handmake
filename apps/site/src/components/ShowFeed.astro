@@ -2,20 +2,61 @@
 import type { Show } from '@handmake/core';
 import type { SiteData } from '../lib/site-data';
 import { pagePath } from '../lib/paths';
-import { showPage, showMediaPath } from '../lib/shows';
+import { showOriginalVideo, type ShowsFeedEntry, showPage, showMediaPath } from '../lib/shows';
+import WorkImage from './WorkImage.astro';
+import { portfolioCover, portfolioPage, workImageKey } from '../lib/portfolio';
+import { uiStrings } from '../lib/i18n';
 import { excerpt } from '../lib/text';
-interface Props { shows: Show[]; lang: string; data: SiteData }
-const { shows, lang, data } = Astro.props;
+interface Props { shows?: Show[]; entries?: ShowsFeedEntry[]; lang: string; data: SiteData }
+const { shows = [], lang, data } = Astro.props;
+const entries = Astro.props.entries ?? shows.map((show): ShowsFeedEntry => ({
+  kind: 'show', show, hasOriginalVideo: !!showOriginalVideo(show, data.works),
+}));
+const ui = uiStrings(lang);
 ---
 <ol class="feed">
-  {shows.map((show) => <li class="entry">
+  {entries.map((entry) => {
+    if (entry.kind === 'original') {
+      const work = entry.work;
+      const cover = portfolioCover(work);
+      return <li class="entry"><a href={`${pagePath(lang, data.site.defaultLanguage, portfolioPage('works', work))}#video`}>
+        <figure class="patch">
+          <WorkImage photo={data.workImages.get(workImageKey(cover.workId, cover.fileName))!} alt="" />
+          <span class="play-mark" aria-hidden="true">▶</span>
+        </figure>
+        <p class="credit original-video"><span aria-hidden="true">▶ </span>{ui.originalVideo}</p>
+        <time datetime={work.date}>{new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: data.tenant.meetingSchedule.timezone }).format(new Date(work.date))}</time>
+        <p class="entry-text">{excerpt(work.versions[lang]!.description, 220)}</p>
+      </a></li>;
+    }
+    const { show, hasOriginalVideo } = entry;
+    return <li class="entry">
     <a href={pagePath(lang, data.site.defaultLanguage, showPage(show))}>
       <figure class="patch">
         <img src={showMediaPath(show, show.images[0]!.fileName)} {...data.imageSizes.get(showMediaPath(show, show.images[0]!.fileName))} alt="" loading="lazy" />
       </figure>
       <p class="credit">KI-generiertes Model</p>
+      {hasOriginalVideo && <p class="credit original-video"><span aria-hidden="true">▶ </span>{ui.originalVideo}</p>}
       <time datetime={show.date}>{new Intl.DateTimeFormat(lang, { dateStyle: 'long', timeZone: data.tenant.meetingSchedule.timezone }).format(new Date(show.date))}</time>
       <p class="entry-text">{excerpt(show.versions[lang]!.description, 220)}</p>
     </a>
-  </li>)}
+  </li>;
+  })}
 </ol>
+
+<style>
+  .original-video { color: var(--ink); font-weight: 600; }
+  .play-mark {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: #fff;
+    color: #222;
+    box-shadow: 0 2px 8px #0006;
+  }
+</style>

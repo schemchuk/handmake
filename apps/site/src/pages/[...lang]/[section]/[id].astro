@@ -67,7 +67,7 @@ const [lead, ...rest] = paragraphs(version.description);
       {work.photos.slice(1).map((file) => (
         <figure class="patch"><WorkImage photo={data.workImages.get(workImageKey(work.id, file))!} alt={title} /></figure>
       ))}
-      {work.video && <figure>
+      {work.video && <figure id="video">
         <div class="patch"><video {...data.imageSizes.get(workVideoPath(work))} controls playsinline preload="metadata" aria-label={`${ui.authenticityLabel}: ${title}`} style="width:100%;height:auto">
           <source src={workVideoPath(work)} type="video/mp4" />
           <a href={workVideoPath(work)}>{title}</a>

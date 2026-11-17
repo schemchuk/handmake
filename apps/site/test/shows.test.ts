@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ContentStore, Show, ShowContentStore, Work } from '@handmake/core';
 
-import { loadShows, showOriginalVideo, showsIn } from '../src/lib/shows';
+import { loadShows, showOriginalVideo, showsFeed, showsIn } from '../src/lib/shows';
 
 const show = (id: string, tenant = 'fixture', date = '2026-11-03T12:00:00Z') =>
   ({
@@ -107,5 +107,58 @@ describe('show original video', () => {
       authentic: [{ kind: 'video', fileName: 'legacy.mp4' }],
     } as Show;
     expect(showOriginalVideo(legacy, [work])).toBe('/show-media/show/legacy.mp4');
+  });
+});
+
+describe('mixed shows feed', () => {
+  const work = {
+    id: 'work',
+    tenant: 'fixture',
+    date: '2026-11-02T12:00:00Z',
+    versions: { de: {} },
+    video: { fileName: 'original.mp4' },
+  } as unknown as Work;
+
+  it('includes a work video without a show and deduplicates a linked visible show', () => {
+    expect(showsFeed({ works: [work], shows: [] }, 'de')).toEqual([{ kind: 'original', work }]);
+    const linked = show('show');
+    expect(showsFeed({ works: [work], shows: [linked] }, 'de')).toEqual([
+      { kind: 'show', show: linked, hasOriginalVideo: true },
+    ]);
+  });
+
+  it('omits excluded, untranslated and video-free works', () => {
+    for (const hidden of [
+      { ...work, siteExcluded: true },
+      { ...work, versions: {} },
+      { ...work, video: undefined },
+    ])
+      expect(showsFeed({ works: [hidden], shows: [] }, 'de')).toEqual([]);
+  });
+
+  it('only deduplicates against shows visible in the same language and tenant', () => {
+    for (const hidden of [
+      { ...show('show'), siteExcluded: true },
+      { ...show('show'), versions: {} },
+      show('foreign', 'other'),
+    ]) {
+      const entries = showsFeed({ works: [work], shows: [hidden] }, 'de');
+      expect(entries).toContainEqual({ kind: 'original', work });
+    }
+    expect(showsFeed({ works: [work], shows: [show('foreign', 'other')] }, 'de')[0]).toMatchObject({
+      kind: 'show',
+      hasOriginalVideo: false,
+    });
+  });
+
+  it('sorts both kinds by descending date, breaking ties by descending id', () => {
+    const newest = show('new');
+    const tied = { ...show('z'), date: work.date, workId: 'unlinked' };
+    const oldest = { ...show('old', 'fixture', '2026-11-01T12:00:00Z'), workId: 'unlinked' };
+    const data = { works: [work], shows: [oldest, tied, { ...newest, workId: 'unlinked' }] };
+    expect(
+      showsFeed(data, 'de').map((entry) => (entry.kind === 'show' ? entry.show.id : entry.work.id)),
+    ).toEqual(['new', 'z', 'work', 'old']);
+    expect(data.shows[0]).toBe(oldest);
   });
 });
