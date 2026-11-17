@@ -2828,7 +2828,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   change and revert) before Wednesday 2026-11-18 20:00 Berlin.
 
 ### T67 — Original videos in the site Shows feed (`site`, F39)
-- Status: open.
+- Status: done (merged 2026-11-17, PR #175).
 - Owner: codex · Reviewer: claude-code · Depends on: T55, T65
 - Why: Volodymyr 2026-11-17: the Shows tab lists only generated shows, so the author's own videos
   from `/work` are missing there. Agreed: one Shows feed, no second tab (a near-empty second tab
