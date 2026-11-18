@@ -2904,7 +2904,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   audio) before coding.
 
 ### T69 — Reel end card with logo and follow call (`reel`, F41)
-- Status: open.
+- Status: done (merged 2026-11-18, PR #177).
 - Owner: codex · Reviewer: claude-code · Depends on: T68
 - Why: Volodymyr 2026-11-18: every reel from `pnpm reel` should end with the round logo
   (docs/design/logo) and a call to follow with an arrow pointing down to where Instagram's Follow

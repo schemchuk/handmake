@@ -1,7 +1,8 @@
 # STATUS
 
-- **Active agent:** claude-code (T69 review/merge).
-- **Current task:** T69 (reel end card), PR open; claude-code merges after green CI. Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
+- **Active agent:** none.
+- **Current task:** none. T69 (reel end card) merged as PR #177; audit exception for picomatch
+  GHSA-fc5q-39xc-vjpf (no patch yet, dev/build tooling only) merged as PR #178 with Volodymyr's OK. Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
 - **Branch:** `main`.
 - **Last commit:** feat(reel): process reel from a long recording (T68) (#176).
 - **Next step:** T68 merged (PR #176, `624a344`; local CLI, no deploy). 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
