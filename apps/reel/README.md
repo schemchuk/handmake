@@ -19,6 +19,12 @@ existing files require `--force`. The input and music files cannot be output pat
 `--length <seconds>` defaults to 30, maximum 55. The source must be at least that long,
 and enough active footage must remain. `--finale <mm:ss>` appends three seconds at normal
 speed (two seconds if only two remain). Omit it for a reel without a finale.
+By default, a 2.5-second end card follows the body and finale: the last frame is frozen,
+blurred and darkened, with the logo, “Folge uns” and downward arrow fading in over 0.3 seconds.
+The matching portrait or landscape artwork is scaled to the full output resolution.
+Total duration is `--length` + 2.5 seconds; the size budget and limits include the card.
+Recording sound loops under the card (or music continues), fading out over the last second.
+Use `--no-endcard` to retain the previous output and duration without a card.
 Both time options also accept `h:mm:ss` for recordings lasting hours.
 `--audio-from <mm:ss>` selects normal-speed recording sound; otherwise the longest
 non-silent stretch is selected. Short sound stretches loop, with fades and loudness normalization (I=-16 LUFS, TP=-1.5 dBTP, LRA=11).

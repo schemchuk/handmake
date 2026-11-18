@@ -9,6 +9,7 @@ export type Options = {
   musicOnly: boolean;
   out: string;
   force: boolean;
+  endcard: boolean;
 };
 export function timestamp(value: string): number {
   if (!/^\d+:[0-5]\d$|^\d+:[0-5]\d:[0-5]\d$/.test(value))
@@ -30,6 +31,7 @@ export function parseOptions(args: string[]): Options {
     musicOnly: false,
     out: `${input}-reel.mp4`,
     force: false,
+    endcard: true,
   };
   const seen = new Set<string>();
   for (let i = 1; i < args.length; i++) {
@@ -37,6 +39,7 @@ export function parseOptions(args: string[]): Options {
     if (seen.has(key)) throw new Error(`Duplicate option: ${key}`);
     seen.add(key);
     if (key === '--force') options.force = true;
+    else if (key === '--no-endcard') options.endcard = false;
     else if (key === '--music-only') options.musicOnly = true;
     else {
       const value = args[++i];
@@ -127,7 +130,8 @@ export function makePlan(duration: number, idle: Interval[], silent: Interval[],
     dropped: duration - kept - finaleLength,
     speed: kept / bodyLength,
     bodyLength,
-    length: options.length,
+    endcardLength: options.endcard ? 2.5 : 0,
+    length: options.length + (options.endcard ? 2.5 : 0),
     audio: { start: audioStart, end: Math.min(audioEnd, audioStart + bodyLength) },
   };
 }
