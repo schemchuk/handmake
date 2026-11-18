@@ -5,10 +5,9 @@
   merged as PR #179 (`a6deaa5`).
 - **Branch:** `main`.
 - **Last commit:** feat(site): round logo in header, footer and icons (T70) (#179).
-- **Next step:** site deployed by Volodymyr (run 44311457945), logo live. Bot not redeployed:
-  PR #179 only added optional theme fields the bot does not read; Volodymyr's
-  `pnpm -C apps/bot run deploy` failed on a Cloudflare auth refresh (network), retry with the next
-  bot change. Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
+- **Next step:** site deployed by Volodymyr (run 44311457945), logo live. Bot redeployed by
+  Volodymyr from `main` after PR #179, Worker `f9ce9d1b-a2a4-4089-bb20-a3d1624a8915`.
+  Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
