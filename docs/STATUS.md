@@ -1,16 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T69 (reel end card) merged as PR #177; audit exception for picomatch
-  GHSA-fc5q-39xc-vjpf (no patch yet, dev/build tooling only) merged as PR #178 with Volodymyr's OK. Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
-- **Branch:** `main`.
-- **Last commit:** feat(reel): process reel from a long recording (T68) (#176).
-- **Next step:** T68 merged (PR #176, `624a344`; local CLI, no deploy). 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
-  `01M7JAGNR0AY284B9EAK4FT4W7`, publish run of 14:00 UTC, all four channels delivered); check votes
-  from Telegram, Instagram, Threads. PR #174 fixed the publish job (full-history checkout of main,
-  rebase abort); first two ballot attempts were deleted from Telegram by hand. Three duplicate
-  entries of week 2026-11-16 are `withdrawn`. T67 (original videos in the site Shows feed) merged as PR #175
-  (`f72a773`); site deployed (run 44073190578). Claude-code reviews, commits and opens the T68 PR.
+- **Active agent:** codex.
+- **Current task:** T70 (round logo on every site page), see docs/03-tasks.md.
+- **Branch:** `feat/t70-site-logo` (to be created from `main`).
+- **Last commit:** docs: add T70 (site logo) with logo and mark assets.
+- **Next step:** codex implements T70 on `feat/t70-site-logo` (edits only; claude-code reviews,
+  commits, opens the PR and merges). Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,

@@ -2927,3 +2927,37 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests (`apps/reel`, `--maxWorkers=2`): plan/duration math with and without the card; render args
   pick the right PNG by orientation; integration test asserts the total duration of a small lavfi
   clip with the card.
+
+### T70 — Round logo on every site page (`site`, `core`)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Why: Volodymyr 2026-11-18: the round logo (docs/design/logo, base since 2026-11-18) should appear
+  naturally on every page of the site. Decided by claude-code: a small textless mark in the header
+  and as the browser icon, the full round logo as a sewn-in label in the footer. The home page keeps
+  its large handwritten wordmark (no change).
+- Assets (ready, committed in `config/tenants/assets/faden-und-stimmung/`): `logo.svg` (copy of
+  `docs/design/logo/logo-round-small.svg`, square 1000x1000 on paper, the hoop fits the inscribed
+  circle) and `mark.svg` (64x64, transparent corners, source `docs/design/logo/mark.py`).
+- Change:
+  1. `packages/core` tenant schema: `site.theme.logo` and `site.theme.mark`, optional, same
+     repo-relative SVG path rule as `wordmark` (share the regex). Tenant config sets both.
+  2. `apps/site`: serve `/logo.svg` and `/mark.svg` like `/wordmark.svg` (one shared helper for the
+     three endpoints, same realpath containment check; 404 when unset). Add `/apple-touch-icon.png`
+     (180x180, from `logo`, sharp, paper background) and `/favicon-32.png` (32x32 from `mark`,
+     transparent).
+  3. `Base.astro` head, when set: `<link rel="icon" href="/mark.svg" type="image/svg+xml">`,
+     `<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">`,
+     `<link rel="apple-touch-icon" href="/apple-touch-icon.png">`.
+  4. Header: when `mark` is set, the home link `.wordmark` starts with
+     `<img src="/mark.svg" alt="" width="64" height="64">` (decorative; the text name stays),
+     about 1.9em high, vertically centred with the name, small gap; about 1.6em under 40rem; the
+     header must not wrap more than today at 320 px width.
+  5. Footer: when `logo` is set, the first footer item becomes the logo (`<img src="/logo.svg"
+     alt={tenant.name}>`, about 5.5rem, `border-radius: 50%` so the square paper corners do not show
+     on the dark ground), keeping the `margin-right: auto` layout; otherwise today's name text.
+  6. No change to CSP, home page, OG images.
+- Acceptance: every built page has the icon links, the header mark and the footer logo; a tenant
+  without `logo`/`mark` builds exactly as today; lighthouse-style check: images have width/height.
+- Tests (`--maxWorkers=2`): core schema accepts/rejects logo/mark paths like wordmark; site build
+  test with a fixture tenant asserts head links, header `img`, footer logo alt, the three endpoints
+  (PNG sizes via sharp metadata), and their absence without the fields.
