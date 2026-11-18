@@ -11,3 +11,9 @@ overrides:
   sharp: ^0.35.5
   undici@7: ^7.30.2
   minimatch@10: ^11.0.1
+# Temporary audit exceptions (Volodymyr's OK 2026-11-18). Remove each once a patched version exists.
+auditConfig:
+  ignoreGhsas:
+    # picomatch <=4.0.7 ReDoS via extglobs, no patched version yet. Only build/dev tooling
+    # (astro, vite, vitest, typescript-eslint) with our own glob patterns; not in the bot Worker.
+    - GHSA-fc5q-39xc-vjpf
