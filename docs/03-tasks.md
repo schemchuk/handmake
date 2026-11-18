@@ -2902,3 +2902,28 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   parts, under 30 s), skipped with a message when `ffmpeg` is absent (CI installs it).
 - Size: if over ~400 non-test lines, split into T68a (planner + analysis) and T68b (render +
   audio) before coding.
+
+### T69 — Reel end card with logo and follow call (`reel`, F41)
+- Status: open.
+- Owner: codex · Reviewer: claude-code · Depends on: T68
+- Why: Volodymyr 2026-11-18: every reel from `pnpm reel` should end with the round logo
+  (docs/design/logo) and a call to follow with an arrow pointing down to where Instagram's Follow
+  button is. Decided: end card only (not over the whole reel); German only ("Folge uns"); one file
+  for all channels (no per-channel versions, no bot change).
+- Assets (ready, committed): `apps/reel/assets/endcard-portrait.png` (1080x1920) and
+  `endcard-landscape.png` (1920x1080), transparent PNGs; source in `docs/design/logo/endcard.py`.
+- Change (`apps/reel` only):
+  1. After the body (and the finale, if any) append an end card of 2.5 s: the last output frame
+     frozen (`tpad=stop_mode=clone`), blurred and darkened (e.g. `boxblur`, `eq=brightness=-0.25`),
+     with the matching PNG overlaid (portrait PNG when output height > width, otherwise
+     landscape), scaled to the output size; 0.3 s fade-in of the card.
+  2. Audio continues under the card (the looped recording sound, or the music) and fades out over
+     its last 1 s; the finale audio rule stays.
+  3. Total duration = `--length` + 2.5 s; size budget and the 60 s / 20 MB checks use the total.
+  4. `--no-endcard` disables it. README updated.
+- Acceptance: a portrait and a landscape reel end with a 2.5 s card showing logo, "Folge uns" and
+  the arrow, at full output resolution; total duration and size within limits; `--no-endcard`
+  gives today's output.
+- Tests (`apps/reel`, `--maxWorkers=2`): plan/duration math with and without the card; render args
+  pick the right PNG by orientation; integration test asserts the total duration of a small lavfi
+  clip with the card.

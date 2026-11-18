@@ -1,7 +1,8 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none (week 2026-11-09 ballot live; closes 2026-11-18 20:00 Berlin).
+- **Active agent:** codex (T69).
+- **Current task:** T69 (reel end card), branch `feat/t69-reel-endcard`; claude-code reviews,
+  commits, PRs. Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
 - **Branch:** `main`.
 - **Last commit:** feat(reel): process reel from a long recording (T68) (#176).
 - **Next step:** T68 merged (PR #176, `624a344`; local CLI, no deploy). 2026-11-18 20:00 Berlin: closing of the week 2026-11-09 ballot (draft
