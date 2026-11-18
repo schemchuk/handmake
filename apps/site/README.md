@@ -20,6 +20,14 @@ The default language comes from `site.defaultLanguage`, other tenant languages l
 `/<lang>/`. A post appears only in languages it has text for. Only posts of type `free` are on the
 blog (`siteVisibleTypes` in `src/lib/site-data.ts`); announcements, reminders and polls stay in channels.
 
+## Brand assets
+
+Optional `site.theme.wordmark`, `logo` and `mark` fields accept repository-relative SVG paths.
+They are served at `/wordmark.svg`, `/logo.svg` and `/mark.svg`, with realpath containment
+checks. The mark appears beside the header name and supplies SVG and 32px PNG favicons.
+The round footer logo also supplies the 180px Apple touch icon, flattened onto the theme's
+paper colour. Unconfigured assets return 404 and their layout elements and icon links are omitted.
+
 ## Portfolio content
 
 Works and collections come through `ContentStore.listWorks`, `listCollections` and

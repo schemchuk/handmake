@@ -77,6 +77,11 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     {self && <meta property="og:url" content={absoluteUrl(site.baseUrl, self)} />}
     {image && <meta property="og:image" content={absoluteUrl(site.baseUrl, image)} />}
     {image && <meta name="twitter:card" content="summary_large_image" />}
+    {site.theme.mark && <>
+      <link rel="icon" href="/mark.svg" type="image/svg+xml" />
+      <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    </>}
+    {site.theme.logo && <link rel="apple-touch-icon" href="/apple-touch-icon.png" />}
     <meta name="theme-color" content={colors.ground} />
     <style is:inline set:html={fontFaceCss()}></style>
   </head>
@@ -87,7 +92,7 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
         <span class="roll-skin" aria-hidden="true"></span>
         <span class="peg peg--l" aria-hidden="true"></span>
         <span class="peg peg--r" aria-hidden="true"></span>
-        <a class="wordmark" href={pagePath(lang, def)}>{tenant.name}</a>
+        <a class="wordmark" href={pagePath(lang, def)}>{site.theme.mark && <img src="/mark.svg" alt="" width="64" height="64" />}{tenant.name}</a>
         <nav class="nav" aria-label="Main">
           <a href={pagePath(lang, def, 'shows')} aria-current={current === 'shows' ? 'page' : undefined}>{ui.showsHeading}</a>
           <a href={pagePath(lang, def, 'works')} aria-current={current === 'works' ? 'page' : undefined}>{ui.worksHeading}</a>
@@ -119,7 +124,7 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
     <div class="hem" aria-hidden="true"></div>
     <div class="fringe" aria-hidden="true"></div>
     <footer class="site-footer">
-      <span>{tenant.name}</span>
+      {site.theme.logo ? <img class="footer-logo" src="/logo.svg" alt={tenant.name} width="1000" height="1000" /> : <span>{tenant.name}</span>}
       {profiles ? (
         <nav class="profiles" aria-label={ui.profiles}>
           {profiles.map(({ network, url }) => (

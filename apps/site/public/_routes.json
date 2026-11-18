@@ -10,6 +10,10 @@
     "/robots.txt",
     "/sitemap*",
     "/wordmark.svg",
+    "/logo.svg",
+    "/mark.svg",
+    "/apple-touch-icon.png",
+    "/favicon-32.png",
     "/*.pdf"
   ]
 }

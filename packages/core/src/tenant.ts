@@ -80,6 +80,13 @@ export const channelsSchema = z
 export const knownChannelKeys = Object.keys(channelsSchema.shape);
 export type ChannelKey = keyof typeof channelsSchema.shape;
 
+const repoSvgPathSchema = z
+  .string()
+  .regex(
+    /^(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.svg$/,
+    'asset must be a repo-relative SVG path without traversal',
+  );
+
 const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'colour must be #RRGGBB');
 
 // An origin only (scheme + host, no path, no trailing slash), so canonical
@@ -153,13 +160,9 @@ export const siteSchema = z
     defaultLanguage: languageCodeSchema,
     theme: z
       .object({
-        wordmark: z
-          .string()
-          .regex(
-            /^(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.svg$/,
-            'wordmark must be a repo-relative SVG path without traversal',
-          )
-          .optional(),
+        wordmark: repoSvgPathSchema.optional(),
+        logo: repoSvgPathSchema.optional(),
+        mark: repoSvgPathSchema.optional(),
         colors: z
           .object({
             ground: hexColorSchema, // background behind the cloth

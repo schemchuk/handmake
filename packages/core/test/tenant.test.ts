@@ -334,8 +334,8 @@ it('rejects Threads languages outside the tenant language set and unknown settin
   ).toBe(false);
 });
 
-describe('wordmark path', () => {
-  const schema = siteSchema.shape.theme.shape.wordmark;
+describe.each(['wordmark', 'logo', 'mark'] as const)('%s path', (asset) => {
+  const schema = siteSchema.shape.theme.shape[asset];
   it('accepts an optional repository SVG', () => {
     expect(schema.safeParse(undefined).success).toBe(true);
     expect(schema.safeParse('config/tenants/assets/hand.svg').success).toBe(true);
