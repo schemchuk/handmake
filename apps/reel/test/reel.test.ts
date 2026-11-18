@@ -4,9 +4,24 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { complement, idleIntervals, makePlan, parseOptions, videoBitrate } from '../src/plan.ts';
-import { detectionIntervals, probe, processReel, renderArgs, run } from '../src/media.ts';
+import {
+  detectionIntervals,
+  displayDimensions,
+  probe,
+  processReel,
+  renderArgs,
+  run,
+} from '../src/media.ts';
 const options = (args: string[] = []) => parseOptions(['input.mp4', ...args]);
 describe('planner', () => {
+  it.each([[], ['--no-endcard']])('accounts for end card duration %j', (...args) => {
+    const opts = options(args);
+    const plan = makePlan(100, [], [], opts);
+    expect(plan.bodyLength).toBe(30);
+    expect(plan.length).toBe(opts.endcard ? 32.5 : 30);
+    expect(plan.endcardLength).toBe(opts.endcard ? 2.5 : 0);
+    expect((videoBitrate(plan.length) * plan.length) / 8).toBeLessThan(19_000_000);
+  });
   it('keeps footage without idle and calculates speed', () => {
     const plan = makePlan(600, [], [], options());
     expect(plan.segments).toEqual([{ start: 0, end: 600 }]);
@@ -154,6 +169,43 @@ describe('options and filters', () => {
       detectionIntervals('silence_start: 0\nsilence_end: 6 | silence_duration: 6', 'silence', 12),
     ).toEqual([{ start: 0, end: 6 }]);
   });
+  it.each([90, -90, 270, -270])('swaps display dimensions at %i degrees', (rotation) => {
+    expect(displayDimensions(1920, 1080, rotation)).toEqual({ width: 1080, height: 1920 });
+  });
+  it('normalizes the continuous body and card loop before fading out', () => {
+    const opts = options();
+    const args = renderArgs('in', 'out', makePlan(100, [], [], opts), opts, true, 1080, {
+      width: 1920,
+      height: 1080,
+    });
+    const filter = args[args.indexOf('-filter_complex') + 1]!;
+    expect(filter.match(/loudnorm=/g)).toHaveLength(1);
+    expect(filter).toContain('atrim=duration=32.5,afade=t=in:d=0.3,loudnorm=');
+    expect(filter).toContain('[mixed]afade=t=out:st=31.5:d=1[a]');
+  });
+  it.each([
+    [1080, 1920, 'portrait'],
+    [1920, 1080, 'landscape'],
+    [1080, 1080, 'landscape'],
+  ] as const)('selects the end card for %ix%i', (width, height, orientation) => {
+    const opts = options();
+    const args = renderArgs('in', 'out', makePlan(100, [], [], opts), opts, false, 1080, {
+      width,
+      height,
+    });
+    expect(args.some((arg) => arg.endsWith(`endcard-${orientation}.png`))).toBe(true);
+    expect(args[args.indexOf('-t') + 1]).toBe('32.5');
+    const filter = args[args.indexOf('-filter_complex') + 1]!;
+    expect(filter).toContain('fade=t=in:d=0.3:alpha=1');
+    expect(filter).toContain('afade=t=out:st=31.5:d=1');
+    opts.endcard = false;
+    expect(
+      renderArgs('in', 'out', makePlan(100, [], [], opts), opts, false, 1080, {
+        width,
+        height,
+      }).join(' '),
+    ).not.toContain('endcard-');
+  });
   it('keeps audio at normal speed, loops it, and mixes or replaces music', () => {
     const opts = options(['--finale', '01:30', '--music', 'song.wav']);
     const args = renderArgs(
@@ -163,6 +215,7 @@ describe('options and filters', () => {
       opts,
       true,
       1080,
+      { width: 1920, height: 1080 },
     );
     const filter = args[args.indexOf('-filter_complex') + 1]!;
     expect(args).toContain('input with spaces.mp4');
@@ -172,8 +225,11 @@ describe('options and filters', () => {
     expect(filter).not.toContain('atempo');
     opts.musicOnly = true;
     expect(
-      renderArgs('in', 'out', makePlan(100, [], [], opts), opts, true, 720).join(' '),
-    ).toContain('[original]anullsink');
+      renderArgs('in', 'out', makePlan(100, [], [], opts), opts, true, 720, {
+        width: 1080,
+        height: 1920,
+      }).join(' '),
+    ).toContain('[extended]anullsink');
   });
 });
 let available = true;
@@ -226,7 +282,7 @@ it.skipIf(!available)(
       const result = await processReel(opts);
       expect(result.plan.dropped).toBeGreaterThan(4);
       expect(result.plan.finale).toEqual({ start: 9, end: 12 });
-      expect(result.duration).toBeCloseTo(5, 1);
+      expect(result.duration).toBeCloseTo(7.5, 1);
       expect(result.size).toBeLessThanOrEqual(20_000_000);
       const output = await probe(out);
       expect(output.data.streams.map((x) => x.codec_name)).toEqual(['h264', 'aac']);
@@ -250,7 +306,7 @@ it.skipIf(!available)(
         music,
       ]);
       await processReel({ ...opts, force: true, music, musicOnly: true });
-      expect((await probe(out)).duration).toBeCloseTo(5, 1);
+      expect((await probe(out)).duration).toBeCloseTo(7.5, 1);
       await writeFile(join(dir, 'invalid'), 'not video');
       await expect(probe(join(dir, 'invalid'))).rejects.toThrow('ffprobe failed');
     } finally {
@@ -261,15 +317,17 @@ it.skipIf(!available)(
 );
 
 it.skipIf(!available).each([
-  [1920, 1080, 1080, 1920, 1080],
-  [1080, 1920, 1080, 1080, 1920],
-  [1920, 1080, 720, 1280, 720],
-  [1080, 1920, 720, 720, 1280],
-  [320, 180, 1080, 320, 180],
-  [180, 320, 720, 180, 320],
+  [1920, 1080, 1080, 1920, 1080, false],
+  [1080, 1920, 1080, 1080, 1920, false],
+  [1920, 1080, 720, 1280, 720, false],
+  [1080, 1920, 720, 720, 1280, false],
+  [320, 180, 1080, 320, 180, false],
+  [180, 320, 720, 180, 320, false],
+  [320, 180, 1080, 320, 180, true],
+  [180, 320, 1080, 180, 320, true],
 ])(
   'renders %ix%i at short-side target %i as %ix%i',
-  async (width, height, side, expectedWidth, expectedHeight) => {
+  async (width, height, side, expectedWidth, expectedHeight, endcard) => {
     const dir = await mkdtemp(join(tmpdir(), 'reel-dimensions-'));
     try {
       const input = join(dir, 'input.mp4'),
@@ -287,11 +345,65 @@ it.skipIf(!available).each([
         '2',
         input,
       ]);
-      const opts = options(['--length', '0.2']);
-      await run('ffmpeg', renderArgs(input, out, makePlan(0.2, [], [], opts), opts, false, side));
+      const opts = options(['--length', '0.2', ...(endcard ? [] : ['--no-endcard'])]);
+      await run(
+        'ffmpeg',
+        renderArgs(input, out, makePlan(0.2, [], [], opts), opts, false, side, { width, height }),
+      );
+      expect((await probe(out)).duration).toBeCloseTo(endcard ? 2.7 : 0.2, 1);
       expect(
         (await probe(out)).data.streams.find((stream) => stream.codec_type === 'video'),
       ).toMatchObject({ width: expectedWidth, height: expectedHeight });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+  30_000,
+);
+
+it.skipIf(!available)(
+  'renders a rotated phone recording with the portrait end card',
+  async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'reel-rotation-'));
+    try {
+      const source = join(dir, 'source.mp4');
+      const input = join(dir, 'rotated.mp4');
+      const out = join(dir, 'reel.mp4');
+      await run('ffmpeg', [
+        '-v',
+        'error',
+        '-f',
+        'lavfi',
+        '-i',
+        'testsrc2=size=1920x1080:rate=30:duration=0.2',
+        '-c:v',
+        'libx264',
+        '-threads',
+        '2',
+        source,
+      ]);
+      await run('ffmpeg', [
+        '-v',
+        'error',
+        '-display_rotation:v:0',
+        '90',
+        '-i',
+        source,
+        '-c',
+        'copy',
+        input,
+      ]);
+      const info = await probe(input);
+      expect(info.data.streams[0]).toMatchObject({ width: 1920, height: 1080 });
+      const opts = parseOptions([input, '--length', '0.2', '--out', out]);
+      const result = await processReel(opts);
+      const args = renderArgs(input, out, result.plan, opts, info.audio, 1080, info.dimensions);
+      expect(args.some((arg) => arg.endsWith('/endcard-portrait.png'))).toBe(true);
+      const filter = args[args.indexOf('-filter_complex') + 1]!;
+      expect(filter).toContain('[1:v:0]scale=1080:1920');
+      const output = await probe(out);
+      expect(output.data.streams[0]).toMatchObject({ width: 1080, height: 1920 });
+      expect(output.duration).toBeCloseTo(2.7, 1);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
