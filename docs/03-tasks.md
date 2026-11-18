@@ -2929,7 +2929,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   clip with the card.
 
 ### T70 — Round logo on every site page (`site`, `core`)
-- Status: open.
+- Status: done (merged 2026-11-18, PR #179).
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Why: Volodymyr 2026-11-18: the round logo (docs/design/logo, base since 2026-11-18) should appear
   naturally on every page of the site. Decided by claude-code: a small textless mark in the header

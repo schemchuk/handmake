@@ -1,11 +1,14 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T70 (round logo on every site page), see docs/03-tasks.md.
-- **Branch:** `feat/t70-site-logo` (to be created from `main`).
-- **Last commit:** docs: add T70 (site logo) with logo and mark assets.
-- **Next step:** codex implements T70 on `feat/t70-site-logo` (edits only; claude-code reviews,
-  commits, opens the PR and merges). Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
+- **Active agent:** none.
+- **Current task:** none. T70 (round logo on every site page: header mark, footer logo, favicons)
+  merged as PR #179 (`a6deaa5`).
+- **Branch:** `main`.
+- **Last commit:** feat(site): round logo in header, footer and icons (T70) (#179).
+- **Next step:** site deploy of `a6deaa5` after CI. Bot not redeployed: PR #179 touched
+  `packages/core` only by adding optional theme fields the bot does not read; the deploy command was
+  blocked by the session's permission classifier, Volodymyr may run `pnpm -C apps/bot run deploy`.
+  Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
