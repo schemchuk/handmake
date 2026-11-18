@@ -621,9 +621,55 @@ describe('profile fixture builds', () => {
             uk: { title: 'Гурток', what: 'Рукоділля', where: 'Ландсгут' },
           },
         };
-        if (configured) tenant.site!.profiles = profiles;
+        if (configured) {
+          tenant.site!.profiles = profiles;
+          for (const asset of ['logo', 'mark'] as const) {
+            tenant.site!.theme[asset] = `config/tenants/${asset}.svg`;
+            await writeFile(
+              path.join(root, tenant.site!.theme[asset]!),
+              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="#955341"/></svg>',
+            );
+          }
+        }
         await writeFile(path.join(root, 'config/tenants/fixture.yaml'), JSON.stringify(tenant));
         await build(root, dist);
+        for (const asset of ['logo.svg', 'mark.svg', 'apple-touch-icon.png', 'favicon-32.png']) {
+          if (configured) {
+            const bytes = await readFile(path.join(dist, asset));
+            if (asset.endsWith('.png')) {
+              const metadata = await sharp(bytes).metadata();
+              const size = asset === 'favicon-32.png' ? 32 : 180;
+              expect(metadata.width).toBe(size);
+              expect(metadata.height).toBe(size);
+              expect(metadata.hasAlpha).toBe(asset === 'favicon-32.png');
+            } else expect(bytes.toString()).toContain('<svg');
+          } else await expect(access(path.join(dist, asset))).rejects.toThrow();
+        }
+        for (const file of await readdir(dist, { recursive: true })) {
+          if (!file.endsWith('.html')) continue;
+          const page = await readFile(path.join(dist, file), 'utf8');
+          for (const asset of [
+            '/mark.svg',
+            '/favicon-32.png',
+            '/apple-touch-icon.png',
+            '/logo.svg',
+          ]) {
+            expect(page.includes(`="${asset}"`)).toBe(configured);
+          }
+          if (configured) {
+            expect(page).toMatch(/<link rel="icon" href="\/mark.svg" type="image\/svg\+xml"/);
+            expect(page).toMatch(
+              /<link rel="icon" href="\/favicon-32.png" sizes="32x32" type="image\/png"/,
+            );
+            expect(page).toMatch(/<link rel="apple-touch-icon" href="\/apple-touch-icon.png"/);
+            expect(page).toMatch(
+              /<a class="wordmark"[^>]*>\s*<img src="\/mark.svg" alt="" width="64" height="64"/,
+            );
+            expect(page).toContain(
+              `src="/logo.svg" alt="${tenant.name}" width="1000" height="1000"`,
+            );
+          } else expect(page).toContain(`<span>${tenant.name}</span>`);
+        }
         for (const lang of ['de', 'uk']) {
           const page = await html(dist, lang === 'de' ? '' : 'uk');
           const footer = page.split('<footer')[1]!;

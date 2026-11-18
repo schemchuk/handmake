@@ -173,6 +173,16 @@ a {
   font-size: 1.3rem;
   text-decoration: none;
 }
+.wordmark:has(img) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+.wordmark img {
+  height: 1.9em;
+  width: auto;
+  flex-shrink: 0;
+}
 .nav {
   font-family: var(--font-display);
   font-size: 1.1rem;
@@ -198,6 +208,9 @@ a {
   .roll {
     padding: 0.6rem 1rem;
     column-gap: 0.4rem;
+  }
+  .wordmark img {
+    height: 1.6em;
   }
   .wordmark {
     font-size: 0.9rem;
@@ -489,6 +502,7 @@ a {
   padding: 1.5rem 0.25rem 3rem;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem 1.4rem;
   color: var(--ground-ink);
   font-size: 0.9rem;
@@ -496,6 +510,12 @@ a {
 .site-footer :first-child {
   margin-right: auto;
   font-family: var(--font-display);
+}
+
+.footer-logo {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
 }
 
 .visually-hidden {
