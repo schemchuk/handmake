@@ -2963,7 +2963,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   (PNG sizes via sharp metadata), and their absence without the fields.
 
 ### T71 — Retry the Instagram Reel upload (`channels`, `publisher`)
-- Status: todo.
+- Status: in review.
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Why: 2026-11-21 work `01M7YV04KMGCC3QQFKF6NBQ9MS` (run 44895631992, and its re-run) published
   photos to all channels and the video to Telegram, then failed on the Instagram video, so the

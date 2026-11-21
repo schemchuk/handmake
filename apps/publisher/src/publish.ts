@@ -509,6 +509,11 @@ export async function runPublish(
           channelOperations.get(channel)?.find((op) => op.kind === 'mediaGroup')?.caption,
         );
       } catch (error) {
+        const message = `video ${channel}: ${safeErrorMessage(
+          error instanceof Error ? (error.cause ?? error) : error,
+        )}`;
+        log(message);
+        await notify('operator', message);
         await notify('author', safeErrorMessage(error));
         throw error;
       }

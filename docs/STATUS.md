@@ -1,8 +1,8 @@
 # STATUS
 
-- **Active agent:** codex.
+- **Active agent:** claude-code (review of T71).
 - **Current task:** T71 (retry the Instagram Reel upload; docs/03-tasks.md).
-- **Branch:** `feat/t71-ig-video-retry` (to create).
+- **Branch:** `feat/t71-ig-video-retry`.
 - **Last commit:** feat(site): round logo in header, footer and icons (T70) (#179).
 - **Next step:** codex implements T71 exactly as written in docs/03-tasks.md (edit files only;
   claude-code reviews, commits, pushes, merges). After merge: re-run publish run 44895631992 so

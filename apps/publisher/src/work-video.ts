@@ -90,7 +90,7 @@ export async function deliverWorkVideo(
       },
     );
     ledger = markDone(ledger, adapter.key, now);
-  } catch {
+  } catch (error) {
     ledger = markFailed(
       ledger,
       adapter.key,
@@ -98,7 +98,7 @@ export async function deliverWorkVideo(
       now,
     );
     await persist(ledger);
-    throw new Error(ledger.channels[adapter.key]!.error);
+    throw new Error(ledger.channels[adapter.key]!.error, { cause: error });
   }
   await persist(ledger);
 }

@@ -704,24 +704,79 @@ describe('resumable work Reel', () => {
     expect(requests).toHaveLength(0);
   });
 
+  it.each(['processing', 'transport', 'HTTP'] as const)(
+    'publishes after retrying a %s failure in the same upload container',
+    async (failure) => {
+      const video = new Uint8Array([0, 1, 255, 42]);
+      const uploads: Array<{ url: string; init?: RequestInit }> = [];
+      const { sleep, sleeps } = sleepRecorder();
+      const graph = graphHandler();
+      const fetchImpl: typeof fetch = async (input, init) => {
+        const url = String(input);
+        if (!url.includes('rupload.')) return graph({ url }, 0);
+        uploads.push({ url, init });
+        if (uploads.length === 2) return jsonResponse({ success: true });
+        if (failure === 'transport') throw new Error('transport failure');
+        if (failure === 'HTTP') return jsonResponse({}, 500);
+        return jsonResponse({
+          debug_info: { retriable: false, type: 'ProcessingFailedError' },
+        });
+      };
+      const adapter = new InstagramAdapter({ fetchImpl, sleep, videoUploadRetryDelayMs: 42 });
+
+      await expect(adapter.deliver([{ kind: 'video' }], makeCtx({ video }))).resolves.toEqual([
+        'media-1',
+      ]);
+      expect(uploads).toHaveLength(2);
+      expect(sleeps).toEqual([42]);
+      for (const { url, init } of uploads) {
+        expect(url).toBe('https://rupload.facebook.com/ig-api-upload/container-1');
+        expect(init?.headers).toMatchObject({ offset: '0', file_size: '4' });
+        expect(new Uint8Array(await (init?.body as Blob).arrayBuffer())).toEqual(video);
+      }
+    },
+  );
+
+  it('reports the processing error type after three failed uploads', async () => {
+    const { sleep, sleeps } = sleepRecorder();
+    const { fetchImpl, requests } = fakeFetch(
+      graphHandler({
+        fail: ({ url }) =>
+          url.includes('rupload.')
+            ? jsonResponse({ debug_info: { type: 'ProcessingFailedError', message: TOKEN } })
+            : undefined,
+      }),
+    );
+    const adapter = new InstagramAdapter({ fetchImpl, sleep });
+
+    await expect(
+      adapter.deliver([{ kind: 'video' }], makeCtx({ video: new Uint8Array([1]) })),
+    ).rejects.toThrow(/^Instagram video upload was not accepted \(ProcessingFailedError\)$/);
+    expect(requests).toHaveLength(4);
+    expect(requests.slice(1).map(({ url }) => url)).toEqual(
+      Array<string>(3).fill('https://rupload.facebook.com/ig-api-upload/container-1'),
+    );
+    expect(sleeps).toEqual([3000, 3000]);
+  });
+
   it.each([
-    new Response('secret-echo', { status: 500 }),
-    new Response('not-json'),
-    jsonResponse({ success: false, message: TOKEN }),
-    jsonResponse(null),
+    [new Response('secret-echo', { status: 500 }), 'returned malformed JSON'],
+    [new Response('not-json'), 'returned malformed JSON'],
+    [jsonResponse({ success: false, debug_info: { type: TOKEN } }), 'was not accepted'],
+    [jsonResponse(null), 'was not accepted'],
   ])(
     'fails a rejected or malformed upload without publishing or leaking upstream data',
-    async (response) => {
+    async (response, failure) => {
       let count = 0;
       const fetchImpl = (async () =>
-        ++count === 1 ? jsonResponse({ id: 'container' }) : response) as typeof fetch;
+        ++count === 1 ? jsonResponse({ id: 'container' }) : response.clone()) as typeof fetch;
       await expect(
-        new InstagramAdapter({ fetchImpl }).deliver(
+        new InstagramAdapter({ fetchImpl, sleep: sleepNoop }).deliver(
           [{ kind: 'video' }],
           makeCtx({ video: new Uint8Array([1]) }),
         ),
-      ).rejects.toThrow(/^Instagram video upload/);
-      expect(count).toBe(2);
+      ).rejects.toThrow(new RegExp(`^Instagram video upload ${failure}$`));
+      expect(count).toBe(4);
     },
   );
 
@@ -741,11 +796,15 @@ describe('resumable work Reel', () => {
 
 it.each([429, 401])('retries only the Reel upload on HTTP %i', async (status) => {
   const urls: string[] = [];
+  const { sleep, sleeps } = sleepRecorder();
   let uploads = 0;
   const fetchImpl = (async (input) => {
     const url = String(input);
     urls.push(url);
     if (url.includes('rupload.')) {
+      if (status === 401 && uploads === 1) {
+        expect(urls.at(-2)).toContain('oauth/access_token');
+      }
       uploads++;
       return uploads === 1
         ? jsonResponse({ error: { code: status === 401 ? 190 : 4 } }, status)
@@ -755,9 +814,10 @@ it.each([429, 401])('retries only the Reel upload on HTTP %i', async (status) =>
     if (url.includes('fields=status_code')) return jsonResponse({ status_code: 'FINISHED' });
     return jsonResponse({ id: 'reel' });
   }) as typeof fetch;
-  const adapter = new InstagramAdapter({ fetchImpl, sleep: sleepNoop });
+  const adapter = new InstagramAdapter({ fetchImpl, sleep, rateLimitBackoffMs: 125 });
   await adapter.deliver([{ kind: 'video' }], makeCtx({ video: new Uint8Array([1]) }));
   expect(uploads).toBe(2);
+  expect(sleeps).toEqual(status === 429 ? [125] : []);
   expect(urls.filter((url) => new URL(url).pathname.endsWith('/media'))).toHaveLength(1);
   expect(urls.filter((url) => url.includes('media_publish'))).toHaveLength(1);
 });
