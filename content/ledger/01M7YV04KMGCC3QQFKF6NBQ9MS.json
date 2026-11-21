@@ -25,9 +25,11 @@
       "updatedAt": "2026-11-21T10:43:44.172Z"
     },
     "threads": {
-      "status": "pending",
-      "remoteIds": [],
-      "updatedAt": "2026-11-21T10:43:01.293Z"
+      "status": "done",
+      "remoteIds": [
+        "18083944763562973"
+      ],
+      "updatedAt": "2026-11-21T10:44:48.713Z"
     }
   }
 }
