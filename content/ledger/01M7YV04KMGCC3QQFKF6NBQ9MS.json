@@ -3,9 +3,12 @@
   "postId": "01M7YV04KMGCC3QQFKF6NBQ9MS",
   "channels": {
     "telegram": {
-      "status": "pending",
-      "remoteIds": [],
-      "updatedAt": "2026-11-21T10:43:01.293Z"
+      "status": "done",
+      "remoteIds": [
+        118,
+        121
+      ],
+      "updatedAt": "2026-11-21T10:43:06.823Z"
     },
     "instagram": {
       "status": "pending",
