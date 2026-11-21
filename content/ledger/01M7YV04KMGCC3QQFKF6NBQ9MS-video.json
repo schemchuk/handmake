@@ -1,0 +1,13 @@
+{
+  "tenantId": "faden-und-stimmung",
+  "postId": "01M7YV04KMGCC3QQFKF6NBQ9MS-video",
+  "channels": {
+    "telegram": {
+      "status": "done",
+      "remoteIds": [
+        122
+      ],
+      "updatedAt": "2026-11-21T10:43:01.293Z"
+    }
+  }
+}
