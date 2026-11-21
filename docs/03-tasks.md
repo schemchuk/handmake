@@ -2961,3 +2961,34 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests (`--maxWorkers=2`): core schema accepts/rejects logo/mark paths like wordmark; site build
   test with a fixture tenant asserts head links, header `img`, footer logo alt, the three endpoints
   (PNG sizes via sharp metadata), and their absence without the fields.
+
+### T71 — Retry the Instagram Reel upload (`channels`, `publisher`)
+- Status: in review.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Why: 2026-11-21 work `01M7YV04KMGCC3QQFKF6NBQ9MS` (run 44895631992, and its re-run) published
+  photos to all channels and the video to Telegram, then failed on the Instagram video, so the
+  Facebook video never ran. claude-code reproduced it on unpublished containers: the first
+  `rupload.facebook.com/ig-api-upload/<container>` POST into a fresh container answers
+  `{"debug_info":{"retriable":false,"type":"ProcessingFailedError","message":"Request processing
+  failed"}}` (no `success`), and a second identical POST into the SAME container returns
+  `{"success":true}`; the container then reaches FINISHED (3 of 3 runs). The adapter tries once,
+  and `deliverWorkVideo` swallows the cause, so the log shows only the generic Ukrainian text.
+- Change:
+  1. `packages/channels/src/instagram/adapter.ts` `#uploadVideo`: up to 3 attempts into the same
+     container (full re-send, `offset: 0`), pause between attempts via the injected `#sleep`,
+     new option `videoUploadRetryDelayMs` (default 3000). Retry on transport failure, on a
+     non-ok response, and on a 200 body without `success: true`. Do not retry 429 (keep the
+     `MetaRateLimitError` path) or code 190 (keep `MetaTokenExpiredError`). After the last
+     attempt throw `InstagramAdapterError` whose message includes `debug_info.type` when it is a
+     plain `[A-Za-z]+` word (never the token, never the raw body).
+  2. `apps/publisher/src/work-video.ts`: keep the ledger/author text as is, but throw it with
+     `{ cause: error }`; in `apps/publisher/src/publish.ts` the video catch logs
+     `video ${channel}: <cause message>` and notifies the operator with the same text (like the
+     photo-channel catch), then rethrows. The author message is unchanged.
+- Acceptance: a first-attempt ProcessingFailedError followed by success publishes the Reel; three
+  failures fail the op with a message naming `ProcessingFailedError`; 429/190 behave as today;
+  the run log names the real cause of a work-video failure.
+- Tests (`--maxWorkers=2`, touched files only): adapter tests for retry-then-success (two upload
+  calls, same container URL, one sleep of the delay), three failures, transport error then success,
+  429 and 190 not retried by the new loop; publisher test that a video failure logs and notifies the
+  operator with the cause.

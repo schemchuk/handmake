@@ -519,7 +519,7 @@ it('retries only the Instagram Reel with its caption and separate channel ledger
     if (url.includes('fields=status_code')) return Response.json({ status_code: 'FINISHED' });
     return Response.json({ id: 'container-id' });
   });
-  const adapter = new InstagramAdapter({ fetchImpl });
+  const adapter = new InstagramAdapter({ fetchImpl, sleep: async () => {} });
   const photosLedger = {
     tenantId,
     postId: id,
@@ -613,13 +613,28 @@ it.each(['instagram', 'facebook'])(
       if (ctx.video) throw new Error('fixture upload rejected');
       return original(ops, ctx, progress);
     });
+    const logger = vi.fn();
+    const notifier = new FakeNotifier();
     const overrides = {
       ...deps(),
       registry,
+      logger,
+      notifier,
       showMediaSource: videoSource,
       env: { ...deps().env, CONTENT_RAW_BASE_URL: 'https://raw.example/content' },
     };
-    await expect(run(overrides)).rejects.toThrow('відео');
+    const authorMessage = 'Не вдалося опублікувати відео роботи. Повторіть публікацію.';
+    const diagnostic = `video ${channel}: fixture upload rejected`;
+    await expect(run(overrides)).rejects.toThrow(authorMessage);
+    expect(logger).toHaveBeenCalledWith(diagnostic);
+    expect(notifier.messages).toEqual([
+      { target: 'operator', message: diagnostic },
+      { target: 'author', message: authorMessage },
+    ]);
+    expect((await store.readLedger(tenantId, `${id}-video`))?.channels[channel]).toMatchObject({
+      status: 'failed',
+      error: authorMessage,
+    });
     expect((await store.readLedger(tenantId, id))?.channels[channel]?.status).toBe('done');
     deliver.mockImplementation(original);
     await run(overrides);

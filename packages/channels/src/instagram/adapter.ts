@@ -41,6 +41,8 @@ export interface InstagramAdapterOptions extends MetaGraphOptions {
   videoStatusPollIntervalMs?: number;
   /** Max video container-status polls before failing the op; default 72. */
   videoStatusPollMaxAttempts?: number;
+  /** Sleep between video upload attempts; default 3000 ms. */
+  videoUploadRetryDelayMs?: number;
   /** Bound on followed comment/posts pages per comments-capability op; default 5. */
   commentsMaxPages?: number;
 }
@@ -92,8 +94,8 @@ type InstagramOp = MediaGroupOp | Extract<SendOperation, { kind: 'video' }>;
  * INSTAGRAM_ACCESS_TOKEN secret (operator runbook:
  * docs/instagram-runbook.md). The refreshed token is never persisted back
  * into the secrets store. A 429 burns one attempt per retry, at the level
- * of the individual call, like Telegram; nothing else is retried
- * in-process (the ledger re-run covers it). Tokens never appear in logs
+ * of the individual call, like Telegram. Reel uploads also retry into
+ * the same container. Tokens never appear in logs
  * or error messages: the request URL carries the access_token, so errors
  * name the endpoint only.
  *
@@ -115,6 +117,7 @@ export class InstagramAdapter implements ChannelAdapter {
 
   readonly #videoStatusPollIntervalMs: number;
   readonly #videoStatusPollMaxAttempts: number;
+  readonly #videoUploadRetryDelayMs: number;
 
   constructor({
     commentsMaxPages,
@@ -122,6 +125,7 @@ export class InstagramAdapter implements ChannelAdapter {
     statusPollMaxAttempts,
     videoStatusPollIntervalMs,
     videoStatusPollMaxAttempts,
+    videoUploadRetryDelayMs = 3000,
     ...graphOptions
   }: InstagramAdapterOptions = {}) {
     this.#graph = new MetaGraphClient('Instagram', graphOptions);
@@ -133,6 +137,7 @@ export class InstagramAdapter implements ChannelAdapter {
       videoStatusPollIntervalMs ?? DEFAULT_VIDEO_STATUS_POLL_INTERVAL_MS;
     this.#videoStatusPollMaxAttempts =
       videoStatusPollMaxAttempts ?? DEFAULT_VIDEO_STATUS_POLL_MAX_ATTEMPTS;
+    this.#videoUploadRetryDelayMs = videoUploadRetryDelayMs;
     this.comments = createMetaCommentsCapability({
       network: 'Instagram',
       error: (message) => new InstagramAdapterError(message),
@@ -240,10 +245,8 @@ export class InstagramAdapter implements ChannelAdapter {
    * One op, with every Graph API call retried AT THE CALL LEVEL: a 429 (or
    * the first expired-token 190) on one call re-sends only that call, so a
    * carousel hit late keeps the child containers it already created instead
-   * of recreating the whole op (PR #94 review note). Deliberately ONLY 429
-   * and the first 190 are retried: a network error after Meta accepted a
-   * container is NOT retried (the ledger-driven re-run covers it; orphan
-   * containers expire unused).
+   * of recreating the whole op (PR #94 review note). The Reel upload also
+   * retries transport failures and rejected uploads into the same container.
    */
   async #sendWithRetry(
     op: InstagramOp,
@@ -303,8 +306,21 @@ export class InstagramAdapter implements ChannelAdapter {
     return published.id;
   }
 
-  /** Fixed upload origin: never follow an upstream URL carrying credentials. */
   async #uploadVideo(id: string, auth: MetaAuthState, video: Uint8Array): Promise<void> {
+    const maxAttempts = 3;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await this.#uploadVideoOnce(id, auth, video);
+        return;
+      } catch (error) {
+        if (!(error instanceof InstagramAdapterError) || attempt >= maxAttempts) throw error;
+      }
+      await this.#sleep(this.#videoUploadRetryDelayMs);
+    }
+  }
+
+  /** Fixed upload origin: never follow an upstream URL carrying credentials. */
+  async #uploadVideoOnce(id: string, auth: MetaAuthState, video: Uint8Array): Promise<void> {
     let response: Response;
     try {
       response = await (this.#graphOptions.fetchImpl ?? fetch)(
@@ -329,17 +345,26 @@ export class InstagramAdapter implements ChannelAdapter {
         'Instagram video upload rate limited',
         this.#graphOptions.rateLimitBackoffMs ?? 60_000,
       );
-    let result: { success?: unknown; error?: { code?: unknown } };
+    let result: {
+      success?: unknown;
+      error?: { code?: unknown };
+      debug_info?: { type?: unknown };
+    } | null;
     try {
-      result = (await response.json()) as { success?: unknown; error?: { code?: unknown } };
+      result = (await response.json()) as typeof result;
     } catch {
       throw new InstagramAdapterError('Instagram video upload returned malformed JSON');
     }
     if (result?.error?.code === 190)
       throw new MetaTokenExpiredError('Instagram video upload: access token expired');
-    if (!response.ok) throw new InstagramAdapterError('Instagram video upload failed');
-    if (result?.success !== true)
-      throw new InstagramAdapterError('Instagram video upload was not accepted');
+    if (response.ok && result?.success === true) return;
+    const type = result?.debug_info?.type;
+    const detail =
+      typeof type === 'string' && /^[A-Za-z]+$/.test(type) && !type.includes(auth.token)
+        ? ` (${type})`
+        : '';
+    const failure = response.ok ? 'was not accepted' : 'failed';
+    throw new InstagramAdapterError(`Instagram video upload ${failure}${detail}`);
   }
 
   async #createContainer(

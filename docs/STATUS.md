@@ -1,13 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T70 (round logo on every site page: header mark, footer logo, favicons)
-  merged as PR #179 (`a6deaa5`).
-- **Branch:** `main`.
+- **Active agent:** claude-code (review of T71).
+- **Current task:** T71 (retry the Instagram Reel upload; docs/03-tasks.md).
+- **Branch:** `feat/t71-ig-video-retry`.
 - **Last commit:** feat(site): round logo in header, footer and icons (T70) (#179).
-- **Next step:** site deployed by Volodymyr (run 44311457945), logo live. Bot redeployed by
-  Volodymyr from `main` after PR #179, Worker `f9ce9d1b-a2a4-4089-bb20-a3d1624a8915`.
-  Week 2026-11-09 ballot closes 2026-11-18 20:00 Berlin.
+- **Next step:** codex implements T71 exactly as written in docs/03-tasks.md (edit files only;
+  claude-code reviews, commits, pushes, merges). After merge: re-run publish run 44895631992 so
+  work `01M7YV04KMGCC3QQFKF6NBQ9MS` gets its Instagram and Facebook video.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
