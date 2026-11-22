@@ -9,7 +9,11 @@
   https://support.google.com/youtube/contact/yt_api_form, filed by Volodymyr) and H21: add
   `youtube: { language: de }` after `facebook` in `config/tenants/faden-und-stimmung.yaml`.
   Meanwhile T79 (Pinterest). Watch the first queued work: Threads about 90 min after the slot.
-- **Blocked on:** YouTube go-live: API audit and H21.
+- **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
+  (`6ecc3d2`), site redeployed; footer links the YouTube channel.
+- **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console
+  (TXT in Cloudflare DNS, keep it). Then Google Auth Platform → Branding → View issues → «I have
+  fixed the issues» → Proceed, so the consent screen shows the privacy policy links.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,
