@@ -1,14 +1,16 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T77 (delayed channels) live: PR #190 (`7d03ae8`), migration 0027 applied
-  and Worker `f2d542f0-f2dd-43a1-b241-deed6e64827f` deployed by Volodymyr 2026-11-22; Threads
-  `delay: { minutes: 90 }` in the tenant YAML. First real delayed Threads run not observed yet.
+- **Current task:** T75c done: PR #192 (`3f8b916`). Cleanup keeps a work with a `failed`
+  ledger entry in `waitingForRetry`, cleans it once a re-run is `done`, alerts only if still
+  failed 24 h after the first failure (a pending re-run keeps waiting). Live via
+  `handmake-reel-cleanup.timer` from the `main` checkout. T77 live since `7d03ae8`; first
+  real delayed Threads run not observed yet.
 - **Branch:** `main`.
-- **Last commit:** config: delay Threads by 90 minutes (T77).
-- **Next step:** T75c (cleanup waits out transient failures), then T78 (YouTube Shorts), then
-  T79 (Pinterest). Watch the first queued work: the
-  other channels at the slot, Threads about 90 min later with «Threads: опубліковано».
+- **Last commit:** docs: record T75c merge.
+- **Next step:** T78 (YouTube Shorts); needs H19 (Google account/OAuth) from Volodymyr, Claude
+  Code gives the guide when due. Then T79 (Pinterest). Watch the first queued work: the other
+  channels at the slot, Threads about 90 min later with «Threads: опубліковано».
   Optional: `queue - Черга публікацій` in the BotFather menu.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.

@@ -3191,7 +3191,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   once the file is gone or closed; 24 h give-up; plural forms 1/2/5/11/21/22.
 
 ### T75c — Cleanup: a failed ledger entry is not final while the bot retries (`reel`, F41, F42)
-- Status: planned (2026-11-22, after the T77 go-live). Do before T78.
+- Status: done (2026-11-22, PR #192, `3f8b916`; live via the timer, runs from the `main` checkout).
 - Owner: claude-code · Reviewer: codex · Depends on: T77
 - Why: since T76a/T77 the bot re-runs publications by itself (a follow-up up to 3 times, a
   queued work with no callback after 2 h), and T78/T79 add two more channels. A `failed` ledger
