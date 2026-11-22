@@ -7,9 +7,10 @@
   `handmake-reel-cleanup.timer` from the `main` checkout. T77 live since `7d03ae8`; first
   real delayed Threads run not observed yet.
 - **Branch:** `main`.
-- **Last commit:** docs: record T75c merge.
-- **Next step:** T78 (YouTube Shorts); needs H19 (Google account/OAuth) from Volodymyr, Claude
-  Code gives the guide when due. Then T79 (Pinterest). Watch the first queued work: the other
+- **Last commit:** docs: record H19 (YouTube account and secrets).
+- **Next step:** T78 (YouTube Shorts) on branch `feat/T78-youtube-shorts` (auth helper
+  committed). H19 done 2026-11-22: `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`,
+  `YOUTUBE_REFRESH_TOKEN` set. Then T79 (Pinterest). Watch the first queued work: the other
   channels at the slot, Threads about 90 min later with «Threads: опубліковано».
   Optional: `queue - Черга публікацій` in the BotFather menu.
 - **Blocked on:** nothing.
