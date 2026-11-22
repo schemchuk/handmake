@@ -166,8 +166,18 @@ describe('YoutubeAdapter', () => {
     ]);
     expect(await adapter.deliver([op], context())).toEqual(['abcdef12345']);
     expect(calls[3]!.init.headers).toEqual({ 'Content-Range': 'bytes */1000' });
+    // 308 must reach the adapter: fetch must not treat it as a redirect error.
+    expect(calls.every(({ init }) => init.redirect === 'manual')).toBe(true);
     expect(calls[4]!.init.headers).toMatchObject({ 'Content-Range': 'bytes 400-999/1000' });
     expect((calls[4]!.init.body as Uint8Array)[0]).toBe(video[400]);
+  });
+
+  it('refuses a real redirect instead of following it', async () => {
+    const { adapter } = fake([
+      token(),
+      new Response(null, { status: 302, headers: { Location: 'https://evil.example/' } }),
+    ]);
+    await expect(adapter.deliver([op], context())).rejects.toThrow(/unexpected redirect/);
   });
 
   it('takes the id from the status check when the last chunk did arrive', async () => {

@@ -250,10 +250,19 @@ export class YoutubeAdapter implements ChannelAdapter {
   async #request(url: string, init: RequestInit): Promise<Response> {
     let response: Response;
     try {
-      response = await this.#fetch(url, { ...init, redirect: 'error' });
+      // 'manual', not 'error': fetch treats YouTube's "308 Resume Incomplete" as a
+      // redirect and 'error' would reject it. Nothing is ever followed.
+      response = await this.#fetch(url, { ...init, redirect: 'manual' });
     } catch {
       throw new Transient();
     }
+    if (
+      response.type === 'opaqueredirect' ||
+      (response.status >= 300 && response.status < 400 && response.status !== 308)
+    )
+      throw new YoutubeAdapterError(
+        `YouTube answered with an unexpected redirect (HTTP ${response.status})`,
+      );
     if (response.status === 429 || (response.status >= 500 && init.method !== 'PUT'))
       throw new Transient();
     return response;
