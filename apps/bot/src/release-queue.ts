@@ -149,6 +149,21 @@ export async function runReleaseQueueCron(
   now: Date,
   options: ReleaseQueueCronOptions,
 ): Promise<void> {
+  // One execution at a time: the busy check and the claim below are separate
+  // statements, so overlapping executions could both dispatch otherwise.
+  const holder = crypto.randomUUID();
+  if (!(await options.drafts.acquireQueueLock(holder, now, queueLockLeaseMs))) return;
+  try {
+    await dispatchTenants(now, options);
+  } finally {
+    await options.drafts.releaseQueueLock(holder).catch(() => undefined);
+  }
+}
+
+/** Longer than one pass (one GitHub call per tenant), shorter than a tick. */
+export const queueLockLeaseMs = 5 * 60 * 1000;
+
+async function dispatchTenants(now: Date, options: ReleaseQueueCronOptions): Promise<void> {
   for (const tenantId of new Set(options.allowList.values())) {
     try {
       const { next, busy } = await options.drafts.queueState(tenantId, now);

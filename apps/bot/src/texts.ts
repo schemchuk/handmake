@@ -230,7 +230,8 @@ export const botTexts = {
   queueItemText: (slot: string, title: string) => `🗓 ${slot}\n${title}`,
   queueNowButton: '⚡ Зараз',
   queueBackButton: '↩️ У чернетку',
-  queueNowText: '⚡ Добре, вийде з найближчим запуском черги, зазвичай протягом 15–30 хвилин.',
+  queueNowText:
+    '⚡ Добре, робота готова до публікації й вийде, щойно до неї дійде черга (зазвичай за 15–30 хвилин).',
   queueBackDoneText: 'Роботу повернено в чернетку, її слот вільний. /work — відкрити її знову.',
   queueStaleText: 'Цей крок уже змінився. Відкрий /queue ще раз.',
   queueLowText: (left: number, slot: string) =>

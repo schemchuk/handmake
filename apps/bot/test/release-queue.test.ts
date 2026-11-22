@@ -8,6 +8,7 @@ import {
   formatSlot,
   maxQueueAttempts,
   nextFreeSlot,
+  queueLockLeaseMs,
   queuesKind,
   runReleaseQueueCron,
 } from '../src/release-queue';
@@ -451,5 +452,36 @@ describe('low-queue reminders (T76b)', () => {
     await runReleaseQueueCron(new Date(lost.getTime() + 900_000), options);
     expect(options.runner.run).toHaveBeenCalledTimes(3);
     expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('a work queued again after giving up earns a new note', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    expect(await store.claimQueueReminder(tenant, 'a')).toBe(true);
+    await store.unschedule(tenant, 'a', mondaySlot);
+    expect(await store.schedule(tenant, 'a', tuesdaySlot, mondaySlot)).toBe('scheduled');
+    expect(await store.claimQueueReminder(tenant, 'a')).toBe(true);
+    expect(await store.claimQueueReminder(tenant, 'a')).toBe(false);
+  });
+});
+
+describe('queue dispatch lock (PR #189 review)', () => {
+  it('an execution holding the lease keeps others from dispatching', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    expect(await store.acquireQueueLock('other', mondaySlot, queueLockLeaseMs)).toBe(true);
+    const { options } = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(options.runner.run).not.toHaveBeenCalled();
+    // The lease expires: the next execution takes over.
+    await runReleaseQueueCron(new Date(mondaySlot.getTime() + queueLockLeaseMs + 1), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('a finished execution releases the lease', async () => {
+    const store = createD1DraftStore(await makeD1());
+    const { options } = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(await store.acquireQueueLock('next', mondaySlot, queueLockLeaseMs)).toBe(true);
   });
 });

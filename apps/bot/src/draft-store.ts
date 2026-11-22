@@ -257,6 +257,10 @@ export interface D1DraftStore {
   /** Records that the low-queue note for this draft's dispatch was sent;
    * false when it already was (a re-dispatch after a lost run). */
   claimQueueReminder(tenantId: string, draftId: string): Promise<boolean>;
+  /** Takes the queue dispatch lease unless another execution holds an
+   * unexpired one. */
+  acquireQueueLock(holder: string, now: Date, leaseMs: number): Promise<boolean>;
+  releaseQueueLock(holder: string): Promise<void>;
   /** GitHub accepted the dispatch of this claim. */
   markDispatched(tenantId: string, draftId: string, version: number, now: Date): Promise<void>;
   /** A cron dispatch failed: back to `scheduled` (next try after one tick), or
@@ -795,8 +799,9 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
             `UPDATE drafts
              SET pending_edit = NULL, status = 'scheduled', publish_at = ?, retry_at = NULL,
                  dispatched_at = NULL, queue_attempts = 0, updated_at = ?, version = version + 1,
-                 extras = CASE WHEN ? IS NULL THEN extras
-                   ELSE json_set(extras, '$.approvalChatId', ?) END
+                 -- A new queueing earns its own low-queue note.
+                 extras = CASE WHEN ? IS NULL THEN json_remove(extras, '$.queueReminded')
+                   ELSE json_set(json_remove(extras, '$.queueReminded'), '$.approvalChatId', ?) END
              WHERE tenant_id = ? AND id = ? AND status = 'ready'
                AND (? IS NULL OR version = ?)`,
           )
@@ -912,6 +917,25 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(now.toISOString(), tenantId, draftId, ...claimableArgs(now))
         .first<DraftRow>();
       return row ? toStoredDraft(row) : undefined;
+    },
+
+    async acquireQueueLock(holder, now, leaseMs) {
+      const result = await db
+        .prepare(
+          `INSERT INTO queue_dispatch_lock (id, holder, held_until) VALUES (1, ?, ?)
+           ON CONFLICT (id) DO UPDATE SET holder = excluded.holder, held_until = excluded.held_until
+           WHERE queue_dispatch_lock.held_until < ?`,
+        )
+        .bind(holder, new Date(now.getTime() + leaseMs).toISOString(), now.toISOString())
+        .run();
+      return result.meta.changes > 0;
+    },
+
+    async releaseQueueLock(holder) {
+      await db
+        .prepare(`UPDATE queue_dispatch_lock SET held_until = '' WHERE id = 1 AND holder = ?`)
+        .bind(holder)
+        .run();
     },
 
     async claimQueueReminder(tenantId, draftId) {
