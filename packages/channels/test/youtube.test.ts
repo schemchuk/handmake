@@ -99,7 +99,7 @@ describe('renderYoutube', () => {
     expect(() =>
       renderYoutube({ ...post, texts: { de: `Titel\n${'ü'.repeat(2600)}` } }, { language: 'de' }),
     ).toThrow(/5000/);
-    expect(renderYoutube({ ...post, type: 'meeting' } as Post, { language: 'de' })).toEqual([]);
+    expect(renderYoutube({ ...post, type: 'reminder' }, { language: 'de' })).toEqual([]);
   });
 });
 

@@ -112,7 +112,9 @@ function google(failUpload = false) {
   });
 }
 
-async function run(options: { env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch } = {}) {
+async function run(
+  options: { env?: NodeJS.ProcessEnv; fetchImpl?: ReturnType<typeof google> } = {},
+) {
   const registry = new ChannelRegistry();
   const telegram = new FakeChannelAdapter({
     key: 'telegram',
@@ -185,8 +187,9 @@ describe('YouTube Shorts (T78)', () => {
   });
 
   it('a YouTube render failure still lets the other channels post the video', async () => {
-    current.work!.versions.de.description = `Schal\n${'ü'.repeat(2600)}`;
-    current.texts.de = current.work!.versions.de.description;
+    const long = `Schal\n${'ü'.repeat(2600)}`;
+    current.work!.versions.de!.description = long;
+    current.texts.de = long;
     await expect(run()).rejects.toThrow(/youtube.*render failed/);
     expect((await store.readLedger(tenantId, `${id}-video`))?.channels.telegram?.status).toBe(
       'done',
