@@ -10,7 +10,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { checkCleanupFileOpen, runCleanup } from '../src/cleanup.ts';
 
@@ -66,7 +66,7 @@ function fixture() {
     if (url.pathname.endsWith('/commits/main')) return commit.clone();
     const path = url.pathname.split('/contents/')[1] ?? url.pathname;
     if (url.hostname === 'api.github.com')
-      expect(url.searchParams.get('ref')).toMatch(/^[ab]{40}$/);
+      expect(url.searchParams.get('ref')).toMatch(/^[abc]{40}$/);
     if (path === video) expect(new Headers(init?.headers).get('range')).toBe('bytes=0-0');
     const value = resources.get(path) ?? 404;
     return typeof value === 'number' ? new Response(null, { status: value }) : new Response(value);
@@ -249,17 +249,108 @@ it('waits for the video ledger and then retries a missing site video on unchange
   expect(f.trash).toHaveBeenCalledTimes(1);
 });
 
-it('reports a failed video channel once, even while the photo ledger is pending', async () => {
+const newSha = (letter: string) => new Response(JSON.stringify({ sha: letter.repeat(40) }));
+const day = 86_400_000;
+
+it('reports a failed video channel once after 24 hours, even while the photo ledger is pending', async () => {
   const f = fixture();
   f.resources.set(index, frontMatter(true));
   f.resources.set(ledger, statuses('pending'));
   f.resources.set(videoLedger, statuses('done', 'failed'));
   await put(reels, 'older.mp4');
   await f.run();
-  f.setCommit(new Response(JSON.stringify({ sha: 'b'.repeat(40) })));
-  await f.run();
+  expect(f.notify).not.toHaveBeenCalled();
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [],
+    waitingForRetry: [{ id, date, video: 'video.mp4', firstFailedAt: now() }],
+  });
+  f.setCommit(newSha('b'));
+  await f.run(() => now() + day - 1);
+  expect(f.notify).not.toHaveBeenCalled();
+  f.setCommit(newSha('c'));
+  await f.run(() => now() + day);
+  await f.run(() => now() + day + 1);
   expect(f.trash).not.toHaveBeenCalled();
   expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Публікація ${id} з помилкою, папки не чищу`);
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [id],
+    waitingForRetry: [],
+  });
+});
+
+it('cleans a failed work without an error notice once a re-run on a later SHA succeeds', async () => {
+  const f = fixture();
+  f.resources.set(ledger, statuses('done', 'failed'));
+  const older = await put(inbox, 'older.mov');
+  await f.run();
+  expect(f.trash).not.toHaveBeenCalled();
+  f.setCommit(newSha('b'));
+  f.resources.set(ledger, statuses('done', 'done'));
+  await f.run(() => now() + 15 * 60_000);
+  expect(f.trash.mock.calls).toEqual([[older]]);
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 1 файл.`);
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [id],
+    waitingForRetry: [],
+  });
+});
+
+it('keeps the first failure time while a re-run is pending, then cleans when done', async () => {
+  const f = fixture();
+  f.resources.set(ledger, statuses('failed'));
+  await put(inbox, 'older.mov');
+  await f.run();
+  f.setCommit(newSha('b'));
+  f.resources.set(ledger, statuses('pending'));
+  await f.run(() => now() + 60_000);
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [],
+    waitingForRetry: [{ id, firstFailedAt: now() }],
+  });
+  f.setCommit(newSha('c'));
+  f.resources.set(ledger, statuses('done'));
+  await f.run(() => now() + 120_000);
+  expect(f.trash).toHaveBeenCalledTimes(1);
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 1 файл.`);
+});
+
+it('makes only the SHA request on unchanged main while a failed work waits', async () => {
+  const f = fixture();
+  f.resources.set(ledger, statuses('failed'));
+  await f.run();
+  f.setCommit(new Response(null, { status: 304 }));
+  f.fetch.mockClear();
+  await f.run(() => now() + 60_000);
+  expect(f.fetch).toHaveBeenCalledTimes(1);
+  expect(f.notify).not.toHaveBeenCalled();
+  await f.run(() => now() + day);
+  expect(f.fetch).toHaveBeenCalledTimes(2);
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Публікація ${id} з помилкою, папки не чищу`);
+});
+
+it('drops a waiting failed work quietly when it leaves the repository', async () => {
+  const f = fixture();
+  f.resources.set(ledger, statuses('failed'));
+  await f.run();
+  f.setCommit(newSha('b'));
+  f.resources.set(listing, JSON.stringify([]));
+  await f.run(() => now() + day);
+  expect(f.notify).not.toHaveBeenCalled();
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [id],
+    waitingForRetry: [],
+  });
+});
+
+it('loads an old state file without the retry list', async () => {
+  const f = fixture();
+  await mkdir(dirname(statePath));
+  await writeFile(statePath, JSON.stringify({ sha, handled: [], waitingForSite: [] }));
+  f.setCommit(newSha('b'));
+  await put(inbox, 'older.mov');
+  await f.run();
+  expect(f.log).not.toHaveBeenCalled();
+  expect(f.trash).toHaveBeenCalledTimes(1);
 });
 
 it('baselines old works without checking their ledgers', async () => {

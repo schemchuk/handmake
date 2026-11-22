@@ -24,12 +24,15 @@ const commitSha = /^[a-f0-9]{40}$/;
 
 type Work = { id: string; date: number; video?: string };
 type CleanupRetry = Work & { firstSkippedAt: number };
+type FailedRetry = Work & { firstFailedAt: number };
+type Status = 'done' | 'pending' | 'failed';
 type State = {
   sha: string;
   etag?: string;
   handled: string[];
   waitingForSite: Work[];
   waitingForCleanup?: CleanupRetry[];
+  waitingForRetry?: FailedRetry[];
 };
 type Options = { inbox: string; reels: string; statePath?: string };
 type Dependencies = {
@@ -76,6 +79,19 @@ function isCleanupRetry(value: unknown): value is CleanupRetry {
   );
 }
 
+function isFailedRetry(value: unknown): value is FailedRetry {
+  return (
+    record(value) &&
+    typeof value.firstFailedAt === 'number' &&
+    Number.isFinite(value.firstFailedAt) &&
+    isWork(value)
+  );
+}
+
+function toWork({ id, date, video }: Work): Work {
+  return video === undefined ? { id, date } : { id, date, video };
+}
+
 async function loadState(path: string): Promise<State | undefined> {
   const raw = await readFile(path, 'utf8').catch((error: unknown) => {
     if (!missing(error)) throw error;
@@ -91,7 +107,10 @@ async function loadState(path: string): Promise<State | undefined> {
     !Array.isArray(state.waitingForSite) ||
     !state.waitingForSite.every(isWork) ||
     (state.waitingForCleanup !== undefined &&
-      (!Array.isArray(state.waitingForCleanup) || !state.waitingForCleanup.every(isCleanupRetry)))
+      (!Array.isArray(state.waitingForCleanup) ||
+        !state.waitingForCleanup.every(isCleanupRetry))) ||
+    (state.waitingForRetry !== undefined &&
+      (!Array.isArray(state.waitingForRetry) || !state.waitingForRetry.every(isFailedRetry)))
   ) {
     throw new Error('Invalid cleanup state');
   }
@@ -125,7 +144,7 @@ function readWork(id: string, markdown: string): Work {
   return { id, date, video };
 }
 
-function ledgerStatus(value: unknown, path: string) {
+function ledgerStatus(value: unknown, path: string): Status {
   if (!record(value) || !record(value.channels)) throw new Error(`Invalid ledger: ${path}`);
   const statuses = Object.values(value.channels).map((channel) =>
     record(channel) ? channel.status : undefined,
@@ -148,7 +167,8 @@ async function discover(
   sha: string,
   handled: Set<string>,
   baseline: number | undefined,
-  retries: CleanupRetry[],
+  skip: Set<string>,
+  failedRetries: FailedRetry[],
 ) {
   const get = async (path: string, accept: string, optional = false) => {
     const response = await request(`${api}/contents/${path}?ref=${sha}`, {
@@ -174,11 +194,26 @@ async function discover(
     throw new Error('Invalid works directory listing');
   }
 
+  // Any channel key counts, so new channels need no change here.
+  const statusOf = async ({ id, video }: Work): Promise<Status> => {
+    const paths = [`content/ledger/${id}.json`];
+    if (video) paths.push(`content/ledger/${id}-video.json`);
+    const statuses: Status[] = [];
+    for (const path of paths) {
+      const ledger = await get(path, rawType, true);
+      statuses.push(ledger ? ledgerStatus(await ledger.json(), path) : 'pending');
+    }
+    if (statuses.includes('failed')) return 'failed';
+    return statuses.every((status) => status === 'done') ? 'done' : 'pending';
+  };
+
   const candidates: Work[] = [];
-  const failed: string[] = [];
-  const retryIds = new Set(retries.map(({ id }) => id));
+  const failed: Work[] = [];
+  const listed = new Set<string>();
   for (const { name: id, type } of entries) {
-    if (type !== 'dir' || handled.has(id) || retryIds.has(id)) continue;
+    if (type !== 'dir') continue;
+    listed.add(id);
+    if (handled.has(id) || skip.has(id)) continue;
     const index = await get(`content/works/${id}/index.md`, rawType, true);
     if (!index) continue;
     const work = readWork(id, await index.text());
@@ -186,17 +221,16 @@ async function discover(
       handled.add(id);
       continue;
     }
-    const paths = [`content/ledger/${id}.json`];
-    if (work.video) paths.push(`content/ledger/${id}-video.json`);
-    const statuses = [];
-    for (const path of paths) {
-      const ledger = await get(path, rawType, true);
-      statuses.push(ledger ? ledgerStatus(await ledger.json(), path) : 'pending');
-    }
-    if (statuses.includes('failed')) failed.push(id);
-    else if (statuses.every((status) => status === 'done')) candidates.push(work);
+    const status = await statusOf(work);
+    if (status === 'failed') failed.push(work);
+    else if (status === 'done') candidates.push(work);
   }
-  return { candidates, failed };
+  // Failed works wait for the bot's own re-runs; a removed work is dropped quietly.
+  const retried: { work: FailedRetry; status: Status | 'gone' }[] = [];
+  for (const work of failedRetries) {
+    retried.push({ work, status: listed.has(work.id) ? await statusOf(work) : 'gone' });
+  }
+  return { candidates, failed, retried };
 }
 
 async function siteReady(request: typeof fetch, { id, video }: Work) {
@@ -324,18 +358,54 @@ export async function runCleanup(
     }
     const changed = sha !== previous?.sha;
     const retries = previous?.waitingForCleanup ?? [];
-    if (!changed && !previous?.waitingForSite.length && !retries.length && etag === previous?.etag)
+    const failedRetries = previous?.waitingForRetry ?? [];
+    if (
+      !changed &&
+      !previous?.waitingForSite.length &&
+      !retries.length &&
+      !failedRetries.length &&
+      etag === previous?.etag
+    )
       return;
     const handled = new Set(previous?.handled);
     const runAt = now();
-    const { candidates, failed } = changed
-      ? await discover(request, sha, handled, previous ? undefined : runAt - dayMs, retries)
-      : { candidates: previous!.waitingForSite, failed: [] };
+    const skip = new Set([...retries, ...failedRetries].map(({ id }) => id));
+    const { candidates, failed, retried } = changed
+      ? await discover(
+          request,
+          sha,
+          handled,
+          previous ? undefined : runAt - dayMs,
+          skip,
+          failedRetries,
+        )
+      : {
+          candidates: previous!.waitingForSite,
+          failed: [],
+          retried: failedRetries.map((work) => ({ work, status: 'pending' as const })),
+        };
+
+    // A failed ledger entry is final only after 24 h: the bot re-runs publications itself.
+    const failures: string[] = [];
+    const waitingForRetry: FailedRetry[] = failed.map((work) => ({
+      ...work,
+      firstFailedAt: runAt,
+    }));
+    const fresh = [...candidates];
+    for (const { work, status } of retried) {
+      if (status === 'gone') handled.add(work.id);
+      else if (status === 'done') fresh.push(toWork(work));
+      else if (runAt - work.firstFailedAt < dayMs) waitingForRetry.push(work);
+      else {
+        handled.add(work.id);
+        failures.push(`Публікація ${work.id} з помилкою, папки не чищу`);
+      }
+    }
 
     // Complete all remote checks before touching either folder.
     const waitingForSite: Work[] = [];
     const ready: (Work & { firstSkippedAt?: number })[] = [...retries];
-    for (const work of candidates) {
+    for (const work of fresh) {
       if (await siteReady(request, work)) ready.push(work);
       else waitingForSite.push(work);
     }
@@ -356,16 +426,14 @@ export async function runCleanup(
       else handled.add(work.id);
       if (count) messages.push(`Робота ${work.id} опублікована: прибрано ${fileCount(count)}.`);
     }
-    for (const id of failed) {
-      handled.add(id);
-      messages.push(`Публікація ${id} з помилкою, папки не чищу`);
-    }
+    messages.push(...failures);
     await saveState(statePath, {
       sha,
       etag,
       handled: [...handled],
       waitingForSite,
       waitingForCleanup,
+      waitingForRetry,
     });
     for (const id of expired) log(`Reel cleanup: gave up on ${id} after 24 hours`);
     for (const message of messages) await sendNotification(message);
