@@ -1,17 +1,15 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T72 (watch a folder and process reels automatically).
-- **Branch:** `feat/T72-reel-watch`.
-- **Last commit:** fix(channels): retry Instagram Reel upload (T71) (#181).
-- **Next step:** codex implements T72 from docs/03-tasks.md on `feat/T72-reel-watch`
-  (file edits only; claude-code reviews, commits, pushes and merges).
+- **Active agent:** none.
+- **Current task:** none. T72 (reel folder watcher) merged as PR #182 (`fe5eaab`).
+- **Branch:** `main`.
+- **Last commit:** feat(reel): watch a folder and process reels automatically (T72) (#182).
+- **Next step:** none. `handmake-reel-watch` systemd user unit installed and running on
+  Volodymyr's machine, watching `~/Desktop/temp/videos`. No bot or publisher change.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
-- **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
-  bot preview 45/45; typecheck for all three packages, changed-code ESLint and diff whitespace
-  checks pass. Initial preview assertions exposed the truncated Instagram caption and were
-  fixed; vector digits remove host-font/cache dependence. Browser thumbnail review remains.
+- **Validation:** reel 59/59 and typecheck; CI green on #182; live run on a generated 40 s clip
+  gave a 9.7 MB / 32.5 s reel, a broken file got an error file, lock removed on SIGTERM.
 
 - **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
   (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT

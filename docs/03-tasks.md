@@ -2994,7 +2994,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   operator with the cause.
 
 ### T72 — Watch a folder and process reels automatically (`reel`, F41)
-- Status: in progress.
+- Status: done (merged 2026-11-22, PR #182).
 - Owner: codex · Reviewer: claude-code · Depends on: T68, T69
 - Why: Volodymyr 2026-11-22: phone videos land in a local folder (`~/Desktop/temp/videos`). He wants
   every new video processed by `pnpm reel` with the default protocol without typing a command,
