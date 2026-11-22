@@ -7,15 +7,19 @@ import { dirname, join, resolve } from 'node:path';
 import { idleIntervals, makePlan, videoBitrate } from './plan.ts';
 import type { Interval, Options, Plan } from './plan.ts';
 const exec = promisify(execFile);
+class CommandExitError extends Error {}
+export class UnreadableInputError extends Error {}
+
 export async function run(binary: string, args: string[]) {
   try {
     return await exec(binary, args, { maxBuffer: 64 * 1024 * 1024 });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT')
       throw new Error(`Missing ${binary}; install system ffmpeg and ffprobe`);
-    throw new Error(
-      `${binary} failed: ${error instanceof Error ? error.message.slice(-2000) : String(error)}`,
-    );
+    const message = `${binary} failed: ${error instanceof Error ? error.message.slice(-2000) : String(error)}`;
+    if (typeof (error as NodeJS.ErrnoException).code === 'number')
+      throw new CommandExitError(message);
+    throw new Error(message);
   }
 }
 export function displayDimensions(width: number, height: number, rotation = 0) {
@@ -205,7 +209,11 @@ export function renderArgs(
     output,
   ];
 }
-export async function processReel(options: Options, chooseLength?: (duration: number) => number) {
+export async function processReel(
+  options: Options,
+  chooseLength?: (duration: number) => number,
+  scratchDir?: string,
+) {
   const input = resolve(options.input),
     out = resolve(options.out);
   if (input === out || (options.music && resolve(options.music) === out))
@@ -227,7 +235,11 @@ export async function processReel(options: Options, chooseLength?: (duration: nu
       () => undefined,
     );
   }
-  const info = await probe(input);
+  const info = await probe(input).catch((error: unknown) => {
+    if (error instanceof CommandExitError)
+      throw new UnreadableInputError(error.message, { cause: error });
+    throw error;
+  });
   if (chooseLength) options = { ...options, length: chooseLength(info.duration) };
   const analysis = await run('ffmpeg', [
     '-hide_banner',
@@ -246,7 +258,7 @@ export async function processReel(options: Options, chooseLength?: (duration: nu
     ? detectionIntervals(analysis.stderr, 'silence', info.duration)
     : [{ start: 0, end: info.duration }];
   const plan = makePlan(info.duration, idleIntervals(frozen, silent), silent, options);
-  const temp = await mkdtemp(join(dirname(out), '.reel-'));
+  const temp = await mkdtemp(join(scratchDir ?? dirname(out), '.reel-'));
   try {
     const file = join(temp, 'output.mp4');
     for (const side of [1080, 720]) {

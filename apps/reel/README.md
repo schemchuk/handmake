@@ -53,6 +53,12 @@ saves `<name>-reel.mp4` beside each source, using its name without the extension
 The body is 30 seconds or the source duration rounded down, with a 2.5-second end card.
 Sources shorter than five seconds fail. Watch and listen to each reel before sending it.
 
+Files must be unchanged across consecutive scans and closed according to `fuser`.
+If `fuser` is unavailable, the watcher waits for 60 seconds of observed stability.
+The watcher waits for a missing folder and resumes when it reappears. Locks and
+temporary files live under `$XDG_RUNTIME_DIR/handmake-reel/`, or under
+`~/.local/state/handmake-reel/` if the runtime directory is unset.
+
 To start the watcher automatically with your user session, create the video folder
 and install the systemd user unit from the repository root.
 
@@ -64,5 +70,8 @@ systemctl --user enable --now handmake-reel-watch
 journalctl --user -u handmake-reel-watch
 ```
 
+If the input cannot be read by `ffprobe`, the watcher retries on later scans and
+records the failure only after the source has stayed unchanged and closed for ten
+minutes. Without `fuser`, it can only check that the source stays unchanged.
 Read `<name>.reel-error.txt` for the reason a file failed. Fix the cause and delete the
 error file to retry. For a finale, `--audio-from`, or music, run `pnpm reel` manually.
