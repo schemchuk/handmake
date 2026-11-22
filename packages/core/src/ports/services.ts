@@ -25,6 +25,8 @@ interface PublishJobBase {
   provenance: Provenance;
   /** Poll spec for a wotw-poll draft (produced by the poll cron, T30). */
   poll?: PostPoll;
+  /** Works only (T77): deliver just these channels; absent = every channel. */
+  channels?: string[];
 }
 
 export type PublishJob = PublishJobBase &

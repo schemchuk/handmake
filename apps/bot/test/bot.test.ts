@@ -513,13 +513,26 @@ describe('publishing (T16)', () => {
     },
     { state: 'published', age: 0, consent: false, reply: botTexts.draftFinishedText },
     { state: 'collecting', age: 0, consent: false, reply: botTexts.publishNotReadyText },
+    // A stale run the release queue owns is never reclaimed by 🚀 (T77 nit).
+    {
+      state: 'publishing',
+      age: publishingStaleMs + 60_000,
+      queued: true,
+      consent: false,
+      reply: botTexts.draftBusyText,
+    },
   ])(
-    'publish from $state aged $age ms uses the correct consent gate',
-    async ({ state, age, consent, reply }) => {
+    'publish from $state aged $age ms (queued: $queued) uses the correct consent gate',
+    async ({ state, age, consent, reply, queued }) => {
       const draftId = await makeReadyDraft();
       await db
-        .prepare('UPDATE drafts SET status = ?, updated_at = ? WHERE id = ?')
-        .bind(state, new Date(Date.now() - age).toISOString(), draftId)
+        .prepare('UPDATE drafts SET status = ?, updated_at = ?, publish_at = ? WHERE id = ?')
+        .bind(
+          state,
+          new Date(Date.now() - age).toISOString(),
+          queued ? new Date(Date.now() - age).toISOString() : null,
+          draftId,
+        )
         .run();
       await bot.handleUpdate(
         callbackQueryUpdate(allowed.userId, allowed.userId, `draft:${draftId}:publish`),

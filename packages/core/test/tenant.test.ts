@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parseTenantConfig,
+  channelDelay,
+  channelLabel,
   channelsSchema,
   knownChannelKeys,
   TenantConfigError,
@@ -62,6 +64,30 @@ describe('parseTenantConfig', () => {
       expect(channelsSchema.safeParse({ telegram: { channelId: 'CHAT', joinUrl } }).success).toBe(
         false,
       );
+    }
+  });
+
+  it('accepts a channel delay in minutes or as next-day wall time (T77)', () => {
+    const yaml = realConfig().replace(
+      'threads:\n    language: de\n',
+      'threads:\n    language: de\n    delay:\n      minutes: 90\n',
+    );
+    const config = parseTenantConfig(yaml);
+    expect(channelDelay(config, 'threads')).toEqual({ minutes: 90 });
+    expect(channelDelay(config, 'telegram')).toBeUndefined();
+    expect(channelDelay(config, 'pinterest')).toBeUndefined();
+    expect(channelLabel('threads')).toBe('Threads');
+    const threads = (delay: unknown) =>
+      channelsSchema.safeParse({ threads: { language: 'de', delay } }).success;
+    expect(threads({ nextDayAt: '09:00' })).toBe(true);
+    for (const bad of [
+      { minutes: 5 },
+      { minutes: 2000 },
+      { nextDayAt: '9:00' },
+      {},
+      { minutes: 90, nextDayAt: '09:00' },
+    ]) {
+      expect(threads(bad)).toBe(false);
     }
   });
 

@@ -3300,7 +3300,21 @@ migrations: Volodymyr applies them before the bot deploy.
   callback, reminder once, posts and shows still publish at once.
 
 ### T77 — Delayed channels: Threads +90 min, Pinterest next morning (`core`, `bot`, `publisher`, F42)
-- Status: planned.
+- Status: in review (branch `feat/T77-delayed-channels`). Migration is `0027_channel_followups.sql`
+  (0026 went to the T76b dispatch lock). After merge: Volodymyr applies 0027, the Worker is
+  deployed, and only then `delay: { minutes: 90 }` goes into `channels.threads` of the tenant
+  YAML (the deployed Worker and publisher read the YAML from `main` with a strict schema).
+- As built: works only (posts and shows keep one run). Follow-up rows are written just before
+  the first dispatch (🚀 and the queue cron), the delay counts from that dispatch, and a row is
+  dispatched only once its draft is `published`, so a delayed channel never goes out alone. The
+  first run's callback reports only its own channels. Follow-ups run in the queue cron under its
+  lock: none on a tick that dispatched a queued work, none while any publish run is in flight,
+  and the queue waits while a follow-up run is in flight (60 min) — one shared concurrency group.
+  A follow-up is dispatched at most 3 times (failed dispatch: next tick; no callback: after 2 h),
+  then `failed` with one author message. A publisher run whose `channels` are all delayed is a
+  follow-up and tells the author one line per channel. If the tenant config cannot be loaded or
+  the rows cannot be stored, everything goes out at once. T75 cleanup needed no change: a
+  `pending` ledger entry already holds it back.
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. Per-channel tenant setting `delay`: `{ minutes: 90 }` or `{ nextDayAt: '09:00' }` (tenant

@@ -15,6 +15,8 @@ import {
   entryNamesAllowed,
   postPollLanguage,
   canonicalLinkSettings,
+  channelDelay,
+  channelLabel,
   ChannelRegistry,
   idempotencyBase,
   initLedger,
@@ -204,6 +206,18 @@ export async function runPublish(
   }
   const publication = workPublication ?? showPublication;
   const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
+  // T77: a run may deliver only some channels of the work; the others keep
+  // their ledger entries untouched for a later run.
+  const runChannels = payload.channels ?? post.channels;
+  const notEnabled = runChannels.filter((channel) => !post.channels.includes(channel));
+  if (notEnabled.length) {
+    throw new PublishError(`channels not enabled for ${post.id}: ${notEnabled.join(', ')}`);
+  }
+  // A follow-up run delivers delayed channels only and tells the author one
+  // short line per channel instead of the full notice.
+  const followUp =
+    !!payload.channels?.length &&
+    payload.channels.every((channel) => channelDelay(tenant, channel) !== undefined);
   const entryIds = postEntryReferences(post);
   const entryNames = await fetchEntryNames(post.tenant, entryIds, {
     env,
@@ -267,7 +281,7 @@ export async function runPublish(
   const committedPost = await git.commit(paths, `content: add ${payload.kind} ${post.id}`);
   log(committedPost ? `committed ${paths.join(', ')}` : 'content unchanged (already committed)');
 
-  const registry = deps.registry ?? defaultRegistry(tenant, env, post.channels);
+  const registry = deps.registry ?? defaultRegistry(tenant, env, runChannels);
   const secrets: SecretResolver = deps.secrets ?? {
     resolve: async (name) => requiredEnv(name, env),
   };
@@ -302,7 +316,7 @@ export async function runPublish(
   let contentPushed = false;
   const failures: string[] = [];
   const channelOperations = new Map<string, SendOperation[]>();
-  for (const channel of post.channels) {
+  for (const channel of runChannels) {
     let entry = ledger.channels[channel];
     const adapter = registry.get(channel);
     let settings = (tenant.channels as Record<string, unknown>)[channel];
@@ -479,10 +493,24 @@ export async function runPublish(
     await persistLedger();
   }
 
-  if (failures.length) throw new PublishError(failures.join('; '));
+  if (failures.length) {
+    if (followUp) {
+      await notify(
+        'author',
+        runChannels
+          .map((channel) =>
+            ledger.channels[channel]?.status === 'done'
+              ? `${channelLabel(channel)}: опубліковано`
+              : `${channelLabel(channel)}: не вдалося (${ledger.channels[channel]?.error ?? 'помилка'})`,
+          )
+          .join('\n'),
+      );
+    }
+    throw new PublishError(failures.join('; '));
+  }
 
   if (workPublication && workVideo) {
-    for (const channel of post.channels.filter(
+    for (const channel of runChannels.filter(
       (key) => key === 'telegram' || key === 'instagram' || key === 'facebook',
     )) {
       try {
@@ -522,9 +550,11 @@ export async function runPublish(
 
   await notify(
     'author',
-    publication && !post.channels.length
-      ? `${payload.kind === 'work' ? 'Роботу' : 'Показ'} опубліковано.`
-      : `Опубліковано. Канали: ${Object.keys(delivered).join(', ')}.`,
+    followUp
+      ? runChannels.map((channel) => `${channelLabel(channel)}: опубліковано`).join('\n')
+      : publication && !post.channels.length
+        ? `${payload.kind === 'work' ? 'Роботу' : 'Показ'} опубліковано.`
+        : `Опубліковано. Канали: ${Object.keys(delivered).join(', ')}.`,
   );
 
   // T19: report the delivery to the bot so it moves the draft out of
@@ -534,7 +564,11 @@ export async function runPublish(
   const callbackUrl = env['PUBLISH_CALLBACK_URL'];
   const callbackSecret = env['PUBLISH_CALLBACK_SECRET'];
   // Site publication is complete independently of later copy delivery.
-  const ledgerEntries = showPublication ? [] : Object.entries(ledger.channels);
+  // Only this run's channels: a delayed channel still pending must not hold
+  // back the callback of the first run (T77).
+  const ledgerEntries = showPublication
+    ? []
+    : Object.entries(ledger.channels).filter(([channel]) => runChannels.includes(channel));
   if (callbackUrl && !callbackSecret) {
     log('PUBLISH_CALLBACK_SECRET missing; published callback not sent');
     await notify(

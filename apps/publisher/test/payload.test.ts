@@ -174,11 +174,25 @@ describe('approved work dispatch contract', () => {
     { work: { ...approvedWorkPayload.work, channels: ['same', 'same'] } },
     { work: { ...approvedWorkPayload.work, versions: { uk: { description: 'UA fixture' } } } },
     { kind: 'post' },
+    { channels: ['threads', 'threads'] },
+    { channels: [''] },
   ])('rejects inconsistent/unapproved work metadata %j', (patch) => {
     expect(() =>
       parseDispatchPayload(JSON.stringify({ ...approvedWorkPayload, ...patch })),
     ).toThrow(PayloadParseError);
   });
+});
+
+it('accepts a work naming its channels (T77), including none, and no other kind', () => {
+  for (const channels of [['telegram', 'instagram'], []]) {
+    expect(
+      parseDispatchPayload(JSON.stringify({ ...approvedWorkPayload, channels })).channels,
+    ).toEqual(channels);
+  }
+  expect(parseDispatchPayload(JSON.stringify(approvedWorkPayload)).channels).toBeUndefined();
+  expect(() =>
+    parseDispatchPayload(JSON.stringify({ ...JSON.parse(validPayload), channels: ['telegram'] })),
+  ).toThrow(/only a work may name its channels/);
 });
 
 it('round-trips the approved work job with edited UA and its per-language metadata', () => {

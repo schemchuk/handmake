@@ -47,6 +47,17 @@ const weeklyMomentSchema = z.object({
   time: timeSchema,
 });
 
+/**
+ * F42 (T77): a channel that posts later than the others. `minutes` counts
+ * from the first dispatch; `nextDayAt` is a wall time on the next local day
+ * (tenant timezone). Absent = the channel goes out with the others.
+ */
+export const channelDelaySchema = z.union([
+  z.object({ minutes: z.number().int().min(15).max(1440) }).strict(),
+  z.object({ nextDayAt: timeSchema }).strict(),
+]);
+export type ChannelDelay = z.infer<typeof channelDelaySchema>;
+
 export const channelsSchema = z
   .object({
     telegram: z
@@ -54,6 +65,7 @@ export const channelsSchema = z
         // Name of the secret holding the channel's Telegram chat id.
         channelId: z.string(),
         joinUrl: z.url({ protocol: /^https$/ }).optional(),
+        delay: channelDelaySchema.optional(),
       })
       .strict()
       .optional(),
@@ -61,6 +73,7 @@ export const channelsSchema = z
       .object({
         // Which tenant language Instagram posts are written in.
         language: languageCodeSchema,
+        delay: channelDelaySchema.optional(),
       })
       .strict()
       .optional(),
@@ -68,10 +81,14 @@ export const channelsSchema = z
       .object({
         // Which tenant language Facebook Page posts are written in.
         language: languageCodeSchema,
+        delay: channelDelaySchema.optional(),
       })
       .strict()
       .optional(),
-    threads: z.object({ language: languageCodeSchema }).strict().optional(),
+    threads: z
+      .object({ language: languageCodeSchema, delay: channelDelaySchema.optional() })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine((channels) => Object.keys(channels).length > 0, 'at least one channel must be enabled');
@@ -374,6 +391,19 @@ export const tenantConfigSchema = z
 
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;
 export type WeeklyMoment = z.infer<typeof weeklyMomentSchema>;
+/** The delay of an enabled channel, if it posts later than the others (T77). */
+export function channelDelay(config: TenantConfig, channel: string): ChannelDelay | undefined {
+  const settings = (config.channels as Record<string, { delay?: ChannelDelay } | undefined>)[
+    channel
+  ];
+  return settings?.delay;
+}
+
+/** Display name of a channel key for author notices («Threads: опубліковано»). */
+export function channelLabel(channel: string): string {
+  return channel.charAt(0).toUpperCase() + channel.slice(1);
+}
+
 export type ReleaseQueueConfig = NonNullable<z.infer<typeof tenantConfigSchema.shape.releaseQueue>>;
 export type MeetingSchedule = z.infer<typeof tenantConfigSchema.shape.meetingSchedule>;
 

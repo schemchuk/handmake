@@ -35,6 +35,15 @@ export const dispatchPayloadSchema = z
     provenance: provenanceSchema,
     work: workPublicationSchema.optional(),
     show: showPublicationSchema.optional(),
+    /**
+     * T77: deliver only these channels of the work (the bot sends delayed
+     * channels in a later run). Absent = every channel; empty = site and
+     * ledger only. Other channels' ledger entries stay as they are.
+     */
+    channels: z
+      .array(z.string().min(1))
+      .refine((names) => new Set(names).size === names.length, 'channels must be unique')
+      .optional(),
   })
   .strict()
   .superRefine((payload, ctx) => {
@@ -89,6 +98,9 @@ export const dispatchPayloadSchema = z
       }
     } else if (payload.work) {
       ctx.addIssue({ code: 'custom', message: 'post must not carry work metadata' });
+    }
+    if (payload.channels && payload.kind !== 'work') {
+      ctx.addIssue({ code: 'custom', message: 'only a work may name its channels' });
     }
     if (payload.type === 'wotw-poll') {
       if (!payload.poll) {

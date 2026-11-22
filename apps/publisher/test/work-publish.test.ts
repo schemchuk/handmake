@@ -715,3 +715,93 @@ it('keeps the Threads work video last in a single carousel ledger entry', async 
   expect(fetchImpl).toHaveBeenCalledTimes(count);
   expect(videoSource.fetchMedia).toHaveBeenCalledTimes(1);
 });
+
+describe('delayed channels (T77)', () => {
+  const tenantFile = () => path.join(root, 'config/tenants/faden-und-stimmung.yaml');
+  async function withDelayedThreads(): Promise<void> {
+    const raw = await readFile(tenantFile(), 'utf8');
+    await writeFile(
+      tenantFile(),
+      raw.replace(
+        /^channels:\n/m,
+        'channels:\n  threads:\n    language: de\n    delay:\n      minutes: 90\n',
+      ),
+    );
+  }
+  function registryOf(...keys: string[]) {
+    const registry = new ChannelRegistry();
+    const adapters = keys.map(
+      (key) =>
+        new FakeChannelAdapter({
+          key,
+          renderImpl: () => [{ kind: 'message', text: `${key} fixture`, lang: 'de' }],
+        }),
+    );
+    for (const adapter of adapters) registry.register(adapter);
+    return { registry, adapters };
+  }
+
+  it('delivers only the named channels and leaves the delayed one pending, then catches up', async () => {
+    await withDelayedThreads();
+    current.work!.channels = ['telegram', 'threads'];
+    const { registry, adapters } = registryOf('telegram', 'threads');
+    const [telegram, threads] = adapters;
+
+    const firstNotes = new FakeNotifier();
+    current.channels = ['telegram'];
+    await run({ registry, notifier: firstNotes });
+    expect(telegram!.deliveries).toHaveLength(1);
+    expect(threads!.deliveries).toHaveLength(0);
+    expect(await store.readLedger(tenantId, id)).toMatchObject({
+      channels: { telegram: { status: 'done' }, threads: { status: 'pending', remoteIds: [] } },
+    });
+    // The pending delayed channel does not hold back the first callback.
+    expect(Object.keys(callback.send.mock.calls[0]![0].channels)).toEqual(['telegram']);
+    expect(firstNotes.messages).toEqual([
+      { target: 'author', message: 'Опубліковано. Канали: telegram.' },
+    ]);
+
+    const followUpNotes = new FakeNotifier();
+    current.channels = ['threads'];
+    await run({ registry, notifier: followUpNotes });
+    expect(telegram!.deliveries).toHaveLength(1);
+    expect(threads!.deliveries).toHaveLength(1);
+    const ledger = await store.readLedger(tenantId, id);
+    expect(ledger?.channels['telegram']?.remoteIds).toEqual(['telegram-msg-1-0']);
+    expect(ledger?.channels['threads']).toMatchObject({ status: 'done' });
+    expect(Object.keys(callback.send.mock.calls[1]![0].channels)).toEqual(['threads']);
+    expect(followUpNotes.messages).toEqual([
+      { target: 'author', message: 'Threads: опубліковано' },
+    ]);
+
+    // Re-running either dispatch never posts twice.
+    current.channels = ['telegram'];
+    expect((await run({ registry })).skipped).toEqual(['telegram']);
+    current.channels = ['threads'];
+    expect((await run({ registry })).skipped).toEqual(['threads']);
+    expect(telegram!.deliveries).toHaveLength(1);
+    expect(threads!.deliveries).toHaveLength(1);
+  });
+
+  it('a failed follow-up tells the author in one line and sends no callback', async () => {
+    await withDelayedThreads();
+    current.work!.channels = ['telegram', 'threads'];
+    const { registry, adapters } = registryOf('telegram', 'threads');
+    vi.spyOn(adapters[1]!, 'deliver').mockRejectedValueOnce(new Error('Threads API down'));
+    const notes = new FakeNotifier();
+    current.channels = ['threads'];
+    await expect(run({ registry, notifier: notes })).rejects.toThrow('Threads API down');
+    expect(notes.messages.filter((note) => note.target === 'author')).toEqual([
+      { target: 'author', message: 'Threads: не вдалося (Threads API down)' },
+    ]);
+    expect(callback.send).not.toHaveBeenCalled();
+    expect(adapters[0]!.deliveries).toHaveLength(0);
+  });
+
+  it('refuses a channel the work does not publish to', async () => {
+    current.work!.channels = ['telegram'];
+    current.channels = ['threads'];
+    const { registry } = registryOf('telegram', 'threads');
+    await expect(run({ registry })).rejects.toThrow('channels not enabled');
+  });
+});

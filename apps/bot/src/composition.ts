@@ -32,6 +32,7 @@ import { runCommentCollect } from './comment-collect';
 import { commentRetentionDays, createCommentStore } from './comment-store';
 import type { CommentNetwork } from './comment-store';
 import { createD1DraftStore } from './draft-store';
+import { createD1FollowupStore } from './channel-followups';
 import type { Env } from './env';
 import { createProcessedUpdateTracker, processedUpdateRetentionDays } from './processed-updates';
 import { createGitHubActionsRunner } from './publish-runner';
@@ -253,6 +254,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
           token: env.GITHUB_DISPATCH_TOKEN,
           live: env.PUBLISH_LIVE === 'true',
         }),
+        followups: createD1FollowupStore(env.DB),
         background: (task) =>
           executionCtx
             ? executionCtx.waitUntil(task())
@@ -400,6 +402,7 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
             live: env.PUBLISH_LIVE === 'true',
           }),
           buildJob: publishJobOf,
+          followups: createD1FollowupStore(env.DB),
           tenantConfigs,
           allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
           notify: (chat, text) => this.bot.api.sendMessage(chat, text),
