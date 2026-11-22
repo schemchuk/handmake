@@ -169,6 +169,19 @@ describe('/queue', () => {
     expect(Date.parse(fresh!.publishAt!)).toBeLessThanOrEqual(Date.now());
   });
 
+  it('«зараз» at an instant another work holds takes the next millisecond', async () => {
+    const a = await readyPost();
+    const b = await readyPost('Подушка');
+    await queueIt(a);
+    await queueIt(b);
+    const [first, second] = await drafts.listScheduled(tenant);
+    expect(await drafts.moveToNow(tenant, b, second!.version, new Date(first!.publishAt!))).toBe(
+      true,
+    );
+    const moved = await drafts.get(tenant, b);
+    expect(Date.parse(moved!.publishAt!)).toBe(Date.parse(first!.publishAt!) + 1);
+  });
+
   it('a stale «в чергу» button never queues a changed draft', async () => {
     const id = await readyPost();
     const shown = (await drafts.get(tenant, id))!.version;

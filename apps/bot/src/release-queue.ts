@@ -201,8 +201,8 @@ async function dispatchDue(
     return;
   }
   await options.drafts.markDispatched(tenantId, draftId, claimed.version, now);
-  // A lost run dispatched again changes nothing in the queue: no new note.
-  if (stored.dispatchedAt) return;
+  // Once per work: a lost run dispatched again changes nothing in the queue.
+  if (!(await options.drafts.claimQueueReminder(tenantId, draftId))) return;
   await remindLowQueue(tenantId, claimed, options).catch((error: unknown) =>
     console.error('release queue reminder failed:', (error as Error).message),
   );

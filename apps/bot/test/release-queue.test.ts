@@ -433,4 +433,23 @@ describe('low-queue reminders (T76b)', () => {
     await runReleaseQueueCron(mondaySlot, options);
     expect(notify).not.toHaveBeenCalled();
   });
+
+  it('a lost run that fails once and then succeeds still sends one note', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    let fail = false;
+    const { options, notify } = cronOptions(store, async () => {
+      if (fail) throw new Error('HTTP 502');
+    });
+    withQueue(options);
+    await runReleaseQueueCron(mondaySlot, options);
+    const lost = new Date(mondaySlot.getTime() + queueLostRunMs + 60_000);
+    fail = true;
+    await runReleaseQueueCron(lost, options);
+    fail = false;
+    await runReleaseQueueCron(new Date(lost.getTime() + 900_000), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(3);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
 });

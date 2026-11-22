@@ -3279,7 +3279,13 @@ migrations: Volodymyr applies them before the bot deploy.
      «busy» although the draft is gone or published; re-read the draft after a refused delete
      and answer by its real state.
   9. Busy check repo-wide (T76c dropped): `queueState` treats a `publishing` draft of any tenant
-     as in flight, since `publish.yml` has one repository-wide concurrency group.
+     as in flight, since `publish.yml` has one repository-wide concurrency group. Tenants are
+     handled one after another inside one cron execution, so they see each other's claims;
+     two overlapping executions for different tenants can still both dispatch (residual, one
+     tenant today; a D1 lock row would close it when a second tenant arrives).
+  10. PR #189 review: «в чергу» carries the shown row version; «Зараз» in `/queue` moves the slot
+     to now (`moveToNow`, next free millisecond on a tie) and leaves the dispatch to the cron;
+     the low-queue note is claimed once per work (`extras.queueReminded`).
   7. Review note from PR #187 (nit): a slot time that does not exist on the DST switch day
      (e.g. 02:30 on the last Sunday of March) silently becomes 03:30; reject such times in the
      schema or document the shift.

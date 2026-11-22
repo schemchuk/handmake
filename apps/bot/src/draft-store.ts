@@ -254,6 +254,9 @@ export interface D1DraftStore {
   /** Atomically claims a due (or interrupted) queued draft as `publishing`;
    * undefined if another tick or the author got there first. */
   claimDue(tenantId: string, draftId: string, now: Date): Promise<StoredDraft | undefined>;
+  /** Records that the low-queue note for this draft's dispatch was sent;
+   * false when it already was (a re-dispatch after a lost run). */
+  claimQueueReminder(tenantId: string, draftId: string): Promise<boolean>;
   /** GitHub accepted the dispatch of this claim. */
   markDispatched(tenantId: string, draftId: string, version: number, now: Date): Promise<void>;
   /** A cron dispatch failed: back to `scheduled` (next try after one tick), or
@@ -841,21 +844,25 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async moveToNow(tenantId, draftId, version, now) {
-      try {
-        const result = await db
-          .prepare(
-            `UPDATE drafts
-             SET publish_at = ?, retry_at = NULL, updated_at = ?, version = version + 1
-             WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND version = ?`,
-          )
-          .bind(now.toISOString(), now.toISOString(), tenantId, draftId, version)
-          .run();
-        return result.meta.changes > 0;
-      } catch (error) {
-        // Two «Зараз» presses in the same millisecond: the slot is taken.
-        if (isUniqueViolation(error)) return false;
-        throw error;
+      // Another work may hold this exact instant (a slot at :30:00.000):
+      // take the next millisecond instead of reporting a stale button.
+      for (let offset = 0; offset < 5; offset++) {
+        const at = new Date(now.getTime() + offset).toISOString();
+        try {
+          const result = await db
+            .prepare(
+              `UPDATE drafts
+               SET publish_at = ?, retry_at = NULL, updated_at = ?, version = version + 1
+               WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND version = ?`,
+            )
+            .bind(at, now.toISOString(), tenantId, draftId, version)
+            .run();
+          return result.meta.changes > 0;
+        } catch (error) {
+          if (!isUniqueViolation(error)) throw error;
+        }
       }
+      return false;
     },
 
     async listScheduled(tenantId) {
@@ -905,6 +912,18 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(now.toISOString(), tenantId, draftId, ...claimableArgs(now))
         .first<DraftRow>();
       return row ? toStoredDraft(row) : undefined;
+    },
+
+    async claimQueueReminder(tenantId, draftId) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts SET extras = json_set(extras, '$.queueReminded', json('true'))
+           WHERE tenant_id = ? AND id = ?
+             AND COALESCE(json_extract(extras, '$.queueReminded'), 0) = 0`,
+        )
+        .bind(tenantId, draftId)
+        .run();
+      return result.meta.changes > 0;
     },
 
     async markDispatched(tenantId, draftId, version, now) {
