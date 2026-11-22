@@ -1,14 +1,14 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T77 (delayed channels). T76b merged as PR #189 (`7f7955b`, Codex six rounds).
-  T76a: PR #187, migration 0025 applied, Worker `32dc4ecf` (2026-11-22 12:42 UTC). T76c dropped.
+- **Current task:** T77 (delayed channels). Release queue live: T76a (PR #187) and T76b (PR #189,
+  `7f7955b`); migrations 0025 and 0026 applied; Worker `78d0c5e3-34f6-420f-80c5-540db95d25fe`
+  deployed by Volodymyr 2026-11-22 13:35 UTC. T76c dropped.
 - **Branch:** `main`.
-- **Last commit:** docs: record T76b merge.
-- **Next step:** Volodymyr applies D1 migration 0026 to remote, then deploys the bot from clean
-  `main`; the queue buttons and `/queue` appear with that deploy (works go out at 18:30, Tuesday
-  19:30). Optional: add `queue - Черга публікацій` to the BotFather command menu. Then T77.
-- **Blocked on:** migration 0026 + deploy (Volodymyr).
+- **Last commit:** docs: record queue go-live.
+- **Next step:** T77 (Threads +90 min, Pinterest next morning), then T78, T79. Optional for
+  Volodymyr: `queue - Черга публікацій` in the BotFather command menu.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
   reel, music only (recording tone absent), source moved, log and rotation state written.
