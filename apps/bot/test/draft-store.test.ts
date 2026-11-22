@@ -538,19 +538,21 @@ describe('markPublished / indexPublished (T18)', () => {
     expect(await store.markPublished(tenantA, 'pub-1', t1)).toBe(false);
   });
 
-  it('markPublished refuses drafts that are not publishing', async () => {
+  it('markPublished refuses drafts that were never approved', async () => {
     const store = await makeStore();
     await store.create(createDraft(tenantA, 'pub-2', t0), 'chat-1');
-    // And a ready one, one translation step further.
+    // And a ready one, one translation step further: a callback reports a
+    // finished run, so a dispatch GitHub accepted after the bot reverted it
+    // to ready (lost response) still ends as published (PR #187 review).
     await store.create(createDraft(tenantA, 'pub-3', t0), 'chat-2');
     await store.claimTranslation(tenantA, 'pub-3', ['collecting'], t1);
     await store.markTranslated(tenantA, 'pub-3', 'Hallo!', t1);
 
     expect(await store.markPublished(tenantA, 'pub-2', t1)).toBe(false);
-    expect(await store.markPublished(tenantA, 'pub-3', t1)).toBe(false);
+    expect(await store.markPublished(tenantA, 'pub-3', t1)).toBe(true);
     expect(await store.markPublished(tenantA, 'missing', t1)).toBe(false);
     expect((await store.get(tenantA, 'pub-2'))?.draft.state).toBe('collecting');
-    expect((await store.get(tenantA, 'pub-3'))?.draft.state).toBe('ready');
+    expect((await store.get(tenantA, 'pub-3'))?.draft.state).toBe('published');
   });
 
   it('indexPublished inserts once and ignores duplicates', async () => {

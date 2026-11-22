@@ -2,7 +2,7 @@ import { createDraft, tenantConfigSchema } from '@handmake/core';
 import type { Draft, PublishJob, ReleaseQueueConfig, TenantConfig } from '@handmake/core';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createD1DraftStore, queueInterruptedMs } from '../src/draft-store';
+import { createD1DraftStore, queueInterruptedMs, queueLostRunMs } from '../src/draft-store';
 import type { D1DraftStore } from '../src/draft-store';
 import {
   formatSlot,
@@ -297,7 +297,7 @@ describe('release queue races (PR #187 review)', () => {
     const store = createD1DraftStore(await makeD1());
     await queued(store, 'a', mondaySlot);
     await store.claimDue(tenant, 'a', mondaySlot);
-    await store.delete(tenant, 'a');
+    expect(await store.delete(tenant, 'a')).toBe(false);
     expect((await store.get(tenant, 'a'))?.draft.state).toBe('publishing');
   });
 
@@ -326,5 +326,39 @@ describe('release queue races (PR #187 review)', () => {
     const { options } = cronOptions(store, async () => undefined);
     await runReleaseQueueCron(mondaySlot, options);
     expect(options.runner.run).not.toHaveBeenCalled();
+  });
+
+  it('a publishing work keeps its slot, so a failed dispatch can return to it', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    const claimed = (await store.claimDue(tenant, 'a', mondaySlot))!;
+    await store.create(readyWork('b'), 'chat-1');
+    expect(await store.schedule(tenant, 'b', mondaySlot, mondaySlot)).toBe('slot-taken');
+    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version, mondaySlot, 3)).toBe(
+      'requeued',
+    );
+  });
+
+  it('a dispatched run that never calls back is dispatched again, then given up', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    let now = mondaySlot;
+    for (let run = 1; run <= maxQueueAttempts; run++) {
+      await runReleaseQueueCron(now, options);
+      expect(options.runner.run).toHaveBeenCalledTimes(run);
+      now = new Date(now.getTime() + queueLostRunMs + 60_000);
+    }
+    await runReleaseQueueCron(now, options);
+    expect(options.runner.run).toHaveBeenCalledTimes(maxQueueAttempts);
+    expect((await store.get(tenant, 'a'))?.draft.state).toBe('ready');
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('a late success callback after the queue gave up still marks it published', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await store.create(readyWork('a'), 'chat-1');
+    expect(await store.markPublished(tenant, 'a', mondaySlot)).toBe(true);
+    expect((await store.get(tenant, 'a'))?.draft.state).toBe('published');
   });
 });

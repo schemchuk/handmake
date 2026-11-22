@@ -46,6 +46,8 @@ export interface StoredDraft {
   pendingEdit: DraftEditTarget | null;
   /** F42: the slot (UTC ISO) of a draft waiting in the release queue. */
   publishAt?: string;
+  /** Failed or lost dispatches of the queued draft so far. */
+  queueAttempts?: number;
 }
 
 /** What happened to a queued draft whose dispatch failed (T76a). */
@@ -124,7 +126,8 @@ export interface D1DraftStore {
   ): Promise<'added' | 'limit' | 'not-collecting'>;
   /** Atomically appends text to the Ukrainian version. False if not collecting. */
   appendText(tenantId: string, draftId: string, text: string, now: Date): Promise<boolean>;
-  delete(tenantId: string, draftId: string): Promise<void>;
+  /** False when the draft is publishing or published (or gone). */
+  delete(tenantId: string, draftId: string): Promise<boolean>;
   listByState(tenantId: string, state: DraftState): Promise<StoredDraft[]>;
   findCollectingForChat(
     tenantId: string,
@@ -268,6 +271,7 @@ interface DraftRow {
   version: number;
   pending_edit: string | null;
   publish_at: string | null;
+  queue_attempts: number;
   created_at: string;
   updated_at: string;
 }
@@ -285,8 +289,9 @@ const draftStates: ReadonlySet<string> = new Set([
 const draftKinds: ReadonlySet<string> = new Set(['post', 'work', 'show']);
 const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work', 'show']);
 
-const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, created_at, updated_at
-  FROM drafts WHERE tenant_id = ?`;
+const draftColumns =
+  'tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, queue_attempts, created_at, updated_at';
+const selectDraft = `SELECT ${draftColumns} FROM drafts WHERE tenant_id = ?`;
 
 /** D1/SQLite report UNIQUE violations with this message; we treat them as
  * expected contention, not errors (the partial unique index on collecting
@@ -295,6 +300,20 @@ export function isUniqueViolation(error: unknown): boolean {
   return error instanceof Error && error.message.includes('UNIQUE constraint failed');
 }
 
+/** A queued draft the cron may claim: a due slot (after any retry wait), a
+ * claim that never reached GitHub, or a dispatch whose run never called back
+ * (re-dispatching is safe: the publisher skips channels already done). */
+const claimable = `(
+  (status = 'scheduled' AND COALESCE(retry_at, publish_at) <= ?)
+  OR (status = 'publishing' AND publish_at IS NOT NULL AND (
+    (dispatched_at IS NULL AND updated_at < ?) OR dispatched_at < ?)))`;
+function claimableArgs(now: Date): string[] {
+  return [
+    now.toISOString(),
+    new Date(now.getTime() - queueInterruptedMs).toISOString(),
+    new Date(now.getTime() - queueLostRunMs).toISOString(),
+  ];
+}
 /** Columns reset when a draft leaves the release queue. */
 const leaveQueue = 'publish_at = NULL, retry_at = NULL, dispatched_at = NULL, queue_attempts = 0';
 /** A queued claim not dispatched within this long was interrupted. */
@@ -303,6 +322,8 @@ export const queueInterruptedMs = 10 * 60 * 1000;
 export const queueBusyMs = 60 * 60 * 1000;
 /** After a failed dispatch the next try waits about one cron tick. */
 export const queueRetryMs = 14 * 60 * 1000;
+/** A dispatched run with no callback after this long is dispatched again. */
+export const queueLostRunMs = 2 * 60 * 60 * 1000;
 
 // D1 meta.changes includes usage-trigger writes. Every guarded mutation below
 // targets at most one draft; any positive count proves that mutation won.
@@ -466,7 +487,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async delete(tenantId, draftId) {
-      await db
+      const result = await db
         // Guarded in SQL as well: the cron may claim a queued draft between the
         // handler's read and this delete (PR #187 review).
         .prepare(
@@ -475,6 +496,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         )
         .bind(tenantId, draftId)
         .run();
+      return result.meta.changes > 0;
     },
 
     async listByState(tenantId, state) {
@@ -650,11 +672,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .prepare(
           `UPDATE drafts
            SET pending_edit = NULL, status = 'published', updated_at = ?, version = version + 1,
-               retry_at = NULL
+               ${leaveQueue}
            WHERE tenant_id = ? AND id = ?
-             -- 'scheduled': the dispatch was accepted but its response lost,
-             -- so the cron requeued it (PR #187 review).
-             AND (status = 'publishing' OR (status = 'scheduled' AND publish_at IS NOT NULL))`,
+             -- The callback reports a finished run, which is the truth: a
+             -- dispatch accepted by GitHub whose response was lost left the
+             -- draft requeued ('scheduled') or reverted ('ready').
+             AND status IN ('publishing', 'scheduled', 'ready')`,
         )
         .bind(now.toISOString(), tenantId, draftId)
         .run();
@@ -800,21 +823,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async queueState(tenantId, now) {
-      const at = now.toISOString();
-      const interrupted = new Date(now.getTime() - queueInterruptedMs).toISOString();
-      const busySince = new Date(now.getTime() - queueBusyMs).toISOString();
       const next = await db
-        .prepare(
-          `${selectDraft} AND (
-             (status = 'scheduled' AND COALESCE(retry_at, publish_at) <= ?)
-             OR (status = 'publishing' AND publish_at IS NOT NULL AND dispatched_at IS NULL
-                 AND updated_at < ?))
-           ORDER BY publish_at, id LIMIT 1`,
-        )
-        .bind(tenantId, at, interrupted)
+        .prepare(`${selectDraft} AND ${claimable} ORDER BY publish_at, id LIMIT 1`)
+        .bind(tenantId, ...claimableArgs(now))
         .first<DraftRow>();
-      // A run in flight (or a dispatch another tick is making right now): a
-      // second dispatch would replace its pending run in the shared
+      // A run in flight (or a dispatch another execution is making right
+      // now): a second dispatch would replace its pending run in the shared
       // `publish` concurrency group, so the queue waits.
       const busy = await db
         .prepare(
@@ -823,26 +837,30 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
              AND NOT (publish_at IS NOT NULL AND dispatched_at IS NULL AND updated_at < ?)
            LIMIT 1`,
         )
-        .bind(tenantId, busySince, interrupted)
+        .bind(
+          tenantId,
+          new Date(now.getTime() - queueBusyMs).toISOString(),
+          new Date(now.getTime() - queueInterruptedMs).toISOString(),
+        )
         .first();
       return { next: next ? toStoredDraft(next) : undefined, busy: !!busy };
     },
 
     async claimDue(tenantId, draftId, now) {
-      const at = now.toISOString();
-      const interrupted = new Date(now.getTime() - queueInterruptedMs).toISOString();
-      const result = await db
+      // RETURNING: the row exactly as this claim left it, never a later
+      // writer's (PR #187 review).
+      const row = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'publishing', dispatched_at = NULL, updated_at = ?, version = version + 1
-           WHERE tenant_id = ? AND id = ? AND (
-             (status = 'scheduled' AND COALESCE(retry_at, publish_at) <= ?)
-             OR (status = 'publishing' AND publish_at IS NOT NULL AND dispatched_at IS NULL
-                 AND updated_at < ?))`,
+           SET status = 'publishing', dispatched_at = NULL, updated_at = ?, version = version + 1,
+               queue_attempts = queue_attempts
+                 + CASE WHEN status = 'publishing' AND dispatched_at IS NOT NULL THEN 1 ELSE 0 END
+           WHERE tenant_id = ? AND id = ? AND ${claimable}
+           RETURNING ${draftColumns}`,
         )
-        .bind(at, tenantId, draftId, at, interrupted)
-        .run();
-      return result.meta.changes > 0 ? this.get(tenantId, draftId) : undefined;
+        .bind(now.toISOString(), tenantId, draftId, ...claimableArgs(now))
+        .first<DraftRow>();
+      return row ? toStoredDraft(row) : undefined;
     },
 
     async markDispatched(tenantId, draftId, version, now) {
@@ -915,7 +933,7 @@ function toStoredDraft(row: DraftRow): StoredDraft {
     },
     version: row.version,
     pendingEdit: row.pending_edit === 'uk' || row.pending_edit === 'de' ? row.pending_edit : null,
-    ...(row.publish_at ? { publishAt: row.publish_at } : {}),
+    ...(row.publish_at ? { publishAt: row.publish_at, queueAttempts: row.queue_attempts } : {}),
   };
 }
 

@@ -3192,7 +3192,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 
 ## Release schedule (spec v13, F42-F44, planned 2026-11-22)
 
-Order: T76a → T76b → T77 → T78 → T79. Owner `claude-code` on Volodymyr's word (2026-11-22: tasks
+Order: T76a → T76c → T76b → T77 → T78 → T79. Owner `claude-code` on Volodymyr's word (2026-11-22: tasks
 Claude Code can do alone it implements itself); reviewer is the other agent, Codex. Browser and
 account steps are H19-H21; Claude Code gives the guide when a step is due. T76a and T77 add D1
 migrations: Volodymyr applies them before the bot deploy.
@@ -3230,12 +3230,36 @@ migrations: Volodymyr applies them before the bot deploy.
      creation time (`buildApprovedWorkJob`), so no `queued_at` column is needed. T75 cleanup keys
      on `date`, so files the author sends for the next work while one waits are never trashed
      early. `queue_attempts` counts failed dispatch ticks instead.
+  6. Second review round (PR #187): a slot stays held while its work is publishing; claims use
+     `RETURNING`; a dispatched run with no callback after 2 h is dispatched again (one attempt;
+     the publisher is idempotent); a callback marks a `ready` or `scheduled` draft published
+     too; `delete` reports a refusal and the bot answers «busy» instead of «deleted»; the cron
+     claims with the wall clock.
+  7. Known residual risk, pre-existing and not fixed here: `publish.yml` has one repository-wide
+     concurrency group with one pending slot, so any dispatch (manual 🚀, queue, other tenant)
+     made while one run executes and another waits cancels the waiting one. The queue only
+     avoids adding to it (one dispatch per tick, waits while its tenant publishes). The real fix
+     is a per-draft concurrency group in `publish.yml` (workflow change, Volodymyr's OK): T76c.
 - Acceptance: two works queued Monday 10:00 Berlin get Monday 18:30 and Tuesday 19:30; a work
   queued at 18:25 gets tomorrow; a slot over the DST switch is correct wall time; a due draft is
   dispatched once even when two ticks overlap; front matter `date` equals queue time.
 - Tests: slot calculation (overrides, lead time, taken slots, DST both ways); state transitions;
   D1 claim race; cron dispatch success, retry, give-up message; tenant without `releaseQueue`
   keeps immediate publish; publisher `date` from the job.
+
+### T76c — Per-draft publish concurrency (`ci`, F42)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T76a · Sensitive: workflow change,
+  Volodymyr's OK before merge.
+- Why: PR #187 review. `publish.yml` uses `concurrency: { group: publish }`; GitHub keeps one
+  pending run per group and cancels it when a newer one arrives, so a dispatch of one draft can
+  silently drop another draft's waiting run (no callback, the draft stays `publishing`).
+- Change: group per draft (`publish-${{ client_payload.draftId || inputs payload draftId }}`),
+  keeping `cancel-in-progress: false`, so runs of the same draft still serialize and different
+  drafts run side by side. First check that concurrent runs of different drafts are safe: the
+  publisher pull-rebases content commits onto a moving `main`; confirm it retries a rejected
+  push and that two drafts never write the same path. If not, add the retry in the same PR.
+- Tests: publisher push retry on a rejected push (fake git); a workflow lint run.
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
 - Status: planned.

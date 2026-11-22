@@ -133,6 +133,18 @@ async function dispatchDue(
   const draftId = stored.draft.draftId;
   const claimed = await options.drafts.claimDue(tenantId, draftId, now);
   if (!claimed) return;
+  // Lost runs were re-dispatched until the attempts ran out.
+  if ((claimed.queueAttempts ?? 0) >= maxQueueAttempts) {
+    const outcome = await options.drafts.requeueAfterFailure(
+      tenantId,
+      draftId,
+      claimed.version,
+      now,
+      0,
+    );
+    if (outcome === 'gave-up') await tellGaveUp(tenantId, claimed, options);
+    return;
+  }
   // A job that cannot be built never becomes valid by waiting: give up at
   // once. A failed dispatch is retried on the next ticks.
   let attempts = 1;

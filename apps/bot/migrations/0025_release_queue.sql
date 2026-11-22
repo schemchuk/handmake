@@ -7,9 +7,13 @@
 --   retry_at       after a failed dispatch: the earliest next claim, so two
 --                  executions of one cron tick never spend two attempts.
 --   dispatched_at  set once GitHub accepted the dispatch; a 'publishing'
---                  queued row without it was interrupted and is reclaimed.
+--                  queued row without it was interrupted and is reclaimed,
+--                  one with it but no callback after 2 h is dispatched
+--                  again (counts as an attempt; the publisher is idempotent).
 --   queue_attempts failed dispatch ticks (3 -> back to 'ready').
--- One queued work per tenant and slot, enforced here, not by the caller.
+-- One queued work per tenant and slot, enforced here, not by the caller; a
+-- slot stays held while its work is publishing, so a failed dispatch can
+-- always return to it.
 
 ALTER TABLE drafts ADD COLUMN publish_at TEXT;
 ALTER TABLE drafts ADD COLUMN retry_at TEXT;
@@ -20,4 +24,4 @@ CREATE INDEX IF NOT EXISTS idx_drafts_release_queue
   ON drafts (tenant_id, status, publish_at);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_drafts_one_per_slot
   ON drafts (tenant_id, publish_at)
-  WHERE status = 'scheduled';
+  WHERE status IN ('scheduled', 'publishing') AND publish_at IS NOT NULL;

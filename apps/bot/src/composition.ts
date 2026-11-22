@@ -390,7 +390,9 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
       // F42: due works from the release queue; its own try block, so a
       // failure here never blocks the crons below.
       try {
-        await runReleaseQueueCron(new Date(event.scheduledTime), {
+        // Wall clock, not scheduledTime: a late tick must not write claims
+        // that already look stale to the publish button's reclaim.
+        await runReleaseQueueCron(new Date(), {
           drafts,
           runner: createGitHubActionsRunner({
             repo: env.GITHUB_REPO,
