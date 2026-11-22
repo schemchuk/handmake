@@ -121,42 +121,47 @@ export function renderArgs(
       '[main][endcard]concat=n=2:v=1:a=0,format=yuv420p[v]',
     );
   } else filters.push('[scaled]null[v]');
-  const loopLength = plan.bodyLength + plan.endcardLength;
-  const bodyFade = `afade=t=out:st=${Math.max(0, plan.bodyLength - 0.5)}:d=0.5`;
-  if (hasAudio) {
-    const samples = Math.max(1, Math.floor((plan.audio.end - plan.audio.start) * 48000));
+  if (options.music && options.musicOnly) {
+    const fade = plan.endcardLength
+      ? ''
+      : `,afade=t=out:st=${Math.max(0, plan.length - 0.5)}:d=0.5`;
     filters.push(
-      `[0:a:0]atrim=start=${plan.audio.start}:end=${plan.audio.end},asetpts=PTS-STARTPTS,aresample=48000,aloop=loop=-1:size=${samples},atrim=duration=${loopLength},afade=t=in:d=0.3,${plan.endcardLength ? '' : `${bodyFade},`}loudnorm=I=-16:TP=-1.5:LRA=11[loop]`,
+      `[1:a:0]atrim=duration=${plan.length},asetpts=PTS-STARTPTS,loudnorm=I=-16:TP=-1.5:LRA=11,volume=${options.musicVolume},afade=t=in:d=0.3${fade}[mixed]`,
     );
-  } else filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${loopLength}[loop]`);
-  if (plan.finale) {
-    if (plan.endcardLength) {
+  } else {
+    const loopLength = plan.bodyLength + plan.endcardLength;
+    const bodyFade = `afade=t=out:st=${Math.max(0, plan.bodyLength - 0.5)}:d=0.5`;
+    if (hasAudio) {
+      const samples = Math.max(1, Math.floor((plan.audio.end - plan.audio.start) * 48000));
       filters.push(
-        '[loop]asplit[bodyloop][cardloop]',
-        `[bodyloop]atrim=duration=${plan.bodyLength},${bodyFade}[base]`,
-        `[cardloop]atrim=start=${plan.bodyLength},asetpts=PTS-STARTPTS[cardaudio]`,
+        `[0:a:0]atrim=start=${plan.audio.start}:end=${plan.audio.end},asetpts=PTS-STARTPTS,aresample=48000,aloop=loop=-1:size=${samples},atrim=duration=${loopLength},afade=t=in:d=0.3,${plan.endcardLength ? '' : `${bodyFade},`}loudnorm=I=-16:TP=-1.5:LRA=11[loop]`,
       );
-    } else filters.push('[loop]anull[base]');
-    const finaleLength = plan.finale.end - plan.finale.start;
-    filters.push(
-      hasAudio
-        ? `[0:a:0]atrim=start=${plan.finale.start}:end=${plan.finale.end},asetpts=PTS-STARTPTS,apad,atrim=duration=${finaleLength}[fa]`
-        : `anullsrc=r=48000:cl=stereo,atrim=duration=${finaleLength}[fa]`,
-      plan.endcardLength
-        ? '[base][fa][cardaudio]concat=n=3:v=0:a=1[extended]'
-        : '[base][fa]concat=n=2:v=0:a=1[extended]',
-    );
-  } else filters.push('[loop]anull[extended]');
-  if (options.music) {
-    filters.push(
-      `[1:a:0]atrim=duration=${plan.length},asetpts=PTS-STARTPTS,volume=${options.musicVolume}${plan.endcardLength ? '' : `,afade=t=out:st=${Math.max(0, plan.length - 0.5)}:d=0.5`}[music]`,
-    );
-    filters.push(
-      options.musicOnly
-        ? '[extended]anullsink;[music]anull[mixed]'
-        : '[extended][music]amix=inputs=2:duration=first:normalize=0[mixed]',
-    );
-  } else filters.push('[extended]anull[mixed]');
+    } else filters.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${loopLength}[loop]`);
+    if (plan.finale) {
+      if (plan.endcardLength) {
+        filters.push(
+          '[loop]asplit[bodyloop][cardloop]',
+          `[bodyloop]atrim=duration=${plan.bodyLength},${bodyFade}[base]`,
+          `[cardloop]atrim=start=${plan.bodyLength},asetpts=PTS-STARTPTS[cardaudio]`,
+        );
+      } else filters.push('[loop]anull[base]');
+      const finaleLength = plan.finale.end - plan.finale.start;
+      filters.push(
+        hasAudio
+          ? `[0:a:0]atrim=start=${plan.finale.start}:end=${plan.finale.end},asetpts=PTS-STARTPTS,apad,atrim=duration=${finaleLength}[fa]`
+          : `anullsrc=r=48000:cl=stereo,atrim=duration=${finaleLength}[fa]`,
+        plan.endcardLength
+          ? '[base][fa][cardaudio]concat=n=3:v=0:a=1[extended]'
+          : '[base][fa]concat=n=2:v=0:a=1[extended]',
+      );
+    } else filters.push('[loop]anull[extended]');
+    if (options.music) {
+      filters.push(
+        `[1:a:0]atrim=duration=${plan.length},asetpts=PTS-STARTPTS,volume=${options.musicVolume}${plan.endcardLength ? '' : `,afade=t=out:st=${Math.max(0, plan.length - 0.5)}:d=0.5`}[music]`,
+      );
+      filters.push('[extended][music]amix=inputs=2:duration=first:normalize=0[mixed]');
+    } else filters.push('[extended]anull[mixed]');
+  }
   filters.push(
     plan.endcardLength ? `[mixed]afade=t=out:st=${plan.length - 1}:d=1[a]` : '[mixed]anull[a]',
   );
@@ -230,7 +235,7 @@ export async function processReel(
     // copyFile with COPYFILE_EXCL below also protects against a concurrent output creator.
     await access(out).then(
       () => {
-        throw new Error('Output exists; use --force');
+        throw Object.assign(new Error('Output exists; use --force'), { code: 'EEXIST' });
       },
       () => undefined,
     );
