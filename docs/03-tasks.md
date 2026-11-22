@@ -3259,14 +3259,14 @@ migrations: Volodymyr applies them before the bot deploy.
   two manual 🚀 presses within one run stays as before T76a.
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
-- Status: planned.
+- Status: in review.
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. For kinds in `releaseQueue.kinds`, the final publish confirmation (after the people
      confirmation for video) schedules instead of dispatching and replies
      «Додано в чергу. Вийде <weekday>, <dd.mm> о <hh:mm>.» A second button
      «Опублікувати зараз» dispatches at once as today.
-  2. `/queue` (Ukrainian label «Черга» in the command menu): lists queued works by slot with
+  2. `/queue` (the command menu is set in BotFather by hand, not in code): lists queued works by slot with
      the first line of the text; per work «Зараз» (publish now; later works keep their slots) and
      «Повернути в чернетку» (unschedule, slot freed). Versioned callbacks as elsewhere.
   3. Low-queue reminder: when a dispatch leaves exactly `lowQueueReminder` work(s) queued, one

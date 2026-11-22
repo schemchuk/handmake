@@ -234,8 +234,20 @@ export interface D1DraftStore {
     now: Date,
     approvalChatId?: string,
   ): Promise<'scheduled' | 'not-ready' | 'slot-taken'>;
-  /** F42: `scheduled` → `ready`, slot freed. */
-  unschedule(tenantId: string, draftId: string, now: Date): Promise<boolean>;
+  /** F42: `scheduled` → `ready`, slot freed; with `version`, only that row
+   * version (a stale queue button never moves a newer state). */
+  unschedule(tenantId: string, draftId: string, now: Date, version?: number): Promise<boolean>;
+  /** Slots held by queued or publishing works (one work per slot). */
+  takenSlots(tenantId: string): Promise<Date[]>;
+  /** «Зараз» in the queue: `scheduled` (that version) → `publishing`, slot
+   * freed, like the publish button's claim. */
+  claimScheduledNow(
+    tenantId: string,
+    draftId: string,
+    version: number,
+    now: Date,
+    approvalChatId?: string,
+  ): Promise<StoredDraft | undefined>;
   /** The tenant's queue, earliest slot first. */
   listScheduled(tenantId: string): Promise<StoredDraft[]>;
   /** The next queued draft to dispatch (a due slot or an interrupted claim)
@@ -802,16 +814,50 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       }
     },
 
-    async unschedule(tenantId, draftId, now) {
+    async unschedule(tenantId, draftId, now, version) {
       const result = await db
         .prepare(
           `UPDATE drafts
            SET status = 'ready', updated_at = ?, version = version + 1, ${leaveQueue}
-           WHERE tenant_id = ? AND id = ? AND status = 'scheduled'`,
+           WHERE tenant_id = ? AND id = ? AND status = 'scheduled'
+             AND (? IS NULL OR version = ?)`,
         )
-        .bind(now.toISOString(), tenantId, draftId)
+        .bind(now.toISOString(), tenantId, draftId, version ?? null, version ?? null)
         .run();
       return result.meta.changes > 0;
+    },
+
+    async takenSlots(tenantId) {
+      const { results } = await db
+        .prepare(
+          `SELECT publish_at FROM drafts WHERE tenant_id = ?
+             AND status IN ('scheduled', 'publishing') AND publish_at IS NOT NULL`,
+        )
+        .bind(tenantId)
+        .all<{ publish_at: string }>();
+      return results.map((row) => new Date(row.publish_at));
+    },
+
+    async claimScheduledNow(tenantId, draftId, version, now, approvalChatId) {
+      const row = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'publishing', updated_at = ?, version = version + 1, ${leaveQueue},
+               extras = CASE WHEN ? IS NULL THEN extras
+                 ELSE json_set(extras, '$.approvalChatId', ?) END
+           WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND version = ?
+           RETURNING ${draftColumns}`,
+        )
+        .bind(
+          now.toISOString(),
+          approvalChatId ?? null,
+          approvalChatId ?? null,
+          tenantId,
+          draftId,
+          version,
+        )
+        .first<DraftRow>();
+      return row ? toStoredDraft(row) : undefined;
     },
 
     async listScheduled(tenantId) {
@@ -829,16 +875,16 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .first<DraftRow>();
       // A run in flight (or a dispatch another execution is making right
       // now): a second dispatch would replace its pending run in the shared
-      // `publish` concurrency group, so the queue waits.
+      // `publish` concurrency group, so the queue waits. Repository-wide,
+      // not per tenant: the group is shared by every tenant (T76c dropped).
       const busy = await db
         .prepare(
-          `SELECT 1 AS busy FROM drafts WHERE tenant_id = ? AND status = 'publishing'
+          `SELECT 1 AS busy FROM drafts WHERE status = 'publishing'
              AND updated_at >= ?
              AND NOT (publish_at IS NOT NULL AND dispatched_at IS NULL AND updated_at < ?)
            LIMIT 1`,
         )
         .bind(
-          tenantId,
           new Date(now.getTime() - queueBusyMs).toISOString(),
           new Date(now.getTime() - queueInterruptedMs).toISOString(),
         )

@@ -83,7 +83,8 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         ? await drafts.get(ctx.tenantId, workId)
         : undefined;
     const stored =
-      active?.draft.kind === 'work' && active.draft.state !== 'published'
+      // A queued work (F42) is done for the author too: /work starts the next.
+      active?.draft.kind === 'work' && !['published', 'scheduled'].includes(active.draft.state)
         ? active
         : await drafts.getOrCreateCollecting(ctx.tenantId, chat, 'work', new Date());
     await drafts.setChatSession(

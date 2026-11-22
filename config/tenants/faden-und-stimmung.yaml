@@ -59,6 +59,17 @@ announcements:
       🧶 Сьогодні о {time} зустріч нашого гуртка, як і завжди, в Landshut, Niedermayerstr. 85!
       Не забудь хороший настрій.
 
+# F42 release queue: approved works wait for a daily slot instead of going
+# out at once («⚡ зараз» stays). Times use meetingSchedule.timezone; Tuesday is
+# later because the meeting announcement goes out at 18:00.
+releaseQueue:
+  kinds: [work]
+  time: '18:30'
+  overrides:
+    tuesday: '19:30'
+  leadMinutes: 10
+  lowQueueReminder: 1
+
 # Website (ADR 011, ADR 016). German at `/`, Ukrainian under `/uk/`.
 # Theme "Lookbook": cool white paper, near-black ink, grey meta text,
 # madder-red running-stitch dividers; one wide grotesk for everything.

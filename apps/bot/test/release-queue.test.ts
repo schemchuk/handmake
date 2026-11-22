@@ -362,3 +362,46 @@ describe('release queue races (PR #187 review)', () => {
     expect((await store.get(tenant, 'a'))?.draft.state).toBe('published');
   });
 });
+
+describe('low-queue reminders (T76b)', () => {
+  function withQueue(options: ReturnType<typeof cronOptions>['options']) {
+    options.tenantConfigs = {
+      load: async () =>
+        ({ meetingSchedule: { timezone: tz }, releaseQueue: queue }) as unknown as TenantConfig,
+    };
+    return options;
+  }
+
+  it('tells the author once when one work is left, then when the queue is empty', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    withQueue(options);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(notify).toHaveBeenCalledWith(
+      'chat-approve',
+      botTexts.queueLowText(1, 'вівторок, 24.11 о 19:30'),
+    );
+    await store.markPublished(tenant, 'a', mondaySlot);
+    await runReleaseQueueCron(tuesdaySlot, options);
+    expect(notify).toHaveBeenLastCalledWith('chat-approve', botTexts.queueEmptyText);
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
+  it('stays quiet while the queue is long and without the queue block', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    await queued(store, 'c', wednesdaySlot);
+    const quiet = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, withQueue(quiet.options));
+    expect(quiet.notify).not.toHaveBeenCalled();
+
+    const store2 = createD1DraftStore(await makeD1());
+    await queued(store2, 'a', mondaySlot);
+    const none = cronOptions(store2, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, none.options);
+    expect(none.notify).not.toHaveBeenCalled();
+  });
+});

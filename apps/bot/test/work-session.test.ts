@@ -75,6 +75,8 @@ beforeEach(async () => {
     .mockResolvedValue({ generateUkrainian: uk, translateUkrainian: de, generate: vi.fn() });
   bot = createBot({
     token: 'TEST_TOKEN',
+    // The real tenant config queues works (F42): «в чергу» is the default.
+    tenantConfigs: { load },
     drafts,
     texts: botTexts,
     translator,
@@ -161,6 +163,24 @@ describe('/work author flow', () => {
     await press(`draft:${id}:publish:confirm`);
     await flush();
     expect(publish.jobs).toHaveLength(1);
+  });
+
+  it('queues an approved work and lets /work start the next one (F42)', async () => {
+    await selectExisting();
+    await contentAndGenerate();
+    await press(`work:${id}:announce:yes`);
+    await press(`draft:${id}:publish`);
+    expect(buttons().map((b) => b.callback_data)).toContain(`draft:${id}:publish:queue`);
+    await press(`draft:${id}:publish:queue`);
+    expect(publish.jobs).toEqual([]);
+    const queued = await get();
+    expect(queued.draft.state).toBe('scheduled');
+    expect(queued.publishAt).toBeDefined();
+    const first = id;
+    await send('/work');
+    const next = (await drafts.getChatSession(tenant, '11'))!.draftId!;
+    expect(next).not.toBe(first);
+    expect((await drafts.get(tenant, next))!.draft.state).toBe('collecting');
   });
 
   it('selects an existing collection and keeps site-only publication as the initial choice', async () => {
