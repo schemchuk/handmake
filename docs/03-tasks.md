@@ -3192,7 +3192,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 
 ## Release schedule (spec v13, F42-F44, planned 2026-11-22)
 
-Order: T76a → T76c → T76b → T77 → T78 → T79. Owner `claude-code` on Volodymyr's word (2026-11-22: tasks
+Order: T76a → T76b → T77 → T78 → T79 (T76c dropped). Owner `claude-code` on Volodymyr's word (2026-11-22: tasks
 Claude Code can do alone it implements itself); reviewer is the other agent, Codex. Browser and
 account steps are H19-H21; Claude Code gives the guide when a step is due. T76a and T77 add D1
 migrations: Volodymyr applies them before the bot deploy.
@@ -3239,7 +3239,7 @@ migrations: Volodymyr applies them before the bot deploy.
      concurrency group with one pending slot, so any dispatch (manual 🚀, queue, other tenant)
      made while one run executes and another waits cancels the waiting one. The queue only
      avoids adding to it (one dispatch per tick, waits while its tenant publishes). The real fix
-     is a per-draft concurrency group in `publish.yml` (workflow change, Volodymyr's OK): T76c.
+     looked like a per-draft group in `publish.yml` (T76c), dropped after review; see T76c.
 - Acceptance: two works queued Monday 10:00 Berlin get Monday 18:30 and Tuesday 19:30; a work
   queued at 18:25 gets tomorrow; a slot over the DST switch is correct wall time; a due draft is
   dispatched once even when two ticks overlap; front matter `date` equals queue time.
@@ -3248,18 +3248,15 @@ migrations: Volodymyr applies them before the bot deploy.
   keeps immediate publish; publisher `date` from the job.
 
 ### T76c — Per-draft publish concurrency (`ci`, F42)
-- Status: planned.
-- Owner: claude-code · Reviewer: codex · Depends on: T76a · Sensitive: workflow change,
-  Volodymyr's OK before merge.
-- Why: PR #187 review. `publish.yml` uses `concurrency: { group: publish }`; GitHub keeps one
-  pending run per group and cancels it when a newer one arrives, so a dispatch of one draft can
-  silently drop another draft's waiting run (no callback, the draft stays `publishing`).
-- Change: group per draft (`publish-${{ client_payload.draftId || inputs payload draftId }}`),
-  keeping `cancel-in-progress: false`, so runs of the same draft still serialize and different
-  drafts run side by side. First check that concurrent runs of different drafts are safe: the
-  publisher pull-rebases content commits onto a moving `main`; confirm it retries a rejected
-  push and that two drafts never write the same path. If not, add the retry in the same PR.
-- Tests: publisher push retry on a rejected push (fake git); a workflow lint run.
+- Status: dropped 2026-11-22 (PR #188 closed after Codex review).
+- Why dropped: a per-draft `publish` group lets runs of different drafts overlap, which moves the
+  one-pending-run replacement to the shared `site` group (a show's `copy-show` needs its `site`
+  job to succeed and is skipped when that pending run is replaced) and lets two drafts race on a
+  shared new `content/collections/<slug>.md` (add/add rebase conflict, ledger not pushed). A
+  safe version needs the site → copy-show chain reworked, which one work a day does not justify.
+- Instead: the shared `publish` group stays, and the release queue waits while ANY publish run
+  of the repository is in flight, not only its own tenant's (T76b item 9). The residual risk of
+  two manual 🚀 presses within one run stays as before T76a.
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
 - Status: planned.
@@ -3281,6 +3278,8 @@ migrations: Volodymyr applies them before the bot deploy.
      or key the tick. Two concurrent deletes (or a callback in between) make the bot answer
      «busy» although the draft is gone or published; re-read the draft after a refused delete
      and answer by its real state.
+  9. Busy check repo-wide (T76c dropped): `queueState` treats a `publishing` draft of any tenant
+     as in flight, since `publish.yml` has one repository-wide concurrency group.
   7. Review note from PR #187 (nit): a slot time that does not exist on the DST switch day
      (e.g. 02:30 on the last Sunday of March) silently becomes 03:30; reject such times in the
      schema or document the shift.

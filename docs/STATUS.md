@@ -1,14 +1,13 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T76c (per-draft publish concurrency). T76a merged as PR #187 (`7f2d38e`),
-  reviewed by Codex in three rounds (14 blocking findings fixed, two nits moved to T76b).
+- **Current task:** T76b (release queue in the bot). T76a merged (PR #187, `7f2d38e`);
+  migration 0025 applied and bot deployed by Volodymyr 2026-11-22 12:42 UTC, Worker
+  `32dc4ecf-d35e-4524-879c-04680ccf9afe`. T76c dropped (PR #188 closed after review).
 - **Branch:** `main`.
-- **Last commit:** docs: record T76a merge.
-- **Next step:** Volodymyr applies D1 migration 0025 to remote, then the bot is deployed from
-  clean `main` (the merged code selects the new columns: deploy only after the migration).
-  Then T76c (workflow change, his OK before merge), T76b, T77, T78, T79.
-- **Blocked on:** migration 0025 (Volodymyr).
+- **Last commit:** docs: drop T76c, queue waits for any publish run.
+- **Next step:** claude-code implements T76b, then T77, T78, T79; Codex reviews each PR.
+- **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
   reel, music only (recording tone absent), source moved, log and rotation state written.
