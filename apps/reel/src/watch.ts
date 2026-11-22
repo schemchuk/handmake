@@ -167,7 +167,7 @@ export function acquireLock(dir: string) {
   return acquireFileLock(lockPath(dir), dir);
 }
 
-async function acquireFileLock(lock: string, dir: string, wait = false) {
+export async function acquireFileLock(lock: string, dir: string, wait = false) {
   const stateDir = resolve(lock, '..');
   await mkdir(stateDir, { recursive: true, mode: 0o700 });
   const temp = await mkdtemp(join(stateDir, '.claim-'));
@@ -180,7 +180,7 @@ async function acquireFileLock(lock: string, dir: string, wait = false) {
   }
 }
 
-async function notify(message: string) {
+export async function notify(message: string) {
   try {
     await exec('notify-send', ['--', message], { timeout: 5000 });
   } catch {
