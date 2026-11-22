@@ -334,8 +334,10 @@ function claimableArgs(now: Date): string[] {
 }
 /** Columns reset when a draft leaves the release queue. */
 const leaveQueue = 'publish_at = NULL, retry_at = NULL, dispatched_at = NULL, queue_attempts = 0';
-/** A queued claim not dispatched within this long was interrupted. */
-export const queueInterruptedMs = 10 * 60 * 1000;
+/** A queued claim not dispatched within this long was interrupted. Longer
+ * than any cron invocation (15 min on Cloudflare), so a dispatch still
+ * waiting on GitHub is never taken for an interrupted one. */
+export const queueInterruptedMs = 20 * 60 * 1000;
 /** A publish run younger than this blocks the next queued dispatch. */
 export const queueBusyMs = 60 * 60 * 1000;
 /** After a failed dispatch the next try waits about one cron tick. */

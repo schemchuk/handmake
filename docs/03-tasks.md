@@ -3219,7 +3219,7 @@ migrations: Volodymyr applies them before the bot deploy.
      dispatch per tenant and tick, and none while a publish run of the tenant is in flight (a
      second dispatch would replace a pending run in the shared `publish` concurrency group);
      one queued draft per slot (unique index); a claim never dispatched is reclaimed after
-     10 minutes (`dispatched_at`); a failure waits one tick (`retry_at`) and is guarded by the
+     20 minutes (`dispatched_at`; longer than a 15-minute cron invocation, PR #189); a failure waits one tick (`retry_at`) and is guarded by the
      claim's version, so a manual 🚀 that took over is never touched; a late success callback
      also accepts a requeued draft; delete refuses `publishing`/`published` in SQL. Claim due drafts atomically
      (`scheduled` → `publishing` only if still scheduled), build the job exactly as the publish
@@ -3280,7 +3280,7 @@ migrations: Volodymyr applies them before the bot deploy.
      and answer by its real state.
   9. Busy check repo-wide (T76c dropped): `queueState` treats a `publishing` draft of any tenant
      as in flight, since `publish.yml` has one repository-wide concurrency group. Migration
-     0026 adds a one-row lease (`queue_dispatch_lock`, 5 min): one cron execution at a time
+     0026 adds a one-row lease (`queue_dispatch_lock`, 20 min, longer than any cron invocation): one cron execution at a time
      runs the busy check and the claim, so overlapping executions never both dispatch.
   10. PR #189 review: «в чергу» carries the shown row version; «Зараз» in `/queue` moves the slot
      to now (`moveToNow`, next free millisecond on a tie) and leaves the dispatch to the cron;

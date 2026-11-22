@@ -160,8 +160,10 @@ export async function runReleaseQueueCron(
   }
 }
 
-/** Longer than one pass (one GitHub call per tenant), shorter than a tick. */
-export const queueLockLeaseMs = 5 * 60 * 1000;
+/** Longer than any cron invocation (Cloudflare caps one at 15 min), so a
+ * lease never expires while its holder may still be waiting on GitHub; a
+ * crashed holder costs at most one skipped tick (PR #189 review). */
+export const queueLockLeaseMs = 20 * 60 * 1000;
 
 async function dispatchTenants(now: Date, options: ReleaseQueueCronOptions): Promise<void> {
   for (const tenantId of new Set(options.allowList.values())) {
