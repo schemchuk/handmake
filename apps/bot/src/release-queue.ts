@@ -100,10 +100,14 @@ export interface ReleaseQueueCronOptions {
 }
 
 /**
- * Dispatches every due queued draft. Queued drafts are dispatched even when
- * the tenant later drops `releaseQueue`, so nothing gets stuck. The claim
- * (`scheduled` → `publishing`) is atomic, so overlapping ticks dispatch once.
- * One failing tenant or draft never stops the others.
+ * Dispatches at most one queued draft per tenant and tick: the earliest due
+ * slot, or a claim an earlier tick made but never dispatched (the Worker died
+ * in between). It waits while a publish run of the tenant is in flight, since
+ * a second dispatch would replace a pending run in the shared `publish`
+ * concurrency group; a backlog after an outage drains one tick at a time.
+ * Queued drafts are dispatched even when the tenant later drops
+ * `releaseQueue`, so nothing gets stuck. The claim is atomic, so overlapping
+ * executions dispatch once. One failing tenant never stops the others.
  */
 export async function runReleaseQueueCron(
   now: Date,
@@ -111,11 +115,9 @@ export async function runReleaseQueueCron(
 ): Promise<void> {
   for (const tenantId of new Set(options.allowList.values())) {
     try {
-      const queued = await options.drafts.listScheduled(tenantId);
-      const due = queued.filter((stored) => Date.parse(stored.publishAt ?? '') <= now.getTime());
-      if (!due.length) continue;
-      const timeZone = (await options.tenantConfigs.load(tenantId)).meetingSchedule.timezone;
-      for (const stored of due) await dispatchDue(now, tenantId, stored, timeZone, options);
+      const { next, busy } = await options.drafts.queueState(tenantId, now);
+      if (!next || busy) continue;
+      await dispatchDue(now, tenantId, next, options);
     } catch (error) {
       console.error(`release queue cron failed for tenant ${tenantId}:`, (error as Error).message);
     }
@@ -126,7 +128,6 @@ async function dispatchDue(
   now: Date,
   tenantId: string,
   stored: StoredDraft,
-  timeZone: string,
   options: ReleaseQueueCronOptions,
 ): Promise<void> {
   const draftId = stored.draft.draftId;
@@ -139,17 +140,32 @@ async function dispatchDue(
     const job = options.buildJob(claimed.draft);
     attempts = maxQueueAttempts;
     await options.runner.run(job);
-    return;
   } catch (error) {
     console.error(`release queue dispatch failed for ${draftId}:`, (error as Error).message);
+    const outcome = await options.drafts.requeueAfterFailure(
+      tenantId,
+      draftId,
+      claimed.version,
+      now,
+      attempts,
+    );
+    if (outcome === 'gave-up') await tellGaveUp(tenantId, claimed, options);
+    return;
   }
-  const outcome = await options.drafts.requeueAfterFailure(tenantId, draftId, now, attempts);
-  if (outcome !== 'gave-up') return;
+  await options.drafts.markDispatched(tenantId, draftId, claimed.version, now);
+}
+
+async function tellGaveUp(
+  tenantId: string,
+  claimed: StoredDraft,
+  options: ReleaseQueueCronOptions,
+): Promise<void> {
   const chatId =
     (claimed.draft.extras['approvalChatId'] as string | undefined) ??
-    (await options.drafts.chatIdOf(tenantId, draftId));
-  if (!chatId) return;
-  const slot = formatSlot(new Date(stored.publishAt!), timeZone);
+    (await options.drafts.chatIdOf(tenantId, claimed.draft.draftId));
+  if (!chatId || !claimed.publishAt) return;
+  const timeZone = (await options.tenantConfigs.load(tenantId)).meetingSchedule.timezone;
+  const slot = formatSlot(new Date(claimed.publishAt), timeZone);
   await options
     .notify(chatId, options.texts.queueGaveUpText.replace('{slot}', slot))
     .catch(() => undefined);

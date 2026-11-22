@@ -6,6 +6,7 @@ import { fakeDb } from './helpers';
 
 const mocks = vi.hoisted(() => ({
   cron: vi.fn(),
+  release: vi.fn(),
   poll: vi.fn(),
   closing: vi.fn(),
   notices: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock('../src/name-reconciliation', () => ({
 }));
 vi.mock('../src/announcement-cron', () => ({ runAnnouncementCron: mocks.cron }));
 vi.mock('../src/poll-cron', () => ({ runPollCron: mocks.poll }));
+vi.mock('../src/release-queue', () => ({ runReleaseQueueCron: mocks.release }));
 vi.mock('../src/poll-closing-runtime', () => ({
   runPollClosingCron: mocks.closing,
   registerPollResultCallbacks: vi.fn(),
@@ -43,6 +45,9 @@ it.each([
     const calls: string[] = [];
     mocks.cron.mockImplementation(async () => {
       calls.push('announcement');
+    });
+    mocks.release.mockImplementation(async () => {
+      calls.push('release');
     });
     mocks.poll.mockImplementation(async () => {
       calls.push('poll');
@@ -76,7 +81,15 @@ it.each([
     await expect(
       app.scheduled({ cron: '* * * * *', scheduledTime: Date.now() } as ScheduledEvent),
     ).resolves.toBe(0);
-    expect(calls).toEqual(['announcement', 'poll', 'closing', 'notices', 'collect', 'reconcile']);
+    expect(calls).toEqual([
+      'announcement',
+      'release',
+      'poll',
+      'closing',
+      'notices',
+      'collect',
+      'reconcile',
+    ]);
     expect(mocks.collect.mock.calls[0]![1].capabilities).toEqual({});
     expect(error).toHaveBeenCalledTimes(1 + Number(pollFails) + Number(closingFails));
     if (pollFails) {

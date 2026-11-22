@@ -2,7 +2,7 @@ import { createDraft, tenantConfigSchema } from '@handmake/core';
 import type { Draft, PublishJob, ReleaseQueueConfig, TenantConfig } from '@handmake/core';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createD1DraftStore } from '../src/draft-store';
+import { createD1DraftStore, queueInterruptedMs } from '../src/draft-store';
 import type { D1DraftStore } from '../src/draft-store';
 import {
   formatSlot,
@@ -104,7 +104,7 @@ function readyWork(id: string): Draft {
 
 async function queued(store: D1DraftStore, id: string, slot: Date): Promise<void> {
   await store.create(readyWork(id), 'chat-1');
-  expect(await store.schedule(tenant, id, slot, monday10, 'chat-approve')).toBe(true);
+  expect(await store.schedule(tenant, id, slot, monday10, 'chat-approve')).toBe('scheduled');
 }
 
 function cronOptions(
@@ -139,7 +139,7 @@ describe('D1 release queue', () => {
       ['b', 'scheduled', tuesdaySlot.toISOString()],
     ]);
     expect(list[0]!.draft.extras['approvalChatId']).toBe('chat-approve');
-    expect(await store.schedule(tenant, 'a', wednesdaySlot, monday10)).toBe(false);
+    expect(await store.schedule(tenant, 'a', wednesdaySlot, monday10)).toBe('not-ready');
     expect(await store.listScheduled('other-tenant')).toEqual([]);
 
     expect(await store.unschedule(tenant, 'a', monday10)).toBe(true);
@@ -231,5 +231,100 @@ describe('runReleaseQueueCron', () => {
     const load = vi.spyOn(options.tenantConfigs, 'load');
     await runReleaseQueueCron(mondaySlot, options);
     expect(load).not.toHaveBeenCalled();
+  });
+});
+
+describe('release queue races (PR #187 review)', () => {
+  const failing = async () => {
+    throw new Error('HTTP 502');
+  };
+
+  it('two works never share a slot', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await store.create(readyWork('b'), 'chat-1');
+    expect(await store.schedule(tenant, 'b', mondaySlot, monday10)).toBe('slot-taken');
+    expect((await store.get(tenant, 'b'))?.draft.state).toBe('ready');
+  });
+
+  it('a claim that was never dispatched is reclaimed after the interruption window', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    expect(await store.claimDue(tenant, 'a', mondaySlot)).toBeDefined(); // Worker dies here
+    const { options } = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(new Date(mondaySlot.getTime() + 60_000), options);
+    expect(options.runner.run).not.toHaveBeenCalled();
+    await runReleaseQueueCron(
+      new Date(mondaySlot.getTime() + queueInterruptedMs + 60_000),
+      options,
+    );
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failure never touches a manual 🚀 that took over the claim', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    const claimed = (await store.claimDue(tenant, 'a', mondaySlot))!;
+    const later = new Date(mondaySlot.getTime() + 600_000);
+    expect(await store.claimPublishing(tenant, 'a', later, later)).toBeDefined();
+    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version, later, 3)).toBe('missing');
+    const stored = await store.get(tenant, 'a');
+    expect(stored?.draft.state).toBe('publishing');
+    expect(stored?.publishAt).toBeUndefined();
+  });
+
+  it('two executions of one tick spend one attempt', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    const { options } = cronOptions(store, failing);
+    await runReleaseQueueCron(mondaySlot, options);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+    expect((await store.get(tenant, 'a'))?.draft.state).toBe('scheduled');
+  });
+
+  it('a late success callback on a requeued draft marks it published', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    const { options } = cronOptions(store, failing);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(await store.markPublished(tenant, 'a', mondaySlot)).toBe(true);
+    await runReleaseQueueCron(new Date(mondaySlot.getTime() + 900_000), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('delete refuses a draft the cron has claimed', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await store.claimDue(tenant, 'a', mondaySlot);
+    await store.delete(tenant, 'a');
+    expect((await store.get(tenant, 'a'))?.draft.state).toBe('publishing');
+  });
+
+  it('a backlog drains one work per tick and waits for a run in flight', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    const { options } = cronOptions(store, async () => undefined);
+    const afterOutage = new Date(tuesdaySlot.getTime() + 60_000);
+    await runReleaseQueueCron(afterOutage, options);
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+    expect(options.runner.run).toHaveBeenLastCalledWith({ tenantId: tenant, postId: 'a' });
+    // A's run is in flight: the next tick waits.
+    await runReleaseQueueCron(new Date(afterOutage.getTime() + 900_000), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+    await store.markPublished(tenant, 'a', new Date(afterOutage.getTime() + 1_000_000));
+    await runReleaseQueueCron(new Date(afterOutage.getTime() + 1_800_000), options);
+    expect(options.runner.run).toHaveBeenLastCalledWith({ tenantId: tenant, postId: 'b' });
+  });
+
+  it('a manual publish in flight also holds the queue', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await store.create(readyWork('manual'), 'chat-1');
+    await store.claimPublishing(tenant, 'manual', mondaySlot);
+    const { options } = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(options.runner.run).not.toHaveBeenCalled();
   });
 });

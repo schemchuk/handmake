@@ -223,26 +223,33 @@ export interface D1DraftStore {
   /** Delete every draft untouched since the cutoff; returns the row count. */
   deleteOlderThan(cutoff: Date): Promise<number>;
   /** F42: `ready` → `scheduled` at `publishAt`; records the approving chat
-   * like claimPublishing. False when the draft is no longer ready. */
+   * like claimPublishing. `slot-taken` when another work holds the slot. */
   schedule(
     tenantId: string,
     draftId: string,
     publishAt: Date,
     now: Date,
     approvalChatId?: string,
-  ): Promise<boolean>;
+  ): Promise<'scheduled' | 'not-ready' | 'slot-taken'>;
   /** F42: `scheduled` → `ready`, slot freed. */
   unschedule(tenantId: string, draftId: string, now: Date): Promise<boolean>;
   /** The tenant's queue, earliest slot first. */
   listScheduled(tenantId: string): Promise<StoredDraft[]>;
-  /** Atomically `scheduled` → `publishing` when the slot is due; undefined if
-   * another tick (or the author) got there first or the slot is not due. */
+  /** The next queued draft to dispatch (a due slot or an interrupted claim)
+   * and whether a publish run of the tenant is in flight. */
+  queueState(tenantId: string, now: Date): Promise<{ next?: StoredDraft; busy: boolean }>;
+  /** Atomically claims a due (or interrupted) queued draft as `publishing`;
+   * undefined if another tick or the author got there first. */
   claimDue(tenantId: string, draftId: string, now: Date): Promise<StoredDraft | undefined>;
-  /** A cron dispatch failed: back to `scheduled` on the same slot, or after
-   * `maxAttempts` failed ticks back to `ready` with the slot freed. */
+  /** GitHub accepted the dispatch of this claim. */
+  markDispatched(tenantId: string, draftId: string, version: number, now: Date): Promise<void>;
+  /** A cron dispatch failed: back to `scheduled` (next try after one tick), or
+   * after `maxAttempts` failed ticks back to `ready` with the slot freed.
+   * `version` is the claim's; a newer claim is never touched. */
   requeueAfterFailure(
     tenantId: string,
     draftId: string,
+    version: number,
     now: Date,
     maxAttempts: number,
   ): Promise<RequeueOutcome>;
@@ -287,6 +294,15 @@ const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, 
 export function isUniqueViolation(error: unknown): boolean {
   return error instanceof Error && error.message.includes('UNIQUE constraint failed');
 }
+
+/** Columns reset when a draft leaves the release queue. */
+const leaveQueue = 'publish_at = NULL, retry_at = NULL, dispatched_at = NULL, queue_attempts = 0';
+/** A queued claim not dispatched within this long was interrupted. */
+export const queueInterruptedMs = 10 * 60 * 1000;
+/** A publish run younger than this blocks the next queued dispatch. */
+export const queueBusyMs = 60 * 60 * 1000;
+/** After a failed dispatch the next try waits about one cron tick. */
+export const queueRetryMs = 14 * 60 * 1000;
 
 // D1 meta.changes includes usage-trigger writes. Every guarded mutation below
 // targets at most one draft; any positive count proves that mutation won.
@@ -451,7 +467,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
 
     async delete(tenantId, draftId) {
       await db
-        .prepare("DELETE FROM drafts WHERE tenant_id = ? AND id = ? AND kind != 'show'")
+        // Guarded in SQL as well: the cron may claim a queued draft between the
+        // handler's read and this delete (PR #187 review).
+        .prepare(
+          `DELETE FROM drafts WHERE tenant_id = ? AND id = ? AND kind != 'show'
+             AND status NOT IN ('publishing', 'published')`,
+        )
         .bind(tenantId, draftId)
         .run();
     },
@@ -594,6 +615,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .prepare(
           `UPDATE drafts
            SET pending_edit = NULL, status = 'publishing', updated_at = ?, version = version + 1,
+               ${leaveQueue},
                extras = CASE WHEN ? IS NULL THEN extras
                  ELSE json_set(extras, '$.approvalChatId', ?) END
            WHERE tenant_id = ? AND id = ?
@@ -615,7 +637,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'ready', updated_at = ?, version = version + 1
+           SET status = 'ready', updated_at = ?, version = version + 1, ${leaveQueue}
            WHERE tenant_id = ? AND id = ? AND status = 'publishing'`,
         )
         .bind(now.toISOString(), tenantId, draftId)
@@ -627,8 +649,12 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET pending_edit = NULL, status = 'published', updated_at = ?, version = version + 1
-           WHERE tenant_id = ? AND id = ? AND status = 'publishing'`,
+           SET pending_edit = NULL, status = 'published', updated_at = ?, version = version + 1,
+               retry_at = NULL
+           WHERE tenant_id = ? AND id = ?
+             -- 'scheduled': the dispatch was accepted but its response lost,
+             -- so the cron requeued it (PR #187 review).
+             AND (status = 'publishing' OR (status = 'scheduled' AND publish_at IS NOT NULL))`,
         )
         .bind(now.toISOString(), tenantId, draftId)
         .run();
@@ -726,33 +752,38 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
     },
 
     async schedule(tenantId, draftId, publishAt, now, approvalChatId) {
-      const result = await db
-        .prepare(
-          `UPDATE drafts
-           SET pending_edit = NULL, status = 'scheduled', publish_at = ?, queue_attempts = 0,
-               updated_at = ?, version = version + 1,
-               extras = CASE WHEN ? IS NULL THEN extras
-                 ELSE json_set(extras, '$.approvalChatId', ?) END
-           WHERE tenant_id = ? AND id = ? AND status = 'ready'`,
-        )
-        .bind(
-          publishAt.toISOString(),
-          now.toISOString(),
-          approvalChatId ?? null,
-          approvalChatId ?? null,
-          tenantId,
-          draftId,
-        )
-        .run();
-      return result.meta.changes > 0;
+      try {
+        const result = await db
+          .prepare(
+            `UPDATE drafts
+             SET pending_edit = NULL, status = 'scheduled', publish_at = ?, retry_at = NULL,
+                 dispatched_at = NULL, queue_attempts = 0, updated_at = ?, version = version + 1,
+                 extras = CASE WHEN ? IS NULL THEN extras
+                   ELSE json_set(extras, '$.approvalChatId', ?) END
+             WHERE tenant_id = ? AND id = ? AND status = 'ready'`,
+          )
+          .bind(
+            publishAt.toISOString(),
+            now.toISOString(),
+            approvalChatId ?? null,
+            approvalChatId ?? null,
+            tenantId,
+            draftId,
+          )
+          .run();
+        return result.meta.changes > 0 ? 'scheduled' : 'not-ready';
+      } catch (error) {
+        // idx_drafts_one_per_slot: a racing approval took this slot.
+        if (isUniqueViolation(error)) return 'slot-taken';
+        throw error;
+      }
     },
 
     async unschedule(tenantId, draftId, now) {
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'ready', publish_at = NULL, queue_attempts = 0, updated_at = ?,
-               version = version + 1
+           SET status = 'ready', updated_at = ?, version = version + 1, ${leaveQueue}
            WHERE tenant_id = ? AND id = ? AND status = 'scheduled'`,
         )
         .bind(now.toISOString(), tenantId, draftId)
@@ -768,38 +799,91 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return results.map(toStoredDraft);
     },
 
+    async queueState(tenantId, now) {
+      const at = now.toISOString();
+      const interrupted = new Date(now.getTime() - queueInterruptedMs).toISOString();
+      const busySince = new Date(now.getTime() - queueBusyMs).toISOString();
+      const next = await db
+        .prepare(
+          `${selectDraft} AND (
+             (status = 'scheduled' AND COALESCE(retry_at, publish_at) <= ?)
+             OR (status = 'publishing' AND publish_at IS NOT NULL AND dispatched_at IS NULL
+                 AND updated_at < ?))
+           ORDER BY publish_at, id LIMIT 1`,
+        )
+        .bind(tenantId, at, interrupted)
+        .first<DraftRow>();
+      // A run in flight (or a dispatch another tick is making right now): a
+      // second dispatch would replace its pending run in the shared
+      // `publish` concurrency group, so the queue waits.
+      const busy = await db
+        .prepare(
+          `SELECT 1 AS busy FROM drafts WHERE tenant_id = ? AND status = 'publishing'
+             AND updated_at >= ?
+             AND NOT (publish_at IS NOT NULL AND dispatched_at IS NULL AND updated_at < ?)
+           LIMIT 1`,
+        )
+        .bind(tenantId, busySince, interrupted)
+        .first();
+      return { next: next ? toStoredDraft(next) : undefined, busy: !!busy };
+    },
+
     async claimDue(tenantId, draftId, now) {
+      const at = now.toISOString();
+      const interrupted = new Date(now.getTime() - queueInterruptedMs).toISOString();
       const result = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'publishing', updated_at = ?, version = version + 1
-           WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND publish_at <= ?`,
+           SET status = 'publishing', dispatched_at = NULL, updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND (
+             (status = 'scheduled' AND COALESCE(retry_at, publish_at) <= ?)
+             OR (status = 'publishing' AND publish_at IS NOT NULL AND dispatched_at IS NULL
+                 AND updated_at < ?))`,
         )
-        .bind(now.toISOString(), tenantId, draftId, now.toISOString())
+        .bind(at, tenantId, draftId, at, interrupted)
         .run();
       return result.meta.changes > 0 ? this.get(tenantId, draftId) : undefined;
     },
 
-    async requeueAfterFailure(tenantId, draftId, now, maxAttempts) {
+    async markDispatched(tenantId, draftId, version, now) {
+      await db
+        .prepare(
+          `UPDATE drafts SET dispatched_at = ?
+           WHERE tenant_id = ? AND id = ? AND version = ? AND status = 'publishing'`,
+        )
+        .bind(now.toISOString(), tenantId, draftId, version)
+        .run();
+    },
+
+    async requeueAfterFailure(tenantId, draftId, version, now, maxAttempts) {
+      // Guarded by the claim's version: a manual 🚀 that took over meanwhile
+      // bumped it, and its attempt is never touched here.
       const requeued = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'scheduled', queue_attempts = queue_attempts + 1, updated_at = ?,
-               version = version + 1
-           WHERE tenant_id = ? AND id = ? AND status = 'publishing'
+           SET status = 'scheduled', queue_attempts = queue_attempts + 1, retry_at = ?,
+               updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND version = ? AND status = 'publishing'
              AND publish_at IS NOT NULL AND queue_attempts + 1 < ?`,
         )
-        .bind(now.toISOString(), tenantId, draftId, maxAttempts)
+        .bind(
+          new Date(now.getTime() + queueRetryMs).toISOString(),
+          now.toISOString(),
+          tenantId,
+          draftId,
+          version,
+          maxAttempts,
+        )
         .run();
       if (requeued.meta.changes > 0) return 'requeued';
       const gaveUp = await db
         .prepare(
           `UPDATE drafts
-           SET status = 'ready', publish_at = NULL, queue_attempts = 0, updated_at = ?,
-               version = version + 1
-           WHERE tenant_id = ? AND id = ? AND status = 'publishing' AND publish_at IS NOT NULL`,
+           SET status = 'ready', updated_at = ?, version = version + 1, ${leaveQueue}
+           WHERE tenant_id = ? AND id = ? AND version = ? AND status = 'publishing'
+             AND publish_at IS NOT NULL`,
         )
-        .bind(now.toISOString(), tenantId, draftId)
+        .bind(now.toISOString(), tenantId, draftId, version)
         .run();
       return gaveUp.meta.changes > 0 ? 'gave-up' : 'missing';
     },

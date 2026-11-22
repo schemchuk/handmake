@@ -3215,7 +3215,13 @@ migrations: Volodymyr applies them before the bot deploy.
      `unschedule` (scheduled → ready) and `beginPublishing` allowed from `scheduled`. D1 migration
      `0025_release_queue.sql`: nullable `publish_at` and `queue_attempts` on drafts, index on
      `(state, publish_at)`. Retention never deletes a `scheduled` draft.
-  4. Cron (`*/15` tick, slots are on quarter hours): claim due drafts atomically
+  4. Cron (`*/15` tick, slots are on quarter hours), after the PR #187 review: at most one
+     dispatch per tenant and tick, and none while a publish run of the tenant is in flight (a
+     second dispatch would replace a pending run in the shared `publish` concurrency group);
+     one queued draft per slot (unique index); a claim never dispatched is reclaimed after
+     10 minutes (`dispatched_at`); a failure waits one tick (`retry_at`) and is guarded by the
+     claim's version, so a manual 🚀 that took over is never touched; a late success callback
+     also accepts a requeued draft; delete refuses `publishing`/`published` in SQL. Claim due drafts atomically
      (`scheduled` → `publishing` only if still scheduled), build the job exactly as the publish
      button does today, dispatch through `PublishRunner`. A failed dispatch returns the draft to
      `scheduled` with the same slot and retries next tick; after 3 failed ticks the author gets
@@ -3246,6 +3252,9 @@ migrations: Volodymyr applies them before the bot deploy.
      message «У черзі лишилась 1 робота (вийде …). Надішли наступну, коли буде готова.»; when the
      queue becomes empty, one message «Черга порожня: завтра нічого не вийде.»
   4. Bot texts in `texts.ts`, Ukrainian; no new secrets.
+  7. Review note from PR #187 (nit): a slot time that does not exist on the DST switch day
+     (e.g. 02:30 on the last Sunday of March) silently becomes 03:30; reject such times in the
+     schema or document the shift.
   6. Add the `releaseQueue` block to `config/tenants/faden-und-stimmung.yaml` (18:30, Tuesday
      19:30, `kinds: [work]`) only once the T76a Worker is deployed.
   5. `/work` while a work is queued starts a new work instead of reopening the queued one
