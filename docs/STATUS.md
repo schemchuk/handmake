@@ -6,7 +6,8 @@
   `delay: { minutes: 90 }` in the tenant YAML. First real delayed Threads run not observed yet.
 - **Branch:** `main`.
 - **Last commit:** config: delay Threads by 90 minutes (T77).
-- **Next step:** T78 (YouTube Shorts), then T79 (Pinterest). Watch the first queued work: the
+- **Next step:** T75c (cleanup waits out transient failures), then T78 (YouTube Shorts), then
+  T79 (Pinterest). Watch the first queued work: the
   other channels at the slot, Threads about 90 min later with «Threads: опубліковано».
   Optional: `queue - Черга публікацій` in the BotFather menu.
 - **Blocked on:** nothing.

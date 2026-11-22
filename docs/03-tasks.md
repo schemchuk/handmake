@@ -3190,6 +3190,29 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   skipped file → work retried next run with no GitHub requests beyond the SHA check, handled
   once the file is gone or closed; 24 h give-up; plural forms 1/2/5/11/21/22.
 
+### T75c — Cleanup: a failed ledger entry is not final while the bot retries (`reel`, F41, F42)
+- Status: planned (2026-11-22, after the T77 go-live). Do before T78.
+- Owner: claude-code · Reviewer: codex · Depends on: T77
+- Why: since T76a/T77 the bot re-runs publications by itself (a follow-up up to 3 times, a
+  queued work with no callback after 2 h), and T78/T79 add two more channels. A `failed` ledger
+  entry is now usually transient, but `discover` marks such a work handled at once, tells
+  «Публікація … з помилкою, папки не чищу» and never looks at it again, so a Threads hiccup at
+  20:00 that succeeds at 20:15 leaves a false alarm and uncleaned files. The author sends each
+  reel to the bot right away (Volodymyr, 2026-11-22), so the `mtime < date` rule stays.
+- Change (`apps/reel/src/cleanup.ts`):
+  1. A work with a `failed` entry (main or `-video` ledger) stays unhandled in a new state list
+     `waitingForRetry` (`id`, `date`, `video?`, `firstFailedAt`); each run with a new `main`
+     SHA re-reads its ledgers; once all `done` it goes the normal site-check/cleanup way.
+  2. Only after 24 h still failed: one notification «Публікація … з помилкою, папки не чищу»,
+     then handled. A work back to `pending` (a re-run in progress) keeps waiting, same 24 h.
+  3. Channels stay generic: any key in the ledger counts, so YouTube (T78) and Pinterest (T79)
+     need no change here. A Pinterest entry `pending` until the next morning only delays the
+     cleanup of that work's files; files made after its `date` are never touched.
+  4. State stays backwards compatible (missing `waitingForRetry` = empty).
+- Tests (`--maxWorkers=2`): failed then done on a later SHA → cleaned, no error notice; failed
+  for 24 h → one notice, handled; failed → pending → done; unchanged SHA with retries waiting
+  makes only the SHA request; old state file without the new list loads.
+
 ## Release schedule (spec v13, F42-F44, planned 2026-11-22)
 
 Order: T76a → T76b → T77 → T78 → T79 (T76c dropped). Owner `claude-code` on Volodymyr's word (2026-11-22: tasks
@@ -3366,6 +3389,10 @@ migrations: Volodymyr applies them before the bot deploy.
      `https://www.googleapis.com/auth/youtube.upload`, prints the refresh token once to the
      terminal, never writes it to disk.
   4. Disabled until the secrets exist: a missing secret skips the channel with one log line.
+     The skip must not leave a `pending` ledger entry: the first-run callback needs every run
+     channel `done`, and T75 cleanup waits on any `pending` entry, so a pending skip would keep
+     the draft `publishing` and the reel folders uncleaned. Keep a skipped channel out of
+     `post.channels` (no ledger entry), as for works without video.
 - Acceptance: with mocked Google endpoints a work with video yields one public upload and a
   `done` ledger entry; a rerun does not upload again; a work without video is not sent.
 - Tests: token refresh, resumable upload incl. 308 resume, metadata limits, idempotent rerun,
@@ -3387,7 +3414,8 @@ migrations: Volodymyr applies them before the bot deploy.
      `PINTEREST_REFRESH_TOKEN`, `PINTEREST_BOARD_ID`; the access token is refreshed per run. If
      Pinterest returns a new refresh token, store it with `SECRETS_WRITE_TOKEN` as in T26d.
      Workflow change: Volodymyr's OK before merge.
-  3. Skipped with one log line while secrets are missing.
+  3. Skipped with one log line while secrets are missing, with no ledger entry and no
+     follow-up row (same reason as T78 item 4: a `pending` entry blocks T75 cleanup).
 - Acceptance: with mocked endpoints a work with video yields a video Pin with cover and link, a
   photo-only work an image Pin; rerun never pins twice; a media upload that never succeeds fails
   the channel with a readable error after a bounded wait.
