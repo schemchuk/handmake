@@ -205,7 +205,7 @@ export function renderArgs(
     output,
   ];
 }
-export async function processReel(options: Options) {
+export async function processReel(options: Options, chooseLength?: (duration: number) => number) {
   const input = resolve(options.input),
     out = resolve(options.out);
   if (input === out || (options.music && resolve(options.music) === out))
@@ -228,6 +228,7 @@ export async function processReel(options: Options) {
     );
   }
   const info = await probe(input);
+  if (chooseLength) options = { ...options, length: chooseLength(info.duration) };
   const analysis = await run('ffmpeg', [
     '-hide_banner',
     '-nostdin',

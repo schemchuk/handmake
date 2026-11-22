@@ -44,3 +44,25 @@ the tool cannot distinguish machine sound from voices, radio or TV. Listen befor
 Checks: `pnpm --filter @handmake/reel test --maxWorkers=2` and
 `pnpm --filter @handmake/reel typecheck`. The integration test generates its own short clip
 and skips with a message if system ffmpeg/ffprobe are unavailable.
+
+## Watch a folder
+
+Run `pnpm reel:watch ~/Desktop/temp/videos` from the repository root to scan the folder
+every 10 seconds. The watcher processes stable MP4 and MOV files, oldest first, and
+saves `<name>-reel.mp4` beside each source, using its name without the extension.
+The body is 30 seconds or the source duration rounded down, with a 2.5-second end card.
+Sources shorter than five seconds fail. Watch and listen to each reel before sending it.
+
+To start the watcher automatically with your user session, create the video folder
+and install the systemd user unit from the repository root.
+
+```sh
+mkdir -p ~/Desktop/temp/videos ~/.config/systemd/user
+cp apps/reel/systemd/handmake-reel-watch.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now handmake-reel-watch
+journalctl --user -u handmake-reel-watch
+```
+
+Read `<name>.reel-error.txt` for the reason a file failed. Fix the cause and delete the
+error file to retry. For a finale, `--audio-from`, or music, run `pnpm reel` manually.
