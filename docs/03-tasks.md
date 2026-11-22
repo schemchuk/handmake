@@ -3259,7 +3259,7 @@ migrations: Volodymyr applies them before the bot deploy.
   two manual 🚀 presses within one run stays as before T76a.
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
-- Status: in review (Codex: 6 rounds, last with no blocking findings).
+- Status: done (PR #189, `7f7955b`; Codex: 6 rounds); migration 0026 and bot deploy pending.
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. For kinds in `releaseQueue.kinds`, the final publish confirmation (after the people
