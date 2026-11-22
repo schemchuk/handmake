@@ -25,7 +25,8 @@ import { createPollOpeningStore } from './poll-opening-store';
 import { AuthorEntrySource, createContestEntryStore } from './contest-store';
 import { createTenantLookup, parseAllowList } from './allow-list';
 import type { TenantLookup } from './allow-list';
-import { createBot } from './bot';
+import { createBot, publishJobOf } from './bot';
+import { runReleaseQueueCron } from './release-queue';
 import type { AppContext } from './context';
 import { runCommentCollect } from './comment-collect';
 import { commentRetentionDays, createCommentStore } from './comment-store';
@@ -385,6 +386,27 @@ export function createApp(env: Env, texts: BotTexts, executionCtx?: ExecutionCon
         });
       } catch (error) {
         logError('announcement cron failed', error, tenantId);
+      }
+      // F42: due works from the release queue; its own try block, so a
+      // failure here never blocks the crons below.
+      try {
+        // Wall clock, not scheduledTime: a late tick must not write claims
+        // that already look stale to the publish button's reclaim.
+        await runReleaseQueueCron(new Date(), {
+          drafts,
+          runner: createGitHubActionsRunner({
+            repo: env.GITHUB_REPO,
+            token: env.GITHUB_DISPATCH_TOKEN,
+            live: env.PUBLISH_LIVE === 'true',
+          }),
+          buildJob: publishJobOf,
+          tenantConfigs,
+          allowList: parseAllowList(env.TELEGRAM_ALLOWED_USER_IDS),
+          notify: (chat, text) => this.bot.api.sendMessage(chat, text),
+          texts,
+        });
+      } catch (error) {
+        logError('release queue cron failed', error, tenantId);
       }
       try {
         await runPollCron(new Date(event.scheduledTime), {

@@ -94,7 +94,7 @@ export function zonedTimeToUtc(wall: Date, timeZone: string): Date {
 
 /** Y/M/D of `instant` in `timeZone`, returned as a Date whose UTC fields
  * carry them (a "local date" for iteration only — not an instant). */
-function wallDay(instant: Date, timeZone: string): Date {
+export function wallDay(instant: Date, timeZone: string): Date {
   const dtf = new Intl.DateTimeFormat('en-US', {
     timeZone,
     year: 'numeric',
@@ -112,7 +112,7 @@ function wallDay(instant: Date, timeZone: string): Date {
   );
 }
 
-function addDays(day: Date, days: number): Date {
+export function addDays(day: Date, days: number): Date {
   return new Date(day.getTime() + days * 24 * 60 * 60 * 1000);
 }
 

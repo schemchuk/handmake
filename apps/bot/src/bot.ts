@@ -167,7 +167,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       await ctx.reply(texts.draftFinishedText);
       return;
     }
-    await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId);
+    if (!(await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId))) {
+      // The release queue claimed it between the read and the delete.
+      await ctx.reply(texts.draftBusyText);
+      return;
+    }
     const session = await sessionOf(ctx);
     await setSession(ctx, { kind: session.kind, draftId: null });
     await ctx.reply(texts.discardDoneText);
@@ -377,7 +381,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         await ctx.reply(texts.draftBusyText);
         return;
       }
-      await ctx.drafts.delete(ctx.tenantId, draftId);
+      if (!(await ctx.drafts.delete(ctx.tenantId, draftId))) {
+        // The release queue claimed it between the read and the delete.
+        await ctx.reply(texts.draftBusyText);
+        return;
+      }
       // Drop the session pointer if it aimed at the draft just deleted.
       const session = await sessionOf(ctx);
       if (session.draftId === draftId) {
@@ -776,7 +784,7 @@ function publishingStaleCutoff(now: Date): Date {
 
 /** Builds the dispatch job from the claimed draft; 'uk' stays the first key
  * so renderTelegram keeps Ukrainian as the album-caption language. */
-function publishJobOf(draft: Draft): PublishJob {
+export function publishJobOf(draft: Draft): PublishJob {
   if (draft.kind === 'work') return buildApprovedWorkJob(draft);
   if (draft.kind === 'show') throw new Error('show approval requires the T44e session');
   const texts: Record<string, string> = {};
