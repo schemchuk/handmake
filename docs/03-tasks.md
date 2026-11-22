@@ -3300,7 +3300,7 @@ migrations: Volodymyr applies them before the bot deploy.
   callback, reminder once, posts and shows still publish at once.
 
 ### T77 — Delayed channels: Threads +90 min, Pinterest next morning (`core`, `bot`, `publisher`, F42)
-- Status: in review (branch `feat/T77-delayed-channels`). Migration is `0027_channel_followups.sql`
+- Status: done (PR #190, `7d03ae8`; Codex: 2 rounds). Migration is `0027_channel_followups.sql`
   (0026 went to the T76b dispatch lock). After merge: Volodymyr applies 0027, the Worker is
   deployed, and only then `delay: { minutes: 90 }` goes into `channels.threads` of the tenant
   YAML (the deployed Worker and publisher read the YAML from `main` with a strict schema).
