@@ -5,8 +5,9 @@
 - **Branch:** `main`.
 - **Last commit:** feat(reel): manual inbox with rotating CC0 music (T74) (#184).
 - **Next step:** none. `handmake-reel-watch` reinstalled and restarted 2026-11-22: watches
-  `~/Desktop/Ролики` → `~/Desktop/Готові рілси` with music from `~/Music/рілси`. First real
-  reel from the new inbox still to confirm.
+  `~/Desktop/Ролики` → `~/Desktop/Готові рілси` with music from `~/Music/рілси`. KDE Connect
+  now saves phone transfers straight into `~/Desktop/Ролики` (Volodymyr 2026-11-22);
+  `temp/videos` retired. First real reel from the new inbox still to confirm.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
