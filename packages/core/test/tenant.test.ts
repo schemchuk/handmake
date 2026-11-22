@@ -68,11 +68,7 @@ describe('parseTenantConfig', () => {
   });
 
   it('accepts a channel delay in minutes or as next-day wall time (T77)', () => {
-    const yaml = realConfig().replace(
-      'threads:\n    language: de\n',
-      'threads:\n    language: de\n    delay:\n      minutes: 90\n',
-    );
-    const config = parseTenantConfig(yaml);
+    const config = parseTenantConfig(realConfig());
     expect(channelDelay(config, 'threads')).toEqual({ minutes: 90 });
     expect(channelDelay(config, 'telegram')).toBeUndefined();
     expect(channelDelay(config, 'pinterest')).toBeUndefined();
@@ -113,7 +109,7 @@ describe('parseTenantConfig', () => {
       joinUrl: 'https://t.me/Faden_und_Stimmung',
     });
     expect(config.channels.facebook).toEqual({ language: 'de' });
-    expect(config.channels.threads).toEqual({ language: 'de' });
+    expect(config.channels.threads).toEqual({ language: 'de', delay: { minutes: 90 } });
     expect(Object.keys(config.channels)).toEqual(['telegram', 'instagram', 'facebook', 'threads']);
     expect(config.offerings).toEqual([]);
   });
