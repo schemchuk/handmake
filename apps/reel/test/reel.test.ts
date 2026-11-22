@@ -224,12 +224,15 @@ describe('options and filters', () => {
     expect(filter).toContain('amix=');
     expect(filter).not.toContain('atempo');
     opts.musicOnly = true;
-    expect(
-      renderArgs('in', 'out', makePlan(100, [], [], opts), opts, true, 720, {
-        width: 1080,
-        height: 1920,
-      }).join(' '),
-    ).toContain('[extended]anullsink');
+    const musicOnly = renderArgs('in', 'out', makePlan(100, [], [], opts), opts, true, 720, {
+      width: 1080,
+      height: 1920,
+    });
+    const musicFilter = musicOnly[musicOnly.indexOf('-filter_complex') + 1];
+    expect(musicOnly).toContain('-stream_loop');
+    expect(musicFilter).toContain('[1:a:0]atrim=duration=');
+    expect(musicFilter).toContain('loudnorm=I=-16:TP=-1.5:LRA=11');
+    expect(musicFilter).not.toMatch(/\[0:a:|amix|\[fa\]/);
   });
 });
 let available = true;

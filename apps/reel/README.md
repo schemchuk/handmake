@@ -47,9 +47,25 @@ and skips with a message if system ffmpeg/ffprobe are unavailable.
 
 ## Watch a folder
 
-Run `pnpm reel:watch ~/Desktop/temp/videos` from the repository root to scan the folder
-every 10 seconds. The watcher processes stable MP4 and MOV files, oldest first, and
-saves `<name>-reel.mp4` beside each source, using its name without the extension.
+Copy an MP4 or MOV by hand from the phone transfer folder (`~/Desktop/temp/videos`)
+into `~/Desktop/Ролики`. The watcher scans the inbox every 10 seconds, oldest stable
+video first. It ignores other file types and subfolders. It saves the reel in
+`~/Desktop/Готові рілси` as `<stem>-reel.mp4`, adding `-2`, `-3`, and so on when
+needed. After rendering and logging the music credit, it sends the inbox copy to the
+desktop Trash with `gio trash`. If Trash is unavailable, it moves the copy into
+`Ролики/оброблені/`. The phone transfer folder stays untouched.
+
+Run from the repository root to start the inbox watcher manually.
+
+```sh
+pnpm reel:watch ~/Desktop/Ролики --out-dir "$HOME/Desktop/Готові рілси" \
+  --trash-source --music-dir ~/Music/рілси
+```
+
+A bare `pnpm reel:watch <dir>` keeps the source and writes the reel beside it.
+With a separate output folder and no `--trash-source`, retained sources can render
+again after a restart. Use `--interval <seconds>` to change the scan interval.
+
 The body is 30 seconds or the source duration rounded down, with a 2.5-second end card.
 Sources shorter than five seconds fail. Watch and listen to each reel before sending it.
 
@@ -63,10 +79,11 @@ To start the watcher automatically with your user session, create the video fold
 and install the systemd user unit from the repository root.
 
 ```sh
-mkdir -p ~/Desktop/temp/videos ~/.config/systemd/user
+mkdir -p ~/Desktop/Ролики ~/.config/systemd/user
 cp apps/reel/systemd/handmake-reel-watch.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now handmake-reel-watch
+systemctl --user enable handmake-reel-watch
+systemctl --user restart handmake-reel-watch
 journalctl --user -u handmake-reel-watch
 ```
 
@@ -75,3 +92,24 @@ records the failure only after the source has stayed unchanged and closed for te
 minutes. Without `fuser`, it can only check that the source stays unchanged.
 Read `<name>.reel-error.txt` for the reason a file failed. Fix the cause and delete the
 error file to retry. For a finale, `--audio-from`, or music, run `pnpm reel` manually.
+
+### Music library
+
+Keep verified CC0 tracks in the top level of `~/Music/рілси/` as MP3, M4A, OGG,
+FLAC or WAV. Add one row per track to the UTF-8 `ліцензії.csv` with this header.
+
+```csv
+file,title,creator,license,license_url,source,page,downloaded,verified_on_page
+```
+
+Use the exact filename, the track title and creator, a CC0 license label (for example,
+`CC0 1.0`), and the track's source page. Quote fields containing commas, quotes or
+newlines, doubling any quotes inside them. Tracks without a complete CC0 entry are
+skipped. An empty eligible library produces an error beside the source.
+
+Music replaces the recording sound throughout the reel and loops under the end card.
+The watcher picks each track once per round and avoids repeating the last track at
+a round boundary when at least two tracks are available. It saves rotation in
+`~/.local/state/handmake-reel/music-rotation.json` and appends the license evidence to
+`~/.local/state/handmake-reel/music-log.csv` (date, input, output, track, title, creator,
+license and page). The desktop notification includes the track title.

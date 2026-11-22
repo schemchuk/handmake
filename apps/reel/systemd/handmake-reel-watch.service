@@ -4,7 +4,7 @@ StartLimitIntervalSec=0
 
 [Service]
 WorkingDirectory=%h/VS_Code_projects/handmake
-ExecStart=/usr/bin/node apps/reel/src/watch.ts %h/Desktop/temp/videos
+ExecStart=/usr/bin/node apps/reel/src/watch.ts %h/Desktop/Ролики --out-dir "%h/Desktop/Готові рілси" --trash-source --music-dir %h/Music/рілси
 Restart=on-failure
 RestartSec=10
 Nice=10
