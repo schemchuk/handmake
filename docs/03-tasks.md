@@ -3276,6 +3276,11 @@ migrations: Volodymyr applies them before the bot deploy.
      message «У черзі лишилась 1 робота (вийде …). Надішли наступну, коли буде готова.»; when the
      queue becomes empty, one message «Черга порожня: завтра нічого не вийде.»
   4. Bot texts in `texts.ts`, Ukrainian; no new secrets.
+  8. Review notes from PR #187 (third round, nits): the "one dispatch per tick" claim does not
+     hold when a re-executed tick finds A already published and takes B; reword the T76a note
+     or key the tick. Two concurrent deletes (or a callback in between) make the bot answer
+     «busy» although the draft is gone or published; re-read the draft after a refused delete
+     and answer by its real state.
   7. Review note from PR #187 (nit): a slot time that does not exist on the DST switch day
      (e.g. 02:30 on the last Sunday of March) silently becomes 03:30; reject such times in the
      schema or document the shift.
