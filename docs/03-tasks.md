@@ -3122,7 +3122,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   render args are music-only with `--music-dir`; log row content.
 
 ### T75 — Clean the reel folders after a work is published (`reel`, F41)
-- Status: todo.
+- Status: done (PR #185, `7be9d7f`).
 - Owner: codex · Reviewer: claude-code · Depends on: T74
 - Why: Volodymyr 2026-11-22. Phone files land in `~/Desktop/Ролики`, reels in
   `~/Desktop/Готові рілси` (T74). Once a work is live everywhere, both folders should empty
@@ -3168,7 +3168,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   first-run baseline; error paths leave files in place.
 
 ### T75b — Cleanup: ignore the document portal and retry skipped files (`reel`, F41)
-- Status: todo.
+- Status: done (PR #186).
 - Owner: codex · Reviewer: claude-code · Depends on: T75
 - Why: first live run 2026-11-22 13:45 trashed the three photos but skipped
   `IMG_0421-reel.mp4`: `fuser` showed it open by `xdg-document-portal` (the reel had been shared

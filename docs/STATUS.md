@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T75b (cleanup: ignore the document portal, retry skipped files). T75 merged as PR #185 (`7be9d7f`).
-- **Branch:** `feat/T75b-cleanup-retry`.
-- **Last commit:** feat(reel): clean reel folders after publication (T75) (#185).
-- **Next step:** T75b for codex. `handmake-reel-cleanup.timer` installed and enabled 2026-11-22
-  (every 5 min); first live run trashed 3 photos for work `01M81F9X…`, the reel was held by
-  `xdg-document-portal` and trashed by hand. KDE Connect saves phone transfers straight into
-  `~/Desktop/Ролики`; `temp/videos` retired.
+- **Active agent:** none.
+- **Current task:** none. T75b merged as PR #186 (`a9e0aea`); T75 as PR #185 (`7be9d7f`).
+- **Branch:** `main`.
+- **Last commit:** fix(reel): retry cleanup of open files, ignore doc portal (T75b) (#186).
+- **Next step:** none. `handmake-reel-cleanup.timer` (every 5 min) empties `~/Desktop/Ролики` and
+  `~/Desktop/Готові рілси` to the Trash once a work is published everywhere; runs from the repo, no
+  reinstall needed for T75b. KDE Connect saves phone transfers straight into `Ролики`. Next real
+  work will confirm the full cycle.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
