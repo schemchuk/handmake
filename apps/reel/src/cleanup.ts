@@ -24,7 +24,8 @@ const commitSha = /^[a-f0-9]{40}$/;
 
 type Work = { id: string; date: number; video?: string };
 type CleanupRetry = Work & { firstSkippedAt: number };
-type FailedRetry = Work & { firstFailedAt: number };
+// lastStatus is the latest ledger status seen; only a still-failed work times out.
+type FailedRetry = Work & { firstFailedAt: number; lastStatus?: 'failed' | 'pending' };
 type Status = 'done' | 'pending' | 'failed';
 type State = {
   sha: string;
@@ -84,6 +85,9 @@ function isFailedRetry(value: unknown): value is FailedRetry {
     record(value) &&
     typeof value.firstFailedAt === 'number' &&
     Number.isFinite(value.firstFailedAt) &&
+    (value.lastStatus === undefined ||
+      value.lastStatus === 'failed' ||
+      value.lastStatus === 'pending') &&
     isWork(value)
   );
 }
@@ -382,20 +386,23 @@ export async function runCleanup(
       : {
           candidates: previous!.waitingForSite,
           failed: [],
-          retried: failedRetries.map((work) => ({ work, status: 'pending' as const })),
+          retried: failedRetries.map((work) => ({ work, status: work.lastStatus ?? 'failed' })),
         };
 
     // A failed ledger entry is final only after 24 h: the bot re-runs publications itself.
+    // A re-run still pending at that point keeps waiting until it ends.
     const failures: string[] = [];
     const waitingForRetry: FailedRetry[] = failed.map((work) => ({
       ...work,
       firstFailedAt: runAt,
+      lastStatus: 'failed',
     }));
     const fresh = [...candidates];
     for (const { work, status } of retried) {
       if (status === 'gone') handled.add(work.id);
       else if (status === 'done') fresh.push(toWork(work));
-      else if (runAt - work.firstFailedAt < dayMs) waitingForRetry.push(work);
+      else if (status === 'pending' || runAt - work.firstFailedAt < dayMs)
+        waitingForRetry.push({ ...work, lastStatus: status });
       else {
         handled.add(work.id);
         failures.push(`Публікація ${work.id} з помилкою, папки не чищу`);

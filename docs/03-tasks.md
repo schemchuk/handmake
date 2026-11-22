@@ -3204,7 +3204,8 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
      `waitingForRetry` (`id`, `date`, `video?`, `firstFailedAt`); each run with a new `main`
      SHA re-reads its ledgers; once all `done` it goes the normal site-check/cleanup way.
   2. Only after 24 h still failed: one notification «Публікація … з помилкою, папки не чищу»,
-     then handled. A work back to `pending` (a re-run in progress) keeps waiting, same 24 h.
+     then handled. A work back to `pending` (a re-run in progress) keeps waiting, even past
+     24 h; the clock still counts from the first failure, so a failure after 24 h alerts at once.
   3. Channels stay generic: any key in the ledger counts, so YouTube (T78) and Pinterest (T79)
      need no change here. A Pinterest entry `pending` until the next morning only delays the
      cleanup of that work's files; files made after its `date` are never touched.

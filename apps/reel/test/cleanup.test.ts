@@ -314,6 +314,28 @@ it('keeps the first failure time while a re-run is pending, then cleans when don
   expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 1 файл.`);
 });
 
+it('keeps waiting past 24 hours while a re-run is pending, then reports a new failure', async () => {
+  const f = fixture();
+  f.resources.set(ledger, statuses('failed'));
+  await put(inbox, 'older.mov');
+  await f.run();
+  f.setCommit(newSha('b'));
+  f.resources.set(ledger, statuses('pending'));
+  await f.run(() => now() + day + 1);
+  f.setCommit(new Response(null, { status: 304 }));
+  await f.run(() => now() + day + 2);
+  expect(f.notify).not.toHaveBeenCalled();
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [],
+    waitingForRetry: [{ id, firstFailedAt: now(), lastStatus: 'pending' }],
+  });
+  f.setCommit(newSha('c'));
+  f.resources.set(ledger, statuses('failed'));
+  await f.run(() => now() + day + 3);
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Публікація ${id} з помилкою, папки не чищу`);
+});
+
 it('makes only the SHA request on unchanged main while a failed work waits', async () => {
   const f = fixture();
   f.resources.set(ledger, statuses('failed'));
