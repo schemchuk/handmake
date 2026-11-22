@@ -87,6 +87,13 @@ describe('parseTenantConfig', () => {
     }
   });
 
+  it('accepts YouTube without a delay only (T78)', () => {
+    expect(channelsSchema.safeParse({ youtube: { language: 'de' } }).success).toBe(true);
+    expect(
+      channelsSchema.safeParse({ youtube: { language: 'de', delay: { minutes: 90 } } }).success,
+    ).toBe(false);
+  });
+
   it('rejects differing site and channel subscription URLs', () => {
     const yaml = realConfig().replace(
       'joinUrl: https://t.me/Faden_und_Stimmung',

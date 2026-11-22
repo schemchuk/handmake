@@ -8,9 +8,9 @@
 - **Last commit:** feat(channels): add YouTube Shorts channel (T78).
 - **Next step:** Codex review of the T78 PR; merge needs Volodymyr's OK (workflow and secret
   handling). After merge: bot deploy, then `channels.youtube: { language: de }` in the tenant
-  YAML (separate commit), and H21 before the first live YouTube run. Then T79 (Pinterest).
+  YAML (separate commit); H21 and the YouTube API audit (H19b) before the first live run. Then T79 (Pinterest).
   Watch the first queued work: Threads about 90 min after the slot.
-- **Blocked on:** Volodymyr's OK for the merge; H21 for go-live.
+- **Blocked on:** Volodymyr's OK for the merge; H21 and the YouTube API audit for go-live.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,

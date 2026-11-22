@@ -184,6 +184,15 @@ describe('YouTube Shorts (T78)', () => {
     expect(logs).toContain('channel youtube: skipped (no video)');
   });
 
+  it('a YouTube render failure still lets the other channels post the video', async () => {
+    current.work!.versions.de.description = `Schal\n${'ü'.repeat(2600)}`;
+    current.texts.de = current.work!.versions.de.description;
+    await expect(run()).rejects.toThrow(/youtube.*render failed/);
+    expect((await store.readLedger(tenantId, `${id}-video`))?.channels.telegram?.status).toBe(
+      'done',
+    );
+  });
+
   it('a YouTube failure still lets the other channels post the video', async () => {
     await expect(run({ fetchImpl: google(true) })).rejects.toThrow(/quotaExceeded/);
     const ledger = await store.readLedger(tenantId, id);

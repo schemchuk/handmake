@@ -48,6 +48,10 @@ export interface YoutubeAdapterOptions {
 }
 
 class Transient extends Error {}
+interface UploadedVideo {
+  id: string;
+  privacy?: string;
+}
 
 /**
  * F43 Shorts upload over the YouTube Data API v3 resumable protocol. One
@@ -98,9 +102,15 @@ export class YoutubeAdapter implements ChannelAdapter {
       const session = await this.#retry(() =>
         this.#startUpload(token, video.length, metadata, language),
       );
-      const id = await this.#upload(session, video);
+      const { id, privacy } = await this.#upload(session, video);
       ids.push(id);
+      // Record the id first: a retry must never upload the same work again.
       await progress?.onDelivered(start + index, id);
+      // Google keeps uploads from an unaudited API project private, whatever we ask for.
+      if (privacy !== undefined && privacy !== 'public')
+        throw new YoutubeAdapterError(
+          `YouTube kept the video ${privacy}; the API project needs the YouTube audit`,
+        );
     }
     return ids;
   }
@@ -172,7 +182,7 @@ export class YoutubeAdapter implements ChannelAdapter {
   }
 
   /** Sends the rest of the file; after a dropped connection asks how much arrived. */
-  async #upload(session: string, video: Uint8Array): Promise<string> {
+  async #upload(session: string, video: Uint8Array): Promise<UploadedVideo> {
     const total = video.length;
     let offset = 0;
     for (let resume = 0; ; resume++) {
@@ -213,11 +223,16 @@ export class YoutubeAdapter implements ChannelAdapter {
     }
   }
 
-  async #videoId(response: Response): Promise<string> {
-    const json = (await response.json().catch(() => undefined)) as { id?: unknown } | undefined;
+  async #videoId(response: Response): Promise<UploadedVideo> {
+    const json = (await response.json().catch(() => undefined)) as
+      { id?: unknown; status?: { privacyStatus?: unknown } } | undefined;
     if (typeof json?.id !== 'string' || !/^[\w-]{6,20}$/.test(json.id))
       throw new YoutubeAdapterError('YouTube returned a malformed video id');
-    return json.id;
+    const privacy = json.status?.privacyStatus;
+    return {
+      id: json.id,
+      ...(typeof privacy === 'string' && /^\w{1,16}$/.test(privacy) && { privacy }),
+    };
   }
 
   /** Readable, bounded failure: only Google's error reason keyword is kept. */

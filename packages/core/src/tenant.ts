@@ -93,10 +93,9 @@ export const channelsSchema = z
       .strict()
       .optional(),
     // F43: Shorts for works with a video only; other content never goes here.
-    youtube: z
-      .object({ language: languageCodeSchema, delay: channelDelaySchema.optional() })
-      .strict()
-      .optional(),
+    // No delay: the publisher decides per work whether YouTube runs (T78), and a
+    // delayed follow-up the bot plans for a skipped channel would never close.
+    youtube: z.object({ language: languageCodeSchema }).strict().optional(),
   })
   .strict()
   .refine((channels) => Object.keys(channels).length > 0, 'at least one channel must be enabled');

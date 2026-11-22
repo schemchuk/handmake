@@ -137,6 +137,25 @@ describe('YoutubeAdapter', () => {
     expect((calls[2]!.init.body as Uint8Array).length).toBe(1000);
   });
 
+  it('records the id but fails when YouTube keeps the video private', async () => {
+    const { adapter } = fake([
+      token(),
+      started(),
+      json({ id: 'abcdef12345', status: { privacyStatus: 'private' } }),
+    ]);
+    const delivered: RemoteId[] = [];
+    await expect(
+      adapter.deliver([op], context(), {
+        startAt: 0,
+        knownIds: [],
+        onDelivered: (_index, id) => {
+          delivered.push(id);
+        },
+      }),
+    ).rejects.toThrow('YouTube kept the video private; the API project needs the YouTube audit');
+    expect(delivered).toEqual(['abcdef12345']);
+  });
+
   it('resumes after a dropped connection from the byte YouTube reports', async () => {
     const { adapter, calls } = fake([
       token(),

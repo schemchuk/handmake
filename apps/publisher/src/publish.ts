@@ -403,7 +403,9 @@ export async function runPublish(
       ledger = markFailed(ledger, channel, message, now);
       await persistLedger();
       await notify('operator', `publish render failed on ${channel}: ${message}`);
-      failures.push(`channel "${channel}" render failed: ${message}`);
+      (channel === 'youtube' ? lateFailures : failures).push(
+        `channel "${channel}" render failed: ${message}`,
+      );
       continue;
     }
     if (channel === 'threads' && workVideo) {

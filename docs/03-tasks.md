@@ -3376,6 +3376,13 @@ migrations: Volodymyr applies them before the bot deploy.
 - Status: in review (branch `feat/T78-youtube-shorts`). Go-live after merge: bot deploy (the
   Worker reads the tenant YAML with a strict schema), then `channels.youtube: { language: de }`
   in the tenant YAML, and H21 (Datenschutz with the YouTube module) before the first live run.
+  Also H19b: Google keeps `videos.insert` uploads of an unaudited API project (created after
+  2020-07-28) private whatever the request says; the adapter records the id, then fails with
+  «the API project needs the YouTube audit». Volodymyr files the YouTube API Services audit
+  form for `faden-und-stimmung-youtube` before enabling the channel.
+- Known limit (Codex review, PR #193): a CI kill between YouTube accepting the last byte and
+  the ledger write can upload twice on rerun, the same one-op window as every channel. The
+  session URL is a bearer upload capability, so it is never stored in the public ledger.
 - As built: the secrets reach only live runs (`publish.yml`), since YouTube has no test channel;
   a test run skips YouTube with one log line. A YouTube failure is reported after the TG/IG/FB
   video step, so it never holds back their Reels. On a retry the first run's ledger decides
