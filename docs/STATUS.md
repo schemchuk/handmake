@@ -5,10 +5,12 @@
   (core schema knows `channels.youtube`). YouTube stays off: the tenant YAML has no `youtube` key.
 - **Branch:** `main`.
 - **Last commit:** docs: record T78 merge.
-- **Next step:** after the YouTube API audit (H19b, form
-  https://support.google.com/youtube/contact/yt_api_form, filed by Volodymyr) and H21: add
-  `youtube: { language: de }` after `facebook` in `config/tenants/faden-und-stimmung.yaml`.
-  Meanwhile T79 (Pinterest). Watch the first queued work: Threads about 90 min after the slot.
+- **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
+  View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
+  (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
+  answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
+  (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
+  in the tenant YAML. Meanwhile T79 (Pinterest).
 - **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
   (`6ecc3d2`), site redeployed; footer links the YouTube channel.
 - **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console
