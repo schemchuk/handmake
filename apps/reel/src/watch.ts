@@ -1,13 +1,37 @@
 import { execFile } from 'node:child_process';
-import { link, lstat, mkdtemp, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import {
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { processReel } from './media.ts';
+import { processReel, UnreadableInputError } from './media.ts';
 import { parseOptions } from './plan.ts';
 
-type FileState = { name: string; size: number; mtimeMs: number };
+type FileState = {
+  name: string;
+  size: number;
+  mtimeMs: number;
+  ctimeMs: number;
+  ino: number;
+  dev: number;
+};
+type Observation = { unchangedSince: number; closedSince?: number };
+type CheckOpen = (file: string) => Promise<boolean | undefined>;
+class LiveWatcherError extends Error {}
+const fallbackStabilityMs = 60_000;
+const unreadableGraceMs = 600_000;
 type Scan = { names: Set<string>; files: Map<string, FileState> };
 const exec = promisify(execFile);
 
@@ -16,15 +40,25 @@ function reelPaths(name: string) {
   return { output: `${stem}-reel.mp4`, error: `${stem}.reel-error.txt` };
 }
 
+function sameFile(a: Omit<FileState, 'name'> | undefined, b: FileState) {
+  return (
+    a?.size === b.size &&
+    a.mtimeMs === b.mtimeMs &&
+    a.ctimeMs === b.ctimeMs &&
+    a.ino === b.ino &&
+    a.dev === b.dev
+  );
+}
+
 export function selectReady(previous: Scan, current: Scan) {
   return [...current.files.values()]
-    .filter(({ name, size, mtimeMs }) => {
+    .filter((file) => {
+      const { name } = file;
       if (name.startsWith('.') || !/\.(mp4|mov)$/i.test(name) || /-reel\.mp4$/i.test(name))
         return false;
       const paths = reelPaths(name);
       if (current.names.has(paths.output) || current.names.has(paths.error)) return false;
-      const last = previous.files.get(name);
-      return last?.size === size && last.mtimeMs === mtimeMs;
+      return sameFile(previous.files.get(name), file);
     })
     .sort((a, b) => a.mtimeMs - b.mtimeMs);
 }
@@ -45,10 +79,12 @@ async function scan(dir: string): Promise<Scan> {
   for (const entry of entries) {
     if (!entry.isFile()) continue;
     const state = await lstat(join(dir, entry.name)).catch((error: unknown) => {
-      if (!isMissing(error)) throw error;
+      if (!isMissing(error)) console.error(`${entry.name}: ${errorMessage(error)}`);
     });
-    if (state?.isFile())
-      files.set(entry.name, { name: entry.name, size: state.size, mtimeMs: state.mtimeMs });
+    if (state?.isFile()) {
+      const { size, mtimeMs, ctimeMs, ino, dev } = state;
+      files.set(entry.name, { name: entry.name, size, mtimeMs, ctimeMs, ino, dev });
+    }
   }
   return { names: new Set(entries.map(({ name }) => name)), files };
 }
@@ -76,12 +112,18 @@ async function lockOwner(lock: string) {
   }
 }
 
+async function removeLock(lock: string) {
+  await unlink(lock).catch((error: unknown) => {
+    if (!isMissing(error)) throw error;
+  });
+}
+
 async function claimLock(lock: string, claim: string, dir: string, recovery = false) {
   for (;;) {
     try {
       // Publish a complete PID atomically, even when two watchers start together.
       await link(claim, lock);
-      return async () => unlink(lock);
+      return async () => removeLock(lock);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
     }
@@ -89,7 +131,8 @@ async function claimLock(lock: string, claim: string, dir: string, recovery = fa
     const pid = await lockOwner(lock);
     if (pid === undefined) continue;
     if (isLive(pid)) {
-      if (!recovery) throw new Error(`Reel watcher already running for ${dir} (PID ${pid})`);
+      if (!recovery)
+        throw new LiveWatcherError(`Reel watcher already running for ${dir} (PID ${pid})`);
       await setTimeout(10);
       continue;
     }
@@ -99,16 +142,30 @@ async function claimLock(lock: string, claim: string, dir: string, recovery = fa
     const releaseGuard = await claimLock(`${lock}.recovery`, claim, dir, true);
     try {
       const owner = await lockOwner(lock);
-      if (owner !== undefined && !isLive(owner)) await unlink(lock);
+      if (owner !== undefined && !isLive(owner)) await removeLock(lock);
     } finally {
       await releaseGuard();
     }
   }
 }
 
+function stateDirectory() {
+  return resolve(
+    process.env.XDG_RUNTIME_DIR || join(homedir(), '.local', 'state'),
+    'handmake-reel',
+  );
+}
+
+export function lockPath(dir: string) {
+  const hash = createHash('sha256').update(resolve(dir)).digest('hex');
+  return join(stateDirectory(), `${hash}.lock`);
+}
+
 export async function acquireLock(dir: string) {
-  const lock = join(dir, '.reel-watch.lock');
-  const temp = await mkdtemp(join(dir, '.reel-watch-'));
+  const lock = lockPath(dir);
+  const stateDir = stateDirectory();
+  await mkdir(stateDir, { recursive: true, mode: 0o700 });
+  const temp = await mkdtemp(join(stateDir, '.claim-'));
   const claim = join(temp, 'pid');
   try {
     await writeFile(claim, `${process.pid}\n`);
@@ -140,6 +197,21 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+export async function checkFileOpen(
+  file: string,
+  execute: (binary: string, args: string[]) => Promise<unknown> = exec,
+): ReturnType<CheckOpen> {
+  try {
+    await execute('fuser', ['-s', file]);
+    return true;
+  } catch (error) {
+    const { code } = error as NodeJS.ErrnoException;
+    if (Number(code) === 1) return false;
+    if (code === 'ENOENT') return undefined;
+    throw error;
+  }
+}
+
 export async function watchDirectory(
   dir: string,
   intervalMs: number,
@@ -147,50 +219,121 @@ export async function watchDirectory(
   processor: (
     options: Parameters<typeof processReel>[0],
     chooseLength: typeof watchLength,
+    scratchDir: string,
   ) => Promise<{ size: number; duration: number }> = processReel,
   sendNotification = notify,
+  {
+    checkOpen = checkFileOpen,
+    now = () => performance.now(),
+  }: { checkOpen?: CheckOpen; now?: () => number } = {},
 ) {
-  const release = await acquireLock(dir);
+  dir = resolve(dir);
+  let release: (() => Promise<void>) | undefined;
   let previous: Scan = { names: new Set(), files: new Map() };
+  let observations = new Map<string, Observation>();
+  let missing = false;
+  let missingFuser = false;
+
+  async function processCandidate(file: FileState, observation: Observation) {
+    const { name } = file;
+    const input = join(dir, name);
+    const paths = reelPaths(name);
+    const out = join(dir, paths.output);
+    const errorFile = join(dir, paths.error);
+    if ((await exists(out)) || (await exists(errorFile))) return;
+
+    const open = missingFuser ? undefined : await checkOpen(input);
+    if (open === undefined && !missingFuser) {
+      missingFuser = true;
+      console.error('fuser missing, using a 60-second stability window');
+    }
+    if (!sameFile(await lstat(input), file)) {
+      observations.delete(name);
+      return;
+    }
+    if (open) {
+      delete observation.closedSince;
+      return;
+    }
+    const checkedAt = now();
+    observation.closedSince ??= checkedAt;
+    if (missingFuser && checkedAt - observation.unchangedSince < fallbackStabilityMs) return;
+    if (signal.aborted) return;
+
+    let result;
+    try {
+      result = await processor(parseOptions([input, '--out', out]), watchLength, stateDirectory());
+    } catch (error) {
+      const message = errorMessage(error);
+      if (error instanceof UnreadableInputError) {
+        if (checkedAt - observation.closedSince < unreadableGraceMs) return;
+        if (!missingFuser && (await checkOpen(input)) !== false) {
+          delete observation.closedSince;
+          return;
+        }
+        if (!sameFile(await lstat(input), file)) {
+          observations.delete(name);
+          return;
+        }
+      }
+      delete observation.closedSince;
+      await writeFile(errorFile, `${message}\n`);
+      console.error(`${name}: ${message}`);
+      await sendNotification(`Не вдалося обробити ${name}: ${message}`);
+      return;
+    }
+    console.log(`${name}: ${result.size} bytes, ${result.duration.toFixed(2)} s`);
+    await sendNotification(`Рілс готовий: ${name}. Прослухайте перед надсиланням.`);
+  }
+
   try {
     while (!signal.aborted) {
-      const current = await scan(dir);
-      for (const file of selectReady(previous, current)) {
-        if (signal.aborted) break;
-        const name = file.name;
-        const input = join(dir, name);
-        const paths = reelPaths(name);
-        const out = join(dir, paths.output);
-        const errorFile = join(dir, paths.error);
-        if ((await exists(out)) || (await exists(errorFile))) continue;
-        const state = await lstat(input).catch((error: unknown) => {
-          if (!isMissing(error)) throw error;
-        });
-        if (!state?.isFile() || state.size !== file.size || state.mtimeMs !== file.mtimeMs) {
-          current.files.delete(name);
-          continue;
+      try {
+        release ??= await acquireLock(dir);
+        const current = await scan(dir)
+          .then((snapshot) => {
+            missing = false;
+            return snapshot;
+          })
+          .catch((error: unknown) => {
+            if (!isMissing(error)) throw error;
+            if (!missing) console.error(`${dir}: folder missing, waiting`);
+            missing = true;
+            return { names: new Set<string>(), files: new Map<string, FileState>() };
+          });
+        const scannedAt = now();
+        observations = new Map(
+          [...current.files].map(([name, file]) => [
+            name,
+            (sameFile(previous.files.get(name), file) && observations.get(name)) || {
+              unchangedSince: scannedAt,
+            },
+          ]),
+        );
+        for (const file of selectReady(previous, current)) {
+          if (signal.aborted) break;
+          const observation = observations.get(file.name);
+          if (!observation) continue;
+          try {
+            await processCandidate(file, observation);
+          } catch (error) {
+            observations.delete(file.name);
+            console.error(`${file.name}: ${errorMessage(error)}`);
+          }
         }
-        if (signal.aborted) break;
-        let result;
-        try {
-          result = await processor(parseOptions([input, '--out', out]), watchLength);
-        } catch (error) {
-          const message = errorMessage(error);
-          await writeFile(errorFile, `${message}\n`);
-          console.error(`${name}: ${message}`);
-          await sendNotification(`Не вдалося обробити ${name}: ${message}`);
-          continue;
-        }
-        console.log(`${name}: ${result.size} bytes, ${result.duration.toFixed(2)} s`);
-        await sendNotification(`Рілс готовий: ${name}. Прослухайте перед надсиланням.`);
+        previous = current;
+      } catch (error) {
+        if (error instanceof LiveWatcherError) throw error;
+        previous = { names: new Set(), files: new Map() };
+        observations.clear();
+        console.error(`${dir}: ${errorMessage(error)}`);
       }
-      previous = current;
       await setTimeout(intervalMs, undefined, { signal }).catch((error: unknown) => {
         if (!signal.aborted) throw error;
       });
     }
   } finally {
-    await release();
+    await release?.().catch((error: unknown) => console.error(errorMessage(error)));
   }
 }
 
