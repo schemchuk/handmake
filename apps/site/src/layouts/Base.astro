@@ -128,7 +128,7 @@ const fullTitle = current === 'home' ? tenant.name : `${title} – ${tenant.name
       {profiles ? (
         <nav class="profiles" aria-label={ui.profiles}>
           {profiles.map(({ network, url }) => (
-            <a href={url} rel="me">{network.charAt(0).toUpperCase() + network.slice(1)}</a>
+            <a href={url} rel="me">{network === 'youtube' ? 'YouTube' : network.charAt(0).toUpperCase() + network.slice(1)}</a>
           ))}
         </nav>
       ) : <JoinChannel lang={lang} />}
