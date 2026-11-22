@@ -13,6 +13,9 @@ import type { Draft } from './ports/store';
  *        │  max maxDraftPhotos)       failed ──retryTranslation──▶ translating
  *        ▼
  *   ready ──beginPublishing──▶ publishing ──publishSucceeded──▶ published
+ *     ▲ │ schedule (F42)          ▲
+ *     │ ▼                         │ beginPublishing (the slot is due)
+ *   scheduled ────────────────────┘   unschedule: back to ready
  *                                 │ publishFailed ▲
  *                                 └───────────────┘ (back to ready)
  *
@@ -35,6 +38,8 @@ export type DraftEvent =
   | { type: 'translationSucceeded'; german: string }
   | { type: 'translationFailed'; error: string }
   | { type: 'retryTranslation' }
+  | { type: 'schedule' }
+  | { type: 'unschedule' }
   | { type: 'beginPublishing' }
   | { type: 'publishSucceeded' }
   | { type: 'publishFailed' };
@@ -123,8 +128,14 @@ export function transitionDraft(draft: Draft, event: DraftEvent, now: Date): Dra
     case 'retryTranslation':
       requireState(draft, 'failed', event.type);
       return moved(draft, 'translating', now);
-    case 'beginPublishing':
+    case 'schedule':
       requireState(draft, 'ready', event.type);
+      return moved(draft, 'scheduled', now);
+    case 'unschedule':
+      requireState(draft, 'scheduled', event.type);
+      return moved(draft, 'ready', now);
+    case 'beginPublishing':
+      if (draft.state !== 'scheduled') requireState(draft, 'ready', event.type);
       return moved(draft, 'publishing', now);
     case 'publishSucceeded':
       requireState(draft, 'publishing', event.type);

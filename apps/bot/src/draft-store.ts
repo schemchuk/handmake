@@ -44,7 +44,12 @@ export interface StoredDraft {
   version: number;
   /** Set while the bot waits for the author's replacement text (ADR 005). */
   pendingEdit: DraftEditTarget | null;
+  /** F42: the slot (UTC ISO) of a draft waiting in the release queue. */
+  publishAt?: string;
 }
+
+/** What happened to a queued draft whose dispatch failed (T76a). */
+export type RequeueOutcome = 'requeued' | 'gave-up' | 'missing';
 
 /** Which language version an edit replaces; the canonical draft keys. */
 export type DraftEditTarget = 'uk' | 'de';
@@ -217,6 +222,30 @@ export interface D1DraftStore {
   ): Promise<boolean>;
   /** Delete every draft untouched since the cutoff; returns the row count. */
   deleteOlderThan(cutoff: Date): Promise<number>;
+  /** F42: `ready` → `scheduled` at `publishAt`; records the approving chat
+   * like claimPublishing. False when the draft is no longer ready. */
+  schedule(
+    tenantId: string,
+    draftId: string,
+    publishAt: Date,
+    now: Date,
+    approvalChatId?: string,
+  ): Promise<boolean>;
+  /** F42: `scheduled` → `ready`, slot freed. */
+  unschedule(tenantId: string, draftId: string, now: Date): Promise<boolean>;
+  /** The tenant's queue, earliest slot first. */
+  listScheduled(tenantId: string): Promise<StoredDraft[]>;
+  /** Atomically `scheduled` → `publishing` when the slot is due; undefined if
+   * another tick (or the author) got there first or the slot is not due. */
+  claimDue(tenantId: string, draftId: string, now: Date): Promise<StoredDraft | undefined>;
+  /** A cron dispatch failed: back to `scheduled` on the same slot, or after
+   * `maxAttempts` failed ticks back to `ready` with the slot freed. */
+  requeueAfterFailure(
+    tenantId: string,
+    draftId: string,
+    now: Date,
+    maxAttempts: number,
+  ): Promise<RequeueOutcome>;
 }
 
 interface DraftRow {
@@ -231,6 +260,7 @@ interface DraftRow {
   photos: string;
   version: number;
   pending_edit: string | null;
+  publish_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -239,6 +269,7 @@ const draftStates: ReadonlySet<string> = new Set([
   'collecting',
   'translating',
   'ready',
+  'scheduled',
   'publishing',
   'published',
   'failed',
@@ -247,7 +278,7 @@ const draftStates: ReadonlySet<string> = new Set([
 const draftKinds: ReadonlySet<string> = new Set(['post', 'work', 'show']);
 const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work', 'show']);
 
-const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, created_at, updated_at
+const selectDraft = `SELECT tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, created_at, updated_at
   FROM drafts WHERE tenant_id = ?`;
 
 /** D1/SQLite report UNIQUE violations with this message; we treat them as
@@ -685,10 +716,92 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
 
     async deleteOlderThan(cutoff) {
       const result = await db
-        .prepare("DELETE FROM drafts WHERE updated_at < ? AND kind != 'show'")
+        // A queued draft waits for its slot, however long the queue is.
+        .prepare(
+          "DELETE FROM drafts WHERE updated_at < ? AND kind != 'show' AND status != 'scheduled'",
+        )
         .bind(cutoff.toISOString())
         .run();
       return result.meta.changes;
+    },
+
+    async schedule(tenantId, draftId, publishAt, now, approvalChatId) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET pending_edit = NULL, status = 'scheduled', publish_at = ?, queue_attempts = 0,
+               updated_at = ?, version = version + 1,
+               extras = CASE WHEN ? IS NULL THEN extras
+                 ELSE json_set(extras, '$.approvalChatId', ?) END
+           WHERE tenant_id = ? AND id = ? AND status = 'ready'`,
+        )
+        .bind(
+          publishAt.toISOString(),
+          now.toISOString(),
+          approvalChatId ?? null,
+          approvalChatId ?? null,
+          tenantId,
+          draftId,
+        )
+        .run();
+      return result.meta.changes > 0;
+    },
+
+    async unschedule(tenantId, draftId, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'ready', publish_at = NULL, queue_attempts = 0, updated_at = ?,
+               version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'scheduled'`,
+        )
+        .bind(now.toISOString(), tenantId, draftId)
+        .run();
+      return result.meta.changes > 0;
+    },
+
+    async listScheduled(tenantId) {
+      const { results } = await db
+        .prepare(`${selectDraft} AND status = 'scheduled' ORDER BY publish_at, id`)
+        .bind(tenantId)
+        .all<DraftRow>();
+      return results.map(toStoredDraft);
+    },
+
+    async claimDue(tenantId, draftId, now) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'publishing', updated_at = ?, version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND publish_at <= ?`,
+        )
+        .bind(now.toISOString(), tenantId, draftId, now.toISOString())
+        .run();
+      return result.meta.changes > 0 ? this.get(tenantId, draftId) : undefined;
+    },
+
+    async requeueAfterFailure(tenantId, draftId, now, maxAttempts) {
+      const requeued = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'scheduled', queue_attempts = queue_attempts + 1, updated_at = ?,
+               version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'publishing'
+             AND publish_at IS NOT NULL AND queue_attempts + 1 < ?`,
+        )
+        .bind(now.toISOString(), tenantId, draftId, maxAttempts)
+        .run();
+      if (requeued.meta.changes > 0) return 'requeued';
+      const gaveUp = await db
+        .prepare(
+          `UPDATE drafts
+           SET status = 'ready', publish_at = NULL, queue_attempts = 0, updated_at = ?,
+               version = version + 1
+           WHERE tenant_id = ? AND id = ? AND status = 'publishing' AND publish_at IS NOT NULL`,
+        )
+        .bind(now.toISOString(), tenantId, draftId)
+        .run();
+      return gaveUp.meta.changes > 0 ? 'gave-up' : 'missing';
     },
   };
 }
@@ -718,6 +831,7 @@ function toStoredDraft(row: DraftRow): StoredDraft {
     },
     version: row.version,
     pendingEdit: row.pending_edit === 'uk' || row.pending_edit === 'de' ? row.pending_edit : null,
+    ...(row.publish_at ? { publishAt: row.publish_at } : {}),
   };
 }
 

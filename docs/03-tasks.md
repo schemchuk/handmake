@@ -3198,28 +3198,32 @@ account steps are H19-H21; Claude Code gives the guide when a step is due. T76a 
 migrations: Volodymyr applies them before the bot deploy.
 
 ### T76a — Release queue: slots, scheduled state, cron dispatch (`core`, `bot`, F42)
-- Status: planned.
+- Status: in review.
 - Owner: claude-code · Reviewer: codex · Depends on: spec v13
 - Change:
-  1. Tenant config `releaseQueue` (core schema + `config/tenants/faden-und-stimmung.yaml`):
+  1. Tenant config `releaseQueue` (core schema only; the tenant YAML gets it in T76b, after the
+     T76a bot deploy: the deployed Worker reads the YAML from `main` with a strict schema and
+     would reject an unknown key):
      `kinds: [work]`, `time: '18:30'`, `overrides: { tuesday: '19:30' }`, `leadMinutes: 10`,
      `lowQueueReminder: 1`; times in `meetingSchedule.timezone`. Absent block = publish at once
      (other tenants and tests unchanged).
-  2. Core: pure `nextFreeSlot(now, taken, config)` returning a UTC instant; DST-safe
+  2. Bot (`apps/bot/src/release-queue.ts`, next to the F18 wall-time helpers): pure
+     `nextFreeSlot(now, taken, config, timeZone)` returning a UTC instant; DST-safe
      (Europe/Berlin wall time), skips slots already taken and today's slot when closer than
      `leadMinutes`.
   3. Draft state machine: new state `scheduled` with events `schedule` (ready → scheduled),
      `unschedule` (scheduled → ready) and `beginPublishing` allowed from `scheduled`. D1 migration
-     `0025_release_queue.sql`: nullable `publish_at` and `queued_at` on drafts, index on
+     `0025_release_queue.sql`: nullable `publish_at` and `queue_attempts` on drafts, index on
      `(state, publish_at)`. Retention never deletes a `scheduled` draft.
   4. Cron (`*/15` tick, slots are on quarter hours): claim due drafts atomically
      (`scheduled` → `publishing` only if still scheduled), build the job exactly as the publish
      button does today, dispatch through `PublishRunner`. A failed dispatch returns the draft to
      `scheduled` with the same slot and retries next tick; after 3 failed ticks the author gets
      one message and the draft goes back to `ready`.
-  5. The work's front-matter `date` is the queue time (`queued_at`), not the slot time: the job
-     carries it and the publisher uses it. T75 cleanup keys on `date`, so files the author sends
-     for the next work while one waits in the queue are never trashed early.
+  5. The work's front-matter `date` must stay before the slot: it is already the draft's
+     creation time (`buildApprovedWorkJob`), so no `queued_at` column is needed. T75 cleanup keys
+     on `date`, so files the author sends for the next work while one waits are never trashed
+     early. `queue_attempts` counts failed dispatch ticks instead.
 - Acceptance: two works queued Monday 10:00 Berlin get Monday 18:30 and Tuesday 19:30; a work
   queued at 18:25 gets tomorrow; a slot over the DST switch is correct wall time; a due draft is
   dispatched once even when two ticks overlap; front matter `date` equals queue time.
@@ -3242,6 +3246,11 @@ migrations: Volodymyr applies them before the bot deploy.
      message «У черзі лишилась 1 робота (вийде …). Надішли наступну, коли буде готова.»; when the
      queue becomes empty, one message «Черга порожня: завтра нічого не вийде.»
   4. Bot texts in `texts.ts`, Ukrainian; no new secrets.
+  6. Add the `releaseQueue` block to `config/tenants/faden-und-stimmung.yaml` (18:30, Tuesday
+     19:30, `kinds: [work]`) only once the T76a Worker is deployed.
+  5. `/work` while a work is queued starts a new work instead of reopening the queued one
+     (`work-session.ts` treats `scheduled` like `published` there); publish now from the queue
+     clears `publish_at`.
 - Acceptance: publishing a work shows the slot; `/queue` shows and edits the queue; publish now
   and back-to-draft work and free the slot; reminders fire once per state change.
 - Tests: handlers with fake store and runner: schedule reply, publish now, unschedule, stale

@@ -274,6 +274,20 @@ export const tenantConfigSchema = z
       })
       .strict()
       .optional(),
+    // F42 release queue. Absent = every kind publishes at once. Times use
+    // meetingSchedule.timezone; one slot per local day.
+    releaseQueue: z
+      .object({
+        kinds: z.array(z.enum(['post', 'work'])).min(1),
+        time: timeSchema,
+        overrides: z.partialRecord(weekdaySchema, timeSchema).default({}),
+        // Today's slot is taken only when it is at least this far away.
+        leadMinutes: z.number().int().nonnegative().default(10),
+        // One reminder when a dispatch leaves this many works queued.
+        lowQueueReminder: z.number().int().nonnegative().default(1),
+      })
+      .strict()
+      .optional(),
     // Absence disables show generation; existing tenants need no migration.
     shows: showConfigSchema.optional(),
     site: siteSchema.optional(),
@@ -358,6 +372,7 @@ export const tenantConfigSchema = z
 
 export type TenantConfig = z.infer<typeof tenantConfigSchema>;
 export type WeeklyMoment = z.infer<typeof weeklyMomentSchema>;
+export type ReleaseQueueConfig = NonNullable<z.infer<typeof tenantConfigSchema.shape.releaseQueue>>;
 export type MeetingSchedule = z.infer<typeof tenantConfigSchema.shape.meetingSchedule>;
 
 /** A value that smells like an actual secret rather than a config value. */

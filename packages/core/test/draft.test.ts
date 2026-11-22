@@ -189,3 +189,19 @@ function publishedDraft(): Draft {
   d = transitionDraft(d, { type: 'publishSucceeded' }, t1);
   return d;
 }
+
+describe('release queue states (F42)', () => {
+  it('ready → scheduled → publishing, and back to ready on unschedule', () => {
+    const scheduled = transitionDraft(readyDraft(), { type: 'schedule' }, t1);
+    expect(scheduled.state).toBe('scheduled');
+    expect(transitionDraft(scheduled, { type: 'unschedule' }, t2).state).toBe('ready');
+    expect(transitionDraft(scheduled, { type: 'beginPublishing' }, t2).state).toBe('publishing');
+  });
+
+  it('only a ready draft is scheduled and only a scheduled one unscheduled', () => {
+    expect(() => transitionDraft(draft(), { type: 'schedule' }, t1)).toThrow(DraftTransitionError);
+    expect(() => transitionDraft(readyDraft(), { type: 'unschedule' }, t1)).toThrow(
+      DraftTransitionError,
+    );
+  });
+});

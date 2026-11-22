@@ -79,7 +79,14 @@ export type CollectionReader = Pick<ContentStore, 'listCollections'>;
 export type WorkReader = Pick<ContentStore, 'listWorks' | 'readWork'>;
 
 export type DraftState =
-  'collecting' | 'translating' | 'ready' | 'publishing' | 'published' | 'failed';
+  | 'collecting'
+  | 'translating'
+  | 'ready'
+  /** F42: waiting in the release queue for its slot (D1 `publish_at`). */
+  | 'scheduled'
+  | 'publishing'
+  | 'published'
+  | 'failed';
 
 /** What an approved draft becomes: a regular post, a work or a show. */
 export type DraftKind = 'post' | 'work' | 'show';
