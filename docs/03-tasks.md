@@ -3166,3 +3166,23 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   (no video, video pending, all done, failed); SHA unchanged → single request (injected
   `fetch`); 304 handling; mtime cut-off and open/hidden/subfolder skips with injected trash;
   first-run baseline; error paths leave files in place.
+
+### T75b — Cleanup: ignore the document portal and retry skipped files (`reel`, F41)
+- Status: todo.
+- Owner: codex · Reviewer: claude-code · Depends on: T75
+- Why: first live run 2026-11-22 13:45 trashed the three photos but skipped
+  `IMG_0421-reel.mp4`: `fuser` showed it open by `xdg-document-portal` (the reel had been shared
+  through the desktop portal to the Telegram app), which can hold a file for hours. The work was
+  still marked handled, so the reel would never be cleaned.
+- Change (`apps/reel/src/cleanup.ts` only, plus tests):
+  1. Open-file check for cleanup: list holders with `fuser -v` (or read `/proc/*/fd` links) and
+     treat a file as open only if a process other than `xdg-document-portal` holds it. The T73
+     watcher keeps its current check.
+  2. If any file older than the work's `date` was skipped because it was open, keep the work in a
+     retry list in the state (like `waitingForSite`) and re-run its cleanup on the next timer run,
+     even when `main` is unchanged; mark it handled only when nothing older remains. Give up after
+     24 h (then mark handled, log one line).
+  3. Notification plural: «прибрано 1 файл / 2 файли / 5 файлів» (PR #185 review nit).
+- Tests (`--maxWorkers=2`): portal-only holder counts as closed; another holder counts as open;
+  skipped file → work retried next run with no GitHub requests beyond the SHA check, handled
+  once the file is gone or closed; 24 h give-up; plural forms 1/2/5/11/21/22.

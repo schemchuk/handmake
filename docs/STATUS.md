@@ -1,13 +1,13 @@
 # STATUS
 
 - **Active agent:** codex.
-- **Current task:** T75 (clean the reel folders after a work is published).
-- **Branch:** `feat/T75-reel-cleanup`.
-- **Last commit:** feat(reel): manual inbox with rotating CC0 music (T74) (#184).
-- **Next step:** none. `handmake-reel-watch` reinstalled and restarted 2026-11-22: watches
-  `~/Desktop/Ролики` → `~/Desktop/Готові рілси` with music from `~/Music/рілси`. KDE Connect
-  now saves phone transfers straight into `~/Desktop/Ролики` (Volodymyr 2026-11-22);
-  `temp/videos` retired. First real reel from the new inbox still to confirm.
+- **Current task:** T75b (cleanup: ignore the document portal, retry skipped files). T75 merged as PR #185 (`7be9d7f`).
+- **Branch:** `feat/T75b-cleanup-retry`.
+- **Last commit:** feat(reel): clean reel folders after publication (T75) (#185).
+- **Next step:** T75b for codex. `handmake-reel-cleanup.timer` installed and enabled 2026-11-22
+  (every 5 min); first live run trashed 3 photos for work `01M81F9X…`, the reel was held by
+  `xdg-document-portal` and trashed by hand. KDE Connect saves phone transfers straight into
+  `~/Desktop/Ролики`; `temp/videos` retired.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
