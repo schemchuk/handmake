@@ -1,0 +1,9 @@
+[Unit]
+Description=Clean reel folders after publication
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/VS_Code_projects/handmake
+ExecStart=/usr/bin/node apps/reel/src/cleanup.ts --inbox "%h/Desktop/Ролики" --reels "%h/Desktop/Готові рілси"
+Nice=19
+IOSchedulingClass=idle
