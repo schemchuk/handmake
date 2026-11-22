@@ -1,6 +1,6 @@
 import { getDomain } from 'tldts';
 
-const sourceTags = new Set(['tg', 'th', 'ig', 'fb', 'gh', 'li', 'nl', 'qr']);
+const sourceTags = new Set(['tg', 'th', 'ig', 'fb', 'yt', 'gh', 'li', 'nl', 'qr']);
 const isHost = (host: string, domain: string) => host === domain || host.endsWith(`.${domain}`);
 
 /** Reduce incoming attribution to a bounded category; never retain full referrers. */
@@ -23,6 +23,7 @@ export function siteVisitSource(url: URL, referer: string | null): string {
   if (isHost(host, 'instagram.com')) return 'ig';
   if (isHost(host, 'facebook.com')) return 'fb';
   if (isHost(host, 'threads.net') || isHost(host, 'threads.com')) return 'th';
+  if (isHost(host, 'youtube.com') || isHost(host, 'youtu.be')) return 'yt';
   if (
     domain?.startsWith('google.') ||
     domain?.startsWith('yandex.') ||

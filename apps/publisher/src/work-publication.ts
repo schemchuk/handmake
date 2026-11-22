@@ -1,11 +1,20 @@
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
-import { collectionSchema, workPublicationSchema } from '@handmake/core';
+import { youtubeSecretNames } from '@handmake/channels';
+import { collectionSchema, videoOnlyChannelKeys, workPublicationSchema } from '@handmake/core';
 import type { ContentStore, Post, TenantConfig } from '@handmake/core';
 
 import { buildWorkFromPayload } from './build-work';
 import type { DispatchPayload } from './payload';
+
+/** Secret names a video-only channel needs before it may run (T78 item 4). */
+const videoChannelSecrets: Record<string, readonly string[]> = { youtube: youtubeSecretNames };
+
+export interface SkippedChannel {
+  channel: string;
+  reason: 'no video' | 'secrets missing' | 'not in the first run';
+}
 
 /** Validate before media fetches/writes; announcements are transient Post projections, not blog posts. */
 export async function prepareWorkPublication(
@@ -13,6 +22,7 @@ export async function prepareWorkPublication(
   tenant: TenantConfig,
   store: ContentStore,
   siteExcluded = false,
+  env: NodeJS.ProcessEnv = {},
 ) {
   const details = workPublicationSchema.parse(payload.work);
   const checkLanguages = (versions: Record<string, unknown>) => {
@@ -69,10 +79,25 @@ export async function prepareWorkPublication(
   if (await store.readPost(tenant.id, work.id))
     throw new Error('work id already belongs to a post');
   const ledger = await store.readLedger(tenant.id, work.id);
-  if (
-    ledger &&
-    !isDeepStrictEqual(Object.keys(ledger.channels).sort(), [...details.channels].sort())
-  ) {
+  // T78: a video-only channel runs only with a video and its secrets, and never
+  // gets a ledger entry otherwise (a pending one would block the callback and
+  // the reel cleanup). On retry the ledger decides, so the set stays stable.
+  const videoOnly = (channel: string) => videoOnlyChannelKeys.includes(channel);
+  const skippedChannels: SkippedChannel[] = details.channels.flatMap(
+    (channel): SkippedChannel[] => {
+      if (!videoOnly(channel)) return [];
+      if (ledger)
+        return ledger.channels[channel] ? [] : [{ channel, reason: 'not in the first run' }];
+      if (!work.video) return [{ channel, reason: 'no video' }];
+      return (videoChannelSecrets[channel] ?? []).some((name) => !env[name])
+        ? [{ channel, reason: 'secrets missing' }]
+        : [];
+    },
+  );
+  const channels = details.channels.filter(
+    (channel) => !skippedChannels.some((skip) => skip.channel === channel),
+  );
+  if (ledger && !isDeepStrictEqual(Object.keys(ledger.channels).sort(), [...channels].sort())) {
     throw new Error('work announcement channels are immutable on retry');
   }
   const post: Post = {
@@ -81,7 +106,7 @@ export async function prepareWorkPublication(
     date: work.date,
     publishAt: 'now',
     type: 'free',
-    channels: details.channels,
+    channels,
     ...(work.siteExcluded ? { siteExcluded: true } : {}),
     photos: work.photos,
     texts: Object.fromEntries(
@@ -98,6 +123,7 @@ export async function prepareWorkPublication(
     work,
     post,
     collection: existingCollection ? undefined : collection,
+    skippedChannels,
     paths: [
       path.join('content', 'works', work.id),
       ...(collection ? [path.join('content', 'collections', `${work.collection}.md`)] : []),

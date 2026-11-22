@@ -1,19 +1,16 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T75c done: PR #192 (`3f8b916`). Cleanup keeps a work with a `failed`
-  ledger entry in `waitingForRetry`, cleans it once a re-run is `done`, alerts only if still
-  failed 24 h after the first failure (a pending re-run keeps waiting). Live via
-  `handmake-reel-cleanup.timer` from the `main` checkout. T77 live since `7d03ae8`; first
-  real delayed Threads run not observed yet.
-- **Branch:** `main`.
-- **Last commit:** docs: record H19 (YouTube account and secrets).
-- **Next step:** T78 (YouTube Shorts) on branch `feat/T78-youtube-shorts` (auth helper
-  committed). H19 done 2026-11-22: `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`,
-  `YOUTUBE_REFRESH_TOKEN` set. Then T79 (Pinterest). Watch the first queued work: the other
-  channels at the slot, Threads about 90 min later with «Threads: опубліковано».
-  Optional: `queue - Черга публікацій` in the BotFather menu.
-- **Blocked on:** nothing.
+- **Current task:** T78 (YouTube Shorts) in review on `feat/T78-youtube-shorts`: adapter
+  `packages/channels/src/youtube/` (token refresh, resumable upload with 308 resume, 3 attempts
+  like T71), publisher wiring, `publish.yml` secrets for live runs only.
+- **Branch:** `feat/T78-youtube-shorts`.
+- **Last commit:** fix(channels): keep YouTube redirect check Workers-typed (T78). CI green; Codex rounds 1-2 handled (PR comments).
+- **Next step:** Codex review of the T78 PR; merge needs Volodymyr's OK (workflow and secret
+  handling). After merge: bot deploy, then `channels.youtube: { language: de }` in the tenant
+  YAML (separate commit); H21 and the YouTube API audit (H19b) before the first live run. Then T79 (Pinterest).
+  Watch the first queued work: Threads about 90 min after the slot.
+- **Blocked on:** Volodymyr's OK for the merge; H21 and the YouTube API audit for go-live.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,

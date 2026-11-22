@@ -59,6 +59,7 @@ const sourceNames: Record<string, string> = {
   th: 'Threads',
   ig: 'Instagram',
   fb: 'Facebook',
+  yt: 'YouTube',
   gh: 'GitHub',
   li: 'LinkedIn',
   nl: 'розсилка',
