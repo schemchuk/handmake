@@ -1,8 +1,8 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T73 (harden the reel folder watcher) merged as PR #183 (`54c99f7`).
-- **Branch:** `main`.
+- **Active agent:** codex.
+- **Current task:** T74 (manual reel inbox with rotating CC0 music).
+- **Branch:** `feat/T74-reel-inbox-music`.
 - **Last commit:** fix(reel): harden the folder watcher (T73) (#183).
 - **Next step:** T74 (manual reel inbox `Ролики` → `Готові рілси`, rotating CC0 music) for
   codex. First real phone video confirmed 2026-11-22: `IMG_0421.mov` (211 s, portrait) →
