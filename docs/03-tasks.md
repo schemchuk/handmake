@@ -2992,3 +2992,46 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   calls, same container URL, one sleep of the delay), three failures, transport error then success,
   429 and 190 not retried by the new loop; publisher test that a video failure logs and notifies the
   operator with the cause.
+
+### T72 — Watch a folder and process reels automatically (`reel`, F41)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: T68, T69
+- Why: Volodymyr 2026-11-22: phone videos land in a local folder (`~/Desktop/temp/videos`). He wants
+  every new video processed by `pnpm reel` with the default protocol without typing a command,
+  the finished reel saved in the same folder.
+- Change (all in `apps/reel`, no new runtime dependencies, no network, no bot access):
+  1. `src/watch.ts` + root script `pnpm reel:watch <dir>`: a long-running loop that scans `<dir>`
+     (not recursive) every 10 s (`--interval <s>` for tests). Pure selection logic separated from
+     I/O. A candidate is a regular file with extension `.mp4`/`.mov` (case-insensitive), not
+     hidden (`.` prefix), not ending in `-reel.mp4`, not a partial download (`.part`, `.crdownload`,
+     `.tmp`), with no `<name>-reel.mp4` and no `<name>.reel-error.txt` next to it.
+  2. A file is processed only after its size and mtime are unchanged across two consecutive scans
+     (still being copied otherwise). Files are processed one at a time, oldest mtime first.
+  3. Processing reuses `processReel` (no shell, no subprocess of `pnpm`) with defaults: end card on,
+     no finale, automatic audio pick, output `<name>-reel.mp4` beside the input, never overwrite.
+     Length: 30 s, or `floor(source duration)` when the source is shorter (probe once); a source
+     under 5 s is rejected.
+  4. Result: on success log one line (input, size, duration) and send a desktop notification via
+     `notify-send` (execFile; if it is missing, log only) in Ukrainian: «Рілс готовий: <name>.
+     Прослухайте перед надсиланням.» On failure write `<name>.reel-error.txt` with the error
+     message (no stack), notify «Не вдалося обробити <name>: <message>», continue with the next
+     file. Deleting the error file makes the watcher retry. The raw file is never moved,
+     changed or deleted.
+  5. One instance per folder: a lock file `<dir>/.reel-watch.lock` with the PID; a second start
+     with a live PID exits with a clear message, a stale lock is replaced. SIGTERM/SIGINT finish
+     the current file's cleanup (processReel already removes temp files) and remove the lock.
+  6. `apps/reel/systemd/handmake-reel-watch.service`: a systemd user unit template
+     (`WorkingDirectory=%h/VS_Code_projects/handmake`, `ExecStart=/usr/bin/node
+     apps/reel/src/watch.ts %h/Desktop/temp/videos`, `Restart=on-failure`, `Nice=10`,
+     `CPUQuota=400%`, `MemoryMax=3G`). README section: install (`cp` to
+     `~/.config/systemd/user/`, `systemctl --user enable --now`), logs (`journalctl --user -u
+     handmake-reel-watch`), how to retry a failed file, and that finale/`--audio-from`/music still
+     need a manual `pnpm reel` run.
+- Acceptance: copying a generated test clip into a watched temp folder produces
+  `<name>-reel.mp4` there once; a clip still growing is not touched until stable; an output or
+  error file is never re-processed; a broken file produces an error file and the next file is
+  still processed.
+- Tests (`apps/reel`, `--maxWorkers=2`): pure selection (extensions, case, hidden, partial,
+  existing output/error, stability across scans, ordering), length choice (long, short, < 5 s),
+  lock handling (live/stale PID), error-file writing with an injected processor; one integration
+  test with a lavfi clip in a temp dir, skipped without ffmpeg.

@@ -1,12 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T71 (retry the Instagram Reel upload) merged as PR #181 (`b0465de`).
-- **Branch:** `main`.
+- **Active agent:** codex.
+- **Current task:** T72 (watch a folder and process reels automatically).
+- **Branch:** `feat/T72-reel-watch`.
 - **Last commit:** fix(channels): retry Instagram Reel upload (T71) (#181).
-- **Next step:** none. Publish run 44895631992 re-run after #181: work
-  `01M7YV04KMGCC3QQFKF6NBQ9MS` video now done on Telegram, Instagram and Facebook. Bot code
-  unchanged by #181, no bot deploy needed.
+- **Next step:** codex implements T72 from docs/03-tasks.md on `feat/T72-reel-watch`
+  (file edits only; claude-code reviews, commits, pushes and merges).
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** touched suites only, all with `--maxWorkers=2`: channels 94/94, publisher 27/27,
