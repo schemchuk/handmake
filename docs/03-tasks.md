@@ -3248,7 +3248,7 @@ migrations: Volodymyr applies them before the bot deploy.
   keeps immediate publish; publisher `date` from the job.
 
 ### T76c — Per-draft publish concurrency (`ci`, F42)
-- Status: planned.
+- Status: in review (Volodymyr's OK for the workflow change 2026-11-22).
 - Owner: claude-code · Reviewer: codex · Depends on: T76a · Sensitive: workflow change,
   Volodymyr's OK before merge.
 - Why: PR #187 review. `publish.yml` uses `concurrency: { group: publish }`; GitHub keeps one
@@ -3260,6 +3260,9 @@ migrations: Volodymyr applies them before the bot deploy.
   publisher pull-rebases content commits onto a moving `main`; confirm it retries a rejected
   push and that two drafts never write the same path. If not, add the retry in the same PR.
 - Tests: publisher push retry on a rejected push (fake git); a workflow lint run.
+- Finding 2026-11-22: no publisher change needed. Every draft writes only
+  `content/{posts,works,shows}/<id>` and `content/ledger/<id>[-video].json`, and `git.ts` already
+  pull-rebases before each of up to 3 push attempts. Workflow lint runs in CI (actionlint).
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
 - Status: planned.

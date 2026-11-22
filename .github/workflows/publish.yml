@@ -29,8 +29,15 @@ on:
         type: boolean
         default: false
 
+# One group per draft (T76c). GitHub keeps a single pending run per group and
+# cancels it when a newer run queues, so one shared group let a dispatch of one
+# draft silently drop another draft's waiting run. Runs of the same draft still
+# serialize (a retry never races its own ledger); different drafts run side by
+# side: each writes only its own content/ and ledger paths, and the publisher's
+# push pull-rebases and retries on a moving main. Manual runs read the id from
+# the payload JSON (null-safe for repository_dispatch, where inputs is empty).
 concurrency:
-  group: publish
+  group: publish-${{ github.event.client_payload.draftId || fromJSON(inputs.payload || '{}').draftId }}
   cancel-in-progress: false
 
 permissions:
