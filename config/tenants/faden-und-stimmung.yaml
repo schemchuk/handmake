@@ -16,8 +16,12 @@ channels:
   # block Telegram or Instagram (T26b).
   facebook:
     language: de
+  # F42 (T77): Threads goes out 90 minutes after the other channels, in a
+  # separate run the bot cron dispatches.
   threads:
     language: de
+    delay:
+      minutes: 90
 
 entryNamePolicy:
   telegram: true

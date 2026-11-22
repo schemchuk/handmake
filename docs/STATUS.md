@@ -1,15 +1,14 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T77 (delayed channels) merged: PR #190 (`7d03ae8`, Codex: 2 rounds,
-  approved). Not live yet: migration 0027 not applied, Worker not deployed, Threads delay not
-  in the tenant YAML. Release queue live since T76a/T76b (Worker `78d0c5e3`, 2026-11-22).
+- **Current task:** T77 (delayed channels) live: PR #190 (`7d03ae8`), migration 0027 applied
+  and Worker `f2d542f0-f2dd-43a1-b241-deed6e64827f` deployed by Volodymyr 2026-11-22; Threads
+  `delay: { minutes: 90 }` in the tenant YAML. First real delayed Threads run not observed yet.
 - **Branch:** `main`.
-- **Last commit:** docs: record T77 merge.
-- **Next step:** Volodymyr applies `apps/bot/migrations/0027_channel_followups.sql` to D1 and
-  deploys the Worker (`pnpm -C apps/bot run deploy`); then claude-code adds
-  `delay: { minutes: 90 }` under `channels.threads` in the tenant YAML (never before the
-  deploy). Then T78, T79. Optional: `queue - Черга публікацій` in the BotFather menu.
+- **Last commit:** config: delay Threads by 90 minutes (T77).
+- **Next step:** T78 (YouTube Shorts), then T79 (Pinterest). Watch the first queued work: the
+  other channels at the slot, Threads about 90 min later with «Threads: опубліковано».
+  Optional: `queue - Черга публікацій` in the BotFather menu.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
