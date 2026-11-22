@@ -6,6 +6,7 @@ import {
   createInstagramAdapter,
   createTelegramAdapter,
   createThreadsAdapter,
+  createYoutubeAdapter,
 } from '@handmake/channels';
 import {
   anonymousEditPlanSchema,
@@ -120,6 +121,9 @@ export function defaultRegistry(
       registry.register(createInstagramAdapter());
     } else if (key === 'threads') {
       registry.register(createThreadsAdapter());
+    } else if (key === 'youtube') {
+      // F43: fixed-name secrets resolve per delivery; uploads the work video.
+      registry.register(createYoutubeAdapter());
     } else if (key === 'facebook') {
       // Same Meta Graph pattern as Instagram (T26b): fixed-name secrets,
       // publisher-prepared public photo URLs — nothing to wire here.
@@ -144,6 +148,7 @@ export function contestErrorCode(error: unknown): string {
     'InstagramAdapterError',
     'ThreadsAdapterError',
     'TelegramAdapterError',
+    'YoutubeAdapterError',
     'FacebookRenderError',
     'InstagramRenderError',
     'ThreadsRenderError',
@@ -183,7 +188,7 @@ export async function runPublish(
   const store = new GitRepoContentStore({ rootDir: root });
   const workPublication =
     payload.kind === 'work'
-      ? await prepareWorkPublication(payload, tenant, store, env.SITE_EXCLUDE_POST === 'true')
+      ? await prepareWorkPublication(payload, tenant, store, env.SITE_EXCLUDE_POST === 'true', env)
       : undefined;
   let showPublication;
   try {
@@ -208,7 +213,13 @@ export async function runPublish(
   const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
   // T77: a run may deliver only some channels of the work; the others keep
   // their ledger entries untouched for a later run.
-  const runChannels = payload.channels ?? post.channels;
+  // T78: a video-only channel the work cannot use is left out, with one log line.
+  for (const skip of workPublication?.skippedChannels ?? [])
+    log(`channel ${skip.channel}: skipped (${skip.reason})`);
+  const skippedChannels = new Set(workPublication?.skippedChannels.map((skip) => skip.channel));
+  const runChannels = (payload.channels ?? post.channels).filter(
+    (channel) => !skippedChannels.has(channel),
+  );
   const notEnabled = runChannels.filter((channel) => !post.channels.includes(channel));
   if (notEnabled.length) {
     throw new PublishError(`channels not enabled for ${post.id}: ${notEnabled.join(', ')}`);
@@ -315,6 +326,8 @@ export async function runPublish(
   // later ones skip the no-op second push (PR #96 review note 4).
   let contentPushed = false;
   const failures: string[] = [];
+  // T78: a YouTube failure must not hold back the work video on the other channels.
+  const lateFailures: string[] = [];
   const channelOperations = new Map<string, SendOperation[]>();
   for (const channel of runChannels) {
     let entry = ledger.channels[channel];
@@ -463,6 +476,7 @@ export async function runPublish(
           photos: photoBytes,
           ...(photoUrls !== undefined && { photoUrls }),
           ...(videoUrl !== undefined && { videoUrl }),
+          ...(channel === 'youtube' && workVideo && { video: workVideo }),
         },
         {
           startAt,
@@ -487,13 +501,16 @@ export async function runPublish(
         `publish failed for ${post.tenant}/${post.id} on ${channel}: ${message}`,
       );
       log(`channel ${channel}: delivery failed (${contestErrorCode(error)})`);
-      failures.push(`channel "${channel}" delivery failed: ${message}`);
+      (channel === 'youtube' ? lateFailures : failures).push(
+        `channel "${channel}" delivery failed: ${message}`,
+      );
       continue;
     }
     await persistLedger();
   }
 
-  if (failures.length) {
+  const reportFailures = async (failures: string[]): Promise<void> => {
+    if (!failures.length) return;
     if (followUp) {
       await notify(
         'author',
@@ -507,7 +524,8 @@ export async function runPublish(
       );
     }
     throw new PublishError(failures.join('; '));
-  }
+  };
+  await reportFailures(failures.length ? [...failures, ...lateFailures] : []);
 
   if (workPublication && workVideo) {
     for (const channel of runChannels.filter(
@@ -547,6 +565,8 @@ export async function runPublish(
       }
     }
   }
+
+  await reportFailures(lateFailures);
 
   await notify(
     'author',

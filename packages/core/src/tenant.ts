@@ -92,12 +92,19 @@ export const channelsSchema = z
       .object({ language: languageCodeSchema, delay: channelDelaySchema.optional() })
       .strict()
       .optional(),
+    // F43: Shorts for works with a video only; other content never goes here.
+    youtube: z
+      .object({ language: languageCodeSchema, delay: channelDelaySchema.optional() })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine((channels) => Object.keys(channels).length > 0, 'at least one channel must be enabled');
 
 // Derived from channelsSchema — single source of truth for channel keys.
 export const knownChannelKeys = Object.keys(channelsSchema.shape);
+/** Channels that carry only a work's video: posts, shows and video-less works skip them. */
+export const videoOnlyChannelKeys: readonly string[] = ['youtube'];
 export type ChannelKey = keyof typeof channelsSchema.shape;
 
 const repoSvgPathSchema = z
@@ -380,6 +387,14 @@ export const tenantConfigSchema = z
         code: 'custom',
         path: ['channels', 'threads', 'language'],
         message: 'threads.language must be in tenant languages',
+      });
+    }
+    const youtube = config.channels.youtube;
+    if (youtube && !config.languages.includes(youtube.language)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['channels', 'youtube', 'language'],
+        message: 'youtube.language must be in tenant languages',
       });
     }
     const facebook = config.channels.facebook;

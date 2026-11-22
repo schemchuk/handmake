@@ -10,5 +10,7 @@ export * from './telegram/adapter';
 export * from './telegram/render';
 export * from './threads/adapter';
 export * from './threads/render';
+export * from './youtube/adapter';
+export * from './youtube/render';
 
 export { appendAuthenticity } from './authenticity';

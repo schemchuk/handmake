@@ -1,4 +1,4 @@
-import { isUlid, newUlid } from '@handmake/core';
+import { isUlid, newUlid, videoOnlyChannelKeys } from '@handmake/core';
 import type { Post, TenantConfig } from '@handmake/core';
 
 import type { DispatchPayload } from './payload';
@@ -38,7 +38,8 @@ export function buildPostFromPayload(
     publishAt: 'now',
     type: payload.type,
     tenant: tenant.id,
-    channels: Object.keys(tenant.channels),
+    // Video-only channels (YouTube) never carry a post.
+    channels: Object.keys(tenant.channels).filter((key) => !videoOnlyChannelKeys.includes(key)),
     photos: payload.fileIds.map((_, i) => `photo-${i + 1}.jpg`),
     versions: Object.fromEntries(langs.map((lang) => [lang, { provenance: payload.provenance }])),
     texts,

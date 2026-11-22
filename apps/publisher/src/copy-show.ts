@@ -9,6 +9,7 @@ import {
   markOpDelivered,
   renderChannelShow,
   showCopyPlanSchema,
+  videoOnlyChannelKeys,
 } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import { createGitCommitter } from './git';
@@ -77,19 +78,23 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
     createHash('sha256').update(bytes).digest('hex'),
   );
   let ledger = (await store.readLedger(tenantId, showId)) ?? initLedger(tenantId, showId, [], now);
+  // Video-only channels (YouTube, T78) carry works only, never show copies.
+  const showChannels = Object.fromEntries(
+    Object.entries(tenant.channels).filter(([key]) => !videoOnlyChannelKeys.includes(key)),
+  );
   const registry =
     deps.registry ??
-    defaultRegistry(tenant, env, Object.keys(ledger.showCopyPlan?.channels ?? tenant.channels));
+    defaultRegistry(tenant, env, Object.keys(ledger.showCopyPlan?.channels ?? showChannels));
   if (!ledger.showCopyPlan) {
     if (Object.keys(ledger.channels).length) throw new Error('copy progress has no stable plan');
     if (!tenant.site) throw new Error('show copies require a site');
     // Fail the entire batch before sending if any configured channel lacks show support.
     // Silently skipping it would report an incomplete copy as successful.
-    for (const key of Object.keys(tenant.channels)) {
+    for (const key of Object.keys(showChannels)) {
       if (!registry.get(key).renderShow) throw new Error(`channel "${key}" does not support shows`);
     }
     const channels = Object.fromEntries(
-      Object.entries(tenant.channels).map(([key, settings]) => [
+      Object.entries(showChannels).map(([key, settings]) => [
         key,
         {
           operations: renderChannelShow(registry.get(key), show, {

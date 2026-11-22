@@ -23,13 +23,15 @@ export async function writeTelegramOnlyTenantConfig(tenantsDir: string): Promise
   const stripped = raw
     .replace(/(?:\n {2}#[^\n]*)*\n {2}threads:\n(?: {4}[^\n]*(?:\n|$))+/, '\n')
     .replace(/(?:\n {2}#[^\n]*)*\n {2}instagram:\n(?: {4}[^\n]*(?:\n|$))+/, '\n')
-    .replace(/(?:\n {2}#[^\n]*)*\n {2}facebook:\n(?: {4}[^\n]*(?:\n|$))+/, '\n');
+    .replace(/(?:\n {2}#[^\n]*)*\n {2}facebook:\n(?: {4}[^\n]*(?:\n|$))+/, '\n')
+    .replace(/(?:\n {2}#[^\n]*)*\n {2}youtube:\n(?: {4}[^\n]*(?:\n|$))+/, '\n');
   const config = parse(stripped) as { channels: Record<string, unknown> };
   if (
     !('telegram' in config.channels) ||
     'instagram' in config.channels ||
     'facebook' in config.channels ||
-    'threads' in config.channels
+    'threads' in config.channels ||
+    'youtube' in config.channels
   ) {
     throw new Error('tenant config strip failed: expected telegram-only channels');
   }

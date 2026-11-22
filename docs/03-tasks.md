@@ -3373,7 +3373,13 @@ migrations: Volodymyr applies them before the bot deploy.
   subset run leaves other ledger entries untouched; follow-up claim and retry.
 
 ### T78 — YouTube Shorts channel (`channels`, `publisher`, F43)
-- Status: planned.
+- Status: in review (branch `feat/T78-youtube-shorts`). Go-live after merge: bot deploy (the
+  Worker reads the tenant YAML with a strict schema), then `channels.youtube: { language: de }`
+  in the tenant YAML, and H21 (Datenschutz with the YouTube module) before the first live run.
+- As built: the secrets reach only live runs (`publish.yml`), since YouTube has no test channel;
+  a test run skips YouTube with one log line. A YouTube failure is reported after the TG/IG/FB
+  video step, so it never holds back their Reels. On a retry the first run's ledger decides
+  whether YouTube runs. Posts and show copies never go to video-only channels.
 - Owner: claude-code · Reviewer: codex · Depends on: T76a · Live needs: H19
 - Change:
   1. `packages/channels/src/youtube/`: adapter for works with a video only. Access token from
