@@ -1,16 +1,15 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T78 (YouTube Shorts) in review on `feat/T78-youtube-shorts`: adapter
-  `packages/channels/src/youtube/` (token refresh, resumable upload with 308 resume, 3 attempts
-  like T71), publisher wiring, `publish.yml` secrets for live runs only.
-- **Branch:** `feat/T78-youtube-shorts`.
-- **Last commit:** fix(channels): keep YouTube redirect check Workers-typed (T78). CI green; Codex rounds 1-2 handled (PR comments).
-- **Next step:** Codex review of the T78 PR; merge needs Volodymyr's OK (workflow and secret
-  handling). After merge: bot deploy, then `channels.youtube: { language: de }` in the tenant
-  YAML (separate commit); H21 and the YouTube API audit (H19b) before the first live run. Then T79 (Pinterest).
-  Watch the first queued work: Threads about 90 min after the slot.
-- **Blocked on:** Volodymyr's OK for the merge; H21 and the YouTube API audit for go-live.
+- **Current task:** T78 merged (PR #193, `fd9d51d`); Worker `76c5fd9f-ed9d-4ac0-a87f-392d243970d3`
+  (core schema knows `channels.youtube`). YouTube stays off: the tenant YAML has no `youtube` key.
+- **Branch:** `main`.
+- **Last commit:** docs: record T78 merge.
+- **Next step:** after the YouTube API audit (H19b, form
+  https://support.google.com/youtube/contact/yt_api_form, filed by Volodymyr) and H21: add
+  `youtube: { language: de }` after `facebook` in `config/tenants/faden-und-stimmung.yaml`.
+  Meanwhile T79 (Pinterest). Watch the first queued work: Threads about 90 min after the slot.
+- **Blocked on:** YouTube go-live: API audit and H21.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,

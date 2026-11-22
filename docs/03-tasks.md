@@ -3373,7 +3373,7 @@ migrations: Volodymyr applies them before the bot deploy.
   subset run leaves other ledger entries untouched; follow-up claim and retry.
 
 ### T78 — YouTube Shorts channel (`channels`, `publisher`, F43)
-- Status: in review (branch `feat/T78-youtube-shorts`). Go-live after merge: bot deploy (the
+- Status: done (PR #193, `fd9d51d`), Worker `76c5fd9f`. Go-live: bot deploy done (the
   Worker reads the tenant YAML with a strict schema), then `channels.youtube: { language: de }`
   in the tenant YAML, and H21 (Datenschutz with the YouTube module) before the first live run.
   Also H19b: Google keeps `videos.insert` uploads of an unaudited API project (created after
