@@ -1,10 +1,19 @@
 import { execFile } from 'node:child_process';
-import { lstat, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  mkdtemp,
+  readdir,
+  readFile,
+  readlink,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs as parseArgsNative, promisify } from 'node:util';
-import { acquireFileLock, checkFileOpen, notify } from './watch.ts';
+import { acquireFileLock, notify } from './watch.ts';
 
 const api = 'https://api.github.com/repos/schemchuk/handmake';
 const site = 'https://fadenundstimmung.de';
@@ -14,12 +23,19 @@ const safeSegment = /^[a-z0-9][a-z0-9._-]*$/i;
 const commitSha = /^[a-f0-9]{40}$/;
 
 type Work = { id: string; date: number; video?: string };
-type State = { sha: string; etag?: string; handled: string[]; waitingForSite: Work[] };
+type CleanupRetry = Work & { firstSkippedAt: number };
+type State = {
+  sha: string;
+  etag?: string;
+  handled: string[];
+  waitingForSite: Work[];
+  waitingForCleanup?: CleanupRetry[];
+};
 type Options = { inbox: string; reels: string; statePath?: string };
 type Dependencies = {
   fetch?: typeof fetch;
   now?: () => number;
-  checkOpen?: typeof checkFileOpen;
+  checkOpen?: (path: string) => Promise<boolean | undefined>;
   trash?: (path: string) => Promise<unknown>;
   notify?: typeof notify;
   log?: (message: string) => void;
@@ -51,6 +67,15 @@ function missing(error: unknown) {
   return (error as NodeJS.ErrnoException).code === 'ENOENT';
 }
 
+function isCleanupRetry(value: unknown): value is CleanupRetry {
+  return (
+    record(value) &&
+    typeof value.firstSkippedAt === 'number' &&
+    Number.isFinite(value.firstSkippedAt) &&
+    isWork(value)
+  );
+}
+
 async function loadState(path: string): Promise<State | undefined> {
   const raw = await readFile(path, 'utf8').catch((error: unknown) => {
     if (!missing(error)) throw error;
@@ -64,7 +89,9 @@ async function loadState(path: string): Promise<State | undefined> {
     !Array.isArray(state.handled) ||
     !state.handled.every(isSegment) ||
     !Array.isArray(state.waitingForSite) ||
-    !state.waitingForSite.every(isWork)
+    !state.waitingForSite.every(isWork) ||
+    (state.waitingForCleanup !== undefined &&
+      (!Array.isArray(state.waitingForCleanup) || !state.waitingForCleanup.every(isCleanupRetry)))
   ) {
     throw new Error('Invalid cleanup state');
   }
@@ -121,6 +148,7 @@ async function discover(
   sha: string,
   handled: Set<string>,
   baseline: number | undefined,
+  retries: CleanupRetry[],
 ) {
   const get = async (path: string, accept: string, optional = false) => {
     const response = await request(`${api}/contents/${path}?ref=${sha}`, {
@@ -148,8 +176,9 @@ async function discover(
 
   const candidates: Work[] = [];
   const failed: string[] = [];
+  const retryIds = new Set(retries.map(({ id }) => id));
   for (const { name: id, type } of entries) {
-    if (type !== 'dir' || handled.has(id)) continue;
+    if (type !== 'dir' || handled.has(id) || retryIds.has(id)) continue;
     const index = await get(`content/works/${id}/index.md`, rawType, true);
     if (!index) continue;
     const work = readWork(id, await index.text());
@@ -182,13 +211,47 @@ async function siteReady(request: typeof fetch, { id, video }: Work) {
   return response.ok;
 }
 
+export async function checkCleanupFileOpen(
+  path: string,
+  listHolders: (file: string) => Promise<{ stdout: string }> = (file) =>
+    execute('fuser', ['-v', resolve(file)], { timeout: 15_000 }),
+  readExecutable = (pid: string) => readlink(`/proc/${pid}/exe`),
+): Promise<boolean | undefined> {
+  let stdout: string;
+  try {
+    ({ stdout } = await listHolders(path));
+  } catch (error) {
+    const failure = error as NodeJS.ErrnoException & { code: string | number; stderr?: string };
+    if (Number(failure.code) === 1 && failure.stderr === '') return false;
+    return undefined;
+  }
+  // fuser prints PIDs to stdout. Its verbose command names can be truncated.
+  const pids = stdout.trim().split(/\s+/);
+  if (!pids.every((pid) => /^[1-9]\d*$/.test(pid))) return undefined;
+  for (const pid of pids) {
+    const executable = await readExecutable(pid).catch(() => undefined);
+    if (executable === undefined || basename(executable) !== 'xdg-document-portal') return true;
+  }
+  return false;
+}
+
+function fileCount(count: number) {
+  const lastDigit = count % 10;
+  const lastTwo = count % 100;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} файлів`;
+  if (lastDigit === 1) return `${count} файл`;
+  if (lastDigit >= 2 && lastDigit <= 4) return `${count} файли`;
+  return `${count} файлів`;
+}
+
 async function trashOlder(
   folders: string[],
   date: number,
-  checkOpen: typeof checkFileOpen,
+  checkOpen: NonNullable<Dependencies['checkOpen']>,
   trash: (path: string) => Promise<unknown>,
 ) {
   let count = 0;
+  let skipped = false;
   for (const folder of folders) {
     const entries = await readdir(folder, { withFileTypes: true }).catch((error: unknown) => {
       if (!missing(error)) throw error;
@@ -202,22 +265,27 @@ async function trashOlder(
           if (!missing(error)) throw error;
         });
       const before = await stat();
-      if (!before?.isFile() || before.mtimeMs >= date || (await checkOpen(path)) !== false)
+      if (!before?.isFile() || before.mtimeMs >= date) continue;
+      if ((await checkOpen(path)) !== false) {
+        skipped = true;
         continue;
+      }
       const after = await stat();
+      if (!after?.isFile() || after.mtimeMs >= date) continue;
       if (
-        !after?.isFile() ||
         after.dev !== before.dev ||
         after.ino !== before.ino ||
         after.ctimeMs !== before.ctimeMs ||
         after.mtimeMs !== before.mtimeMs
-      )
+      ) {
+        skipped = true;
         continue;
+      }
       await trash(path);
       count++;
     }
   }
-  return count;
+  return { count, skipped };
 }
 
 export async function runCleanup(
@@ -225,7 +293,7 @@ export async function runCleanup(
   {
     fetch: fetchImpl = fetch,
     now = Date.now,
-    checkOpen = checkFileOpen,
+    checkOpen = checkCleanupFileOpen,
     trash = (path) => execute('gio', ['trash', '--', path], { timeout: 15_000 }),
     notify: sendNotification = notify,
     log = console.error,
@@ -255,32 +323,51 @@ export async function runCleanup(
       etag = main.headers.get('etag') ?? undefined;
     }
     const changed = sha !== previous?.sha;
-    if (!changed && !previous?.waitingForSite.length && etag === previous?.etag) return;
+    const retries = previous?.waitingForCleanup ?? [];
+    if (!changed && !previous?.waitingForSite.length && !retries.length && etag === previous?.etag)
+      return;
     const handled = new Set(previous?.handled);
+    const runAt = now();
     const { candidates, failed } = changed
-      ? await discover(request, sha, handled, previous ? undefined : now() - dayMs)
+      ? await discover(request, sha, handled, previous ? undefined : runAt - dayMs, retries)
       : { candidates: previous!.waitingForSite, failed: [] };
 
     // Complete all remote checks before touching either folder.
     const waitingForSite: Work[] = [];
-    const ready: Work[] = [];
+    const ready: (Work & { firstSkippedAt?: number })[] = [...retries];
     for (const work of candidates) {
       if (await siteReady(request, work)) ready.push(work);
       else waitingForSite.push(work);
     }
 
     const messages = [];
+    const waitingForCleanup: CleanupRetry[] = [];
+    const expired: string[] = [];
     const folders = [...new Set([resolve(inbox), resolve(reels)])];
     for (const work of ready.sort((a, b) => a.date - b.date)) {
-      const count = await trashOlder(folders, work.date, checkOpen, trash);
-      handled.add(work.id);
-      if (count) messages.push(`Робота ${work.id} опублікована: прибрано ${count} файлів.`);
+      const firstSkippedAt = work.firstSkippedAt ?? runAt;
+      if (runAt - firstSkippedAt >= dayMs) {
+        handled.add(work.id);
+        expired.push(work.id);
+        continue;
+      }
+      const { count, skipped } = await trashOlder(folders, work.date, checkOpen, trash);
+      if (skipped) waitingForCleanup.push({ ...work, firstSkippedAt });
+      else handled.add(work.id);
+      if (count) messages.push(`Робота ${work.id} опублікована: прибрано ${fileCount(count)}.`);
     }
     for (const id of failed) {
       handled.add(id);
       messages.push(`Публікація ${id} з помилкою, папки не чищу`);
     }
-    await saveState(statePath, { sha, etag, handled: [...handled], waitingForSite });
+    await saveState(statePath, {
+      sha,
+      etag,
+      handled: [...handled],
+      waitingForSite,
+      waitingForCleanup,
+    });
+    for (const id of expired) log(`Reel cleanup: gave up on ${id} after 24 hours`);
     for (const message of messages) await sendNotification(message);
   } catch (error) {
     log(`Reel cleanup: ${String(error).replace(/\s+/g, ' ')}`);

@@ -10,9 +10,16 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { runCleanup } from '../src/cleanup.ts';
+import { checkCleanupFileOpen, runCleanup } from '../src/cleanup.ts';
+
+const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
+vi.mock('node:child_process', async (importOriginal) => {
+  const original = await importOriginal<typeof import('node:child_process')>();
+  const { promisify } = await import('node:util');
+  return { ...original, execFile: Object.assign(vi.fn(), { [promisify.custom]: execute }) };
+});
 
 const id = 'WORK-1';
 const date = Date.parse('2026-11-22T09:00:00.000Z');
@@ -78,8 +85,8 @@ function fixture() {
     setCommit(response: Response) {
       commit = response;
     },
-    run: () =>
-      runCleanup({ inbox, reels, statePath }, { fetch, now, trash, notify, log, checkOpen }),
+    run: (clock = now) =>
+      runCleanup({ inbox, reels, statePath }, { fetch, now: clock, trash, notify, log, checkOpen }),
   };
 }
 
@@ -96,15 +103,14 @@ it('trashes only older closed regular files in both folders and handles the work
   const b = await put(reels, 'older.mp4');
   await put(inbox, 'equal.mov', date);
   await put(reels, 'newer.mp4', date + 1000);
-  await put(inbox, 'open.mov');
   await put(reels, '.hidden');
   await mkdir(join(reels, 'nested'));
   const child = await put(join(reels, 'nested'), 'child.mp4');
   await symlink(child, join(inbox, 'link.mov'));
   await f.run();
   expect(f.trash.mock.calls).toEqual([[a], [b]]);
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 2 файлів.`);
-  expect((await readdir(inbox)).sort()).toEqual(['equal.mov', 'link.mov', 'open.mov']);
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 2 файли.`);
+  expect((await readdir(inbox)).sort()).toEqual(['equal.mov', 'link.mov']);
   expect((await readdir(reels)).sort()).toEqual(['.hidden', 'nested', 'newer.mp4']);
   f.setCommit(new Response(JSON.stringify({ sha: 'b'.repeat(40) })));
   f.fetch.mockClear();
@@ -112,6 +118,100 @@ it('trashes only older closed regular files in both folders and handles the work
   await f.run();
   expect(f.fetch).toHaveBeenCalledTimes(2);
   expect(f.trash).toHaveBeenCalledTimes(2);
+});
+
+it('passes the absolute file path to fuser as its only operand', async () => {
+  execute.mockRejectedValueOnce({ code: 1, stdout: '', stderr: '' });
+
+  expect(await checkCleanupFileOpen('-open.mov')).toBe(false);
+  expect(execute).toHaveBeenCalledExactlyOnceWith('fuser', ['-v', resolve('-open.mov')], {
+    timeout: 15_000,
+  });
+});
+
+it.each([
+  ['101', false],
+  ['202', true],
+  ['101 202', true],
+  ['303', true],
+] as const)('checks executable names for fuser PIDs %s', async (stdout, open) => {
+  const listHolders = async () => ({ stdout, stderr: 'truncated command names' });
+  const readExecutable = async (pid: string) => {
+    if (pid === '303') throw new Error('Executable unavailable');
+    return pid === '101' ? '/usr/libexec/xdg-document-portal' : '/usr/bin/editor';
+  };
+  expect(await checkCleanupFileOpen('open.mov', listHolders, readExecutable)).toBe(open);
+});
+
+it.each(['gone', 'closed'])(
+  'retries on unchanged main until the skipped file is %s',
+  async (end) => {
+    const f = fixture();
+    const open = await put(inbox, 'open.mov');
+    const closed = await put(reels, 'closed.mp4');
+    await f.run();
+    expect(f.trash.mock.calls).toEqual([[closed]]);
+    expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+      handled: [],
+      waitingForCleanup: [{ id, date, firstSkippedAt: now() }],
+    });
+
+    f.setCommit(new Response(null, { status: 304 }));
+    f.fetch.mockClear();
+    await f.run();
+    expect(f.fetch).toHaveBeenCalledTimes(1);
+    expect(f.trash.mock.calls).toEqual([[closed]]);
+
+    if (end === 'gone') await unlink(open);
+    else f.checkOpen.mockResolvedValue(false);
+    f.fetch.mockClear();
+    await f.run();
+    expect(f.fetch).toHaveBeenCalledTimes(1);
+    expect(f.trash.mock.calls).toEqual(end === 'gone' ? [[closed]] : [[closed], [open]]);
+    expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+      handled: [id],
+      waitingForCleanup: [],
+    });
+  },
+);
+
+it('keeps the original retry deadline across a new SHA and gives up once after 24 hours', async () => {
+  const f = fixture();
+  await put(inbox, 'open.mov');
+  await f.run();
+  f.setCommit(new Response(JSON.stringify({ sha: 'b'.repeat(40) })));
+  f.fetch.mockClear();
+  await f.run(() => now() + 86_399_999);
+  expect(f.fetch).toHaveBeenCalledTimes(2);
+  expect(f.checkOpen).toHaveBeenCalledTimes(2);
+  expect(f.log).not.toHaveBeenCalled();
+
+  const deadline = () => now() + 86_400_000;
+  await f.run(deadline);
+  await f.run(deadline);
+  expect(f.checkOpen).toHaveBeenCalledTimes(2);
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(f.log).toHaveBeenCalledExactlyOnceWith(`Reel cleanup: gave up on ${id} after 24 hours`);
+  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
+    handled: [id],
+    waitingForCleanup: [],
+  });
+});
+
+it.each([
+  [1, 'файл'],
+  [2, 'файли'],
+  [5, 'файлів'],
+  [11, 'файлів'],
+  [21, 'файл'],
+  [22, 'файли'],
+])('uses the Ukrainian plural for %i files', async (count, noun) => {
+  const f = fixture();
+  await Promise.all(Array.from({ length: count }, (_, i) => put(inbox, `older-${i}.mov`)));
+  await f.run();
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith(
+    `Робота ${id} опублікована: прибрано ${count} ${noun}.`,
+  );
 });
 
 it.each([200, 304])('makes one conditional request on idle HTTP %s', async (status) => {
