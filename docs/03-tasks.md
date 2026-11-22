@@ -3259,7 +3259,7 @@ migrations: Volodymyr applies them before the bot deploy.
   two manual 🚀 presses within one run stays as before T76a.
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
-- Status: in review.
+- Status: in review (Codex: 6 rounds, last with no blocking findings).
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. For kinds in `releaseQueue.kinds`, the final publish confirmation (after the people
@@ -3315,6 +3315,9 @@ migrations: Volodymyr applies them before the bot deploy.
      stored job and `channels: [<channel>]`; retry as in T76a.
   4. Author notification for a follow-up run: one short line per channel («Threads: опубліковано»
      or the error), no repeat of the full message.
+- Review note from PR #189 (nit): an old 🚀 on a queue-owned `publishing` draft still shows
+  the consent buttons and only then answers «busy»; check `stored.publishAt` before showing them
+  (`apps/bot/src/bot.ts`, publish action).
 - Acceptance: a work at 18:30 reaches Threads at 20:00 (next tick), the other channels at 18:30;
   re-running either dispatch never posts twice; T75 cleanup waits until the delayed channel is
   `done`.
