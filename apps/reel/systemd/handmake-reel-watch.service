@@ -1,0 +1,15 @@
+[Unit]
+Description=Faden und Stimmung reel folder watcher
+
+[Service]
+WorkingDirectory=%h/VS_Code_projects/handmake
+ExecStart=/usr/bin/node apps/reel/src/watch.ts %h/Desktop/temp/videos
+Restart=on-failure
+Nice=10
+CPUQuota=400%
+MemoryMax=3G
+KillMode=mixed
+TimeoutStopSec=infinity
+
+[Install]
+WantedBy=default.target

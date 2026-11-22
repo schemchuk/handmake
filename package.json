@@ -9,6 +9,7 @@
   },
   "scripts": {
     "reel": "node apps/reel/src/cli.ts",
+    "reel:watch": "node apps/reel/src/watch.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
