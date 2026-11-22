@@ -256,10 +256,8 @@ export class YoutubeAdapter implements ChannelAdapter {
     } catch {
       throw new Transient();
     }
-    if (
-      response.type === 'opaqueredirect' ||
-      (response.status >= 300 && response.status < 400 && response.status !== 308)
-    )
+    // An opaque redirect (browser runtimes) has status 0 and fails as not ok below.
+    if (response.status >= 300 && response.status < 400 && response.status !== 308)
       throw new YoutubeAdapterError(
         `YouTube answered with an unexpected redirect (HTTP ${response.status})`,
       );
