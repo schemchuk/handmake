@@ -182,3 +182,20 @@ on 2026-11-03.
   background behind the cloth stays. Display typeface: Gabriela (chosen from four with Cyrillic).
   All pages are redesigned, not only the home page.
 - Mockup: docs/design/site-cloth/index.html.
+
+## Round 2026-11-22: one video a day (release schedule)
+- Volodymyr's brief: the author will publish about one video a day; the release must suit the
+  Instagram and other network algorithms.
+- Q1 Audience: German-speaking. Captions on the networks are German; time slots follow German
+  habits.
+- Q2 Release mode: a queue with a fixed daily time, not "publish now". The author sends works to
+  the bot whenever she likes; the bot releases the next one at the slot. "Publish now" stays.
+- Q3 New networks for video: YouTube Shorts and Pinterest (TikTok not now).
+- Q4 The author can answer comments in the evening, 18:00-20:00.
+- Accepted scheme (defaults proposed by Claude Code, not objected to): every day 18:30
+  Europe/Berlin, weekends included; on Tuesday 19:30 because the meeting announcement goes out at
+  18:00. Instagram, Facebook, Telegram and YouTube at the slot; Threads 90 minutes later; Pinterest
+  the next morning at 09:00. The bot reminds the author when one work is left in the queue; an
+  empty queue skips the day. Review the slot after 2-3 weeks of T63/T64 numbers.
+- Volodymyr 2026-11-22: tasks Claude Code can do alone it implements itself; for browser steps he
+  gets a full guide with links when the step is due.

@@ -39,6 +39,9 @@ Agents never create accounts or handle secret values. Each item unblocks the tas
 | H18 | (T49d go-live) Re-authorize the Threads token with `threads_basic`, `threads_content_publish`, `threads_read_replies` and `threads_manage_replies`, then update GitHub Secret `THREADS_ACCESS_TOKEN` and set Worker `handmake-bot` secrets `THREADS_USER_ID` and `THREADS_ACCESS_TOKEN`. Create a Cloudflare API token limited to "Workers Scripts: Edit" on this account and store it as GitHub Secret `CLOUDFLARE_WORKERS_TOKEN`. Apply the T49d D1 migration to remote. **Partly done 2026-11-10:** new Threads token (issued 16:16 UTC, expires 2027-01-09; scopes `threads_basic`, `threads_content_publish`, `threads_read_replies`, `threads_manage_replies`, `threads_manage_insights`) in GitHub Secret `THREADS_ACCESS_TOKEN` and Worker secrets `THREADS_ACCESS_TOKEN`/`THREADS_USER_ID`; `CLOUDFLARE_WORKERS_TOKEN` (Workers Scripts: Edit, one account, expires 2030-05-31) set. Migration waits for the T49d PR. | T49d |
 | H13 | Author takes 2-3 good photos (daylight, flat, plus a close-up) of 3 real works: one clothing piece with embroidery, one pillow, one small appliqué or accessory. **Done 2026-11-01:** 11 photos of 3 works received (blouse with cross-stitch, crocheted pillow cover, crocheted flower appliqué), kept locally and NOT committed (public repo, author's works). Usable: blouse 1-3, pillow 1-2, appliqué 4 and 6; blurry or process shots skipped (pillow 3, appliqué 1-3, 5). Author's consent to send them to AI providers is still needed before T43. | T43 |
 | H12 | Record a short screen video or GIF of the real flow (bot → preview → channel) on the test channel. **Done 2026-11-13:** recorded on Telegram Desktop with the bot in test mode (`PUBLISH_LIVE=false`, then back to `true`): three photos of the author's socks → `/done` → preview → publish → album with UA caption and DE reply in the test channel. 29 s, chat list cropped out, file picker and a transient publish failure cut (`getFile` fetch failed, re-run passed). Kept locally by Volodymyr as `demo.gif` (3.0 MB, 360 px) and `demo.mp4` (1.1 MB); T34 adds it to the repo. | T34 |
+| H19 | (F43) YouTube for the brand: a YouTube channel on the brand Google account; a Google Cloud project with "YouTube Data API v3" enabled; OAuth consent screen "External", published to "In production" (in "Testing" the refresh token dies after 7 days); an OAuth client of type "Desktop app". Run the T78 helper locally to get a refresh token; store GitHub Secrets `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN`. Channel description links to the Impressum. Claude Code gives the step-by-step guide when T78 is ready. | T78 |
+| H20 | (F44) Pinterest: the brand account switched to a business account, one board for works, a developer app at developers.pinterest.com (Trial access first), app id/secret and tokens as GitHub Secrets (names in T79). After T79 works in the sandbox: record the demo video and apply for Standard access (review takes days). Profile links to the Impressum. Guide from Claude Code when T79 is ready. | T79 |
+| H21 | (F43, F44) Regenerate the Datenschutzerklärung with the YouTube and Pinterest modules and hand it to Claude Code for `docs/legal/`; legal review stays with Volodymyr. | T78, T79 go-live |
 
 ## Tasks
 
@@ -3186,3 +3189,128 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests (`--maxWorkers=2`): portal-only holder counts as closed; another holder counts as open;
   skipped file → work retried next run with no GitHub requests beyond the SHA check, handled
   once the file is gone or closed; 24 h give-up; plural forms 1/2/5/11/21/22.
+
+## Release schedule (spec v13, F42-F44, planned 2026-11-22)
+
+Order: T76a → T76b → T77 → T78 → T79. Owner `claude-code` on Volodymyr's word (2026-11-22: tasks
+Claude Code can do alone it implements itself); reviewer is the other agent, Codex. Browser and
+account steps are H19-H21; Claude Code gives the guide when a step is due. T76a and T77 add D1
+migrations: Volodymyr applies them before the bot deploy.
+
+### T76a — Release queue: slots, scheduled state, cron dispatch (`core`, `bot`, F42)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: spec v13
+- Change:
+  1. Tenant config `releaseQueue` (core schema + `config/tenants/faden-und-stimmung.yaml`):
+     `kinds: [work]`, `time: '18:30'`, `overrides: { tuesday: '19:30' }`, `leadMinutes: 10`,
+     `lowQueueReminder: 1`; times in `meetingSchedule.timezone`. Absent block = publish at once
+     (other tenants and tests unchanged).
+  2. Core: pure `nextFreeSlot(now, taken, config)` returning a UTC instant; DST-safe
+     (Europe/Berlin wall time), skips slots already taken and today's slot when closer than
+     `leadMinutes`.
+  3. Draft state machine: new state `scheduled` with events `schedule` (ready → scheduled),
+     `unschedule` (scheduled → ready) and `beginPublishing` allowed from `scheduled`. D1 migration
+     `0025_release_queue.sql`: nullable `publish_at` and `queued_at` on drafts, index on
+     `(state, publish_at)`. Retention never deletes a `scheduled` draft.
+  4. Cron (`*/15` tick, slots are on quarter hours): claim due drafts atomically
+     (`scheduled` → `publishing` only if still scheduled), build the job exactly as the publish
+     button does today, dispatch through `PublishRunner`. A failed dispatch returns the draft to
+     `scheduled` with the same slot and retries next tick; after 3 failed ticks the author gets
+     one message and the draft goes back to `ready`.
+  5. The work's front-matter `date` is the queue time (`queued_at`), not the slot time: the job
+     carries it and the publisher uses it. T75 cleanup keys on `date`, so files the author sends
+     for the next work while one waits in the queue are never trashed early.
+- Acceptance: two works queued Monday 10:00 Berlin get Monday 18:30 and Tuesday 19:30; a work
+  queued at 18:25 gets tomorrow; a slot over the DST switch is correct wall time; a due draft is
+  dispatched once even when two ticks overlap; front matter `date` equals queue time.
+- Tests: slot calculation (overrides, lead time, taken slots, DST both ways); state transitions;
+  D1 claim race; cron dispatch success, retry, give-up message; tenant without `releaseQueue`
+  keeps immediate publish; publisher `date` from the job.
+
+### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T76a
+- Change:
+  1. For kinds in `releaseQueue.kinds`, the final publish confirmation (after the people
+     confirmation for video) schedules instead of dispatching and replies
+     «Додано в чергу. Вийде <weekday>, <dd.mm> о <hh:mm>.» A second button
+     «Опублікувати зараз» dispatches at once as today.
+  2. `/queue` (Ukrainian label «Черга» in the command menu): lists queued works by slot with
+     the first line of the text; per work «Зараз» (publish now; later works keep their slots) and
+     «Повернути в чернетку» (unschedule, slot freed). Versioned callbacks as elsewhere.
+  3. Low-queue reminder: when a dispatch leaves exactly `lowQueueReminder` work(s) queued, one
+     message «У черзі лишилась 1 робота (вийде …). Надішли наступну, коли буде готова.»; when the
+     queue becomes empty, one message «Черга порожня: завтра нічого не вийде.»
+  4. Bot texts in `texts.ts`, Ukrainian; no new secrets.
+- Acceptance: publishing a work shows the slot; `/queue` shows and edits the queue; publish now
+  and back-to-draft work and free the slot; reminders fire once per state change.
+- Tests: handlers with fake store and runner: schedule reply, publish now, unschedule, stale
+  callback, reminder once, posts and shows still publish at once.
+
+### T77 — Delayed channels: Threads +90 min, Pinterest next morning (`core`, `bot`, `publisher`, F42)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T76a
+- Change:
+  1. Per-channel tenant setting `delay`: `{ minutes: 90 }` or `{ nextDayAt: '09:00' }` (tenant
+     timezone). Threads gets `{ minutes: 90 }`; Pinterest `{ nextDayAt: '09:00' }` when T79 adds
+     it.
+  2. Publish payload gains optional `channels: string[]`. The first dispatch of a work names the
+     channels without a delay; the publisher still creates the ledger with every enabled channel,
+     delayed ones stay `pending`. A run with `channels` delivers only those and never touches the
+     others' ledger entries; idempotency rules unchanged.
+  3. Bot: after the first dispatch, rows in a new D1 table `channel_followups` (migration 0026:
+     tenant, draft id, channel, due_at, state, attempts). The cron dispatches due rows with the
+     stored job and `channels: [<channel>]`; retry as in T76a.
+  4. Author notification for a follow-up run: one short line per channel («Threads: опубліковано»
+     or the error), no repeat of the full message.
+- Acceptance: a work at 18:30 reaches Threads at 20:00 (next tick), the other channels at 18:30;
+  re-running either dispatch never posts twice; T75 cleanup waits until the delayed channel is
+  `done`.
+- Tests: delay calculation incl. DST; payload schema with and without `channels`; publisher
+  subset run leaves other ledger entries untouched; follow-up claim and retry.
+
+### T78 — YouTube Shorts channel (`channels`, `publisher`, F43)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T76a · Live needs: H19
+- Change:
+  1. `packages/channels/src/youtube/`: adapter for works with a video only. Access token from
+     the refresh token (`https://oauth2.googleapis.com/token`), resumable upload to
+     `https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status`
+     with `privacyStatus: public`, `selfDeclaredMadeForKids: false`, `categoryId: "26"`, German
+     title (first line, at most 100 characters) and description (German text, canonical link,
+     at most 5 hashtags). Resume after a dropped connection; retry like T71. Video id in the
+     ledger. Works without video get no `youtube` ledger entry.
+  2. Tenant config `channels.youtube: { language: de }` (after facebook, a failure never blocks
+     the others). Secrets `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN` in
+     `.env.example` and `publish.yml` env (workflow change: Volodymyr's OK before merge).
+  3. Local helper `apps/publisher/scripts/youtube-auth.ts`: loopback OAuth with scope
+     `https://www.googleapis.com/auth/youtube.upload`, prints the refresh token once to the
+     terminal, never writes it to disk.
+  4. Disabled until the secrets exist: a missing secret skips the channel with one log line.
+- Acceptance: with mocked Google endpoints a work with video yields one public upload and a
+  `done` ledger entry; a rerun does not upload again; a work without video is not sent.
+- Tests: token refresh, resumable upload incl. 308 resume, metadata limits, idempotent rerun,
+  skip without secrets.
+
+### T79 — Pinterest channel (`channels`, `publisher`, F44)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T77 · Live needs: H20
+- Change:
+  1. `packages/channels/src/pinterest/` on API v5 (`https://api.pinterest.com/v5`, sandbox
+     `https://api-sandbox.pinterest.com/v5` while the app has Trial access, chosen by config).
+     Video: `POST /media` (`media_type: video`), multipart upload to the returned URL, poll
+     `GET /media/{id}` until `succeeded`, then `POST /pins` with `media_source.source_type:
+     video_id` and the first photo's site URL as cover. Without video: `source_type: image_url`
+     with the first photo. `link` = canonical work page; German title (at most 100 characters)
+     and description (at most 500). Pin id in the ledger.
+  2. Tenant config `channels.pinterest: { language: de, boardId: PINTEREST_BOARD_ID,
+     delay: { nextDayAt: '09:00' } }`. Secrets `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`,
+     `PINTEREST_REFRESH_TOKEN`, `PINTEREST_BOARD_ID`; the access token is refreshed per run. If
+     Pinterest returns a new refresh token, store it with `SECRETS_WRITE_TOKEN` as in T26d.
+     Workflow change: Volodymyr's OK before merge.
+  3. Skipped with one log line while secrets are missing.
+- Acceptance: with mocked endpoints a work with video yields a video Pin with cover and link, a
+  photo-only work an image Pin; rerun never pins twice; a media upload that never succeeds fails
+  the channel with a readable error after a bounded wait.
+- Tests: token refresh and rotation hand-off, media register/upload/poll, image vs video pin,
+  idempotent rerun, timeout path, skip without secrets.

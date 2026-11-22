@@ -2,10 +2,10 @@
 
 What we build and why: acceptance criteria and explicit non-goals.
 
-Status: **approved v12 (2026-11-14).**
-Previous: approved v11 (2026-11-14), v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
+Status: **approved v13 (2026-11-22).**
+Previous: approved v12 (2026-11-14), v11 (2026-11-14), v10 (2026-11-13), v9 (2026-11-13), v8 (2026-11-06), v7 (2026-11-04), v6 (2026-10-30).
 Source: docs/00-interview.md, rounds 0-6, and the POSSE discussion (docs/STATUS.md, rounds 1-9, 2026-10-30).
-Changes from v11 (v12) are listed in section 14-v12, from v10 (v11) in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
+Changes from v12 (v13) are listed in section 14-v13, from v11 (v12) in section 14-v12, from v10 (v11) in section 14-v11, from v9 (v10) in section 14-v10, from v8 (v9) in section 14-v9, from v7 (v8) in section 14, from v6 in 14a.
 
 ## 1. Problem, vision and goals
 
@@ -339,6 +339,28 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   reply (reply rules ported from `/ig-reply`). She sends, edits or skips; nothing is posted without
   her press. Comment text and the commenter's handle are personal data of readers: kept only until
   the comment is handled (at most 30 days), never in Git, listed in the Datenschutzerklärung.
+- **F42** Release queue (v13, Volodymyr 2026-11-22). A work the author publishes through `/work`
+  goes into a queue instead of out at once; the bot names the slot it will go out at
+  («Вийде в середу, 25.11, о 18:30»). One work per day at the tenant's slot (default 18:30
+  Europe/Berlin, Tuesday 19:30 so it does not collide with the 18:00 announcement); the next free
+  slot is taken, today's slot if it is still at least 10 minutes away. The author can see the
+  queue, publish a queued work now, or take it back to the draft. When only one work is left she
+  gets one reminder; an empty queue skips the day, nothing is filled in. Posts, shows,
+  announcements and contest posts keep publishing at once. Channels may carry a delay: Threads
+  goes 90 minutes after the slot, Pinterest the next morning at 09:00. The site page appears with
+  the first channel run, never earlier.
+  - Acceptance: two works queued on Monday at 10:00 go out Monday 18:30 and Tuesday 19:30; a
+    queued work published now frees its slot for the next one; the reel folder cleanup (T75)
+    still trashes only files sent before that work.
+- **F43** YouTube Shorts (v13). A work with a video also goes to the brand's YouTube channel as a
+  Short at the slot: German title (at most 100 characters) and description with the canonical
+  link, public, not made for kids, category "Howto & Style". Works without a video are not sent.
+- **F44** Pinterest (v13). Every work becomes a Pin on the brand board, linking to its page on the
+  site: a video Pin when the work has a video (cover: the first photo), otherwise an image Pin with
+  the first photo. German title and description with search keywords. Pins made while the app has
+  only Trial access are visible to the account alone; the channel goes live after Standard access.
+- New profiles (YouTube, Pinterest) link to the Impressum; the Datenschutzerklärung gains both
+  (Volodymyr regenerates it, legal review stays his).
 - Weekly planning and post-mortems (`/ig-plan`, `/ig-audit`) are not built: Volodymyr runs those
   skills himself in Claude Code.
 
@@ -478,7 +500,7 @@ Non-goals in v8:
 
 Deferred (the architecture must not block them):
 - **Web admin panel** as a second authoring interface next to the bot.
-- **Scheduled publishing** (`publishAt` exists; always "now" today).
+- ~~Scheduled publishing~~ built for works as F42 (v13).
 - **Fully AI-generated posts** (`provenance: ai-generated`, same preview and Publish step).
 - **Instagram contest** for people outside the circle (docs/research/002-contests.md).
 - **Tenant onboarding** for bloggers (sign-up, connecting channels, billing). Until then a tenant is
@@ -582,6 +604,14 @@ Not in scope now: sign-up, billing, tenant admin UI, per-tenant usage limits.
   that address (required practice in Germany).
 - **Funnel:** attract (shows, works, contest on all networks) -> engage (comments, Telegram channel) ->
   capture (email with lead magnet) -> convert (shop, phase 4).
+
+## 14-v13. Changes from v12 (v13, approved 2026-11-22)
+
+- New F42 release queue for works with a daily slot and per-channel delays; F43 YouTube Shorts;
+  F44 Pinterest. Interview round 2026-11-22.
+- Architecture impact (T76-T79): drafts gain a `scheduled` state and a slot time in D1; the bot
+  cron dispatches due works and delayed channels; the publish payload may name a subset of
+  channels; two new channel adapters in `packages/channels`.
 
 ## 14-v12. Changes from v11 (v12, approved 2026-11-14)
 

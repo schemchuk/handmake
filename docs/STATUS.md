@@ -1,13 +1,12 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T75b merged as PR #186 (`a9e0aea`); T75 as PR #185 (`7be9d7f`).
-- **Branch:** `main`.
-- **Last commit:** fix(reel): retry cleanup of open files, ignore doc portal (T75b) (#186).
-- **Next step:** none. `handmake-reel-cleanup.timer` (every 5 min) empties `~/Desktop/Ролики` and
-  `~/Desktop/Готові рілси` to the Trash once a work is published everywhere; runs from the repo, no
-  reinstall needed for T75b. KDE Connect saves phone transfers straight into `Ролики`. Next real
-  work will confirm the full cycle.
+- **Active agent:** claude-code.
+- **Current task:** T76a (release queue: slots, scheduled state, cron dispatch). Spec v13
+  (F42-F44) and tasks T76a-T79, H19-H21 added 2026-11-22.
+- **Branch:** `feat/T76a-release-queue`.
+- **Last commit:** docs: plan daily release queue, YouTube Shorts, Pinterest.
+- **Next step:** claude-code implements T76a, then T76b, T77, T78, T79 (Volodymyr 2026-11-22);
+  Codex reviews each PR. Guides for H19/H20 when T78/T79 are ready.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
