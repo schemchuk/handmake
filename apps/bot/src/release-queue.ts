@@ -108,6 +108,7 @@ export async function scheduleDraft(
       slot,
       now,
       approvalChatId,
+      stored.version,
     );
     if (outcome === 'scheduled') return slot;
     if (outcome === 'not-ready') return undefined;
@@ -200,6 +201,8 @@ async function dispatchDue(
     return;
   }
   await options.drafts.markDispatched(tenantId, draftId, claimed.version, now);
+  // A lost run dispatched again changes nothing in the queue: no new note.
+  if (stored.dispatchedAt) return;
   await remindLowQueue(tenantId, claimed, options).catch((error: unknown) =>
     console.error('release queue reminder failed:', (error as Error).message),
   );
@@ -216,7 +219,8 @@ async function remindLowQueue(
   const queue = config.releaseQueue;
   if (!queue) return;
   const left = await options.drafts.listScheduled(tenantId);
-  if (left.length > queue.lowQueueReminder) return;
+  // Exactly at the threshold, and once more when empty: one note per change.
+  if (left.length !== queue.lowQueueReminder && left.length !== 0) return;
   const chatId =
     (claimed.draft.extras['approvalChatId'] as string | undefined) ??
     (await options.drafts.chatIdOf(tenantId, claimed.draft.draftId));

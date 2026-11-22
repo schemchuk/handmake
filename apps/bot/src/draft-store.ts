@@ -48,6 +48,8 @@ export interface StoredDraft {
   publishAt?: string;
   /** Failed or lost dispatches of the queued draft so far. */
   queueAttempts?: number;
+  /** When GitHub accepted the queue's dispatch of this draft. */
+  dispatchedAt?: string;
 }
 
 /** What happened to a queued draft whose dispatch failed (T76a). */
@@ -233,21 +235,17 @@ export interface D1DraftStore {
     publishAt: Date,
     now: Date,
     approvalChatId?: string,
+    /** The row version the caller validated; another version is not-ready. */
+    expectedVersion?: number,
   ): Promise<'scheduled' | 'not-ready' | 'slot-taken'>;
   /** F42: `scheduled` → `ready`, slot freed; with `version`, only that row
    * version (a stale queue button never moves a newer state). */
   unschedule(tenantId: string, draftId: string, now: Date, version?: number): Promise<boolean>;
   /** Slots held by queued or publishing works (one work per slot). */
   takenSlots(tenantId: string): Promise<Date[]>;
-  /** «Зараз» in the queue: `scheduled` (that version) → `publishing`, slot
-   * freed, like the publish button's claim. */
-  claimScheduledNow(
-    tenantId: string,
-    draftId: string,
-    version: number,
-    now: Date,
-    approvalChatId?: string,
-  ): Promise<StoredDraft | undefined>;
+  /** «Зараз» in the queue: the slot of that row version moves to `now`, so
+   * the cron dispatches it on its next tick with all of its guards. */
+  moveToNow(tenantId: string, draftId: string, version: number, now: Date): Promise<boolean>;
   /** The tenant's queue, earliest slot first. */
   listScheduled(tenantId: string): Promise<StoredDraft[]>;
   /** The next queued draft to dispatch (a due slot or an interrupted claim)
@@ -284,6 +282,7 @@ interface DraftRow {
   pending_edit: string | null;
   publish_at: string | null;
   queue_attempts: number;
+  dispatched_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -302,7 +301,7 @@ const draftKinds: ReadonlySet<string> = new Set(['post', 'work', 'show']);
 const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work', 'show']);
 
 const draftColumns =
-  'tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, queue_attempts, created_at, updated_at';
+  'tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, queue_attempts, dispatched_at, created_at, updated_at';
 const selectDraft = `SELECT ${draftColumns} FROM drafts WHERE tenant_id = ?`;
 
 /** D1/SQLite report UNIQUE violations with this message; we treat them as
@@ -786,7 +785,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes;
     },
 
-    async schedule(tenantId, draftId, publishAt, now, approvalChatId) {
+    async schedule(tenantId, draftId, publishAt, now, approvalChatId, expectedVersion) {
       try {
         const result = await db
           .prepare(
@@ -795,7 +794,8 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
                  dispatched_at = NULL, queue_attempts = 0, updated_at = ?, version = version + 1,
                  extras = CASE WHEN ? IS NULL THEN extras
                    ELSE json_set(extras, '$.approvalChatId', ?) END
-             WHERE tenant_id = ? AND id = ? AND status = 'ready'`,
+             WHERE tenant_id = ? AND id = ? AND status = 'ready'
+               AND (? IS NULL OR version = ?)`,
           )
           .bind(
             publishAt.toISOString(),
@@ -804,6 +804,8 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
             approvalChatId ?? null,
             tenantId,
             draftId,
+            expectedVersion ?? null,
+            expectedVersion ?? null,
           )
           .run();
         return result.meta.changes > 0 ? 'scheduled' : 'not-ready';
@@ -838,26 +840,22 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return results.map((row) => new Date(row.publish_at));
     },
 
-    async claimScheduledNow(tenantId, draftId, version, now, approvalChatId) {
-      const row = await db
-        .prepare(
-          `UPDATE drafts
-           SET status = 'publishing', updated_at = ?, version = version + 1, ${leaveQueue},
-               extras = CASE WHEN ? IS NULL THEN extras
-                 ELSE json_set(extras, '$.approvalChatId', ?) END
-           WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND version = ?
-           RETURNING ${draftColumns}`,
-        )
-        .bind(
-          now.toISOString(),
-          approvalChatId ?? null,
-          approvalChatId ?? null,
-          tenantId,
-          draftId,
-          version,
-        )
-        .first<DraftRow>();
-      return row ? toStoredDraft(row) : undefined;
+    async moveToNow(tenantId, draftId, version, now) {
+      try {
+        const result = await db
+          .prepare(
+            `UPDATE drafts
+             SET publish_at = ?, retry_at = NULL, updated_at = ?, version = version + 1
+             WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND version = ?`,
+          )
+          .bind(now.toISOString(), now.toISOString(), tenantId, draftId, version)
+          .run();
+        return result.meta.changes > 0;
+      } catch (error) {
+        // Two «Зараз» presses in the same millisecond: the slot is taken.
+        if (isUniqueViolation(error)) return false;
+        throw error;
+      }
     },
 
     async listScheduled(tenantId) {
@@ -980,6 +978,7 @@ function toStoredDraft(row: DraftRow): StoredDraft {
     version: row.version,
     pendingEdit: row.pending_edit === 'uk' || row.pending_edit === 'de' ? row.pending_edit : null,
     ...(row.publish_at ? { publishAt: row.publish_at, queueAttempts: row.queue_attempts } : {}),
+    ...(row.dispatched_at ? { dispatchedAt: row.dispatched_at } : {}),
   };
 }
 

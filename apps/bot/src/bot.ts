@@ -104,17 +104,6 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   registerQueueSession(bot, {
     texts,
     ...(options.tenantConfigs ? { tenantConfigs: options.tenantConfigs } : {}),
-    publishNow: async (ctx, claimed) => {
-      let job: PublishJob;
-      try {
-        job = publishJobOf(claimed.draft);
-      } catch {
-        await ctx.drafts.revertPublishing(ctx.tenantId, claimed.draft.draftId, new Date());
-        await ctx.reply(texts.publishInvalidText);
-        return;
-      }
-      await runPublish(ctx, claimed, job);
-    },
   });
 
   /** The tenant's queue settings when drafts of this kind are queued (F42). */
@@ -358,7 +347,9 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
                 [
                   {
                     text: texts.publishQueueButton,
-                    callback_data: `draft:${draftId}:publish:queue`,
+                    // Bound to the version shown: a stale button never queues
+                    // a draft that changed since (PR #189 review).
+                    callback_data: `draft:${draftId}:publish:queue:${stored.version}`,
                   },
                 ],
                 [
@@ -383,7 +374,14 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       return;
     }
 
-    if (action === 'publish:queue') {
+    if (action.startsWith('publish:queue:')) {
+      const shownVersion = Number(action.slice('publish:queue:'.length));
+      if (!Number.isInteger(shownVersion) || shownVersion !== stored.version) {
+        await ctx.reply(
+          stored.draft.state === 'scheduled' ? texts.queuedAlreadyText : texts.queueStaleText,
+        );
+        return;
+      }
       // Validate as the publish button does: a draft that can never be
       // dispatched must not wait for a slot first.
       try {

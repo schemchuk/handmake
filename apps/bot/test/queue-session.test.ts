@@ -67,6 +67,12 @@ async function readyPost(text = 'Новий шарф'): Promise<string> {
 
 const press = (data: string) => bot.handleUpdate(callbackQueryUpdate(user, user, data));
 
+/** «в чергу» as the consent message shows it: bound to the row version. */
+async function queueIt(id: string): Promise<void> {
+  const stored = await drafts.get(tenant, id);
+  await press(`draft:${id}:publish:queue:${stored!.version}`);
+}
+
 function keyboardOf(index = -1): string[] {
   const payload = calls.filter((call) => call.method === 'sendMessage').at(index)?.payload;
   const markup = payload?.['reply_markup'] as
@@ -77,9 +83,10 @@ function keyboardOf(index = -1): string[] {
 describe('publishing a queued kind', () => {
   it('offers «в чергу», «зараз» and cancel after the consent question', async () => {
     const id = await readyPost();
+    const version = (await drafts.get(tenant, id))!.version;
     await press(`draft:${id}:publish`);
     expect(keyboardOf()).toEqual([
-      `draft:${id}:publish:queue`,
+      `draft:${id}:publish:queue:${version}`,
       `draft:${id}:publish:confirm`,
       `draft:${id}:publish:cancel`,
     ]);
@@ -88,8 +95,8 @@ describe('publishing a queued kind', () => {
   it('«в чергу» takes the next free slot and dispatches nothing', async () => {
     const first = await readyPost();
     const second = await readyPost('Подушка');
-    await press(`draft:${first}:publish:queue`);
-    await press(`draft:${second}:publish:queue`);
+    await queueIt(first);
+    await queueIt(second);
     expect(jobs).toEqual([]);
     const [a, b] = await drafts.listScheduled(tenant);
     expect([a?.draft.draftId, b?.draft.draftId]).toEqual([first, second]);
@@ -108,7 +115,7 @@ describe('publishing a queued kind', () => {
 
   it('🚀 on a queued draft points to /queue', async () => {
     const id = await readyPost();
-    await press(`draft:${id}:publish:queue`);
+    await queueIt(id);
     await press(`draft:${id}:publish`);
     await press(`draft:${id}:publish:confirm`);
     expect(sentTexts(calls).slice(-2)).toEqual([
@@ -134,7 +141,7 @@ describe('/queue', () => {
 
   it('lists queued works with «зараз» and «у чернетку»', async () => {
     const id = await readyPost('Шарф\nдругий рядок');
-    await press(`draft:${id}:publish:queue`);
+    await queueIt(id);
     calls.length = 0;
     await bot.handleUpdate(textUpdate(user, '/queue'));
     const [stored] = await drafts.listScheduled(tenant);
@@ -148,28 +155,40 @@ describe('/queue', () => {
     ]);
   });
 
-  it('«зараз» dispatches the work and frees its slot', async () => {
+  it('«зараз» moves the slot to now and leaves the dispatch to the cron', async () => {
     const id = await readyPost();
-    await press(`draft:${id}:publish:queue`);
+    await queueIt(id);
     const [stored] = await drafts.listScheduled(tenant);
+    const before = Date.now();
     await press(`queue:${id}:now:${stored!.version}`);
-    await flush();
-    expect(jobs.map((job) => job.postId)).toEqual([id]);
+    expect(jobs).toEqual([]);
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.queueNowText);
     const fresh = await drafts.get(tenant, id);
-    expect(fresh?.draft.state).toBe('publishing');
-    expect(fresh?.publishAt).toBeUndefined();
-    expect(await drafts.takenSlots(tenant)).toEqual([]);
+    expect(fresh?.draft.state).toBe('scheduled');
+    expect(Date.parse(fresh!.publishAt!)).toBeGreaterThanOrEqual(before);
+    expect(Date.parse(fresh!.publishAt!)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('a stale «в чергу» button never queues a changed draft', async () => {
+    const id = await readyPost();
+    const shown = (await drafts.get(tenant, id))!.version;
+    await queueIt(id);
+    const [stored] = await drafts.listScheduled(tenant);
+    await press(`queue:${id}:back:${stored!.version}`);
+    await press(`draft:${id}:publish:queue:${shown}`);
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.queueStaleText);
+    expect((await drafts.get(tenant, id))?.draft.state).toBe('ready');
   });
 
   it('«у чернетку» frees the slot; a stale button changes nothing', async () => {
     const id = await readyPost();
-    await press(`draft:${id}:publish:queue`);
+    await queueIt(id);
     const [stored] = await drafts.listScheduled(tenant);
     await press(`queue:${id}:back:${stored!.version}`);
     expect((await drafts.get(tenant, id))?.draft.state).toBe('ready');
     expect(sentTexts(calls).at(-1)).toBe(botTexts.queueBackDoneText);
 
-    await press(`draft:${id}:publish:queue`);
+    await queueIt(id);
     await press(`queue:${id}:now:${stored!.version}`);
     expect(sentTexts(calls).at(-1)).toBe(botTexts.queueStaleText);
     expect(jobs).toEqual([]);

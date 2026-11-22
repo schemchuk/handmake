@@ -9,15 +9,14 @@ import type { BotTexts } from './texts';
 
 /**
  * F42 queue view (T76b): `/queue` lists the queued works by slot; each has
- * «Зараз» (publish now, its slot freed, later works keep theirs) and
+ * «Зараз» (its slot moves to now: out on the next cron tick, later works keep
+ * theirs) and
  * «У чернетку» (back to ready, slot freed). Buttons carry the row version, so
  * a stale keyboard never moves a newer state.
  */
 export interface QueueSessionOptions {
   texts: BotTexts;
   tenantConfigs?: TenantConfigSource;
-  /** The publish button's dispatch for a freshly claimed draft (bot.ts). */
-  publishNow: (ctx: AppContext, claimed: StoredDraft) => Promise<void>;
 }
 
 const titleLength = 80;
@@ -75,23 +74,25 @@ export function registerQueueSession(bot: Bot<AppContext>, options: QueueSession
     }
     const now = new Date();
     if (action === 'now') {
-      const chat = ctx.chat?.id;
-      const claimed = await ctx.drafts.claimScheduledNow(
-        ctx.tenantId,
-        id,
-        version,
-        now,
-        chat === undefined ? undefined : String(chat),
-      );
-      if (!claimed) {
-        await ctx.reply(texts.queueStaleText);
-        return;
-      }
-      await options.publishNow(ctx, claimed);
+      // The slot moves to now; the cron dispatches it on its next tick, with
+      // its check that no other publish run is in flight (PR #189 review).
+      const moved = await ctx.drafts.moveToNow(ctx.tenantId, id, version, now);
+      await ctx.reply(moved ? texts.queueNowText : texts.queueStaleText);
       return;
     }
     if (action === 'back') {
       const moved = await ctx.drafts.unschedule(ctx.tenantId, id, now, version);
+      if (moved && ctx.chat) {
+        // /work reopens this work next, as the reply promises.
+        const fresh = await ctx.drafts.get(ctx.tenantId, id);
+        if (fresh?.draft.kind === 'work')
+          await ctx.drafts.setChatSession(
+            ctx.tenantId,
+            String(ctx.chat.id),
+            { kind: 'work', draftId: id },
+            now,
+          );
+      }
       await ctx.reply(moved ? texts.queueBackDoneText : texts.queueStaleText);
       return;
     }

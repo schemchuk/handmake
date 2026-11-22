@@ -170,8 +170,10 @@ describe('/work author flow', () => {
     await contentAndGenerate();
     await press(`work:${id}:announce:yes`);
     await press(`draft:${id}:publish`);
-    expect(buttons().map((b) => b.callback_data)).toContain(`draft:${id}:publish:queue`);
-    await press(`draft:${id}:publish:queue`);
+    const queueButton = buttons().find((b) =>
+      b.callback_data.startsWith(`draft:${id}:publish:queue:`),
+    );
+    await press(queueButton!.callback_data);
     expect(publish.jobs).toEqual([]);
     const queued = await get();
     expect(queued.draft.state).toBe('scheduled');
@@ -181,6 +183,10 @@ describe('/work author flow', () => {
     const next = (await drafts.getChatSession(tenant, '11'))!.draftId!;
     expect(next).not.toBe(first);
     expect((await drafts.get(tenant, next))!.draft.state).toBe('collecting');
+    // Back to draft from /queue: /work reopens the queued work, as promised.
+    const [inQueue] = await drafts.listScheduled(tenant);
+    await press(`queue:${first}:back:${inQueue!.version}`);
+    expect((await drafts.getChatSession(tenant, '11'))!.draftId).toBe(first);
   });
 
   it('selects an existing collection and keeps site-only publication as the initial choice', async () => {

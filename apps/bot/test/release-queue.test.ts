@@ -404,4 +404,33 @@ describe('low-queue reminders (T76b)', () => {
     await runReleaseQueueCron(mondaySlot, none.options);
     expect(none.notify).not.toHaveBeenCalled();
   });
+
+  it('a lost run dispatched again sends no second note', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    withQueue(options);
+    await runReleaseQueueCron(mondaySlot, options);
+    await runReleaseQueueCron(new Date(mondaySlot.getTime() + queueLostRunMs + 60_000), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(2);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('notes only at the exact threshold', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    await queued(store, 'c', wednesdaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    options.tenantConfigs = {
+      load: async () =>
+        ({
+          meetingSchedule: { timezone: tz },
+          releaseQueue: { ...queue, lowQueueReminder: 3 },
+        }) as unknown as TenantConfig,
+    };
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(notify).not.toHaveBeenCalled();
+  });
 });
