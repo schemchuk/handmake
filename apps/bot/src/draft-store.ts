@@ -661,7 +661,10 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
                extras = CASE WHEN ? IS NULL THEN extras
                  ELSE json_set(extras, '$.approvalChatId', ?) END
            WHERE tenant_id = ? AND id = ?
-             AND (status = 'ready' OR (status = 'publishing' AND updated_at < ?))`,
+             -- A queue-owned claim (publish_at set) is recovered by the queue
+             -- only: its dispatch may still be waiting on GitHub (PR #189).
+             AND (status = 'ready'
+               OR (status = 'publishing' AND publish_at IS NULL AND updated_at < ?))`,
         )
         .bind(
           now.toISOString(),

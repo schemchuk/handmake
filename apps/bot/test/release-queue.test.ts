@@ -262,16 +262,19 @@ describe('release queue races (PR #187 review)', () => {
     expect(options.runner.run).toHaveBeenCalledTimes(1);
   });
 
-  it('a failure never touches a manual 🚀 that took over the claim', async () => {
+  it('a stale 🚀 never takes over a claim the queue is dispatching', async () => {
     const store = createD1DraftStore(await makeD1());
     await queued(store, 'a', mondaySlot);
     const claimed = (await store.claimDue(tenant, 'a', mondaySlot))!;
     const later = new Date(mondaySlot.getTime() + 600_000);
-    expect(await store.claimPublishing(tenant, 'a', later, later)).toBeDefined();
-    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version, later, 3)).toBe('missing');
-    const stored = await store.get(tenant, 'a');
-    expect(stored?.draft.state).toBe('publishing');
-    expect(stored?.publishAt).toBeUndefined();
+    expect(await store.claimPublishing(tenant, 'a', later, later)).toBeUndefined();
+    // A newer claim (version bump) is never touched by the old one's failure.
+    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version - 1, later, 3)).toBe(
+      'missing',
+    );
+    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version, later, 3)).toBe(
+      'requeued',
+    );
   });
 
   it('two executions of one tick spend one attempt', async () => {
