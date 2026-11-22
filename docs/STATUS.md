@@ -1,17 +1,21 @@
 # STATUS
 
-- **Active agent:** claude-code.
-- **Current task:** T77 (delayed channels). Release queue live: T76a (PR #187) and T76b (PR #189,
-  `7f7955b`); migrations 0025 and 0026 applied; Worker `78d0c5e3-34f6-420f-80c5-540db95d25fe`
-  deployed by Volodymyr 2026-11-22 13:35 UTC. T76c dropped.
-- **Branch:** `main`.
-- **Last commit:** docs: record queue go-live.
-- **Next step:** T77 (Threads +90 min, Pinterest next morning), then T78, T79. Optional for
+- **Active agent:** codex (review of T77).
+- **Current task:** T77 (delayed channels) in review: PR on `feat/T77-delayed-channels`,
+  reviewer Codex. Release queue live: T76a (PR #187) and T76b (PR #189, `7f7955b`); migrations
+  0025 and 0026 applied; Worker `78d0c5e3-34f6-420f-80c5-540db95d25fe` (2026-11-22).
+- **Branch:** `feat/T77-delayed-channels`.
+- **Last commit:** feat(bot): delay Threads behind the other channels (T77).
+- **Next step:** Codex reviews the T77 PR. After merge: Volodymyr applies migration
+  `0027_channel_followups.sql`, the Worker is deployed, then `delay: { minutes: 90 }` is added
+  to `channels.threads` in the tenant YAML (not before the deploy). Then T78, T79. Optional for
   Volodymyr: `queue - Черга публікацій` in the BotFather command menu.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
-- **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
-  reel, music only (recording tone absent), source moved, log and rotation state written.
+- **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
+  work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,
+  release-queue, published-callback, draft-store, composition, queue-session green; bot.test
+  57/57 (needs ~5 GB under the local cgroup cap, 3 GB is killed).
 - **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
   (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT
   covers code only) merged with Volodymyr's OK; site redeployed (run 43736256054).

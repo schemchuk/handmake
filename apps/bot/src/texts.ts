@@ -237,6 +237,9 @@ export const botTexts = {
   queueLowText: (left: number, slot: string) =>
     `У черзі лишилось робіт: ${left} (наступна вийде ${slot}). Надішли нову, коли буде готова.`,
   queueEmptyText: 'Черга порожня: у наступний слот нічого не вийде.',
+  /** A delayed channel (T77) the cron gave up on after three dispatches. */
+  followupFailedText: (channel: string) =>
+    `${channel}: не вийшло опублікувати 😔 Я пробував тричі; решта мереж і сайт у порядку.`,
 
   // --- Preview message (built by preview.ts) ----------------------------------
   previewHeader: (photoCount: number) => `🧵 Перегляд допису (${photoCount} фото)`,

@@ -49,6 +49,7 @@ export function createGitHubActionsRunner(options: GitHubActionsRunnerOptions): 
             ...(job.kind === 'work' ? { work: job.work } : {}),
             ...(job.kind === 'show' ? { show: job.show } : {}),
             ...(job.poll !== undefined ? { poll: job.poll } : {}),
+            ...(job.channels !== undefined ? { channels: job.channels } : {}),
             live: options.live,
           },
         }),

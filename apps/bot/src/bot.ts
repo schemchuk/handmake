@@ -30,6 +30,8 @@ import { showWorkVideo, workVideoKeyboard } from './work-video';
 import { registerWorkSession } from './work-session';
 import type { WorkSessionOptions } from './work-session';
 import { queuesKind, scheduleDraft, formatSlot } from './release-queue';
+import { prepareDispatch } from './channel-followups';
+import type { FollowupStore } from './channel-followups';
 import { registerQueueSession } from './queue-session';
 import { registerShowSession } from './show-session';
 import type { ShowSessionOptions } from './show-session';
@@ -55,6 +57,8 @@ export interface CreateBotOptions {
   translatorFor?: (tenantId: string, ref: string) => Promise<Translator>;
   /** Dispatches an approved draft to the publish pipeline (T16). */
   publishRunner: PublishRunner;
+  /** Delayed channels of works (T77); absent = every channel at once. */
+  followups?: FollowupStore;
   /**
    * Whether publishes go to the live channels (bot PUBLISH_LIVE var). False
    * means the test channel: the preview renders a site-excluded post (no
@@ -321,8 +325,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     if (action === 'publish') {
       // Consent first (F10: no identifiable faces without written consent);
       // the confirm button re-reads the draft and claims it atomically.
+      // A queue-owned run is never reclaimed here (PR #189 review), so it
+      // answers «busy» before the consent buttons.
       const stalePublishing =
         stored.draft.state === 'publishing' &&
+        !stored.publishAt &&
         new Date(stored.draft.updatedAt).getTime() < publishingStaleCutoff(new Date()).getTime();
       if (stored.draft.state === 'scheduled') {
         await ctx.reply(texts.queuedAlreadyText);
@@ -671,7 +678,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     await ctx.reply(texts.publishingText);
     options.background(async () => {
       try {
-        await options.publishRunner.run(job);
+        await options.publishRunner.run(await prepareDispatch(job, options, new Date()));
       } catch {
         await ctx.drafts.revertPublishing(ctx.tenantId, claimed.draft.draftId, new Date());
         await bot.api.sendMessage(targetChat, texts.publishFailedText).catch(() => undefined);

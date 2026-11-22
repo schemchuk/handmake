@@ -3300,7 +3300,31 @@ migrations: Volodymyr applies them before the bot deploy.
   callback, reminder once, posts and shows still publish at once.
 
 ### T77 — Delayed channels: Threads +90 min, Pinterest next morning (`core`, `bot`, `publisher`, F42)
-- Status: planned.
+- Status: in review (branch `feat/T77-delayed-channels`). Migration is `0027_channel_followups.sql`
+  (0026 went to the T76b dispatch lock). After merge: Volodymyr applies 0027, the Worker is
+  deployed, and only then `delay: { minutes: 90 }` goes into `channels.threads` of the tenant
+  YAML (the deployed Worker and publisher read the YAML from `main` with a strict schema).
+- As built: works only (posts and shows keep one run). Follow-up rows are written just before
+  the first dispatch (🚀 and the queue cron), the delay counts from that dispatch, and a row is
+  dispatched only once its draft is `published`, so a delayed channel never goes out alone. The
+  first run's callback reports only its own channels. Follow-ups run in the queue cron under its
+  lock: none on a tick that dispatched a queued work, none while any publish run is in flight,
+  and the queue waits while a follow-up run is in flight (60 min) — one shared concurrency group.
+  A follow-up is dispatched at most 3 times (failed dispatch: next tick; no callback: after 2 h),
+  then `failed` with one author message. A publisher run whose `channels` are all delayed is a
+  follow-up and tells the author one line per channel. If the tenant config cannot be loaded or
+  the rows cannot be stored, everything goes out at once. T75 cleanup needed no change: a
+  `pending` ledger entry already holds it back.
+- PR #190 review (Codex, round 1): a re-dispatch of the first run (lost callback, manual
+  recovery) keeps a pending follow-up's deadline; only a failed one starts over. A `nextDayAt`
+  in the spring DST gap shifts an hour later, a repeated autumn hour uses standard time
+  (documented and tested). Not changed, residual risk as in T76a item 7: a manual 🚀 does not
+  take the queue lock, so with a third run already holding the `publish` group a follow-up and
+  a manual run can both be pending and one replaces the other. The cron itself never dispatches
+  while a tracked run is in flight; a replaced follow-up is re-dispatched after 2 h (it counts
+  as one of its 3 attempts), a replaced manual run is reclaimed by 🚀 after the stale cutoff as
+  before. Making 🚀 wait on the lock would make the author's «зараз» answer «busy» for up to an
+  hour while Threads catches up, which one work a day does not justify.
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. Per-channel tenant setting `delay`: `{ minutes: 90 }` or `{ nextDayAt: '09:00' }` (tenant
@@ -3310,7 +3334,7 @@ migrations: Volodymyr applies them before the bot deploy.
      channels without a delay; the publisher still creates the ledger with every enabled channel,
      delayed ones stay `pending`. A run with `channels` delivers only those and never touches the
      others' ledger entries; idempotency rules unchanged.
-  3. Bot: after the first dispatch, rows in a new D1 table `channel_followups` (migration 0026:
+  3. Bot: just before the first dispatch, rows in a new D1 table `channel_followups` (migration 0027:
      tenant, draft id, channel, due_at, state, attempts). The cron dispatches due rows with the
      stored job and `channels: [<channel>]`; retry as in T76a.
   4. Author notification for a follow-up run: one short line per channel («Threads: опубліковано»

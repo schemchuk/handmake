@@ -251,6 +251,9 @@ export interface D1DraftStore {
   /** The next queued draft to dispatch (a due slot or an interrupted claim)
    * and whether a publish run of the tenant is in flight. */
   queueState(tenantId: string, now: Date): Promise<{ next?: StoredDraft; busy: boolean }>;
+  /** A publish run of any tenant is in flight (the repository-wide check
+   * behind `queueState().busy`); delayed channels wait for it too (T77). */
+  publishBusy(now: Date): Promise<boolean>;
   /** Atomically claims a due (or interrupted) queued draft as `publishing`;
    * undefined if another tick or the author got there first. */
   claimDue(tenantId: string, draftId: string, now: Date): Promise<StoredDraft | undefined>;
@@ -347,6 +350,26 @@ export const queueLostRunMs = 2 * 60 * 60 * 1000;
 
 // D1 meta.changes includes usage-trigger writes. Every guarded mutation below
 // targets at most one draft; any positive count proves that mutation won.
+/** A run in flight (or a dispatch another execution is making right now):
+ * a second dispatch would replace its pending run in the shared `publish`
+ * concurrency group, so the queue waits. Repository-wide, not per tenant:
+ * the group is shared by every tenant (T76c dropped). */
+async function publishBusy(db: D1Database, now: Date): Promise<boolean> {
+  const busy = await db
+    .prepare(
+      `SELECT 1 AS busy FROM drafts WHERE status = 'publishing'
+         AND updated_at >= ?
+         AND NOT (publish_at IS NOT NULL AND dispatched_at IS NULL AND updated_at < ?)
+       LIMIT 1`,
+    )
+    .bind(
+      new Date(now.getTime() - queueBusyMs).toISOString(),
+      new Date(now.getTime() - queueInterruptedMs).toISOString(),
+    )
+    .first();
+  return !!busy;
+}
+
 export function createD1DraftStore(db: D1Database): D1DraftStore {
   return {
     async get(tenantId, draftId) {
@@ -888,24 +911,10 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .prepare(`${selectDraft} AND ${claimable} ORDER BY publish_at, id LIMIT 1`)
         .bind(tenantId, ...claimableArgs(now))
         .first<DraftRow>();
-      // A run in flight (or a dispatch another execution is making right
-      // now): a second dispatch would replace its pending run in the shared
-      // `publish` concurrency group, so the queue waits. Repository-wide,
-      // not per tenant: the group is shared by every tenant (T76c dropped).
-      const busy = await db
-        .prepare(
-          `SELECT 1 AS busy FROM drafts WHERE status = 'publishing'
-             AND updated_at >= ?
-             AND NOT (publish_at IS NOT NULL AND dispatched_at IS NULL AND updated_at < ?)
-           LIMIT 1`,
-        )
-        .bind(
-          new Date(now.getTime() - queueBusyMs).toISOString(),
-          new Date(now.getTime() - queueInterruptedMs).toISOString(),
-        )
-        .first();
-      return { next: next ? toStoredDraft(next) : undefined, busy: !!busy };
+      return { next: next ? toStoredDraft(next) : undefined, busy: await publishBusy(db, now) };
     },
+
+    publishBusy: (now) => publishBusy(db, now),
 
     async claimDue(tenantId, draftId, now) {
       // RETURNING: the row exactly as this claim left it, never a later

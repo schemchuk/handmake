@@ -1,5 +1,6 @@
 import { publishedCallbackBodySchema, verifyCallbackSignature } from '@handmake/core';
 
+import { createD1FollowupStore } from './channel-followups';
 import { createD1DraftStore } from './draft-store';
 import { queueNameReconciliations } from './name-withdrawal-store';
 import type { Env } from './env';
@@ -156,6 +157,16 @@ export async function handlePublishedCallback(
           legacy ? 1 : 0,
         );
       }),
+    );
+  }
+  // T77: a follow-up run reports its delayed channel; a manual full rerun
+  // may report one too. Either way that follow-up is no longer due.
+  if (kind === 'work') {
+    await createD1FollowupStore(env.DB).markDone(
+      tenantId,
+      postId,
+      deliveries.map(([channel]) => channel),
+      new Date(),
     );
   }
   if (kind === 'post') await store.indexPublished({ tenantId, postId, publishedAt: date, photos });

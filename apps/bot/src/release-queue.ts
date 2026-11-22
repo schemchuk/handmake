@@ -2,6 +2,8 @@ import type { PublishJob, PublishRunner, ReleaseQueueConfig, TenantConfig } from
 
 import type { AllowList } from './allow-list';
 import { addDays, meetingDayKey, wallDay, zonedTimeToUtc } from './announcements';
+import { dispatchFollowup, prepareDispatch } from './channel-followups';
+import type { FollowupStore } from './channel-followups';
 import type { D1DraftStore, StoredDraft } from './draft-store';
 import type { TenantConfigSource } from './tenant-config-source';
 import type { BotTexts } from './texts';
@@ -131,6 +133,8 @@ export interface ReleaseQueueCronOptions {
   /** Sends a plain message to the author's chat. */
   notify: (chatId: string, text: string) => Promise<unknown>;
   texts: BotTexts;
+  /** Delayed channels (T77); without it every channel goes out at once. */
+  followups?: FollowupStore;
 }
 
 /**
@@ -154,7 +158,24 @@ export async function runReleaseQueueCron(
   const holder = crypto.randomUUID();
   if (!(await options.drafts.acquireQueueLock(holder, now, queueLockLeaseMs))) return;
   try {
-    await dispatchTenants(now, options);
+    // Every dispatch of this tick goes through here, so a follow-up only
+    // goes out on a tick that dispatched nothing else.
+    let dispatched = false;
+    const runner = {
+      run: (job: PublishJob) => {
+        dispatched = true;
+        return options.runner.run(job);
+      },
+    };
+    const followups = options.followups;
+    if (!followups || !(await followups.inFlight(now))) {
+      await dispatchTenants(now, { ...options, runner });
+    }
+    if (followups && !dispatched) {
+      await dispatchFollowup(now, { ...options, followups }).catch((error: unknown) =>
+        console.error('follow-up cron failed:', (error as Error).message),
+      );
+    }
   } finally {
     await options.drafts.releaseQueueLock(holder).catch(() => undefined);
   }
@@ -204,7 +225,7 @@ async function dispatchDue(
   try {
     const job = options.buildJob(claimed.draft);
     attempts = maxQueueAttempts;
-    await options.runner.run(job);
+    await options.runner.run(await prepareDispatch(job, options, now));
   } catch (error) {
     console.error(`release queue dispatch failed for ${draftId}:`, (error as Error).message);
     const outcome = await options.drafts.requeueAfterFailure(
