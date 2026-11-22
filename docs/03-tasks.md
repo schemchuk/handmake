@@ -3198,7 +3198,7 @@ account steps are H19-H21; Claude Code gives the guide when a step is due. T76a 
 migrations: Volodymyr applies them before the bot deploy.
 
 ### T76a — Release queue: slots, scheduled state, cron dispatch (`core`, `bot`, F42)
-- Status: in review.
+- Status: done (PR #187, `7f2d38e`); migration 0025 and bot deploy pending.
 - Owner: claude-code · Reviewer: codex · Depends on: spec v13
 - Change:
   1. Tenant config `releaseQueue` (core schema only; the tenant YAML gets it in T76b, after the

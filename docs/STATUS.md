@@ -1,13 +1,14 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T76a (release queue: slots, scheduled state, cron dispatch). Spec v13
-  (F42-F44) and tasks T76a-T79, H19-H21 added 2026-11-22.
-- **Branch:** `feat/T76a-release-queue`.
-- **Last commit:** docs: plan daily release queue, YouTube Shorts, Pinterest.
-- **Next step:** claude-code implements T76a, then T76b, T77, T78, T79 (Volodymyr 2026-11-22);
-  Codex reviews each PR. Guides for H19/H20 when T78/T79 are ready.
-- **Blocked on:** nothing.
+- **Current task:** T76c (per-draft publish concurrency). T76a merged as PR #187 (`7f2d38e`),
+  reviewed by Codex in three rounds (14 blocking findings fixed, two nits moved to T76b).
+- **Branch:** `main`.
+- **Last commit:** docs: record T76a merge.
+- **Next step:** Volodymyr applies D1 migration 0025 to remote, then the bot is deployed from
+  clean `main` (the merged code selects the new columns: deploy only after the migration).
+  Then T76c (workflow change, his OK before merge), T76b, T77, T78, T79.
+- **Blocked on:** migration 0025 (Volodymyr).
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
   reel, music only (recording tone absent), source moved, log and rotation state written.
