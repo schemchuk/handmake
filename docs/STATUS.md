@@ -1,15 +1,15 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T73 (harden the reel folder watcher).
-- **Branch:** `feat/T73-reel-watch-hardening`.
-- **Last commit:** feat(reel): watch a folder and process reels automatically (T72) (#182).
-- **Next step:** codex implements T73 from docs/03-tasks.md (file edits only; claude-code
-  reviews, commits, pushes and merges). The watcher service is stopped until then.
+- **Active agent:** none.
+- **Current task:** none. T73 (harden the reel folder watcher) merged as PR #183 (`54c99f7`).
+- **Branch:** `main`.
+- **Last commit:** fix(reel): harden the folder watcher (T73) (#183).
+- **Next step:** none. Updated `handmake-reel-watch` unit reinstalled and restarted on
+  Volodymyr's machine; stale in-folder lock removed. First real phone video still to confirm.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
-- **Validation:** reel 59/59 and typecheck; CI green on #182; live run on a generated 40 s clip
-  gave a 9.7 MB / 32.5 s reel, a broken file got an error file, lock removed on SIGTERM.
+- **Validation:** reel 66/66 and typecheck; CI green on #183; live run: open file skipped
+  until closed, photo untouched, folder removed and recreated without stopping the watcher.
 
 - **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
   (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT

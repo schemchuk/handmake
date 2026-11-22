@@ -3037,7 +3037,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   test with a lavfi clip in a temp dir, skipped without ffmpeg.
 
 ### T73 — Harden the reel folder watcher (`reel`, F41)
-- Status: in progress.
+- Status: done (merged 2026-11-22, PR #183).
 - Owner: codex · Reviewer: claude-code · Depends on: T72
 - Why: 2026-11-22, first real day of T72. (a) At 10:31 the watched folder was emptied and removed
   from outside; the watcher crashed on `unlink` of its lock, then every restart crashed on
