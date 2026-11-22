@@ -1,17 +1,16 @@
 # STATUS
 
-- **Active agent:** codex.
-- **Current task:** T74 (manual reel inbox with rotating CC0 music).
-- **Branch:** `feat/T74-reel-inbox-music`.
-- **Last commit:** fix(reel): harden the folder watcher (T73) (#183).
-- **Next step:** T74 (manual reel inbox `Ролики` → `Готові рілси`, rotating CC0 music) for
-  codex. First real phone video confirmed 2026-11-22: `IMG_0421.mov` (211 s, portrait) →
-  1080x1920 reel, 32.5 s.
+- **Active agent:** none.
+- **Current task:** none. T74 (manual reel inbox with rotating CC0 music) merged as PR #184 (`87fe5bc`).
+- **Branch:** `main`.
+- **Last commit:** feat(reel): manual inbox with rotating CC0 music (T74) (#184).
+- **Next step:** none. `handmake-reel-watch` reinstalled and restarted 2026-11-22: watches
+  `~/Desktop/Ролики` → `~/Desktop/Готові рілси` with music from `~/Music/рілси`. First real
+  reel from the new inbox still to confirm.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
-- **Validation:** reel 66/66 and typecheck; CI green on #183; live run: open file skipped
-  until closed, photo untouched, folder removed and recreated without stopping the watcher.
-
+- **Validation:** reel 72/72 and typecheck; CI green on #184; scratch-dir smoke run: 1080x1920
+  reel, music only (recording tone absent), source moved, log and rotation state written.
 - **Legal audit 2026-11-15:** Impressum street/postal code fixed in GitHub Secrets
   (`IMPRESSUM_STREET`, `IMPRESSUM_CITY`); PR #163 (Datenschutz contest section, NOTICE: MIT
   covers code only) merged with Volodymyr's OK; site redeployed (run 43736256054).

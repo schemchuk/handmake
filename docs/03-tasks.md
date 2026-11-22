@@ -3071,7 +3071,7 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   file for unreadable input with injected clock.
 
 ### T74 — Manual reel inbox with rotating CC0 music (`reel`, F41)
-- Status: todo.
+- Status: done (PR #184, `87fe5bc`).
 - Owner: codex · Reviewer: claude-code · Depends on: T72, T73
 - Why: Volodymyr 2026-11-22. Phone videos arrive via KDE Connect in `~/Desktop/temp/videos` and
   must stay there untouched: nothing is processed or written in that folder. A reel is made only
