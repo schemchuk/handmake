@@ -3035,3 +3035,37 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   existing output/error, stability across scans, ordering), length choice (long, short, < 5 s),
   lock handling (live/stale PID), error-file writing with an injected processor; one integration
   test with a lavfi clip in a temp dir, skipped without ffmpeg.
+
+### T73 — Harden the reel folder watcher (`reel`, F41)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: T72
+- Why: 2026-11-22, first real day of T72. (a) At 10:31 the watched folder was emptied and removed
+  from outside; the watcher crashed on `unlink` of its lock, then every restart crashed on
+  `mkdtemp` in the missing folder, and systemd hit the start limit, so the service stayed dead.
+  (b) At 10:44 KDE Connect started writing `IMG_0421.mov` straight under its final name and
+  stalled at 141 MB of ~410 MB with the file still open by `kdeconnectd`: size and mtime were
+  stable, so T72 would have processed a truncated file. A second, unrelated processor on the
+  machine (`rolyky`, `~/Desktop/Ролики`) solves (b) with `fuser`.
+- Change (`apps/reel` only):
+  1. Missing or removed watched folder never crashes the loop: log once «folder missing,
+     waiting», keep scanning every interval, resume when it reappears. Errors from one scan or
+     one file are logged and the loop continues; only argument errors and a live second instance
+     exit.
+  2. Move the lock and its claim temp out of the watched folder: `$XDG_RUNTIME_DIR/handmake-reel/`
+     (fallback `~/.local/state/handmake-reel/`), lock name derived from a hash of the resolved
+     folder path. Releasing a lock that is already gone is not an error.
+  3. A candidate is ready only if, in addition to the T72 stability rule, no process holds it
+     open: check with `fuser -s <file>` via `execFile` (exit 0 = open → not ready; exit 1 = free;
+     missing `fuser` → log once and fall back to a 60 s stability window instead of 10 s). Inject
+     the check for tests.
+  4. If `ffprobe` cannot read the input (truncated/moov missing) do not write the error file at
+     once: retry on later scans and write `<name>.reel-error.txt` only after the file has been
+     unchanged and closed for 10 minutes. Other processing errors keep the T72 behaviour.
+  5. systemd unit: `RestartSec=10`, `StartLimitIntervalSec=0` (in `[Unit]`).
+- Acceptance: deleting and recreating the watched folder while the watcher runs does not stop
+  it; a file held open by another process is not processed until closed; a truncated, closed file
+  gets an error file only after the window; no files of the watcher remain in the watched folder
+  except outputs and error files.
+- Tests (`apps/reel`, `--maxWorkers=2`): missing folder then reappearing; lock path outside the
+  folder and release when already gone; open-file check true/false/missing-fuser; delayed error
+  file for unreadable input with injected clock.

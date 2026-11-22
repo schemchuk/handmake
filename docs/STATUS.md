@@ -1,11 +1,11 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T72 (reel folder watcher) merged as PR #182 (`fe5eaab`).
-- **Branch:** `main`.
+- **Active agent:** codex.
+- **Current task:** T73 (harden the reel folder watcher).
+- **Branch:** `feat/T73-reel-watch-hardening`.
 - **Last commit:** feat(reel): watch a folder and process reels automatically (T72) (#182).
-- **Next step:** none. `handmake-reel-watch` systemd user unit installed and running on
-  Volodymyr's machine, watching `~/Desktop/temp/videos`. No bot or publisher change.
+- **Next step:** codex implements T73 from docs/03-tasks.md (file edits only; claude-code
+  reviews, commits, pushes and merges). The watcher service is stopped until then.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 59/59 and typecheck; CI green on #182; live run on a generated 40 s clip
