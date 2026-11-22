@@ -4,8 +4,9 @@
 - **Current task:** none. T73 (harden the reel folder watcher) merged as PR #183 (`54c99f7`).
 - **Branch:** `main`.
 - **Last commit:** fix(reel): harden the folder watcher (T73) (#183).
-- **Next step:** none. Updated `handmake-reel-watch` unit reinstalled and restarted on
-  Volodymyr's machine; stale in-folder lock removed. First real phone video still to confirm.
+- **Next step:** T74 (manual reel inbox `Ролики` → `Готові рілси`, rotating CC0 music) for
+  codex. First real phone video confirmed 2026-11-22: `IMG_0421.mov` (211 s, portrait) →
+  1080x1920 reel, 32.5 s.
 - **Blocked on:** nothing.
 - **Open questions for Volodymyr:** none.
 - **Validation:** reel 66/66 and typecheck; CI green on #183; live run: open file skipped

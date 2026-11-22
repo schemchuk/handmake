@@ -3069,3 +3069,54 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
 - Tests (`apps/reel`, `--maxWorkers=2`): missing folder then reappearing; lock path outside the
   folder and release when already gone; open-file check true/false/missing-fuser; delayed error
   file for unreadable input with injected clock.
+
+### T74 — Manual reel inbox with rotating CC0 music (`reel`, F41)
+- Status: todo.
+- Owner: codex · Reviewer: claude-code · Depends on: T72, T73
+- Why: Volodymyr 2026-11-22. Phone videos arrive via KDE Connect in `~/Desktop/temp/videos` and
+  must stay there untouched: nothing is processed or written in that folder. A reel is made only
+  when he copies a video by hand into `~/Desktop/Ролики`; the finished reel goes to
+  `~/Desktop/Готові рілси`. The recording's own sound is not wanted: every reel gets music only,
+  a different track each time, from a local library of CC0 tracks. A temporary script outside
+  the repo (`rolyky`, retired 2026-11-22, archived in `~/backups/rolyky/`) proved this flow; it
+  is reference only, do not copy it. iPhone portrait rotation is already handled by `apps/reel`
+  (checked on `IMG_0421.mov`, display matrix -90 → 1080x1920 reel).
+- Music library (outside the repo, never committed): `~/Music/рілси/`, 22 CC0 tracks from
+  Freesound (MP3), each verified on its Freesound page 2026-11-22. `ліцензії.csv` (UTF-8, header
+  `file,title,creator,license,license_url,source,page,downloaded,verified_on_page`) has one row
+  per file. Volodymyr may delete tracks or add his own with a row.
+- Change (`apps/reel` only):
+  1. `watch.ts` options: `--out-dir <dir>` (default: the watched folder, today's behaviour) and
+     `--trash-source`. With `--out-dir` the reel is written to `<out-dir>/<stem>-reel.mp4`, never
+     overwriting (`-2`, `-3`, … suffix). With `--trash-source`, after a successful render the
+     input is moved to the desktop Trash with `gio trash` via `execFile`; if that fails, move it
+     to `<watched>/оброблені/` (subfolders are never scanned). In this mode "already processed"
+     means the input is gone, so the T72 "no `<name>-reel.mp4` beside it" rule does not apply.
+     Error files stay beside the input as in T72; the input is never deleted on failure.
+  2. `--music-dir <dir>`: each reel gets one track from the top level of `<dir>` (mp3, m4a, ogg,
+     flac, wav) that has a row in `<dir>/ліцензії.csv`; tracks without a row are never used (log
+     once per file). The pick is random among tracks not used in the current round; when all
+     were used a new round starts, and its first pick is never the previous track. The round is
+     stored in `~/.local/state/handmake-reel/music-rotation.json`, keyed by the resolved music
+     folder (persistent: not `$XDG_RUNTIME_DIR`, which is cleared on reboot). `--music-dir`
+     implies music-only for the whole reel, finale included. The track loops if shorter than the
+     reel, keeps the existing fades and loudnorm, and continues under the end card (T69 rule).
+     No eligible track → error file with a clear message, no reel.
+  3. After each reel with music append a row to `~/.local/state/handmake-reel/music-log.csv`
+     (`date,input,output,track,title,creator,license,page`) so a platform claim can be answered.
+  4. Success notification names the track: «Рілс готовий: <name>, музика: <title>. Прослухайте
+     перед надсиланням.»
+  5. Unit `apps/reel/systemd/handmake-reel-watch.service`: watch `%h/Desktop/Ролики` with
+     `--out-dir "%h/Desktop/Готові рілси" --trash-source --music-dir %h/Music/рілси` (quote the
+     path with the space). `~/Desktop/temp/videos` is no longer watched. Volodymyr reinstalls
+     and restarts the unit after merge.
+  6. README: the manual inbox flow, the music folder and CSV format, the log.
+- Acceptance: a video put in `Ролики` produces a reel in `Готові рілси` with music from the
+  library and no recording sound; the input goes to the Trash; non-video files and subfolders in
+  `Ролики` are ignored; nothing is created in `temp/videos`; ten reels in a row over a
+  three-track library never repeat a track within a round or across the round boundary; a track
+  without a CSV row is never picked; the log row has the track's page.
+- Tests (`apps/reel`, `--maxWorkers=2`): out-dir naming and no-overwrite; trash success and
+  fallback move; selection in trash-source mode; pure rotation logic with injected random and
+  state (round reset, no repeat at the boundary, CSV filter); CSV parsing incl. quoted fields;
+  render args are music-only with `--music-dir`; log row content.
