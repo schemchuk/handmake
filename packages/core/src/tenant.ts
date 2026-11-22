@@ -50,7 +50,9 @@ const weeklyMomentSchema = z.object({
 /**
  * F42 (T77): a channel that posts later than the others. `minutes` counts
  * from the first dispatch; `nextDayAt` is a wall time on the next local day
- * (tenant timezone). Absent = the channel goes out with the others.
+ * (tenant timezone). Absent = the channel goes out with the others. A
+ * `nextDayAt` in the DST gap (02:00-03:00 in Europe/Berlin) goes out an hour
+ * later on that one day; a repeated autumn hour uses standard time.
  */
 export const channelDelaySchema = z.union([
   z.object({ minutes: z.number().int().min(15).max(1440) }).strict(),

@@ -3315,6 +3315,16 @@ migrations: Volodymyr applies them before the bot deploy.
   follow-up and tells the author one line per channel. If the tenant config cannot be loaded or
   the rows cannot be stored, everything goes out at once. T75 cleanup needed no change: a
   `pending` ledger entry already holds it back.
+- PR #190 review (Codex, round 1): a re-dispatch of the first run (lost callback, manual
+  recovery) keeps a pending follow-up's deadline; only a failed one starts over. A `nextDayAt`
+  in the spring DST gap shifts an hour later, a repeated autumn hour uses standard time
+  (documented and tested). Not changed, residual risk as in T76a item 7: a manual 🚀 does not
+  take the queue lock, so with a third run already holding the `publish` group a follow-up and
+  a manual run can both be pending and one replaces the other. The cron itself never dispatches
+  while a tracked run is in flight; a replaced follow-up is re-dispatched after 2 h (it counts
+  as one of its 3 attempts), a replaced manual run is reclaimed by 🚀 after the stale cutoff as
+  before. Making 🚀 wait on the lock would make the author's «зараз» answer «busy» for up to an
+  hour while Threads catches up, which one work a day does not justify.
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. Per-channel tenant setting `delay`: `{ minutes: 90 }` or `{ nextDayAt: '09:00' }` (tenant

@@ -21,7 +21,10 @@ import type { BotTexts } from './texts';
 export const maxFollowupAttempts = 3;
 
 /** When a delayed channel is due: `minutes` after `base`, or the wall time
- * on the local day after `base` (DST-safe via zonedTimeToUtc). */
+ * on the local day after `base` (DST-safe via zonedTimeToUtc). A wall time
+ * missing on the spring switch day (02:30 in Europe/Berlin) shifts an hour
+ * later; one that repeats in autumn is taken at its second, standard-time
+ * occurrence. */
 export function channelDueAt(delay: ChannelDelay, base: Date, timeZone: string): Date {
   if ('minutes' in delay) return new Date(base.getTime() + delay.minutes * 60_000);
   const [hours, minutes] = delay.nextDayAt.split(':').map(Number);
@@ -71,7 +74,9 @@ export interface FollowupRow {
 
 export interface FollowupStore {
   /** Stores the delayed channels of a dispatch. A row already dispatched or
-   * done keeps its state; a pending or failed one starts over. */
+   * done is left alone; a pending one keeps its deadline (a recovery
+   * dispatch of the first run must not move it, PR #190 review); a failed
+   * one starts over with the new deadline. */
   schedule(
     tenantId: string,
     draftId: string,
@@ -150,7 +155,9 @@ export function createD1FollowupStore(db: D1Database): FollowupStore {
                (tenant_id, draft_id, channel, job, due_at, state, attempts, dispatched_at, updated_at)
                VALUES (?, ?, ?, ?, ?, 'pending', 0, NULL, ?)
                ON CONFLICT (tenant_id, draft_id, channel) DO UPDATE SET
-                 job = excluded.job, due_at = excluded.due_at, state = 'pending', attempts = 0,
+                 job = excluded.job, state = 'pending', attempts = 0,
+                 due_at = CASE WHEN channel_followups.state = 'failed'
+                   THEN excluded.due_at ELSE channel_followups.due_at END,
                  dispatched_at = NULL, updated_at = excluded.updated_at
                WHERE channel_followups.state IN ('pending', 'failed')`,
             )

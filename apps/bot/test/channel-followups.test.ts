@@ -69,6 +69,14 @@ describe('channelDueAt', () => {
     expect(channelDueAt({ nextDayAt: '09:00' }, new Date('2026-10-24T16:30:00.000Z'), tz)).toEqual(
       new Date('2026-10-25T08:00:00.000Z'),
     );
+    // 02:30 does not exist on 2027-03-28: an hour later (03:30 CEST).
+    expect(channelDueAt({ nextDayAt: '02:30' }, new Date('2027-03-27T17:30:00.000Z'), tz)).toEqual(
+      new Date('2027-03-28T01:30:00.000Z'),
+    );
+    // 02:30 happens twice on 2026-10-25: the second one (02:30 CET).
+    expect(channelDueAt({ nextDayAt: '02:30' }, new Date('2026-10-24T16:30:00.000Z'), tz)).toEqual(
+      new Date('2026-10-25T01:30:00.000Z'),
+    );
     // 00:30 local is already the next day: 09:00 of the day after.
     expect(channelDueAt({ nextDayAt: '09:00' }, new Date('2026-11-23T23:30:00.000Z'), tz)).toEqual(
       new Date('2026-11-25T08:00:00.000Z'),
@@ -241,6 +249,26 @@ describe('follow-ups in the release-queue cron', () => {
     await runReleaseQueueCron(now, options);
     expect(run).toHaveBeenCalledTimes(maxFollowupAttempts);
     expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('a lost first-run callback and its re-dispatch keep the Threads deadline', async () => {
+    const { drafts, followups, run, options, db } = await setup();
+    await queuedWork(drafts, 'a', mondaySlot);
+    await runReleaseQueueCron(mondaySlot, options);
+    // No callback: the queue dispatches the first run again after 2 h.
+    const retry = new Date(mondaySlot.getTime() + queueLostRunMs + minute);
+    await runReleaseQueueCron(retry, options);
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run.mock.calls[1]![0].channels).toEqual(['telegram', 'instagram']);
+    const row = await db
+      .prepare('SELECT state, due_at FROM channel_followups WHERE draft_id = ?')
+      .bind('a')
+      .first<{ state: string; due_at: string }>();
+    expect(row).toEqual({ state: 'pending', due_at: at(90).toISOString() });
+    // Once the retried run reports back, Threads goes out on the next tick.
+    await drafts.markPublished(tenant, 'a', new Date(retry.getTime() + 5 * minute));
+    await runReleaseQueueCron(new Date(retry.getTime() + 15 * minute), options);
+    expect(run.mock.calls[2]![0].channels).toEqual(['threads']);
   });
 
   it('a new dispatch of the draft resets a failed follow-up but never a done one', async () => {
