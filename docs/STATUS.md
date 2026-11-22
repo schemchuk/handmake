@@ -1,8 +1,8 @@
 # STATUS
 
-- **Active agent:** none.
-- **Current task:** none. T74 (manual reel inbox with rotating CC0 music) merged as PR #184 (`87fe5bc`).
-- **Branch:** `main`.
+- **Active agent:** codex.
+- **Current task:** T75 (clean the reel folders after a work is published).
+- **Branch:** `feat/T75-reel-cleanup`.
 - **Last commit:** feat(reel): manual inbox with rotating CC0 music (T74) (#184).
 - **Next step:** none. `handmake-reel-watch` reinstalled and restarted 2026-11-22: watches
   `~/Desktop/Ролики` → `~/Desktop/Готові рілси` with music from `~/Music/рілси`. KDE Connect

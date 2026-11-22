@@ -3120,3 +3120,49 @@ each leaving the live site coherent. Site tests only, `--maxWorkers=2`. No bot d
   fallback move; selection in trash-source mode; pure rotation logic with injected random and
   state (round reset, no repeat at the boundary, CSV filter); CSV parsing incl. quoted fields;
   render args are music-only with `--music-dir`; log row content.
+
+### T75 — Clean the reel folders after a work is published (`reel`, F41)
+- Status: todo.
+- Owner: codex · Reviewer: claude-code · Depends on: T74
+- Why: Volodymyr 2026-11-22. Phone files land in `~/Desktop/Ролики`, reels in
+  `~/Desktop/Готові рілси` (T74). Once a work is live everywhere, both folders should empty
+  themselves. He sends 1, at most 3-4 works a day, one at a time; a 5-minute check is fine as long
+  as it costs nearly nothing when idle.
+- Change (`apps/reel` only, new `src/cleanup.ts` + tests, systemd units, README):
+  1. One-shot command `node apps/reel/src/cleanup.ts --inbox <dir> --reels <dir>` run by a user
+     timer `handmake-reel-cleanup.timer` (`OnBootSec=2min`, `OnUnitActiveSec=5min`,
+     `Persistent=false`) with service `handmake-reel-cleanup.service` (`Type=oneshot`,
+     `Nice=19`, `IOSchedulingClass=idle`; quote the path with the space). No long-running process.
+  2. Data source: the public GitHub REST API for `schemchuk/handmake`, branch `main`, via
+     `fetch` without a token, with `If-None-Match` ETags (a 304 does not count against the
+     60/hour unauthenticated limit). First request: the `main` commit SHA; if it equals the stored
+     SHA, exit with no further requests. Otherwise list `content/works/` and read only what is
+     needed for works not yet handled. No git clone, no use of the developer checkout.
+  3. A work `<id>` is "published" when all hold: `content/works/<id>/index.md` exists;
+     `content/ledger/<id>.json` exists and every channel in it has `status: "done"`; if the
+     front matter has `video:`, `content/ledger/<id>-video.json` exists and every channel is
+     `done`; and the site serves the work: `GET https://fadenundstimmung.de/work-media/<id
+     lowercased>/<video.fileName>` (Range `bytes=0-0`) returns 2xx when the work has a video,
+     otherwise a stable public URL of the work's first photo or page taken from `apps/site`
+     (document which). Pending → check again next run. Any channel with a status other than
+     `pending`/`done` → one desktop notification per work («Публікація <id> з помилкою, папки
+     не чищу»), no cleanup for that work.
+  4. Cleanup on a published work: move to the desktop Trash (`gio trash` via `execFile`, as in
+     T74) every top-level regular file in both folders whose mtime is before the work's
+     front-matter `date` (submission time). Skip subfolders, hidden files, and files open by
+     another process (reuse the T73 `fuser` check). Newer files stay: they belong to the next
+     work. Notify once: «Робота <id> опублікована: прибрано N файлів.» Nothing to move → no
+     notification.
+  5. State in `~/.local/state/handmake-reel/cleanup.json` (atomic write): last `main` SHA,
+     ETags, handled work ids. First run ever: mark every work whose `date` is older than 24 h
+     as handled, so old works never trigger a cleanup.
+  6. Network errors, rate limit (403/429) or bad JSON: log one line, exit 0, retry next run;
+     never trash anything on partial data.
+- Acceptance: idle run with unchanged `main` makes exactly one HTTP request; a new work with
+  all ledgers `done` and the site URL live trashes older files in both folders and keeps newer
+  ones; a pending video ledger or a missing site page leaves the folders untouched; a failed
+  channel notifies once and trashes nothing; a work handled once is never handled again.
+- Tests (`apps/reel`, `--maxWorkers=2`): readiness rules with fixture front matter and ledgers
+  (no video, video pending, all done, failed); SHA unchanged → single request (injected
+  `fetch`); 304 handling; mtime cut-off and open/hidden/subfolder skips with injected trash;
+  first-run baseline; error paths leave files in place.
