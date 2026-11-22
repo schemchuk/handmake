@@ -5,7 +5,7 @@
   `packages/channels/src/youtube/` (token refresh, resumable upload with 308 resume, 3 attempts
   like T71), publisher wiring, `publish.yml` secrets for live runs only.
 - **Branch:** `feat/T78-youtube-shorts`.
-- **Last commit:** feat(channels): add YouTube Shorts channel (T78).
+- **Last commit:** fix(channels): keep YouTube redirect check Workers-typed (T78). CI green; Codex rounds 1-2 handled (PR comments).
 - **Next step:** Codex review of the T78 PR; merge needs Volodymyr's OK (workflow and secret
   handling). After merge: bot deploy, then `channels.youtube: { language: de }` in the tenant
   YAML (separate commit); H21 and the YouTube API audit (H19b) before the first live run. Then T79 (Pinterest).
