@@ -127,6 +127,8 @@ site:
     - network: telegram
       url: https://t.me/Faden_und_Stimmung
       lead: [uk]
+    - network: youtube
+      url: https://www.youtube.com/@FadenundStimmung
   baseUrl: https://fadenundstimmung.de
   defaultLanguage: de
   newsletter:
