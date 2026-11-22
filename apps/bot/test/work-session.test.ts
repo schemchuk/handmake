@@ -75,6 +75,8 @@ beforeEach(async () => {
     .mockResolvedValue({ generateUkrainian: uk, translateUkrainian: de, generate: vi.fn() });
   bot = createBot({
     token: 'TEST_TOKEN',
+    // The real tenant config queues works (F42): «в чергу» is the default.
+    tenantConfigs: { load },
     drafts,
     texts: botTexts,
     translator,
@@ -161,6 +163,30 @@ describe('/work author flow', () => {
     await press(`draft:${id}:publish:confirm`);
     await flush();
     expect(publish.jobs).toHaveLength(1);
+  });
+
+  it('queues an approved work and lets /work start the next one (F42)', async () => {
+    await selectExisting();
+    await contentAndGenerate();
+    await press(`work:${id}:announce:yes`);
+    await press(`draft:${id}:publish`);
+    const queueButton = buttons().find((b) =>
+      b.callback_data.startsWith(`draft:${id}:publish:queue:`),
+    );
+    await press(queueButton!.callback_data);
+    expect(publish.jobs).toEqual([]);
+    const queued = await get();
+    expect(queued.draft.state).toBe('scheduled');
+    expect(queued.publishAt).toBeDefined();
+    const first = id;
+    await send('/work');
+    const next = (await drafts.getChatSession(tenant, '11'))!.draftId!;
+    expect(next).not.toBe(first);
+    expect((await drafts.get(tenant, next))!.draft.state).toBe('collecting');
+    // Back to draft from /queue: /work reopens the queued work, as promised.
+    const [inQueue] = await drafts.listScheduled(tenant);
+    await press(`queue:${first}:back:${inQueue!.version}`);
+    expect((await drafts.getChatSession(tenant, '11'))!.draftId).toBe(first);
   });
 
   it('selects an existing collection and keeps site-only publication as the initial choice', async () => {

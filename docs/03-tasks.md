@@ -3219,7 +3219,7 @@ migrations: Volodymyr applies them before the bot deploy.
      dispatch per tenant and tick, and none while a publish run of the tenant is in flight (a
      second dispatch would replace a pending run in the shared `publish` concurrency group);
      one queued draft per slot (unique index); a claim never dispatched is reclaimed after
-     10 minutes (`dispatched_at`); a failure waits one tick (`retry_at`) and is guarded by the
+     20 minutes (`dispatched_at`; longer than a 15-minute cron invocation, PR #189); a failure waits one tick (`retry_at`) and is guarded by the
      claim's version, so a manual 🚀 that took over is never touched; a late success callback
      also accepts a requeued draft; delete refuses `publishing`/`published` in SQL. Claim due drafts atomically
      (`scheduled` → `publishing` only if still scheduled), build the job exactly as the publish
@@ -3259,14 +3259,14 @@ migrations: Volodymyr applies them before the bot deploy.
   two manual 🚀 presses within one run stays as before T76a.
 
 ### T76b — Release queue in the bot: queue on publish, `/queue`, reminders (`bot`, F42)
-- Status: planned.
+- Status: in review (Codex: 6 rounds, last with no blocking findings).
 - Owner: claude-code · Reviewer: codex · Depends on: T76a
 - Change:
   1. For kinds in `releaseQueue.kinds`, the final publish confirmation (after the people
      confirmation for video) schedules instead of dispatching and replies
      «Додано в чергу. Вийде <weekday>, <dd.mm> о <hh:mm>.» A second button
      «Опублікувати зараз» dispatches at once as today.
-  2. `/queue` (Ukrainian label «Черга» in the command menu): lists queued works by slot with
+  2. `/queue` (the command menu is set in BotFather by hand, not in code): lists queued works by slot with
      the first line of the text; per work «Зараз» (publish now; later works keep their slots) and
      «Повернути в чернетку» (unschedule, slot freed). Versioned callbacks as elsewhere.
   3. Low-queue reminder: when a dispatch leaves exactly `lowQueueReminder` work(s) queued, one
@@ -3279,7 +3279,13 @@ migrations: Volodymyr applies them before the bot deploy.
      «busy» although the draft is gone or published; re-read the draft after a refused delete
      and answer by its real state.
   9. Busy check repo-wide (T76c dropped): `queueState` treats a `publishing` draft of any tenant
-     as in flight, since `publish.yml` has one repository-wide concurrency group.
+     as in flight, since `publish.yml` has one repository-wide concurrency group. Migration
+     0026 adds a one-row lease (`queue_dispatch_lock`, 20 min, longer than any cron invocation): one cron execution at a time
+     runs the busy check and the claim, so overlapping executions never both dispatch.
+  10. PR #189 review: «в чергу» carries the shown row version; «Зараз» in `/queue` moves the slot
+     to now (`moveToNow`, next free millisecond on a tie) and leaves the dispatch to the cron;
+     the low-queue note is claimed once per queueing (`extras.queueReminded`, cleared when the
+     work is queued again).
   7. Review note from PR #187 (nit): a slot time that does not exist on the DST switch day
      (e.g. 02:30 on the last Sunday of March) silently becomes 03:30; reject such times in the
      schema or document the shift.
@@ -3309,6 +3315,9 @@ migrations: Volodymyr applies them before the bot deploy.
      stored job and `channels: [<channel>]`; retry as in T76a.
   4. Author notification for a follow-up run: one short line per channel («Threads: опубліковано»
      or the error), no repeat of the full message.
+- Review note from PR #189 (nit): an old 🚀 on a queue-owned `publishing` draft still shows
+  the consent buttons and only then answers «busy»; check `stored.publishAt` before showing them
+  (`apps/bot/src/bot.ts`, publish action).
 - Acceptance: a work at 18:30 reaches Threads at 20:00 (next tick), the other channels at 18:30;
   re-running either dispatch never posts twice; T75 cleanup waits until the delayed channel is
   `done`.

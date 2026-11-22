@@ -82,6 +82,40 @@ export function formatSlot(slot: Date, timeZone: string): string {
   return `${weekday}, ${parts['day']}.${parts['month']} о ${parts['hour']}:${parts['minute']}`;
 }
 
+/**
+ * Puts a ready draft into the next free slot. The slot is unique in D1, so a
+ * racing approval that took it makes this pick the next one. Undefined when
+ * the draft is no longer ready.
+ */
+export async function scheduleDraft(
+  drafts: D1DraftStore,
+  stored: StoredDraft,
+  config: ReleaseQueueConfig,
+  timeZone: string,
+  now: Date,
+  approvalChatId?: string,
+): Promise<Date | undefined> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const slot = nextFreeSlot(
+      now,
+      await drafts.takenSlots(stored.draft.tenantId),
+      config,
+      timeZone,
+    );
+    const outcome = await drafts.schedule(
+      stored.draft.tenantId,
+      stored.draft.draftId,
+      slot,
+      now,
+      approvalChatId,
+      stored.version,
+    );
+    if (outcome === 'scheduled') return slot;
+    if (outcome === 'not-ready') return undefined;
+  }
+  throw new Error('release queue slot kept being taken');
+}
+
 /** Whether drafts of this kind go through the queue for the tenant. */
 export function queuesKind(config: TenantConfig, kind: StoredDraft['draft']['kind']): boolean {
   return !!config.releaseQueue?.kinds.some((queued) => queued === kind);
@@ -102,7 +136,9 @@ export interface ReleaseQueueCronOptions {
 /**
  * Dispatches at most one queued draft per tenant and tick: the earliest due
  * slot, or a claim an earlier tick made but never dispatched (the Worker died
- * in between). It waits while a publish run of the tenant is in flight, since
+ * in between). A re-executed tick that finds that draft already done may take
+ * the next overdue one; the busy check still keeps runs from overlapping. It
+ * waits while any publish run of the repository is in flight, since
  * a second dispatch would replace a pending run in the shared `publish`
  * concurrency group; a backlog after an outage drains one tick at a time.
  * Queued drafts are dispatched even when the tenant later drops
@@ -113,6 +149,23 @@ export async function runReleaseQueueCron(
   now: Date,
   options: ReleaseQueueCronOptions,
 ): Promise<void> {
+  // One execution at a time: the busy check and the claim below are separate
+  // statements, so overlapping executions could both dispatch otherwise.
+  const holder = crypto.randomUUID();
+  if (!(await options.drafts.acquireQueueLock(holder, now, queueLockLeaseMs))) return;
+  try {
+    await dispatchTenants(now, options);
+  } finally {
+    await options.drafts.releaseQueueLock(holder).catch(() => undefined);
+  }
+}
+
+/** Longer than any cron invocation (Cloudflare caps one at 15 min), so a
+ * lease never expires while its holder may still be waiting on GitHub; a
+ * crashed holder costs one or two skipped ticks (PR #189 review). */
+export const queueLockLeaseMs = 20 * 60 * 1000;
+
+async function dispatchTenants(now: Date, options: ReleaseQueueCronOptions): Promise<void> {
   for (const tenantId of new Set(options.allowList.values())) {
     try {
       const { next, busy } = await options.drafts.queueState(tenantId, now);
@@ -165,6 +218,38 @@ async function dispatchDue(
     return;
   }
   await options.drafts.markDispatched(tenantId, draftId, claimed.version, now);
+  // Once per work: a lost run dispatched again changes nothing in the queue.
+  if (!(await options.drafts.claimQueueReminder(tenantId, draftId))) return;
+  await remindLowQueue(tenantId, claimed, options).catch((error: unknown) =>
+    console.error('release queue reminder failed:', (error as Error).message),
+  );
+}
+
+/** After a dispatch: one note when the queue runs low or empty (T76b). A
+ * dispatch happens once per work, so each state change is told once. */
+async function remindLowQueue(
+  tenantId: string,
+  claimed: StoredDraft,
+  options: ReleaseQueueCronOptions,
+): Promise<void> {
+  const config = await options.tenantConfigs.load(tenantId);
+  const queue = config.releaseQueue;
+  if (!queue) return;
+  const left = await options.drafts.listScheduled(tenantId);
+  // Exactly at the threshold, and once more when empty: one note per change.
+  if (left.length !== queue.lowQueueReminder && left.length !== 0) return;
+  const chatId =
+    (claimed.draft.extras['approvalChatId'] as string | undefined) ??
+    (await options.drafts.chatIdOf(tenantId, claimed.draft.draftId));
+  if (!chatId) return;
+  const next = left[0]?.publishAt;
+  const text = next
+    ? options.texts.queueLowText(
+        left.length,
+        formatSlot(new Date(next), config.meetingSchedule.timezone),
+      )
+    : options.texts.queueEmptyText;
+  await options.notify(chatId, text);
 }
 
 async function tellGaveUp(

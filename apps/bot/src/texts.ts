@@ -219,6 +219,25 @@ export const botTexts = {
     'Не вийшло опублікувати роботу з черги ({slot}) 😔 Я пробував тричі. ' +
     'Чернетка знову готова — натисни 🚀, коли захочеш повторити.',
 
+  // Consent buttons for kinds that go through the queue (T76b).
+  publishQueueButton: '✅ Облич немає — в чергу',
+  publishNowButton: '⚡ Облич немає — опублікувати зараз',
+  queuedText: (slot: string) =>
+    `🗓 Додано в чергу. Вийде ${slot}. Подивитися чи змінити чергу — /queue.`,
+  queuedAlreadyText: 'Ця робота вже в черзі. Подивитися чи змінити — /queue.',
+  queueListText: 'Черга публікацій:',
+  queueEmptyListText: 'Черга порожня. Нова робота через /work стане в найближчий слот.',
+  queueItemText: (slot: string, title: string) => `🗓 ${slot}\n${title}`,
+  queueNowButton: '⚡ Зараз',
+  queueBackButton: '↩️ У чернетку',
+  queueNowText:
+    '⚡ Добре, робота готова до публікації й вийде, щойно до неї дійде черга (зазвичай за 15–30 хвилин).',
+  queueBackDoneText: 'Роботу повернено в чернетку, її слот вільний. /work — відкрити її знову.',
+  queueStaleText: 'Цей крок уже змінився. Відкрий /queue ще раз.',
+  queueLowText: (left: number, slot: string) =>
+    `У черзі лишилось робіт: ${left} (наступна вийде ${slot}). Надішли нову, коли буде готова.`,
+  queueEmptyText: 'Черга порожня: у наступний слот нічого не вийде.',
+
   // --- Preview message (built by preview.ts) ----------------------------------
   previewHeader: (photoCount: number) => `🧵 Перегляд допису (${photoCount} фото)`,
   previewUkLabel: (chars: number) => `🇺🇦 Українською (${chars} симв.):`,

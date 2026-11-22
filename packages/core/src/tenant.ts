@@ -275,7 +275,9 @@ export const tenantConfigSchema = z
       .strict()
       .optional(),
     // F42 release queue. Absent = every kind publishes at once. Times use
-    // meetingSchedule.timezone; one slot per local day.
+    // meetingSchedule.timezone; one slot per local day. A time inside the
+    // spring DST gap (02:00-03:00 in Europe/Berlin) goes out an hour later on
+    // that one day; keep slots outside it.
     releaseQueue: z
       .object({
         kinds: z.array(z.enum(['post', 'work'])).min(1),

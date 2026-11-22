@@ -48,6 +48,8 @@ export interface StoredDraft {
   publishAt?: string;
   /** Failed or lost dispatches of the queued draft so far. */
   queueAttempts?: number;
+  /** When GitHub accepted the queue's dispatch of this draft. */
+  dispatchedAt?: string;
 }
 
 /** What happened to a queued draft whose dispatch failed (T76a). */
@@ -233,9 +235,17 @@ export interface D1DraftStore {
     publishAt: Date,
     now: Date,
     approvalChatId?: string,
+    /** The row version the caller validated; another version is not-ready. */
+    expectedVersion?: number,
   ): Promise<'scheduled' | 'not-ready' | 'slot-taken'>;
-  /** F42: `scheduled` → `ready`, slot freed. */
-  unschedule(tenantId: string, draftId: string, now: Date): Promise<boolean>;
+  /** F42: `scheduled` → `ready`, slot freed; with `version`, only that row
+   * version (a stale queue button never moves a newer state). */
+  unschedule(tenantId: string, draftId: string, now: Date, version?: number): Promise<boolean>;
+  /** Slots held by queued or publishing works (one work per slot). */
+  takenSlots(tenantId: string): Promise<Date[]>;
+  /** «Зараз» in the queue: the slot of that row version moves to `now`, so
+   * the cron dispatches it on its next tick with all of its guards. */
+  moveToNow(tenantId: string, draftId: string, version: number, now: Date): Promise<boolean>;
   /** The tenant's queue, earliest slot first. */
   listScheduled(tenantId: string): Promise<StoredDraft[]>;
   /** The next queued draft to dispatch (a due slot or an interrupted claim)
@@ -244,6 +254,13 @@ export interface D1DraftStore {
   /** Atomically claims a due (or interrupted) queued draft as `publishing`;
    * undefined if another tick or the author got there first. */
   claimDue(tenantId: string, draftId: string, now: Date): Promise<StoredDraft | undefined>;
+  /** Records that the low-queue note for this draft's dispatch was sent;
+   * false when it already was (a re-dispatch after a lost run). */
+  claimQueueReminder(tenantId: string, draftId: string): Promise<boolean>;
+  /** Takes the queue dispatch lease unless another execution holds an
+   * unexpired one. */
+  acquireQueueLock(holder: string, now: Date, leaseMs: number): Promise<boolean>;
+  releaseQueueLock(holder: string): Promise<void>;
   /** GitHub accepted the dispatch of this claim. */
   markDispatched(tenantId: string, draftId: string, version: number, now: Date): Promise<void>;
   /** A cron dispatch failed: back to `scheduled` (next try after one tick), or
@@ -272,6 +289,7 @@ interface DraftRow {
   pending_edit: string | null;
   publish_at: string | null;
   queue_attempts: number;
+  dispatched_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -290,7 +308,7 @@ const draftKinds: ReadonlySet<string> = new Set(['post', 'work', 'show']);
 const sessionKinds: ReadonlySet<string> = new Set(['post', 'entry', 'work', 'show']);
 
 const draftColumns =
-  'tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, queue_attempts, created_at, updated_at';
+  'tenant_id, id, chat_id, status, kind, type, extras, texts, photos, version, pending_edit, publish_at, queue_attempts, dispatched_at, created_at, updated_at';
 const selectDraft = `SELECT ${draftColumns} FROM drafts WHERE tenant_id = ?`;
 
 /** D1/SQLite report UNIQUE violations with this message; we treat them as
@@ -316,8 +334,10 @@ function claimableArgs(now: Date): string[] {
 }
 /** Columns reset when a draft leaves the release queue. */
 const leaveQueue = 'publish_at = NULL, retry_at = NULL, dispatched_at = NULL, queue_attempts = 0';
-/** A queued claim not dispatched within this long was interrupted. */
-export const queueInterruptedMs = 10 * 60 * 1000;
+/** A queued claim not dispatched within this long was interrupted. Longer
+ * than any cron invocation (15 min on Cloudflare), so a dispatch still
+ * waiting on GitHub is never taken for an interrupted one. */
+export const queueInterruptedMs = 20 * 60 * 1000;
 /** A publish run younger than this blocks the next queued dispatch. */
 export const queueBusyMs = 60 * 60 * 1000;
 /** After a failed dispatch the next try waits about one cron tick. */
@@ -641,7 +661,10 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
                extras = CASE WHEN ? IS NULL THEN extras
                  ELSE json_set(extras, '$.approvalChatId', ?) END
            WHERE tenant_id = ? AND id = ?
-             AND (status = 'ready' OR (status = 'publishing' AND updated_at < ?))`,
+             -- A queue-owned claim (publish_at set) is recovered by the queue
+             -- only: its dispatch may still be waiting on GitHub (PR #189).
+             AND (status = 'ready'
+               OR (status = 'publishing' AND publish_at IS NULL AND updated_at < ?))`,
         )
         .bind(
           now.toISOString(),
@@ -774,16 +797,18 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes;
     },
 
-    async schedule(tenantId, draftId, publishAt, now, approvalChatId) {
+    async schedule(tenantId, draftId, publishAt, now, approvalChatId, expectedVersion) {
       try {
         const result = await db
           .prepare(
             `UPDATE drafts
              SET pending_edit = NULL, status = 'scheduled', publish_at = ?, retry_at = NULL,
                  dispatched_at = NULL, queue_attempts = 0, updated_at = ?, version = version + 1,
-                 extras = CASE WHEN ? IS NULL THEN extras
-                   ELSE json_set(extras, '$.approvalChatId', ?) END
-             WHERE tenant_id = ? AND id = ? AND status = 'ready'`,
+                 -- A new queueing earns its own low-queue note.
+                 extras = CASE WHEN ? IS NULL THEN json_remove(extras, '$.queueReminded')
+                   ELSE json_set(json_remove(extras, '$.queueReminded'), '$.approvalChatId', ?) END
+             WHERE tenant_id = ? AND id = ? AND status = 'ready'
+               AND (? IS NULL OR version = ?)`,
           )
           .bind(
             publishAt.toISOString(),
@@ -792,6 +817,8 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
             approvalChatId ?? null,
             tenantId,
             draftId,
+            expectedVersion ?? null,
+            expectedVersion ?? null,
           )
           .run();
         return result.meta.changes > 0 ? 'scheduled' : 'not-ready';
@@ -802,16 +829,50 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       }
     },
 
-    async unschedule(tenantId, draftId, now) {
+    async unschedule(tenantId, draftId, now, version) {
       const result = await db
         .prepare(
           `UPDATE drafts
            SET status = 'ready', updated_at = ?, version = version + 1, ${leaveQueue}
-           WHERE tenant_id = ? AND id = ? AND status = 'scheduled'`,
+           WHERE tenant_id = ? AND id = ? AND status = 'scheduled'
+             AND (? IS NULL OR version = ?)`,
         )
-        .bind(now.toISOString(), tenantId, draftId)
+        .bind(now.toISOString(), tenantId, draftId, version ?? null, version ?? null)
         .run();
       return result.meta.changes > 0;
+    },
+
+    async takenSlots(tenantId) {
+      const { results } = await db
+        .prepare(
+          `SELECT publish_at FROM drafts WHERE tenant_id = ?
+             AND status IN ('scheduled', 'publishing') AND publish_at IS NOT NULL`,
+        )
+        .bind(tenantId)
+        .all<{ publish_at: string }>();
+      return results.map((row) => new Date(row.publish_at));
+    },
+
+    async moveToNow(tenantId, draftId, version, now) {
+      // Another work may hold this exact instant (a slot at :30:00.000):
+      // take the next millisecond instead of reporting a stale button.
+      for (let offset = 0; offset < 5; offset++) {
+        const at = new Date(now.getTime() + offset).toISOString();
+        try {
+          const result = await db
+            .prepare(
+              `UPDATE drafts
+               SET publish_at = ?, retry_at = NULL, updated_at = ?, version = version + 1
+               WHERE tenant_id = ? AND id = ? AND status = 'scheduled' AND version = ?`,
+            )
+            .bind(at, now.toISOString(), tenantId, draftId, version)
+            .run();
+          return result.meta.changes > 0;
+        } catch (error) {
+          if (!isUniqueViolation(error)) throw error;
+        }
+      }
+      return false;
     },
 
     async listScheduled(tenantId) {
@@ -829,16 +890,16 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .first<DraftRow>();
       // A run in flight (or a dispatch another execution is making right
       // now): a second dispatch would replace its pending run in the shared
-      // `publish` concurrency group, so the queue waits.
+      // `publish` concurrency group, so the queue waits. Repository-wide,
+      // not per tenant: the group is shared by every tenant (T76c dropped).
       const busy = await db
         .prepare(
-          `SELECT 1 AS busy FROM drafts WHERE tenant_id = ? AND status = 'publishing'
+          `SELECT 1 AS busy FROM drafts WHERE status = 'publishing'
              AND updated_at >= ?
              AND NOT (publish_at IS NOT NULL AND dispatched_at IS NULL AND updated_at < ?)
            LIMIT 1`,
         )
         .bind(
-          tenantId,
           new Date(now.getTime() - queueBusyMs).toISOString(),
           new Date(now.getTime() - queueInterruptedMs).toISOString(),
         )
@@ -861,6 +922,37 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(now.toISOString(), tenantId, draftId, ...claimableArgs(now))
         .first<DraftRow>();
       return row ? toStoredDraft(row) : undefined;
+    },
+
+    async acquireQueueLock(holder, now, leaseMs) {
+      const result = await db
+        .prepare(
+          `INSERT INTO queue_dispatch_lock (id, holder, held_until) VALUES (1, ?, ?)
+           ON CONFLICT (id) DO UPDATE SET holder = excluded.holder, held_until = excluded.held_until
+           WHERE queue_dispatch_lock.held_until < ?`,
+        )
+        .bind(holder, new Date(now.getTime() + leaseMs).toISOString(), now.toISOString())
+        .run();
+      return result.meta.changes > 0;
+    },
+
+    async releaseQueueLock(holder) {
+      await db
+        .prepare(`UPDATE queue_dispatch_lock SET held_until = '' WHERE id = 1 AND holder = ?`)
+        .bind(holder)
+        .run();
+    },
+
+    async claimQueueReminder(tenantId, draftId) {
+      const result = await db
+        .prepare(
+          `UPDATE drafts SET extras = json_set(extras, '$.queueReminded', json('true'))
+           WHERE tenant_id = ? AND id = ?
+             AND COALESCE(json_extract(extras, '$.queueReminded'), 0) = 0`,
+        )
+        .bind(tenantId, draftId)
+        .run();
+      return result.meta.changes > 0;
     },
 
     async markDispatched(tenantId, draftId, version, now) {
@@ -934,6 +1026,7 @@ function toStoredDraft(row: DraftRow): StoredDraft {
     version: row.version,
     pendingEdit: row.pending_edit === 'uk' || row.pending_edit === 'de' ? row.pending_edit : null,
     ...(row.publish_at ? { publishAt: row.publish_at, queueAttempts: row.queue_attempts } : {}),
+    ...(row.dispatched_at ? { dispatchedAt: row.dispatched_at } : {}),
   };
 }
 

@@ -29,6 +29,8 @@ import type { BotTexts } from './texts';
 import { showWorkVideo, workVideoKeyboard } from './work-video';
 import { registerWorkSession } from './work-session';
 import type { WorkSessionOptions } from './work-session';
+import { queuesKind, scheduleDraft, formatSlot } from './release-queue';
+import { registerQueueSession } from './queue-session';
 import { registerShowSession } from './show-session';
 import type { ShowSessionOptions } from './show-session';
 
@@ -99,6 +101,30 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
   registerCommentSession(bot, options);
   const workSession = registerWorkSession(bot, options);
   registerShowSession(bot, options, workSession.start);
+  registerQueueSession(bot, {
+    texts,
+    ...(options.tenantConfigs ? { tenantConfigs: options.tenantConfigs } : {}),
+  });
+
+  /** The tenant's queue settings when drafts of this kind are queued (F42). */
+  async function queueFor(ctx: AppContext, kind: StoredDraft['draft']['kind']) {
+    const config = await options.tenantConfigs?.load(ctx.tenantId);
+    return config?.releaseQueue && queuesKind(config, kind)
+      ? { queue: config.releaseQueue, timeZone: config.meetingSchedule.timezone }
+      : undefined;
+  }
+
+  /** A delete SQL refused, or a racing one won: answer by the real state. */
+  async function replyRefusedDelete(ctx: AppContext, draftId: string): Promise<void> {
+    const fresh = await ctx.drafts.get(ctx.tenantId, draftId);
+    await ctx.reply(
+      !fresh
+        ? texts.discardDoneText
+        : fresh.draft.state === 'published'
+          ? texts.draftFinishedText
+          : texts.draftBusyText,
+    );
+  }
 
   bot.command('stats', async (ctx) => {
     if (ctx.chat?.type !== 'private') return;
@@ -169,7 +195,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
     }
     if (!(await ctx.drafts.delete(existing.draft.tenantId, existing.draft.draftId))) {
       // The release queue claimed it between the read and the delete.
-      await ctx.reply(texts.draftBusyText);
+      await replyRefusedDelete(ctx, existing.draft.draftId);
       return;
     }
     const session = await sessionOf(ctx);
@@ -298,28 +324,107 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       const stalePublishing =
         stored.draft.state === 'publishing' &&
         new Date(stored.draft.updatedAt).getTime() < publishingStaleCutoff(new Date()).getTime();
+      if (stored.draft.state === 'scheduled') {
+        await ctx.reply(texts.queuedAlreadyText);
+        return;
+      }
       if (stored.draft.state !== 'ready' && !stalePublishing) {
         await ctx.reply(
           stored.draft.state === 'publishing' ? texts.draftBusyText : texts.publishNotReadyText,
         );
         return;
       }
+      const cancel = {
+        text: texts.publishCancelButton,
+        callback_data: `draft:${draftId}:publish:cancel`,
+      };
+      // Queued kinds (F42): «в чергу» is the default, «зараз» the exception.
+      const queued = await queueFor(ctx, stored.draft.kind).catch(() => undefined);
       await ctx.reply(texts.publishConsentText, {
         reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: texts.publishConfirmButton,
-                callback_data: `draft:${draftId}:publish:confirm`,
-              },
-              {
-                text: texts.publishCancelButton,
-                callback_data: `draft:${draftId}:publish:cancel`,
-              },
-            ],
-          ],
+          inline_keyboard: queued
+            ? [
+                [
+                  {
+                    text: texts.publishQueueButton,
+                    // Bound to the version shown: a stale button never queues
+                    // a draft that changed since (PR #189 review).
+                    callback_data: `draft:${draftId}:publish:queue:${stored.version}`,
+                  },
+                ],
+                [
+                  {
+                    text: texts.publishNowButton,
+                    callback_data: `draft:${draftId}:publish:confirm`,
+                  },
+                ],
+                [cancel],
+              ]
+            : [
+                [
+                  {
+                    text: texts.publishConfirmButton,
+                    callback_data: `draft:${draftId}:publish:confirm`,
+                  },
+                  cancel,
+                ],
+              ],
         },
       });
+      return;
+    }
+
+    if (action.startsWith('publish:queue:')) {
+      const shownVersion = Number(action.slice('publish:queue:'.length));
+      if (!Number.isInteger(shownVersion) || shownVersion !== stored.version) {
+        await ctx.reply(
+          stored.draft.state === 'scheduled' ? texts.queuedAlreadyText : texts.queueStaleText,
+        );
+        return;
+      }
+      // Validate as the publish button does: a draft that can never be
+      // dispatched must not wait for a slot first.
+      try {
+        publishJobOf(stored.draft);
+      } catch {
+        await ctx.reply(texts.publishInvalidText);
+        return;
+      }
+      let queued: Awaited<ReturnType<typeof queueFor>>;
+      try {
+        queued = await queueFor(ctx, stored.draft.kind);
+      } catch {
+        await ctx.reply(texts.publishFailedText);
+        return;
+      }
+      if (!queued) {
+        // The tenant dropped the queue since the buttons were sent.
+        await ctx.reply(texts.publishNotReadyText);
+        return;
+      }
+      const now = new Date();
+      const slot = await scheduleDraft(
+        ctx.drafts,
+        stored,
+        queued.queue,
+        queued.timeZone,
+        now,
+        chatId(ctx),
+      );
+      if (!slot) {
+        const fresh = await ctx.drafts.get(ctx.tenantId, draftId);
+        await ctx.reply(
+          fresh?.draft.state === 'scheduled'
+            ? texts.queuedAlreadyText
+            : fresh?.draft.state === 'published'
+              ? texts.draftFinishedText
+              : fresh?.draft.state === 'publishing'
+                ? texts.draftBusyText
+                : texts.publishNotReadyText,
+        );
+        return;
+      }
+      await ctx.reply(texts.queuedText(formatSlot(slot, queued.timeZone)));
       return;
     }
 
@@ -358,7 +463,9 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
             ? texts.draftFinishedText
             : fresh?.draft.state === 'publishing'
               ? texts.draftBusyText
-              : texts.publishNotReadyText,
+              : fresh?.draft.state === 'scheduled'
+                ? texts.queuedAlreadyText
+                : texts.publishNotReadyText,
         );
         return;
       }
@@ -383,7 +490,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       }
       if (!(await ctx.drafts.delete(ctx.tenantId, draftId))) {
         // The release queue claimed it between the read and the delete.
-        await ctx.reply(texts.draftBusyText);
+        await replyRefusedDelete(ctx, draftId);
         return;
       }
       // Drop the session pointer if it aimed at the draft just deleted.

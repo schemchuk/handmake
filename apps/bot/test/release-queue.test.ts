@@ -8,6 +8,7 @@ import {
   formatSlot,
   maxQueueAttempts,
   nextFreeSlot,
+  queueLockLeaseMs,
   queuesKind,
   runReleaseQueueCron,
 } from '../src/release-queue';
@@ -261,16 +262,19 @@ describe('release queue races (PR #187 review)', () => {
     expect(options.runner.run).toHaveBeenCalledTimes(1);
   });
 
-  it('a failure never touches a manual 🚀 that took over the claim', async () => {
+  it('a stale 🚀 never takes over a claim the queue is dispatching', async () => {
     const store = createD1DraftStore(await makeD1());
     await queued(store, 'a', mondaySlot);
     const claimed = (await store.claimDue(tenant, 'a', mondaySlot))!;
     const later = new Date(mondaySlot.getTime() + 600_000);
-    expect(await store.claimPublishing(tenant, 'a', later, later)).toBeDefined();
-    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version, later, 3)).toBe('missing');
-    const stored = await store.get(tenant, 'a');
-    expect(stored?.draft.state).toBe('publishing');
-    expect(stored?.publishAt).toBeUndefined();
+    expect(await store.claimPublishing(tenant, 'a', later, later)).toBeUndefined();
+    // A newer claim (version bump) is never touched by the old one's failure.
+    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version - 1, later, 3)).toBe(
+      'missing',
+    );
+    expect(await store.requeueAfterFailure(tenant, 'a', claimed.version, later, 3)).toBe(
+      'requeued',
+    );
   });
 
   it('two executions of one tick spend one attempt', async () => {
@@ -360,5 +364,127 @@ describe('release queue races (PR #187 review)', () => {
     await store.create(readyWork('a'), 'chat-1');
     expect(await store.markPublished(tenant, 'a', mondaySlot)).toBe(true);
     expect((await store.get(tenant, 'a'))?.draft.state).toBe('published');
+  });
+});
+
+describe('low-queue reminders (T76b)', () => {
+  function withQueue(options: ReturnType<typeof cronOptions>['options']) {
+    options.tenantConfigs = {
+      load: async () =>
+        ({ meetingSchedule: { timezone: tz }, releaseQueue: queue }) as unknown as TenantConfig,
+    };
+    return options;
+  }
+
+  it('tells the author once when one work is left, then when the queue is empty', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    withQueue(options);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(notify).toHaveBeenCalledWith(
+      'chat-approve',
+      botTexts.queueLowText(1, 'вівторок, 24.11 о 19:30'),
+    );
+    await store.markPublished(tenant, 'a', mondaySlot);
+    await runReleaseQueueCron(tuesdaySlot, options);
+    expect(notify).toHaveBeenLastCalledWith('chat-approve', botTexts.queueEmptyText);
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
+  it('stays quiet while the queue is long and without the queue block', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    await queued(store, 'c', wednesdaySlot);
+    const quiet = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, withQueue(quiet.options));
+    expect(quiet.notify).not.toHaveBeenCalled();
+
+    const store2 = createD1DraftStore(await makeD1());
+    await queued(store2, 'a', mondaySlot);
+    const none = cronOptions(store2, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, none.options);
+    expect(none.notify).not.toHaveBeenCalled();
+  });
+
+  it('a lost run dispatched again sends no second note', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    withQueue(options);
+    await runReleaseQueueCron(mondaySlot, options);
+    await runReleaseQueueCron(new Date(mondaySlot.getTime() + queueLostRunMs + 60_000), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(2);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('notes only at the exact threshold', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    await queued(store, 'c', wednesdaySlot);
+    const { options, notify } = cronOptions(store, async () => undefined);
+    options.tenantConfigs = {
+      load: async () =>
+        ({
+          meetingSchedule: { timezone: tz },
+          releaseQueue: { ...queue, lowQueueReminder: 3 },
+        }) as unknown as TenantConfig,
+    };
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('a lost run that fails once and then succeeds still sends one note', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    await queued(store, 'b', tuesdaySlot);
+    let fail = false;
+    const { options, notify } = cronOptions(store, async () => {
+      if (fail) throw new Error('HTTP 502');
+    });
+    withQueue(options);
+    await runReleaseQueueCron(mondaySlot, options);
+    const lost = new Date(mondaySlot.getTime() + queueLostRunMs + 60_000);
+    fail = true;
+    await runReleaseQueueCron(lost, options);
+    fail = false;
+    await runReleaseQueueCron(new Date(lost.getTime() + 900_000), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(3);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('a work queued again after giving up earns a new note', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    expect(await store.claimQueueReminder(tenant, 'a')).toBe(true);
+    await store.unschedule(tenant, 'a', mondaySlot);
+    expect(await store.schedule(tenant, 'a', tuesdaySlot, mondaySlot)).toBe('scheduled');
+    expect(await store.claimQueueReminder(tenant, 'a')).toBe(true);
+    expect(await store.claimQueueReminder(tenant, 'a')).toBe(false);
+  });
+});
+
+describe('queue dispatch lock (PR #189 review)', () => {
+  it('an execution holding the lease keeps others from dispatching', async () => {
+    const store = createD1DraftStore(await makeD1());
+    await queued(store, 'a', mondaySlot);
+    expect(await store.acquireQueueLock('other', mondaySlot, queueLockLeaseMs)).toBe(true);
+    const { options } = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(options.runner.run).not.toHaveBeenCalled();
+    // The lease expires: the next execution takes over.
+    await runReleaseQueueCron(new Date(mondaySlot.getTime() + queueLockLeaseMs + 1), options);
+    expect(options.runner.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('a finished execution releases the lease', async () => {
+    const store = createD1DraftStore(await makeD1());
+    const { options } = cronOptions(store, async () => undefined);
+    await runReleaseQueueCron(mondaySlot, options);
+    expect(await store.acquireQueueLock('next', mondaySlot, queueLockLeaseMs)).toBe(true);
   });
 });
