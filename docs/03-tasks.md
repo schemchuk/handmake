@@ -3334,7 +3334,7 @@ migrations: Volodymyr applies them before the bot deploy.
      channels without a delay; the publisher still creates the ledger with every enabled channel,
      delayed ones stay `pending`. A run with `channels` delivers only those and never touches the
      others' ledger entries; idempotency rules unchanged.
-  3. Bot: after the first dispatch, rows in a new D1 table `channel_followups` (migration 0026:
+  3. Bot: just before the first dispatch, rows in a new D1 table `channel_followups` (migration 0027:
      tenant, draft id, channel, due_at, state, attempts). The cron dispatches due rows with the
      stored job and `channels: [<channel>]`; retry as in T76a.
   4. Author notification for a follow-up run: one short line per channel («Threads: опубліковано»

@@ -21,10 +21,10 @@ import type { BotTexts } from './texts';
 export const maxFollowupAttempts = 3;
 
 /** When a delayed channel is due: `minutes` after `base`, or the wall time
- * on the local day after `base` (DST-safe via zonedTimeToUtc). A wall time
- * missing on the spring switch day (02:30 in Europe/Berlin) shifts an hour
- * later; one that repeats in autumn is taken at its second, standard-time
- * occurrence. */
+ * on the local day after `base` (DST-safe via zonedTimeToUtc). Verified for
+ * Europe/Berlin only: 02:30 on the spring switch day shifts to 03:30, and
+ * the repeated autumn 02:30 is taken at its second (CET) occurrence. Other
+ * zones may resolve gap times differently. */
 export function channelDueAt(delay: ChannelDelay, base: Date, timeZone: string): Date {
   if ('minutes' in delay) return new Date(base.getTime() + delay.minutes * 60_000);
   const [hours, minutes] = delay.nextDayAt.split(':').map(Number);

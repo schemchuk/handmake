@@ -252,7 +252,7 @@ describe('follow-ups in the release-queue cron', () => {
   });
 
   it('a lost first-run callback and its re-dispatch keep the Threads deadline', async () => {
-    const { drafts, followups, run, options, db } = await setup();
+    const { drafts, run, options, db } = await setup();
     await queuedWork(drafts, 'a', mondaySlot);
     await runReleaseQueueCron(mondaySlot, options);
     // No callback: the queue dispatches the first run again after 2 h.
