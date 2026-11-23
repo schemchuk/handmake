@@ -1,8 +1,10 @@
+import { createHmac } from 'node:crypto';
 import {
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
-  readdir,
+  rename,
   rm,
   symlink,
   unlink,
@@ -10,7 +12,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { checkCleanupFileOpen, runCleanup } from '../src/cleanup.ts';
 
@@ -21,108 +23,270 @@ vi.mock('node:child_process', async (importOriginal) => {
   return { ...original, execFile: Object.assign(vi.fn(), { [promisify.custom]: execute }) };
 });
 
-const id = 'WORK-1';
-const date = Date.parse('2026-11-22T09:00:00.000Z');
-const now = () => date + 1000;
-const sha = 'a'.repeat(40);
+const dayMs = 86_400_000;
+const iso = (time: number) => new Date(time).toISOString();
+const env = { REEL_HANDOFF_BOT_URL: 'https://bot.example.test', REEL_HANDOFF_SECRET: 'test-only' };
 let dir: string;
 let inbox: string;
 let reels: string;
 let statePath: string;
-const listing = 'content/works';
-const index = `${listing}/${id}/index.md`;
-const ledger = `content/ledger/${id}.json`;
-const videoLedger = `content/ledger/${id}-video.json`;
-const page = '/works/work-1/';
-const video = '/work-media/work-1/video.mp4';
+let last: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'reel-cleanup-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'reel-cleanup-'));
   inbox = join(dir, 'inbox');
-  reels = join(dir, 'ready reels');
-  statePath = join(dir, 'state', 'cleanup.json');
-  await Promise.all([mkdir(inbox), mkdir(reels)]);
+  reels = join(dir, 'reels');
+  statePath = join(dir, 'cleanup.json');
+  last = iso(Date.now() - dayMs);
+  await Promise.all([mkdir(inbox), mkdir(reels), writeFile(statePath, JSON.stringify({ last }))]);
 });
-afterEach(async () => rm(dir, { recursive: true, force: true }));
+afterEach(async () => {
+  await rm(dir, { recursive: true, force: true });
+  vi.clearAllMocks();
+});
 
-function frontMatter(hasVideo = false, submitted = date) {
-  return `---\ndate: ${new Date(submitted).toISOString()}\n${hasVideo ? 'video:\n  fileName: video.mp4\n' : ''}---\n`;
-}
-
-const statuses = (...values: string[]) =>
-  JSON.stringify({ channels: Object.fromEntries(values.map((status, n) => [n, { status }])) });
-
-function fixture() {
-  const resources = new Map<string, string | number>([
-    [listing, JSON.stringify([{ name: id, type: 'dir' }])],
-    [index, frontMatter()],
-    [ledger, statuses('done', 'done')],
-    [page, 200],
-    [video, 206],
-  ]);
-  let commit = new Response(JSON.stringify({ sha }), { headers: { ETag: '"main-1"' } });
-  const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
-    const url = new URL(String(input));
-    if (url.pathname.endsWith('/commits/main')) return commit.clone();
-    const path = url.pathname.split('/contents/')[1] ?? url.pathname;
-    if (url.hostname === 'api.github.com')
-      expect(url.searchParams.get('ref')).toMatch(/^[abc]{40}$/);
-    if (path === video) expect(new Headers(init?.headers).get('range')).toBe('bytes=0-0');
-    const value = resources.get(path) ?? 404;
-    return typeof value === 'number' ? new Response(null, { status: value }) : new Response(value);
-  });
-  const trash = vi.fn(unlink);
-  const notify = vi.fn(async (_message: string) => {});
-  const log = vi.fn();
-  const checkOpen = vi.fn(async (file: string) => basename(file) === 'open.mov');
-  return {
-    resources,
-    fetch,
-    trash,
-    notify,
-    log,
-    checkOpen,
-    setCommit(response: Response) {
-      commit = response;
-    },
-    run: (clock = now) =>
-      runCleanup({ inbox, reels, statePath }, { fetch, now: clock, trash, notify, log, checkOpen }),
-  };
-}
-
-async function put(folder: string, file: string, mtime = date - 1000) {
-  const path = join(folder, file);
-  await writeFile(path, 'fixture');
-  await utimes(path, new Date(mtime), new Date(mtime));
+async function put(folder: string, name: string) {
+  const path = join(folder, name);
+  await writeFile(path, 'test');
   return path;
 }
 
-it('trashes only older closed regular files in both folders and handles the work once', async () => {
-  const f = fixture();
-  const a = await put(inbox, 'older.mov');
-  const b = await put(reels, 'older.mp4');
-  await put(inbox, 'equal.mov', date);
-  await put(reels, 'newer.mp4', date + 1000);
+async function state() {
+  return JSON.parse(await readFile(statePath, 'utf8'));
+}
+
+function fixture(handoffs: string[] = []) {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementation(async () => Response.json({ handoffs }));
+  const now = vi.fn(() => Date.now() + 1000);
+  const trash = vi.fn((path: string) => unlink(path));
+  const checkOpen = vi.fn<(path: string) => Promise<boolean | undefined>>(async () => false);
+  const notify = vi.fn(async () => {});
+  const log = vi.fn();
+  const run = () =>
+    runCleanup({ inbox, reels, statePath }, { fetch, now, trash, checkOpen, notify, log, env });
+  return { run, fetch, now, trash, checkOpen, notify, log };
+}
+
+it('uses ctime in both folders, skips hidden and non-regular entries, and notifies once for multiple hand-offs', async () => {
+  const image = await put(inbox, 'photo.jpg');
+  const reel = await put(reels, 'work-reel.mp4');
   await put(reels, '.hidden');
   await mkdir(join(reels, 'nested'));
-  const child = await put(join(reels, 'nested'), 'child.mp4');
-  await symlink(child, join(inbox, 'link.mov'));
+  await put(join(reels, 'nested'), 'saved.mp4');
+  await symlink(image, join(inbox, 'link.jpg'));
+  const newer = await put(reels, 'new.mp4');
+  await Promise.all([image, reel, newer].map((path) => utimes(path, 1, 1)));
+  const cutoff = Math.ceil(Math.max((await lstat(image)).ctimeMs, (await lstat(reel)).ctimeMs)) + 2;
+  await vi.waitFor(() => expect(Date.now()).toBeGreaterThan(cutoff + 1));
+  await utimes(newer, 1, 1);
+  const f = fixture([iso(cutoff), iso(cutoff + 1)]);
   await f.run();
-  expect(f.trash.mock.calls).toEqual([[a], [b]]);
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 2 файли.`);
-  expect((await readdir(inbox)).sort()).toEqual(['equal.mov', 'link.mov']);
-  expect((await readdir(reels)).sort()).toEqual(['.hidden', 'nested', 'newer.mp4']);
-  f.setCommit(new Response(JSON.stringify({ sha: 'b'.repeat(40) })));
-  f.fetch.mockClear();
-  await put(inbox, 'still-older.mov');
+  expect(f.trash.mock.calls).toEqual([[image], [reel]]);
+  expect(f.trash.mock.calls.map(([path]) => dirname(path))).toEqual([inbox, reels]);
+  expect((await lstat(join(reels, 'nested'))).isDirectory()).toBe(true);
+  await expect(readFile(join(reels, 'nested', 'saved.mp4'), 'utf8')).resolves.toBe('test');
+  expect((await lstat(join(inbox, 'link.jpg'))).isSymbolicLink()).toBe(true);
+  expect((await lstat(newer)).mtimeMs).toBe(1000);
+  expect(f.notify).toHaveBeenCalledExactlyOnceWith('Робота в черзі: прибрано 2 файли.');
+  expect(await state()).toEqual({ last: iso(cutoff + 1) });
+});
+
+it('recreates a missing folder with its parents and logs it on an idle run', async () => {
+  await rm(reels, { recursive: true });
+  reels = join(reels, 'output');
+  const f = fixture();
   await f.run();
-  expect(f.fetch).toHaveBeenCalledTimes(2);
-  expect(f.trash).toHaveBeenCalledTimes(2);
+  expect((await lstat(reels)).isDirectory()).toBe(true);
+  expect(f.log).toHaveBeenCalledExactlyOnceWith(`Reel cleanup: recreated folder ${reels}`);
+  expect(f.fetch).toHaveBeenCalledTimes(1);
+  expect(f.trash).not.toHaveBeenCalled();
+  await f.run();
+  expect(f.log).toHaveBeenCalledTimes(1);
+});
+
+it.each(['symlink', 'file'])('trashes nothing when a configured folder is a %s', async (kind) => {
+  const input = await put(inbox, 'photo.jpg');
+  const outside = await put(dir, 'outside.mp4');
+  await rm(reels, { recursive: true });
+  if (kind === 'symlink') await symlink(dir, reels);
+  else await writeFile(reels, 'keep');
+  const f = fixture([iso(Date.now() + 100)]);
+  await f.run();
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(f.log).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Invalid cleanup folder'));
+  await expect(readFile(input, 'utf8')).resolves.toBe('test');
+  await expect(readFile(outside, 'utf8')).resolves.toBe('test');
+  expect(await state()).toEqual({ last });
+});
+
+it('retries only regular files with an exact configured parent', async () => {
+  const nested = join(reels, 'nested');
+  await mkdir(nested);
+  const direct = await put(reels, 'direct.mp4');
+  const paths = [direct, await put(nested, 'nested.mp4'), await put(dir, 'outside.mp4')];
+  const firstSkippedAt = Date.now();
+  const retry = await Promise.all(
+    paths.map(async (path) => {
+      const { dev, ino, ctimeMs } = await lstat(path);
+      return { path, dev, ino, ctimeMs, firstSkippedAt };
+    }),
+  );
+  await writeFile(statePath, JSON.stringify({ last, retry }));
+  const f = fixture();
+  await f.run();
+  expect(f.trash.mock.calls).toEqual([[direct]]);
+  expect(await state()).toEqual({ last });
+});
+
+it('stops if a folder becomes a symlink during the open-file check', async () => {
+  const path = await put(inbox, 'photo.jpg');
+  const moved = join(dir, 'moved');
+  const f = fixture([iso(Date.now() + 100)]);
+  f.checkOpen.mockImplementationOnce(async () => {
+    await rename(inbox, moved);
+    await symlink(moved, inbox);
+    return false;
+  });
+  await f.run();
+  expect(f.trash).not.toHaveBeenCalled();
+  await expect(readFile(path, 'utf8')).resolves.toBe('test');
+  expect(await state()).toEqual({ last });
+});
+
+it('keeps unprocessed videos and accepts numbered reels and watcher errors', async () => {
+  await put(inbox, 'unfinished.MOV');
+  await put(reels, 'unfinished-other-reel.mp4');
+  const finished = await put(inbox, 'finished.MP4');
+  const output = await put(reels, 'finished-reel-2.mp4');
+  const failed = await put(inbox, 'failed.mov');
+  const marker = await put(inbox, 'failed.reel-error.txt');
+  const f = fixture([iso(Date.now() + 100)]);
+  await f.run();
+  expect(f.trash.mock.calls.flat().sort()).toEqual(
+    [finished, output, failed, marker, join(reels, 'unfinished-other-reel.mp4')].sort(),
+  );
+  await expect(lstat(join(inbox, 'unfinished.MOV'))).resolves.toBeDefined();
+});
+
+it('signs the exact requested path and query and does no cleanup on an idle run', async () => {
+  await put(reels, 'old.mp4');
+  const f = fixture();
+  await f.run();
+  expect(f.fetch).toHaveBeenCalledTimes(1);
+  const [target, init] = f.fetch.mock.calls[0]!;
+  const url = new URL(String(target));
+  expect(url.origin + url.pathname).toBe(env.REEL_HANDOFF_BOT_URL + '/reel/handoffs');
+  expect(Object.fromEntries(url.searchParams)).toEqual({
+    tenant: 'faden-und-stimmung',
+    since: last,
+  });
+  expect(init?.method).toBe('GET');
+  expect(init?.redirect).toBe('error');
+  const headers = new Headers(init?.headers);
+  const timestamp = String(Math.floor(f.now.mock.results[0]!.value / 1000));
+  expect(headers.get('X-Handmake-Timestamp')).toBe(timestamp);
+  expect(headers.get('X-Handmake-Signature')).toBe(
+    createHmac('sha256', env.REEL_HANDOFF_SECRET)
+      .update(`GET\n${url.pathname}${url.search}\n${timestamp}`)
+      .digest('hex'),
+  );
+  expect(f.checkOpen).not.toHaveBeenCalled();
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(f.notify).not.toHaveBeenCalled();
+  expect(await state()).toEqual({ last });
+});
+
+it.each(['missing', 'legacy'])('establishes a baseline for %s state', async (kind) => {
+  if (kind === 'missing') await unlink(statePath);
+  else
+    await writeFile(
+      statePath,
+      JSON.stringify({ sha: 'a'.repeat(40), handled: [], waitingForSite: [] }),
+    );
+  await put(reels, 'old.mp4');
+  const baseline = Date.now() + 100;
+  const f = fixture([iso(baseline + 1)]);
+  f.now.mockReturnValue(baseline);
+  await f.run();
+  expect(f.fetch).toHaveBeenCalledTimes(1);
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(await state()).toEqual({ last: iso(baseline) });
+});
+
+it.each(['network', '401', '503', 'bad JSON', 'invalid times'])(
+  'leaves state and files alone on %s',
+  async (failure) => {
+    const path = await put(reels, 'old.mp4');
+    const f = fixture([iso(Date.now() + 100)]);
+    f.checkOpen.mockResolvedValueOnce(true);
+    await f.run();
+    const before = await readFile(statePath, 'utf8');
+    if (failure === 'network') f.fetch.mockRejectedValueOnce(new Error(env.REEL_HANDOFF_SECRET));
+    else if (failure === 'bad JSON') f.fetch.mockResolvedValueOnce(new Response('{'));
+    else if (failure === 'invalid times')
+      f.fetch.mockResolvedValueOnce(Response.json({ handoffs: [iso(Date.now() + 500), 'bad'] }));
+    else f.fetch.mockResolvedValueOnce(new Response(null, { status: Number(failure) }));
+    await f.run();
+    expect(f.log).toHaveBeenCalledTimes(1);
+    expect(f.log.mock.calls[0]![0]).not.toContain(env.REEL_HANDOFF_SECRET);
+    expect(f.trash).not.toHaveBeenCalled();
+    await expect(lstat(path)).resolves.toBeDefined();
+    expect(await readFile(statePath, 'utf8')).toBe(before);
+  },
+);
+
+it('retries a skipped inbox video even after moving its matching reel', async () => {
+  const input = await put(inbox, 'work.mov');
+  const output = await put(reels, 'work-reel.mp4');
+  const cutoff = iso(Date.now() + 100);
+  const f = fixture([cutoff]);
+  f.checkOpen.mockResolvedValueOnce(true);
+  await f.run();
+  expect(f.trash.mock.calls).toEqual([[output]]);
+  expect(await state()).toMatchObject({ last: cutoff, retry: [{ path: input }] });
+  f.fetch.mockResolvedValueOnce(Response.json({ handoffs: [] }));
+  await f.run();
+  expect(f.trash.mock.calls).toEqual([[output], [input]]);
+  expect(f.notify).toHaveBeenLastCalledWith('Робота в черзі: прибрано 1 файл.');
+  expect(await state()).toEqual({ last: cutoff });
+});
+
+it('logs and leaves a skipped file at the 24-hour limit', async () => {
+  const path = await put(reels, 'work-reel.mp4');
+  const runAt = Date.now() + 100;
+  const cutoff = iso(runAt);
+  const f = fixture([cutoff]);
+  f.now.mockReturnValue(runAt);
+  f.checkOpen.mockResolvedValueOnce(undefined);
+  await f.run();
+  f.fetch.mockResolvedValueOnce(Response.json({ handoffs: [iso(runAt + 1)] }));
+  f.now.mockReturnValue(runAt + dayMs);
+  await f.run();
+  expect(f.checkOpen).toHaveBeenCalledTimes(1);
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(f.log).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('24 hours'));
+  await expect(lstat(path)).resolves.toBeDefined();
+  expect(await state()).toEqual({ last: iso(runAt + 1) });
+});
+
+it('does not retry a replaced file at the same path', async () => {
+  const path = await put(reels, 'work-reel.mp4');
+  const cutoff = Date.now() + 100;
+  const f = fixture([iso(cutoff)]);
+  f.checkOpen.mockResolvedValueOnce(true);
+  await f.run();
+  await rename(path, join(dir, 'original.mp4'));
+  await put(reels, 'work-reel.mp4');
+  f.fetch.mockResolvedValueOnce(Response.json({ handoffs: [] }));
+  await f.run();
+  expect(f.trash).not.toHaveBeenCalled();
+  expect(await state()).toEqual({ last: iso(cutoff) });
 });
 
 it('passes the absolute file path to fuser as its only operand', async () => {
   execute.mockRejectedValueOnce({ code: 1, stdout: '', stderr: '' });
-
   expect(await checkCleanupFileOpen('-open.mov')).toBe(false);
   expect(execute).toHaveBeenCalledExactlyOnceWith('fuser', ['-v', resolve('-open.mov')], {
     timeout: 15_000,
@@ -141,295 +305,4 @@ it.each([
     return pid === '101' ? '/usr/libexec/xdg-document-portal' : '/usr/bin/editor';
   };
   expect(await checkCleanupFileOpen('open.mov', listHolders, readExecutable)).toBe(open);
-});
-
-it.each(['gone', 'closed'])(
-  'retries on unchanged main until the skipped file is %s',
-  async (end) => {
-    const f = fixture();
-    const open = await put(inbox, 'open.mov');
-    const closed = await put(reels, 'closed.mp4');
-    await f.run();
-    expect(f.trash.mock.calls).toEqual([[closed]]);
-    expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-      handled: [],
-      waitingForCleanup: [{ id, date, firstSkippedAt: now() }],
-    });
-
-    f.setCommit(new Response(null, { status: 304 }));
-    f.fetch.mockClear();
-    await f.run();
-    expect(f.fetch).toHaveBeenCalledTimes(1);
-    expect(f.trash.mock.calls).toEqual([[closed]]);
-
-    if (end === 'gone') await unlink(open);
-    else f.checkOpen.mockResolvedValue(false);
-    f.fetch.mockClear();
-    await f.run();
-    expect(f.fetch).toHaveBeenCalledTimes(1);
-    expect(f.trash.mock.calls).toEqual(end === 'gone' ? [[closed]] : [[closed], [open]]);
-    expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-      handled: [id],
-      waitingForCleanup: [],
-    });
-  },
-);
-
-it('keeps the original retry deadline across a new SHA and gives up once after 24 hours', async () => {
-  const f = fixture();
-  await put(inbox, 'open.mov');
-  await f.run();
-  f.setCommit(new Response(JSON.stringify({ sha: 'b'.repeat(40) })));
-  f.fetch.mockClear();
-  await f.run(() => now() + 86_399_999);
-  expect(f.fetch).toHaveBeenCalledTimes(2);
-  expect(f.checkOpen).toHaveBeenCalledTimes(2);
-  expect(f.log).not.toHaveBeenCalled();
-
-  const deadline = () => now() + 86_400_000;
-  await f.run(deadline);
-  await f.run(deadline);
-  expect(f.checkOpen).toHaveBeenCalledTimes(2);
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(f.log).toHaveBeenCalledExactlyOnceWith(`Reel cleanup: gave up on ${id} after 24 hours`);
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [id],
-    waitingForCleanup: [],
-  });
-});
-
-it.each([
-  [1, 'файл'],
-  [2, 'файли'],
-  [5, 'файлів'],
-  [11, 'файлів'],
-  [21, 'файл'],
-  [22, 'файли'],
-])('uses the Ukrainian plural for %i files', async (count, noun) => {
-  const f = fixture();
-  await Promise.all(Array.from({ length: count }, (_, i) => put(inbox, `older-${i}.mov`)));
-  await f.run();
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(
-    `Робота ${id} опублікована: прибрано ${count} ${noun}.`,
-  );
-});
-
-it.each([200, 304])('makes one conditional request on idle HTTP %s', async (status) => {
-  const f = fixture();
-  await f.run();
-  if (status === 304) f.setCommit(new Response(null, { status }));
-  f.fetch.mockClear();
-  await f.run();
-  expect(f.fetch).toHaveBeenCalledTimes(1);
-  expect(new Headers(f.fetch.mock.calls[0]?.[1]?.headers).get('if-none-match')).toBe('"main-1"');
-  expect(f.log).not.toHaveBeenCalled();
-  expect(f.notify).not.toHaveBeenCalled();
-});
-
-it('waits for the video ledger and then retries a missing site video on unchanged main', async () => {
-  const f = fixture();
-  f.resources.set(index, frontMatter(true));
-  f.resources.set(videoLedger, statuses('done', 'pending'));
-  await put(reels, 'older.mp4');
-  await f.run();
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(f.fetch.mock.calls.some(([url]) => String(url).includes(video))).toBe(false);
-
-  f.setCommit(new Response(JSON.stringify({ sha: 'b'.repeat(40) })));
-  f.resources.set(videoLedger, statuses('done', 'done'));
-  f.resources.set(video, 404);
-  await f.run();
-  expect(f.trash).not.toHaveBeenCalled();
-
-  f.setCommit(new Response(null, { status: 304 }));
-  f.resources.set(video, 206);
-  f.fetch.mockClear();
-  await f.run();
-  expect(f.fetch).toHaveBeenCalledTimes(2);
-  expect(f.trash).toHaveBeenCalledTimes(1);
-});
-
-const newSha = (letter: string) => new Response(JSON.stringify({ sha: letter.repeat(40) }));
-const day = 86_400_000;
-
-it('reports a failed video channel once after 24 hours, even while the photo ledger is pending', async () => {
-  const f = fixture();
-  f.resources.set(index, frontMatter(true));
-  f.resources.set(ledger, statuses('pending'));
-  f.resources.set(videoLedger, statuses('done', 'failed'));
-  await put(reels, 'older.mp4');
-  await f.run();
-  expect(f.notify).not.toHaveBeenCalled();
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [],
-    waitingForRetry: [{ id, date, video: 'video.mp4', firstFailedAt: now() }],
-  });
-  f.setCommit(newSha('b'));
-  await f.run(() => now() + day - 1);
-  expect(f.notify).not.toHaveBeenCalled();
-  f.setCommit(newSha('c'));
-  await f.run(() => now() + day);
-  await f.run(() => now() + day + 1);
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Публікація ${id} з помилкою, папки не чищу`);
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [id],
-    waitingForRetry: [],
-  });
-});
-
-it('cleans a failed work without an error notice once a re-run on a later SHA succeeds', async () => {
-  const f = fixture();
-  f.resources.set(ledger, statuses('done', 'failed'));
-  const older = await put(inbox, 'older.mov');
-  await f.run();
-  expect(f.trash).not.toHaveBeenCalled();
-  f.setCommit(newSha('b'));
-  f.resources.set(ledger, statuses('done', 'done'));
-  await f.run(() => now() + 15 * 60_000);
-  expect(f.trash.mock.calls).toEqual([[older]]);
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 1 файл.`);
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [id],
-    waitingForRetry: [],
-  });
-});
-
-it('keeps the first failure time while a re-run is pending, then cleans when done', async () => {
-  const f = fixture();
-  f.resources.set(ledger, statuses('failed'));
-  await put(inbox, 'older.mov');
-  await f.run();
-  f.setCommit(newSha('b'));
-  f.resources.set(ledger, statuses('pending'));
-  await f.run(() => now() + 60_000);
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [],
-    waitingForRetry: [{ id, firstFailedAt: now() }],
-  });
-  f.setCommit(newSha('c'));
-  f.resources.set(ledger, statuses('done'));
-  await f.run(() => now() + 120_000);
-  expect(f.trash).toHaveBeenCalledTimes(1);
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Робота ${id} опублікована: прибрано 1 файл.`);
-});
-
-it('keeps waiting past 24 hours while a re-run is pending, then reports a new failure', async () => {
-  const f = fixture();
-  f.resources.set(ledger, statuses('failed'));
-  await put(inbox, 'older.mov');
-  await f.run();
-  f.setCommit(newSha('b'));
-  f.resources.set(ledger, statuses('pending'));
-  await f.run(() => now() + day + 1);
-  f.setCommit(new Response(null, { status: 304 }));
-  await f.run(() => now() + day + 2);
-  expect(f.notify).not.toHaveBeenCalled();
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [],
-    waitingForRetry: [{ id, firstFailedAt: now(), lastStatus: 'pending' }],
-  });
-  f.setCommit(newSha('c'));
-  f.resources.set(ledger, statuses('failed'));
-  await f.run(() => now() + day + 3);
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Публікація ${id} з помилкою, папки не чищу`);
-});
-
-it('makes only the SHA request on unchanged main while a failed work waits', async () => {
-  const f = fixture();
-  f.resources.set(ledger, statuses('failed'));
-  await f.run();
-  f.setCommit(new Response(null, { status: 304 }));
-  f.fetch.mockClear();
-  await f.run(() => now() + 60_000);
-  expect(f.fetch).toHaveBeenCalledTimes(1);
-  expect(f.notify).not.toHaveBeenCalled();
-  await f.run(() => now() + day);
-  expect(f.fetch).toHaveBeenCalledTimes(2);
-  expect(f.notify).toHaveBeenCalledExactlyOnceWith(`Публікація ${id} з помилкою, папки не чищу`);
-});
-
-it('drops a waiting failed work quietly when it leaves the repository', async () => {
-  const f = fixture();
-  f.resources.set(ledger, statuses('failed'));
-  await f.run();
-  f.setCommit(newSha('b'));
-  f.resources.set(listing, JSON.stringify([]));
-  await f.run(() => now() + day);
-  expect(f.notify).not.toHaveBeenCalled();
-  expect(JSON.parse(await readFile(statePath, 'utf8'))).toMatchObject({
-    handled: [id],
-    waitingForRetry: [],
-  });
-});
-
-it('loads an old state file without the retry list', async () => {
-  const f = fixture();
-  await mkdir(dirname(statePath));
-  await writeFile(statePath, JSON.stringify({ sha, handled: [], waitingForSite: [] }));
-  f.setCommit(newSha('b'));
-  await put(inbox, 'older.mov');
-  await f.run();
-  expect(f.log).not.toHaveBeenCalled();
-  expect(f.trash).toHaveBeenCalledTimes(1);
-});
-
-it('baselines old works without checking their ledgers', async () => {
-  const f = fixture();
-  f.resources.set(index, frontMatter(false, date - 86_400_000));
-  await put(inbox, 'old.mov', date - 172_800_000);
-  await f.run();
-  expect(f.fetch).toHaveBeenCalledTimes(3);
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(JSON.parse(await readFile(statePath, 'utf8')).handled).toEqual([id]);
-});
-
-it.each([403, 429, 'bad JSON', 'network'])(
-  'leaves files in place on partial remote data (%s)',
-  async (failure) => {
-    const f = fixture();
-    f.resources.set(listing, JSON.stringify([id, 'WORK-2'].map((name) => ({ name, type: 'dir' }))));
-    f.resources.set(`${listing}/WORK-2/index.md`, frontMatter());
-    if (failure === 'network') {
-      const request = f.fetch.getMockImplementation()!;
-      f.fetch.mockImplementation((url, init) => {
-        if (String(url).includes('WORK-2.json')) return Promise.reject(new Error('offline'));
-        return request(url, init);
-      });
-    } else {
-      f.resources.set('content/ledger/WORK-2.json', failure);
-    }
-    await put(inbox, 'older.mov');
-    await f.run();
-    expect(await readdir(inbox)).toEqual(['older.mov']);
-    expect(f.trash).not.toHaveBeenCalled();
-    expect(f.notify).not.toHaveBeenCalled();
-    expect(f.log).toHaveBeenCalledTimes(1);
-    await expect(readFile(statePath)).rejects.toMatchObject({ code: 'ENOENT' });
-  },
-);
-
-it('keeps both folders when the photo work page is missing', async () => {
-  const f = fixture();
-  f.resources.set(page, 404);
-  await put(inbox, 'older.mov');
-  await put(reels, 'older.mp4');
-  await f.run();
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(f.notify).not.toHaveBeenCalled();
-  expect(f.log).not.toHaveBeenCalled();
-});
-
-it('leaves earlier ready works untouched when a later site request fails', async () => {
-  const f = fixture();
-  f.resources.set(listing, JSON.stringify([id, 'WORK-2'].map((name) => ({ name, type: 'dir' }))));
-  f.resources.set(`${listing}/WORK-2/index.md`, frontMatter());
-  f.resources.set('content/ledger/WORK-2.json', statuses('done'));
-  f.resources.set('/works/work-2/', 503);
-  await put(inbox, 'older.mov');
-  await f.run();
-  expect(f.trash).not.toHaveBeenCalled();
-  expect(f.notify).not.toHaveBeenCalled();
-  expect(f.log).toHaveBeenCalledExactlyOnceWith('Reel cleanup: Error: /works/work-2/: HTTP 503');
 });

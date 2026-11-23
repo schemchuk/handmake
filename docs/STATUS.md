@@ -1,13 +1,13 @@
 # STATUS
 
-- **Active agent:** codex (T80b).
+- **Active agent:** claude-code (reviewing T80b, PR on `feat/T80b-reel-handoff-cleanup`).
 - **Current task:** T80a merged (PR #195, `0db4dde`); migration 0028 applied on remote D1;
   Worker secret `REEL_HANDOFF_SECRET` set (same value in `~/.config/handmake-reel/cleanup.env`,
   mode 600); Worker `2a7c57cd-f354-4612-bfba-1b8a31633261`. Live check: signed
   `GET /reel/handoffs` → 200 `{"handoffs":[]}`, unsigned → 401. T78 merged (PR #193); YouTube
   stays off: the tenant YAML has no `youtube` key.
-- **Branch:** `main`.
-- **Last commit:** docs: record T80a merge.
+- **Branch:** `feat/T80b-reel-handoff-cleanup`.
+- **Last commit:** feat(reel): clean reel folders on bot hand-offs.
 - **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
   View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):

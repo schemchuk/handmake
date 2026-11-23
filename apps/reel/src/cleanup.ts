@@ -1,6 +1,8 @@
 import { execFile } from 'node:child_process';
+import { createHmac } from 'node:crypto';
 import {
   lstat,
+  mkdir,
   mkdtemp,
   readdir,
   readFile,
@@ -10,31 +12,18 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs as parseArgsNative, promisify } from 'node:util';
 import { acquireFileLock, notify } from './watch.ts';
 
-const api = 'https://api.github.com/repos/schemchuk/handmake';
-const site = 'https://fadenundstimmung.de';
 const dayMs = 24 * 60 * 60 * 1000;
 const execute = promisify(execFile);
-const safeSegment = /^[a-z0-9][a-z0-9._-]*$/i;
-const commitSha = /^[a-f0-9]{40}$/;
+const tenant = 'faden-und-stimmung';
 
-type Work = { id: string; date: number; video?: string };
-type CleanupRetry = Work & { firstSkippedAt: number };
-// lastStatus is the latest ledger status seen; only a still-failed work times out.
-type FailedRetry = Work & { firstFailedAt: number; lastStatus?: 'failed' | 'pending' };
-type Status = 'done' | 'pending' | 'failed';
-type State = {
-  sha: string;
-  etag?: string;
-  handled: string[];
-  waitingForSite: Work[];
-  waitingForCleanup?: CleanupRetry[];
-  waitingForRetry?: FailedRetry[];
-};
+type Identity = { dev: number; ino: number; ctimeMs: number };
+type Retry = Identity & { path: string; firstSkippedAt: number };
+type State = { last: string; retry?: Retry[] };
 type Options = { inbox: string; reels: string; statePath?: string };
 type Dependencies = {
   fetch?: typeof fetch;
@@ -43,27 +32,24 @@ type Dependencies = {
   trash?: (path: string) => Promise<unknown>;
   notify?: typeof notify;
   log?: (message: string) => void;
+  env?: { REEL_HANDOFF_BOT_URL?: string; REEL_HANDOFF_SECRET?: string };
 };
 
 function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isSegment(value: unknown): value is string {
-  return typeof value === 'string' && safeSegment.test(value);
+function isTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const time = Date.parse(value);
+  return Number.isFinite(time) && new Date(time).toISOString() === value;
 }
 
-function isSha(value: unknown): value is string {
-  return typeof value === 'string' && commitSha.test(value);
-}
-
-function isWork(value: unknown): value is Work {
+function isRetry(value: unknown): value is Retry {
   return (
     record(value) &&
-    isSegment(value.id) &&
-    typeof value.date === 'number' &&
-    Number.isFinite(value.date) &&
-    (value.video === undefined || isSegment(value.video))
+    typeof value.path === 'string' &&
+    [value.dev, value.ino, value.ctimeMs, value.firstSkippedAt].every(Number.isFinite)
   );
 }
 
@@ -71,29 +57,19 @@ function missing(error: unknown) {
   return (error as NodeJS.ErrnoException).code === 'ENOENT';
 }
 
-function isCleanupRetry(value: unknown): value is CleanupRetry {
-  return (
-    record(value) &&
-    typeof value.firstSkippedAt === 'number' &&
-    Number.isFinite(value.firstSkippedAt) &&
-    isWork(value)
-  );
+async function statIfPresent(path: string) {
+  return lstat(path).catch((error: unknown) => {
+    if (!missing(error)) throw error;
+  });
 }
 
-function isFailedRetry(value: unknown): value is FailedRetry {
-  return (
-    record(value) &&
-    typeof value.firstFailedAt === 'number' &&
-    Number.isFinite(value.firstFailedAt) &&
-    (value.lastStatus === undefined ||
-      value.lastStatus === 'failed' ||
-      value.lastStatus === 'pending') &&
-    isWork(value)
-  );
-}
-
-function toWork({ id, date, video }: Work): Work {
-  return video === undefined ? { id, date } : { id, date, video };
+async function checkFolder(folder: string, onMissing?: () => Promise<void>) {
+  let stat = await statIfPresent(folder);
+  if (!stat && onMissing) {
+    await onMissing();
+    stat = await statIfPresent(folder);
+  }
+  if (!stat?.isDirectory()) throw new Error(`Invalid cleanup folder: ${folder}`);
 }
 
 async function loadState(path: string): Promise<State | undefined> {
@@ -103,22 +79,20 @@ async function loadState(path: string): Promise<State | undefined> {
   if (raw === undefined) return;
   const state: unknown = JSON.parse(raw);
   if (
+    record(state) &&
+    !('last' in state) &&
+    Array.isArray(state.handled) &&
+    /^[a-f0-9]{40}$/.test(typeof state.sha === 'string' ? state.sha : '')
+  )
+    return;
+  if (
     !record(state) ||
-    !isSha(state.sha) ||
-    (state.etag !== undefined && typeof state.etag !== 'string') ||
-    !Array.isArray(state.handled) ||
-    !state.handled.every(isSegment) ||
-    !Array.isArray(state.waitingForSite) ||
-    !state.waitingForSite.every(isWork) ||
-    (state.waitingForCleanup !== undefined &&
-      (!Array.isArray(state.waitingForCleanup) ||
-        !state.waitingForCleanup.every(isCleanupRetry))) ||
-    (state.waitingForRetry !== undefined &&
-      (!Array.isArray(state.waitingForRetry) || !state.waitingForRetry.every(isFailedRetry)))
+    !isTimestamp(state.last) ||
+    (state.retry !== undefined && (!Array.isArray(state.retry) || !state.retry.every(isRetry)))
   ) {
     throw new Error('Invalid cleanup state');
   }
-  return state as State;
+  return { last: state.last, retry: state.retry as Retry[] | undefined };
 }
 
 async function saveState(path: string, state: State) {
@@ -132,121 +106,55 @@ async function saveState(path: string, state: State) {
   }
 }
 
-// Read only the fields emitted by the work front matter serializer.
-function readWork(id: string, markdown: string): Work {
-  const front = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(markdown)?.[1];
-  const dateField = /^date:[ \t]*(.+)$/m.exec(front ?? '')?.[1]?.trim();
-  const date = Date.parse(dateField?.replace(/^(['"])(.*)\1$/, '$2') ?? '');
-  if (!front || !Number.isFinite(date)) throw new Error(`Invalid front matter for ${id}`);
-  const videoField = /^video:([^\r\n]*)(?:\r?\n)((?:[ \t]+[^\r\n]*\r?\n?)*)/m.exec(front + '\n');
-  if (!videoField) return { id, date };
-  const video = /^[ \t]+fileName:[ \t]*(.+)$/m
-    .exec(videoField[2] ?? '')?.[1]
-    ?.trim()
-    .replace(/^(['"])(.*)\1$/, '$2');
-  if (videoField[1]?.trim() || !isSegment(video)) throw new Error(`Invalid video for ${id}`);
-  return { id, date, video };
-}
-
-function ledgerStatus(value: unknown, path: string): Status {
-  if (!record(value) || !record(value.channels)) throw new Error(`Invalid ledger: ${path}`);
-  const statuses = Object.values(value.channels).map((channel) =>
-    record(channel) ? channel.status : undefined,
-  );
-  if (!statuses.length || !statuses.every((status) => typeof status === 'string')) {
-    throw new Error(`Invalid ledger channels: ${path}`);
-  }
-  if (statuses.some((status) => status !== 'done' && status !== 'pending')) return 'failed';
-  return statuses.every((status) => status === 'done') ? 'done' : 'pending';
-}
-
-async function requireOk(response: Response, target: string) {
-  if (response.ok) return;
-  await response.body?.cancel();
-  throw new Error(`${target}: HTTP ${response.status}`);
-}
-
-async function discover(
+async function fetchHandoffs(
   request: typeof fetch,
-  sha: string,
-  handled: Set<string>,
-  baseline: number | undefined,
-  skip: Set<string>,
-  failedRetries: FailedRetry[],
-) {
-  const get = async (path: string, accept: string, optional = false) => {
-    const response = await request(`${api}/contents/${path}?ref=${sha}`, {
-      headers: { Accept: accept },
+  { REEL_HANDOFF_BOT_URL: botUrl, REEL_HANDOFF_SECRET: secret }: NonNullable<Dependencies['env']>,
+  last: string,
+  now: number,
+): Promise<string[]> {
+  if (!botUrl || !secret) throw new Error('Missing reel hand-off configuration');
+  let url: URL;
+  try {
+    url = new URL('/reel/handoffs', botUrl);
+    if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
+  } catch {
+    throw new Error('Invalid reel hand-off bot URL');
+  }
+  url.search = new URLSearchParams({ tenant, since: last }).toString();
+  const timestamp = String(Math.floor(now / 1000));
+  const signature = createHmac('sha256', secret)
+    .update(`GET\n${url.pathname}${url.search}\n${timestamp}`)
+    .digest('hex');
+  let response: Response;
+  try {
+    response = await request(url, {
+      method: 'GET',
+      redirect: 'error',
+      signal: AbortSignal.timeout(15_000),
+      headers: {
+        'X-Handmake-Timestamp': timestamp,
+        'X-Handmake-Signature': signature,
+      },
     });
-    if (optional && response.status === 404) {
-      await response.body?.cancel();
-      return;
-    }
-    await requireOk(response, path);
-    return response;
-  };
-  const jsonType = 'application/vnd.github+json';
-  const rawType = 'application/vnd.github.raw+json';
-  const listing = await get('content/works', jsonType);
-  const entries: unknown = await listing?.json();
+  } catch {
+    throw new Error('Reel hand-off request failed');
+  }
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error(`Reel hand-off request returned HTTP ${response.status}`);
+  }
+  const body: unknown = await response.json().catch(() => undefined);
   if (
-    !Array.isArray(entries) ||
-    !entries.every(
-      (entry) => record(entry) && typeof entry.type === 'string' && isSegment(entry.name),
+    !record(body) ||
+    !Array.isArray(body.handoffs) ||
+    !body.handoffs.every(isTimestamp) ||
+    !body.handoffs.every(
+      (time, index, times) => time > last && (index === 0 || time >= times[index - 1]!),
     )
   ) {
-    throw new Error('Invalid works directory listing');
+    throw new Error('Invalid reel hand-off response');
   }
-
-  // Any channel key counts, so new channels need no change here.
-  const statusOf = async ({ id, video }: Work): Promise<Status> => {
-    const paths = [`content/ledger/${id}.json`];
-    if (video) paths.push(`content/ledger/${id}-video.json`);
-    const statuses: Status[] = [];
-    for (const path of paths) {
-      const ledger = await get(path, rawType, true);
-      statuses.push(ledger ? ledgerStatus(await ledger.json(), path) : 'pending');
-    }
-    if (statuses.includes('failed')) return 'failed';
-    return statuses.every((status) => status === 'done') ? 'done' : 'pending';
-  };
-
-  const candidates: Work[] = [];
-  const failed: Work[] = [];
-  const listed = new Set<string>();
-  for (const { name: id, type } of entries) {
-    if (type !== 'dir') continue;
-    listed.add(id);
-    if (handled.has(id) || skip.has(id)) continue;
-    const index = await get(`content/works/${id}/index.md`, rawType, true);
-    if (!index) continue;
-    const work = readWork(id, await index.text());
-    if (baseline !== undefined && work.date < baseline) {
-      handled.add(id);
-      continue;
-    }
-    const status = await statusOf(work);
-    if (status === 'failed') failed.push(work);
-    else if (status === 'done') candidates.push(work);
-  }
-  // Failed works wait for the bot's own re-runs; a removed work is dropped quietly.
-  const retried: { work: FailedRetry; status: Status | 'gone' }[] = [];
-  for (const work of failedRetries) {
-    retried.push({ work, status: listed.has(work.id) ? await statusOf(work) : 'gone' });
-  }
-  return { candidates, failed, retried };
-}
-
-async function siteReady(request: typeof fetch, { id, video }: Work) {
-  const key = id.toLowerCase();
-  const path = video ? `/work-media/${key}/${encodeURIComponent(video)}` : `/works/${key}/`;
-  const response = await request(site + path, {
-    redirect: 'error',
-    headers: video ? { Range: 'bytes=0-0' } : {},
-  });
-  if (response.status !== 404) await requireOk(response, path);
-  await response.body?.cancel();
-  return response.ok;
+  return body.handoffs;
 }
 
 export async function checkCleanupFileOpen(
@@ -282,171 +190,135 @@ function fileCount(count: number) {
   return `${count} файлів`;
 }
 
-async function trashOlder(
-  folders: string[],
-  date: number,
-  checkOpen: NonNullable<Dependencies['checkOpen']>,
-  trash: (path: string) => Promise<unknown>,
-) {
-  let count = 0;
-  let skipped = false;
-  for (const folder of folders) {
-    const entries = await readdir(folder, { withFileTypes: true }).catch((error: unknown) => {
-      if (!missing(error)) throw error;
-      return [];
-    });
-    for (const entry of entries) {
-      if (!entry.isFile() || entry.name.startsWith('.')) continue;
-      const path = join(folder, entry.name);
-      const stat = () =>
-        lstat(path).catch((error: unknown) => {
-          if (!missing(error)) throw error;
-        });
-      const before = await stat();
-      if (!before?.isFile() || before.mtimeMs >= date) continue;
-      if ((await checkOpen(path)) !== false) {
-        skipped = true;
-        continue;
-      }
-      const after = await stat();
-      if (!after?.isFile() || after.mtimeMs >= date) continue;
-      if (
-        after.dev !== before.dev ||
-        after.ino !== before.ino ||
-        after.ctimeMs !== before.ctimeMs ||
-        after.mtimeMs !== before.mtimeMs
-      ) {
-        skipped = true;
-        continue;
-      }
-      await trash(path);
-      count++;
-    }
+async function regularNames(folder: string) {
+  const entries = await readdir(folder, { withFileTypes: true });
+  return new Set(
+    entries
+      .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
+      .map((entry) => entry.name),
+  );
+}
+
+async function regularStat(path: string) {
+  const stat = await statIfPresent(path);
+  if (stat?.isFile()) return stat;
+}
+
+function sameFile(before: Identity, after: Identity | undefined) {
+  return after?.dev === before.dev && after.ino === before.ino && after.ctimeMs === before.ctimeMs;
+}
+
+async function cleanupCandidates(inbox: string, reels: string) {
+  const [inputs, outputs] = await Promise.all([regularNames(inbox), regularNames(reels)]);
+  const reelStems = new Set<string>();
+  for (const name of outputs) {
+    const match = /^(.*)-reel(?:-\d+)?\.mp4$/.exec(name);
+    if (match) reelStems.add(match[1]!);
   }
-  return { count, skipped };
+  const eligibleInputs = [...inputs].filter((name) => {
+    const stem = basename(name, extname(name));
+    return (
+      !/\.(mov|mp4)$/i.test(name) || reelStems.has(stem) || inputs.has(`${stem}.reel-error.txt`)
+    );
+  });
+  // Process inbox files before removing their completion evidence.
+  return [
+    ...eligibleInputs.map((name) => join(inbox, name)),
+    ...(inbox === reels ? [] : [...outputs].map((name) => join(reels, name))),
+  ];
 }
 
 export async function runCleanup(
   { inbox, reels, statePath = join(homedir(), '.local/state/handmake-reel/cleanup.json') }: Options,
   {
-    fetch: fetchImpl = fetch,
+    fetch: request = fetch,
     now = Date.now,
     checkOpen = checkCleanupFileOpen,
     trash = (path) => execute('gio', ['trash', '--', path], { timeout: 15_000 }),
     notify: sendNotification = notify,
     log = console.error,
+    env = {
+      REEL_HANDOFF_BOT_URL: process.env.REEL_HANDOFF_BOT_URL,
+      REEL_HANDOFF_SECRET: process.env.REEL_HANDOFF_SECRET,
+    },
   }: Dependencies = {},
 ) {
-  const request: typeof fetch = (url, init) =>
-    fetchImpl(url, { ...init, signal: AbortSignal.timeout(15_000) });
   let release: (() => Promise<void>) | undefined;
+  let count = 0;
   try {
+    const folders = new Set([resolve(inbox), resolve(reels)]);
     release = await acquireFileLock(`${statePath}.lock`, statePath);
+    for (const folder of folders) {
+      await checkFolder(folder, async () => {
+        const created = await mkdir(folder, { recursive: true, mode: 0o755 });
+        if (created !== undefined) log(`Reel cleanup: recreated folder ${folder}`);
+      });
+    }
     const previous = await loadState(statePath);
-    const main = await request(`${api}/commits/main`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        ...(previous?.etag ? { 'If-None-Match': previous.etag } : {}),
-      },
-    });
-    let sha: string;
-    let etag = previous?.etag;
-    if (main.status === 304 && previous) {
-      sha = previous.sha;
-    } else {
-      await requireOk(main, 'main commit');
-      const commit: unknown = await main.json();
-      if (!record(commit) || !isSha(commit.sha)) throw new Error('Invalid main commit SHA');
-      sha = commit.sha;
-      etag = main.headers.get('etag') ?? undefined;
-    }
-    const changed = sha !== previous?.sha;
-    const retries = previous?.waitingForCleanup ?? [];
-    const failedRetries = previous?.waitingForRetry ?? [];
-    if (
-      !changed &&
-      !previous?.waitingForSite.length &&
-      !retries.length &&
-      !failedRetries.length &&
-      etag === previous?.etag
-    )
-      return;
-    const handled = new Set(previous?.handled);
     const runAt = now();
-    const skip = new Set([...retries, ...failedRetries].map(({ id }) => id));
-    const { candidates, failed, retried } = changed
-      ? await discover(
-          request,
-          sha,
-          handled,
-          previous ? undefined : runAt - dayMs,
-          skip,
-          failedRetries,
-        )
-      : {
-          candidates: previous!.waitingForSite,
-          failed: [],
-          retried: failedRetries.map((work) => ({ work, status: work.lastStatus ?? 'failed' })),
-        };
+    const last = previous?.last ?? new Date(runAt).toISOString();
+    const handoffs = await fetchHandoffs(request, env, last, runAt);
+    if (!previous) {
+      await saveState(statePath, { last });
+      return;
+    }
+    if (!handoffs.length && !previous.retry?.length) return;
 
-    // A failed ledger entry is final only after 24 h: the bot re-runs publications itself.
-    // A re-run still pending at that point keeps waiting until it ends.
-    const failures: string[] = [];
-    const waitingForRetry: FailedRetry[] = failed.map((work) => ({
-      ...work,
-      firstFailedAt: runAt,
-      lastStatus: 'failed',
-    }));
-    const fresh = [...candidates];
-    for (const { work, status } of retried) {
-      if (status === 'gone') handled.add(work.id);
-      else if (status === 'done') fresh.push(toWork(work));
-      else if (status === 'pending' || runAt - work.firstFailedAt < dayMs)
-        waitingForRetry.push({ ...work, lastStatus: status });
-      else {
-        handled.add(work.id);
-        failures.push(`Публікація ${work.id} з помилкою, папки не чищу`);
+    const retry: Retry[] = [];
+    const attempted = new Map<string, Identity>();
+    async function clean(path: string, before: Identity, firstSkippedAt: number) {
+      if (!folders.has(dirname(path)) || path !== resolve(path)) return;
+      attempted.set(path, before);
+      if ((await checkOpen(path)) !== false) {
+        const { dev, ino, ctimeMs } = before;
+        retry.push({ path, dev, ino, ctimeMs, firstSkippedAt });
+        return;
       }
+      for (const folder of folders) await checkFolder(folder);
+      if (!sameFile(before, await regularStat(path))) return;
+      await trash(path);
+      count++;
     }
 
-    // Complete all remote checks before touching either folder.
-    const waitingForSite: Work[] = [];
-    const ready: (Work & { firstSkippedAt?: number })[] = [...retries];
-    for (const work of fresh) {
-      if (await siteReady(request, work)) ready.push(work);
-      else waitingForSite.push(work);
-    }
-
-    const messages = [];
-    const waitingForCleanup: CleanupRetry[] = [];
-    const expired: string[] = [];
-    const folders = [...new Set([resolve(inbox), resolve(reels)])];
-    for (const work of ready.sort((a, b) => a.date - b.date)) {
-      const firstSkippedAt = work.firstSkippedAt ?? runAt;
-      if (runAt - firstSkippedAt >= dayMs) {
-        handled.add(work.id);
-        expired.push(work.id);
+    // Capture completion evidence before any of these files are moved.
+    const candidates = new Set(
+      handoffs.length ? await cleanupCandidates(resolve(inbox), resolve(reels)) : [],
+    );
+    for (const entry of previous.retry ?? []) {
+      if (!folders.has(dirname(entry.path)) || basename(entry.path).startsWith('.')) continue;
+      if (!sameFile(entry, await regularStat(entry.path))) continue;
+      if (runAt - entry.firstSkippedAt >= dayMs) {
+        attempted.set(entry.path, entry);
+        log('Reel cleanup: left an open file after 24 hours');
         continue;
       }
-      const { count, skipped } = await trashOlder(folders, work.date, checkOpen, trash);
-      if (skipped) waitingForCleanup.push({ ...work, firstSkippedAt });
-      else handled.add(work.id);
-      if (count) messages.push(`Робота ${work.id} опублікована: прибрано ${fileCount(count)}.`);
+      await clean(entry.path, entry, entry.firstSkippedAt);
     }
-    messages.push(...failures);
+
+    for (const handoff of handoffs) {
+      const cutoff = Date.parse(handoff);
+      for (const path of candidates) {
+        const stat = await regularStat(path);
+        if (stat && stat.ctimeMs >= cutoff) continue;
+        candidates.delete(path);
+        if (!stat) continue;
+        const prior = attempted.get(path);
+        if (prior && sameFile(prior, stat)) continue;
+        await clean(path, stat, runAt);
+      }
+    }
     await saveState(statePath, {
-      sha,
-      etag,
-      handled: [...handled],
-      waitingForSite,
-      waitingForCleanup,
-      waitingForRetry,
+      last: handoffs.at(-1) ?? last,
+      ...(retry.length ? { retry } : {}),
     });
-    for (const id of expired) log(`Reel cleanup: gave up on ${id} after 24 hours`);
-    for (const message of messages) await sendNotification(message);
   } catch (error) {
     log(`Reel cleanup: ${String(error).replace(/\s+/g, ' ')}`);
   } finally {
+    if (count) {
+      await sendNotification(`Робота в черзі: прибрано ${fileCount(count)}.`).catch(() =>
+        log('Reel cleanup: desktop notification failed'),
+      );
+    }
     await release?.().catch((error: unknown) => log(`Reel cleanup lock: ${String(error)}`));
   }
 }
