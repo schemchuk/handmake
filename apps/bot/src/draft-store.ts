@@ -190,6 +190,8 @@ export interface D1DraftStore {
     now: Date,
     staleBefore?: Date,
     approvalChatId?: string,
+    /** T80a: the draft leaves the author now; records `handed_off_at` once. */
+    handOff?: boolean,
   ): Promise<StoredDraft | undefined>;
   /** Moves 'publishing' → 'ready' when the dispatch itself failed. */
   revertPublishing(tenantId: string, draftId: string, now: Date): Promise<boolean>;
@@ -266,6 +268,9 @@ export interface D1DraftStore {
   releaseQueueLock(holder: string): Promise<void>;
   /** GitHub accepted the dispatch of this claim. */
   markDispatched(tenantId: string, draftId: string, version: number, now: Date): Promise<void>;
+  /** T80a: hand-off times (UTC ISO) of the tenant after `since`, ascending,
+   * at most `limit`. Times only: nothing about the draft leaves the bot. */
+  handoffsSince(tenantId: string, since: Date, limit: number): Promise<string[]>;
   /** A cron dispatch failed: back to `scheduled` (next try after one tick), or
    * after `maxAttempts` failed ticks back to `ready` with the slot freed.
    * `version` is the claim's; a newer claim is never touched. */
@@ -675,12 +680,13 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
       return result.meta.changes > 0 ? this.get(tenantId, draftId) : undefined;
     },
 
-    async claimPublishing(tenantId, draftId, now, staleBefore, approvalChatId) {
+    async claimPublishing(tenantId, draftId, now, staleBefore, approvalChatId, handOff = false) {
       const result = await db
         .prepare(
           `UPDATE drafts
            SET pending_edit = NULL, status = 'publishing', updated_at = ?, version = version + 1,
                ${leaveQueue},
+               handed_off_at = CASE WHEN ? THEN COALESCE(handed_off_at, ?) ELSE handed_off_at END,
                extras = CASE WHEN ? IS NULL THEN extras
                  ELSE json_set(extras, '$.approvalChatId', ?) END
            WHERE tenant_id = ? AND id = ?
@@ -690,6 +696,8 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
                OR (status = 'publishing' AND publish_at IS NULL AND updated_at < ?))`,
         )
         .bind(
+          now.toISOString(),
+          handOff ? 1 : 0,
           now.toISOString(),
           approvalChatId ?? null,
           approvalChatId ?? null,
@@ -827,6 +835,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
             `UPDATE drafts
              SET pending_edit = NULL, status = 'scheduled', publish_at = ?, retry_at = NULL,
                  dispatched_at = NULL, queue_attempts = 0, updated_at = ?, version = version + 1,
+                 handed_off_at = COALESCE(handed_off_at, ?),
                  -- A new queueing earns its own low-queue note.
                  extras = CASE WHEN ? IS NULL THEN json_remove(extras, '$.queueReminded')
                    ELSE json_set(json_remove(extras, '$.queueReminded'), '$.approvalChatId', ?) END
@@ -835,6 +844,7 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
           )
           .bind(
             publishAt.toISOString(),
+            now.toISOString(),
             now.toISOString(),
             approvalChatId ?? null,
             approvalChatId ?? null,
@@ -962,6 +972,18 @@ export function createD1DraftStore(db: D1Database): D1DraftStore {
         .bind(tenantId, draftId)
         .run();
       return result.meta.changes > 0;
+    },
+
+    async handoffsSince(tenantId, since, limit) {
+      const { results } = await db
+        .prepare(
+          `SELECT handed_off_at FROM drafts
+           WHERE tenant_id = ? AND handed_off_at > ?
+           ORDER BY handed_off_at LIMIT ?`,
+        )
+        .bind(tenantId, since.toISOString(), limit)
+        .all<{ handed_off_at: string }>();
+      return results.map((row) => row.handed_off_at);
     },
 
     async markDispatched(tenantId, draftId, version, now) {

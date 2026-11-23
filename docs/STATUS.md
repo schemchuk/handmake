@@ -1,10 +1,11 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T78 merged (PR #193, `fd9d51d`); Worker `76c5fd9f-ed9d-4ac0-a87f-392d243970d3`
-  (core schema knows `channels.youtube`). YouTube stays off: the tenant YAML has no `youtube` key.
-- **Branch:** `main`.
-- **Last commit:** docs: record T78 merge.
+- **Current task:** T80a in review (Codex reviews, then claude-code merges after Volodymyr applies
+  migration 0028 and sets the Worker secret `REEL_HANDOFF_SECRET`; deploy after that). T78 merged
+  (PR #193); YouTube stays off: the tenant YAML has no `youtube` key.
+- **Branch:** `feat/T80a-reel-handoffs`.
+- **Last commit:** feat(bot): record work hand-offs for the PC reel cleanup.
 - **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
   View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):

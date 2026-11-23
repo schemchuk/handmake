@@ -3450,7 +3450,7 @@ the arrival time (2026-11-23: photos taken 22.11 16:05 arrived 23.11 11:50 with 
 Order: T80a (bot, migration, secret, deploy) → T80b (reel). Owner `claude-code`, reviewer Codex.
 
 ### T80a — Bot: hand-off time and a signed endpoint for the PC (`bot`, F41)
-- Status: planned.
+- Status: in review.
 - Owner: claude-code · Reviewer: codex · Depends on: T76b
 - Change:
   1. D1 migration `0028_draft_handed_off.sql`: nullable `handed_off_at TEXT` (UTC ISO) on

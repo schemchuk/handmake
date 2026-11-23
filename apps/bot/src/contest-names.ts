@@ -1,6 +1,7 @@
-import { contestNamesPath, isUlid, verifyCallbackSignature } from '@handmake/core';
+import { contestNamesPath, isUlid } from '@handmake/core';
 import type { EntryNames } from '@handmake/core';
 import type { Env } from './env';
+import { verifySignedRequest } from './signed-request';
 
 /** Direct D1 lookup shared with author previews. Missing/withdrawn entries remain anonymous. */
 export async function readEntryNames(
@@ -33,18 +34,7 @@ export async function handleContestNames(
   now = Date.now(),
 ): Promise<Response> {
   const url = new URL(request.url);
-  const timestamp = request.headers.get('X-Handmake-Timestamp') ?? '';
-  const signature = request.headers.get('X-Handmake-Signature') ?? '';
-  if (
-    !env.NAMES_ENDPOINT_SECRET ||
-    !/^\d+$/.test(timestamp) ||
-    Math.abs(now / 1000 - Number(timestamp)) > 300 ||
-    !(await verifyCallbackSignature(
-      env.NAMES_ENDPOINT_SECRET,
-      `${request.method}\n${url.pathname}${url.search}\n${timestamp}`,
-      signature,
-    ))
-  )
+  if (!(await verifySignedRequest(env.NAMES_ENDPOINT_SECRET, request, now)))
     return new Response('unauthorized', { status: 401 });
   if (request.method !== 'GET' || url.pathname !== contestNamesPath)
     return new Response('method not allowed', { status: 405 });
