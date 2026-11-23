@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** claude-code.
+- **Active agent:** codex (T80b).
 - **Current task:** T80a merged (PR #195, `0db4dde`); migration 0028 applied on remote D1;
   Worker secret `REEL_HANDOFF_SECRET` set (same value in `~/.config/handmake-reel/cleanup.env`,
   mode 600); Worker `2a7c57cd-f354-4612-bfba-1b8a31633261`. Live check: signed
@@ -13,8 +13,9 @@
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
   answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
   (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
-  in the tenant YAML. Meanwhile T80b (reel cleanup on bot hand-off; T80a is live), then
-  T79 (Pinterest).
+  in the tenant YAML. Meanwhile T80b (Codex: reel cleanup on bot hand-off, see
+  docs/03-tasks.md; T80a is live, the secret is already in `~/.config/handmake-reel/cleanup.env`;
+  bot URL = `PUBLISH_CALLBACK_URL` in `.env` without `/callbacks/published`), then T79 (Pinterest).
 - **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
   (`6ecc3d2`), site redeployed; footer links the YouTube channel.
 - **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console

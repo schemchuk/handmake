@@ -3447,7 +3447,8 @@ at T". Trash stays reversible and the originals stay on the phone.
 Also a bug in the T75 rule: KDE Connect sets a file's mtime to the capture time on the phone, not
 the arrival time (2026-11-23: photos taken 22.11 16:05 arrived 23.11 11:50 with mtime 22.11), so
 `mtime < date` would trash files that arrived after the work. Use the arrival time (`ctimeMs`).
-Order: T80a (bot, migration, secret, deploy) → T80b (reel). Owner `claude-code`, reviewer Codex.
+Order: T80a (bot, migration, secret, deploy) → T80b (reel). T80a was written by claude-code
+against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer claude-code.
 
 ### T80a — Bot: hand-off time and a signed endpoint for the PC (`bot`, F41)
 - Status: done (PR #195, Worker 2a7c57cd).
@@ -3475,7 +3476,7 @@ Order: T80a (bot, migration, secret, deploy) → T80b (reel). Owner `claude-code
 
 ### T80b — Reel cleanup driven by bot hand-offs (`reel`, F41)
 - Status: planned.
-- Owner: claude-code · Reviewer: codex · Depends on: T80a (deployed)
+- Owner: codex · Reviewer: claude-code · Depends on: T80a (deployed, Worker 2a7c57cd)
 - Change (`apps/reel/src/cleanup.ts`, its tests, systemd unit, README; replaces T75/T75b/T75c
   logic):
   1. Each timer run (unchanged: every 5 min, oneshot, idle priority) makes one signed request to
