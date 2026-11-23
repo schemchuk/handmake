@@ -350,8 +350,8 @@ IDs are referenced by tasks and tests. F1-F18 are implemented; F19 is redefined 
   goes 90 minutes after the slot, Pinterest the next morning at 09:00. The site page appears with
   the first channel run, never earlier.
   - Acceptance: two works queued on Monday at 10:00 go out Monday 18:30 and Tuesday 19:30; a
-    queued work published now frees its slot for the next one; the reel folder cleanup (T75)
-    still trashes only files sent before that work.
+    queued work published now frees its slot for the next one; the reel folder cleanup (T80b) follows the
+    queue hand-off and trashes only eligible files whose ctime precedes it.
 - **F43** YouTube Shorts (v13). A work with a video also goes to the brand's YouTube channel as a
   Short at the slot: German title (at most 100 characters) and description with the canonical
   link, public, not made for kids, category "Howto & Style". Works without a video are not sent.

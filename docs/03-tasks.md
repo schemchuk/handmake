@@ -3475,7 +3475,7 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
   immediate dispatch and never overwrites it; endpoint auth, strict query, `since` filter, cap.
 
 ### T80b — Reel cleanup driven by bot hand-offs (`reel`, F41)
-- Status: planned.
+- Status: in review.
 - Owner: codex · Reviewer: claude-code · Depends on: T80a (deployed, Worker 2a7c57cd)
 - Change (`apps/reel/src/cleanup.ts`, its tests, systemd unit, README; replaces T75/T75b/T75c
   logic):
@@ -3496,13 +3496,20 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
      state file: `last = now`, nothing trashed.
   4. Network error, 401, 5xx or bad JSON: one log line, exit 0, nothing trashed, `last`
      unchanged.
-  5. Drop the T75 code paths (GitHub client, ETags, ledgers, site check, `waitingForSite`,
+  5. Folder protection (Volodymyr 2026-11-23): the run never trashes, renames or recurses into
+     a folder. At the start of each run each of the two folders is checked with `lstat`: missing →
+     recreated empty (`mkdir`, mode 755, parents included) and logged once; a symlink or anything
+     that is not a directory → one log line and nothing is trashed in that run. Only regular
+     files directly inside are candidates (no subfolders, no symlinks); every trashed path is
+     checked to have one of the two folders as its exact parent.
+  6. Drop the T75 code paths (GitHub client, ETags, ledgers, site check, `waitingForSite`,
      `waitingForRetry`, publish-failure notice) and their tests; update the README section and
      spec v13 line on the cleanup (it now follows the queue, not the publication).
 - Acceptance: a hand-off trashes files that arrived before it in both folders and keeps files
   that arrived later even with an older mtime; an unprocessed inbox video stays; an open file
   is retried and left after 24 h; an idle run makes exactly one HTTP request and touches
-  nothing; a failed request trashes nothing.
+  nothing; a failed request trashes nothing; a deleted folder is recreated; a folder that is
+  a symlink or a file makes the run trash nothing; subfolders and symlinks inside stay.
 - Tests (`--maxWorkers=2`): ctime cut-off with an old mtime; unprocessed-video rule; portal vs
   other holder; retry and give-up; first-run baseline and old state file; error paths; signed
   request headers (injected `fetch` and clock).

@@ -1,8 +1,9 @@
 [Unit]
-Description=Clean reel folders after publication
+Description=Clean reel folders after queue hand-offs
 
 [Service]
 Type=oneshot
+EnvironmentFile=%h/.config/handmake-reel/cleanup.env
 WorkingDirectory=%h/VS_Code_projects/handmake
 ExecStart=/usr/bin/node apps/reel/src/cleanup.ts --inbox "%h/Desktop/Ролики" --reels "%h/Desktop/Готові рілси"
 Nice=19
