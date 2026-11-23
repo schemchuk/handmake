@@ -8,7 +8,7 @@
   YouTube stays off: the tenant YAML has no `youtube` key.
 - **Branch:** `main`.
 - **Last commit:** docs: record T80b merge.
-- **Next step (now):** deploy the bot for T81 (PR #197 merged, `7283de7`): `pnpm -C apps/bot run deploy`, record the Worker version.
+- **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
 - **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
   View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
