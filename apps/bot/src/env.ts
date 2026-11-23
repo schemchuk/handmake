@@ -9,6 +9,9 @@ export interface Env {
   /** Dedicated HMAC secret for show transport; absence disables the endpoint. */
   SHOW_TRANSPORT_SECRET?: string;
   NAMES_ENDPOINT_SECRET?: string;
+  /** T80a: HMAC key the PC reel cleanup signs `GET /reel/handoffs` with;
+   * absence disables the endpoint. */
+  REEL_HANDOFF_SECRET?: string;
   DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
   /** Optional until contest closing is enabled; same live channel as the publisher. */

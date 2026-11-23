@@ -125,6 +125,19 @@ describe('publishing a queued kind', () => {
     expect(jobs).toEqual([]);
   });
 
+  it('«зараз» records the hand-off of a queued kind; an unqueued post leaves none (T80a)', async () => {
+    const id = await readyPost();
+    await press(`draft:${id}:publish:confirm`);
+    expect(await drafts.handoffsSince(tenant, new Date(0), 20)).toHaveLength(1);
+
+    config = { ...base, releaseQueue: undefined } as TenantConfig;
+    const other = await readyPost('Подушка');
+    await press(`draft:${other}:publish:confirm`);
+    await flush();
+    expect(jobs.map((job) => job.postId)).toEqual([id, other]);
+    expect(await drafts.handoffsSince(tenant, new Date(0), 20)).toHaveLength(1);
+  });
+
   it('a tenant without the queue keeps the single publish button', async () => {
     config = { ...base, releaseQueue: undefined } as TenantConfig;
     const id = await readyPost();

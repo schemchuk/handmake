@@ -453,6 +453,11 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
       // The guarded claim decides, not the state we just read: a fresh
       // 'publishing' row means a racing press already dispatched (back off),
       // a stale one means the background dispatch died and may be reclaimed.
+      // T80a: a work (or any queued kind) leaves the author here; the PC
+      // reel cleanup follows these hand-offs.
+      const handOff =
+        stored.draft.kind === 'work' ||
+        !!(await queueFor(ctx, stored.draft.kind).catch(() => undefined));
       const now = new Date();
       const claimed = await ctx.drafts.claimPublishing(
         ctx.tenantId,
@@ -460,6 +465,7 @@ export function createBot(options: CreateBotOptions): Bot<AppContext> {
         now,
         publishingStaleCutoff(now),
         chatId(ctx),
+        handOff,
       );
       if (!claimed) {
         // The callback may have landed between the read above and the claim:
