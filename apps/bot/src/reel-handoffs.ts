@@ -34,7 +34,9 @@ export async function handleReelHandoffs(
     url.searchParams.getAll('since').length !== 1 ||
     !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(tenant) ||
     !utcIso.test(since) ||
-    Number.isNaN(sinceDate.getTime())
+    Number.isNaN(sinceDate.getTime()) ||
+    // Date rolls impossible days over (02-30 → 03-02); refuse them.
+    sinceDate.toISOString().slice(0, 19) !== since.slice(0, 19)
   )
     return new Response('invalid query', { status: 400 });
   try {

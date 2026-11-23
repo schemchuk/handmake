@@ -171,6 +171,8 @@ describe('GET /reel/handoffs (T80a)', () => {
     expect(await status(query('2026-11-23'))).toBe(400);
     expect(await status(query('2026-11-23T12:00:00+02:00'))).toBe(400);
     expect(await status(query('2026-13-45T99:00:00Z'))).toBe(400);
+    expect(await status(query('2026-02-30T12:00:00Z'))).toBe(400);
+    expect(await status(query('2026-11-23T12:00:00Z'))).toBe(200);
     expect(await status(`${reelHandoffsPath}?tenant=Bad_Slug&since=${since}`)).toBe(400);
     expect(await status(query(since), 'POST')).toBe(405);
   });
