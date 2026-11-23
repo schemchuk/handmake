@@ -1,18 +1,20 @@
 # STATUS
 
 - **Active agent:** claude-code.
-- **Current task:** T80a in review (Codex reviews, then claude-code merges after Volodymyr applies
-  migration 0028 and sets the Worker secret `REEL_HANDOFF_SECRET`; deploy after that). T78 merged
-  (PR #193); YouTube stays off: the tenant YAML has no `youtube` key.
-- **Branch:** `feat/T80a-reel-handoffs`.
-- **Last commit:** feat(bot): record work hand-offs for the PC reel cleanup.
+- **Current task:** T80a merged (PR #195, `0db4dde`); migration 0028 applied on remote D1;
+  Worker secret `REEL_HANDOFF_SECRET` set (same value in `~/.config/handmake-reel/cleanup.env`,
+  mode 600); Worker `2a7c57cd-f354-4612-bfba-1b8a31633261`. Live check: signed
+  `GET /reel/handoffs` → 200 `{"handoffs":[]}`, unsigned → 401. T78 merged (PR #193); YouTube
+  stays off: the tenant YAML has no `youtube` key.
+- **Branch:** `main`.
+- **Last commit:** docs: record T80a merge.
 - **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
   View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
   answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
   (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
-  in the tenant YAML. Meanwhile T80a → T80b (reel cleanup on bot hand-off, planned
-  2026-11-23; Volodymyr starts it in a fresh session), then T79 (Pinterest).
+  in the tenant YAML. Meanwhile T80b (reel cleanup on bot hand-off; T80a is live), then
+  T79 (Pinterest).
 - **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
   (`6ecc3d2`), site redeployed; footer links the YouTube channel.
 - **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console
