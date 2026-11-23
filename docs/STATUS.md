@@ -13,8 +13,8 @@
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
   answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
   (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
-  in the tenant YAML. Then T79 (Pinterest, owner Codex). Unverified live: the first real
-  hand-off trashing files (next queued work).
+  in the tenant YAML. Then T79 (Pinterest, owner Codex). T80 verified live 2026-11-23
+  12:59 EET: hand-off 12:55:37 trashed 5 files from both folders, Telegram notice received.
 - **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
   (`6ecc3d2`), site redeployed; footer links the YouTube channel.
 - **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console
