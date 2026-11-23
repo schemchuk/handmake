@@ -10,7 +10,8 @@
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
   answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
   (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
-  in the tenant YAML. Meanwhile T79 (Pinterest).
+  in the tenant YAML. Meanwhile T80a → T80b (reel cleanup on bot hand-off, planned
+  2026-11-23; Volodymyr starts it in a fresh session), then T79 (Pinterest).
 - **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
   (`6ecc3d2`), site redeployed; footer links the YouTube channel.
 - **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console

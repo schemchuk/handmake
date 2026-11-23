@@ -3435,3 +3435,73 @@ migrations: Volodymyr applies them before the bot deploy.
   the channel with a readable error after a bounded wait.
 - Tests: token refresh and rotation hand-off, media register/upload/poll, image vs video pin,
   idempotent rerun, timeout path, skip without secrets.
+
+## Reel cleanup on hand-off (F41, planned 2026-11-23)
+
+Why: Volodymyr 2026-11-23. Once a work is in the bot (queued or published at once) the bot holds
+all its media, so the PC copies in `~/Desktop/Ролики` and `~/Desktop/Готові рілси` are no longer
+needed. T75/T75b/T75c wait until every channel and the site are live (Pinterest goes out the next
+morning), which keeps files for half a day or more and needs GitHub polling, ETags, a site check,
+retry lists and 24 h timeouts. Replace that with one signal from the bot: "a work was handed off
+at T". Trash stays reversible and the originals stay on the phone.
+Also a bug in the T75 rule: KDE Connect sets a file's mtime to the capture time on the phone, not
+the arrival time (2026-11-23: photos taken 22.11 16:05 arrived 23.11 11:50 with mtime 22.11), so
+`mtime < date` would trash files that arrived after the work. Use the arrival time (`ctimeMs`).
+Order: T80a (bot, migration, secret, deploy) → T80b (reel). Owner `claude-code`, reviewer Codex.
+
+### T80a — Bot: hand-off time and a signed endpoint for the PC (`bot`, F41)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T76b
+- Change:
+  1. D1 migration `0028_draft_handed_off.sql`: nullable `handed_off_at TEXT` (UTC ISO) on
+     `drafts`, index `(tenant_id, handed_off_at)`. Set once, when a draft of a queue kind first
+     leaves the author: on `schedule` (ready → scheduled) or on an immediate dispatch
+     («Опублікувати зараз», or a kind without a queue). Never cleared: «Повернути в чернетку»
+     keeps it (the bot still holds the media); a later re-schedule does not move it.
+  2. `GET /reel/handoffs?tenant=<slug>&since=<UTC ISO>` in `composition.ts` next to
+     `contestNamesPath`, signed the same way as `handleContestNames` (HMAC of
+     `method\npath?query\ntimestamp`, headers `X-Handmake-Timestamp` / `X-Handmake-Signature`,
+     ±300 s) with a new Worker secret `REEL_HANDOFF_SECRET`. Strict query (only those two keys,
+     once each). Response `{"handoffs":["<UTC ISO>", ...]}`: `handed_off_at` values newer than
+     `since`, ascending, at most 20. No ids, texts or names: nothing personal leaves the bot.
+  3. `.env.example` placeholder; `wrangler.toml` unchanged except what the secret needs.
+- Live: Volodymyr applies the migration and sets the secret (`wrangler secret put
+  REEL_HANDOFF_SECRET`, the same value in the PC env file of T80b) before the deploy.
+- Acceptance: queueing a work or publishing it now sets `handed_off_at` once; unschedule and
+  re-schedule keep the first value; the endpoint returns only newer times, ascending, capped;
+  bad/missing/stale signature → 401; extra or repeated query keys → 400.
+- Tests (`--maxWorkers=2`, see the resource rule): store sets the time on schedule and on
+  immediate dispatch and never overwrites it; endpoint auth, strict query, `since` filter, cap.
+
+### T80b — Reel cleanup driven by bot hand-offs (`reel`, F41)
+- Status: planned.
+- Owner: claude-code · Reviewer: codex · Depends on: T80a (deployed)
+- Change (`apps/reel/src/cleanup.ts`, its tests, systemd unit, README; replaces T75/T75b/T75c
+  logic):
+  1. Each timer run (unchanged: every 5 min, oneshot, idle priority) makes one signed request to
+     `GET /reel/handoffs?since=<last>` with `REEL_HANDOFF_SECRET` and the bot URL from
+     `~/.config/handmake-reel/cleanup.env` (mode 600, `EnvironmentFile=` in the service; never
+     logged). No GitHub, ledger or site requests any more.
+  2. For each new hand-off time T (ascending): move to the Trash (`gio trash`) every top-level,
+     non-hidden regular file in both folders whose `ctimeMs` < T, except:
+     - files open by a process other than `xdg-document-portal` (T75b check) → retried next run
+       for at most 24 h, then logged and left;
+     - an inbox video (`.mov`/`.mp4`) that has neither a reel in `Готові рілси` nor a
+       `.reel-error.txt` yet: the watcher has not finished with it, so it belongs to the next
+       work.
+     Notify once per run with files moved: «Робота в черзі: прибрано N файлів.» (plural forms
+     as in T75b). Then store T as `last`.
+  3. State `cleanup.json` becomes `{ last, retry? }` (atomic write). First run, or an old T75
+     state file: `last = now`, nothing trashed.
+  4. Network error, 401, 5xx or bad JSON: one log line, exit 0, nothing trashed, `last`
+     unchanged.
+  5. Drop the T75 code paths (GitHub client, ETags, ledgers, site check, `waitingForSite`,
+     `waitingForRetry`, publish-failure notice) and their tests; update the README section and
+     spec v13 line on the cleanup (it now follows the queue, not the publication).
+- Acceptance: a hand-off trashes files that arrived before it in both folders and keeps files
+  that arrived later even with an older mtime; an unprocessed inbox video stays; an open file
+  is retried and left after 24 h; an idle run makes exactly one HTTP request and touches
+  nothing; a failed request trashes nothing.
+- Tests (`--maxWorkers=2`): ctime cut-off with an old mtime; unprocessed-video rule; portal vs
+  other holder; retry and give-up; first-run baseline and old state file; error paths; signed
+  request headers (injected `fetch` and clock).
