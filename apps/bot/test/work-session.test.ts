@@ -130,7 +130,7 @@ describe('/work author flow', () => {
   it('creates a localized collection from plain text, previews, cancels consent and explicitly dispatches the approved work', async () => {
     await start('interior');
     await press(buttons().find((b) => b.text === botTexts.workCreateButton)!.callback_data);
-    await send('UA title\nUA description\nDE title\nDE description');
+    await send('  UA title  \n\n UA description\n \t\nDE title  \n DE description \n');
     expect((await get()).draft.texts).toEqual({});
     await contentAndGenerate();
     expect(publish.jobs).toEqual([]);
@@ -274,12 +274,23 @@ describe('/work author flow', () => {
     expect((await drafts.getChatSession(tenant, '11'))!.draftId).not.toBe(discarded);
   });
 
-  it('does not collect malformed new-collection input as a work note', async () => {
+  it('explains a missing collection field and accepts a corrected reply', async () => {
     await start();
     await press(buttons().find((b) => b.text === botTexts.workCreateButton)!.callback_data);
-    await send('Only one field');
-    expect((await get()).draft.texts).toEqual({});
+    const before = await get();
+    await send('UA title\nUA description\nDE description');
+    expect(sentTexts(calls).at(-1)).toBe(
+      'Отримано 3 рядки, потрібно 4 — по одному на кожне поле:\n' +
+        '1. Назва (uk)\n2. Опис (uk)\n3. Назва (de)\n4. Опис (de)\n' +
+        'Назва (de) — коротка назва колекції німецькою.',
+    );
+    expect(await get()).toEqual(before);
     expect(factory).not.toHaveBeenCalled();
+    await send('UA title\nUA description\nDE title\nDE description');
+    expect(sentTexts(calls).at(-1)).toBe(botTexts.workConfiguredText);
+    expect(readWorkDraftData((await get()).draft).config.collection).toBe(
+      `collection-${id.toLowerCase()}`,
+    );
   });
 
   it('keeps selection pinned to a slug across photo updates and a reordered source, with bounded callback bytes', async () => {

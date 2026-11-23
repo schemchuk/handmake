@@ -3515,7 +3515,7 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
   request headers (injected `fetch` and clock).
 
 ### T81 — Bot: say why a new-collection form was rejected (`bot`)
-- Status: in progress.
+- Status: in review.
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Problem (2026-11-23, live): the author sent three lines (uk title, uk description, de
   description; no de title) after «Нова колекція». The bot answered with the same form again and

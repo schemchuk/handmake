@@ -7,6 +7,7 @@ import type { AppContext } from './context';
 import type { StoredDraft } from './draft-store';
 import { buildTenantPreview } from './preview';
 import type { TenantConfigSource } from './tenant-config-source';
+import { workFormFields } from './texts';
 import { createWorkVideo, showWorkVideo, workVideoKeyboard } from './work-video';
 import { createWorkDraftFlow } from './work-draft-flow';
 
@@ -215,9 +216,15 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
       return next();
     try {
       const { languages } = await configFor(ctx.tenantId);
-      const fields = ctx.msg.text.split('\n');
-      if (fields.length !== languages.length * 2 || fields.some((field) => !field.trim()))
-        return ctx.reply(texts.workFormText(languages));
+      const fields = ctx.msg.text
+        .split('\n')
+        .map((field) => field.trim())
+        .filter(Boolean);
+      const expected = languages.length * 2;
+      if (fields.length !== expected)
+        return ctx.reply(
+          texts.workFormCountText(fields.length, expected, workFormFields(languages)),
+        );
       const versions = Object.fromEntries(
         languages.map((lang, i) => [
           lang,
