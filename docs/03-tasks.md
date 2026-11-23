@@ -3513,3 +3513,21 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
 - Tests (`--maxWorkers=2`): ctime cut-off with an old mtime; unprocessed-video rule; portal vs
   other holder; retry and give-up; first-run baseline and old state file; error paths; signed
   request headers (injected `fetch` and clock).
+
+### T81 — Bot: say why a new-collection form was rejected (`bot`)
+- Status: in progress.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Problem (2026-11-23, live): the author sent three lines (uk title, uk description, de
+  description; no de title) after «Нова колекція». The bot answered with the same form again and
+  gave no reason, so it looked as if creating a collection did not work.
+- Change (`apps/bot/src/work-session.ts` text handler, `apps/bot/src/texts.ts`, tests):
+  1. Trim each line and ignore blank lines before counting, so empty lines between fields or a
+     trailing newline are accepted.
+  2. If the count still differs from `languages.length * 2`, reply with a new text
+     `workFormCountText(got, expected, fieldNames)`: «Отримано N рядк(и/ів), потрібно M — по
+     одному на кожне поле:» followed by the numbered field list (`1. Назва (uk)` …), and a line
+     that the de title is a short German name. Ukrainian plural forms for N.
+  3. Keep the session in `creating` state so the next message is parsed again (unchanged).
+- Acceptance: three lines → reply names 3 and 4 and lists the four fields, no collection created;
+  four lines with blank lines between them → collection created with trimmed fields.
+- Tests (`--maxWorkers=2`, only `apps/bot/test/work-session.test.ts`): both cases above.

@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** codex (T79, after the YouTube steps below).
+- **Active agent:** codex (T81 now; then T79 after the YouTube steps below).
 - **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
   hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
   the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
@@ -8,6 +8,7 @@
   YouTube stays off: the tenant YAML has no `youtube` key.
 - **Branch:** `main`.
 - **Last commit:** docs: record T80b merge.
+- **Next step (now):** T81 in docs/03-tasks.md (bot: explain a rejected new-collection form).
 - **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
   View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
