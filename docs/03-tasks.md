@@ -3414,7 +3414,7 @@ migrations: Volodymyr applies them before the bot deploy.
 
 ### T79 — Pinterest channel (`channels`, `publisher`, F44)
 - Status: planned.
-- Owner: claude-code · Reviewer: codex · Depends on: T77 · Live needs: H20
+- Owner: codex · Reviewer: claude-code · Depends on: T77 · Live needs: H20
 - Change:
   1. `packages/channels/src/pinterest/` on API v5 (`https://api.pinterest.com/v5`, sandbox
      `https://api-sandbox.pinterest.com/v5` while the app has Trial access, chosen by config).
@@ -3475,7 +3475,7 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
   immediate dispatch and never overwrites it; endpoint auth, strict query, `since` filter, cap.
 
 ### T80b — Reel cleanup driven by bot hand-offs (`reel`, F41)
-- Status: in review.
+- Status: done (PR #196, units installed 2026-11-23).
 - Owner: codex · Reviewer: claude-code · Depends on: T80a (deployed, Worker 2a7c57cd)
 - Change (`apps/reel/src/cleanup.ts`, its tests, systemd unit, README; replaces T75/T75b/T75c
   logic):

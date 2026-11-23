@@ -1,21 +1,20 @@
 # STATUS
 
-- **Active agent:** claude-code (reviewing T80b, PR on `feat/T80b-reel-handoff-cleanup`).
-- **Current task:** T80a merged (PR #195, `0db4dde`); migration 0028 applied on remote D1;
-  Worker secret `REEL_HANDOFF_SECRET` set (same value in `~/.config/handmake-reel/cleanup.env`,
-  mode 600); Worker `2a7c57cd-f354-4612-bfba-1b8a31633261`. Live check: signed
-  `GET /reel/handoffs` → 200 `{"handoffs":[]}`, unsigned → 401. T78 merged (PR #193); YouTube
-  stays off: the tenant YAML has no `youtube` key.
-- **Branch:** `feat/T80b-reel-handoff-cleanup`.
-- **Last commit:** feat(reel): clean reel folders on bot hand-offs.
+- **Active agent:** codex (T79, after the YouTube steps below).
+- **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
+  hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
+  the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
+  `REEL_HANDOFF_BOT_URL`. T80a merged (PR #195), Worker `2a7c57cd`, migration 0028 applied.
+  YouTube stays off: the tenant YAML has no `youtube` key.
+- **Branch:** `main`.
+- **Last commit:** docs: record T80b merge.
 - **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
   View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
   (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
   answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
   (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
-  in the tenant YAML. Meanwhile T80b (Codex: reel cleanup on bot hand-off, see
-  docs/03-tasks.md; T80a is live, the secret is already in `~/.config/handmake-reel/cleanup.env`;
-  bot URL = `PUBLISH_CALLBACK_URL` in `.env` without `/callbacks/published`), then T79 (Pinterest).
+  in the tenant YAML. Then T79 (Pinterest, owner Codex). Unverified live: the first real
+  hand-off trashing files (next queued work).
 - **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
   (`6ecc3d2`), site redeployed; footer links the YouTube channel.
 - **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console
