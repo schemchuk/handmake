@@ -3,6 +3,10 @@ import type { FacebookSkip, InstagramSkip } from '@handmake/channels';
 
 import type { AiBudget, AiCostLedger } from './ai-costs';
 
+export function workFormFields(languages: string[]): string[] {
+  return languages.flatMap((lang) => [`Назва (${lang})`, `Опис (${lang})`]);
+}
+
 /**
  * User-facing bot strings, in one place so the language can be adjusted or
  * i18n'd later without touching the handlers. Author-facing texts are
@@ -113,7 +117,21 @@ export const botTexts = {
   workCreateButton: 'Нова колекція',
   workFormText: (languages: string[]) =>
     'Ці поля описують колекцію. Текст роботи береться з підпису до фото. Надішли одним повідомленням, кожне поле з нового рядка:\n' +
-    languages.flatMap((lang) => [`Назва (${lang})`, `Опис (${lang})`]).join('\n'),
+    workFormFields(languages).join('\n'),
+  workFormCountText: (got: number, expected: number, fieldNames: string[]) => {
+    const lastDigit = got % 10;
+    const lastTwoDigits = got % 100;
+    let lines = 'рядків';
+    if (lastTwoDigits < 11 || lastTwoDigits > 14) {
+      if (lastDigit === 1) lines = 'рядок';
+      else if (lastDigit >= 2 && lastDigit <= 4) lines = 'рядки';
+    }
+    return [
+      `Отримано ${got} ${lines}, потрібно ${expected} — по одному на кожне поле:`,
+      ...fieldNames.map((name, index) => `${index + 1}. ${name}`),
+      'Назва (de) — коротка назва колекції німецькою.',
+    ].join('\n');
+  },
   workConfiguredText: 'Колекцію обрано. Додай фото та коротку нотатку про роботу, потім /done.',
   workSetupErrorText: 'Не вдалося обрати колекцію чи зберегти зміни. Спробуй /work ще раз.',
   workNeedsPhotosText: 'Додай фото роботи перед /done.',
