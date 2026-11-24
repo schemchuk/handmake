@@ -1,18 +1,18 @@
 # STATUS
 
-- **Active agent:** codex (T79).
+- **Active agent:** claude-code (T79 review/merge).
 - **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
   hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
   the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
   `REEL_HANDOFF_BOT_URL`. T80a merged (PR #195), Worker `2a7c57cd`, migration 0028 applied.
   YouTube stays off: the tenant YAML has no `youtube` key.
-- **Branch:** `main`.
-- **Last commit:** docs: record T80b merge.
+- **Branch:** `feat/T79-pinterest` (PR open, reviewed by claude-code).
+- **Last commit:** feat: add Pinterest channel (T79).
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
-- **Next step:** Codex implements T79 (Pinterest channel, docs/03-tasks.md) now against mocked
-  endpoints on branch `feat/T79-pinterest`; live go-live waits for H20 Trial access. The
-  workflow change needs Volodymyr's OK before merge. YouTube: wait for Google's audit reply
-  (mail to the brand account), then `youtube: { language: de }` in the tenant YAML.
+- **Next step:** T79 PR reviewed, no blocking findings; merge after green CI and Volodymyr's OK
+  (workflow and secret handling). Deploy the Worker with the callback/schema changes before
+  enabling the tenant channel. Trial setup still depends on H20. YouTube: wait for the audit
+  reply, then enable `youtube: { language: de }` in the tenant YAML.
 - **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
   sent", no case number shown). Branding re-verified and published 2026-11-24 08:37 EET (consent
   screen shows the privacy links). Form: individual, 1 project (254229190666), use case Video

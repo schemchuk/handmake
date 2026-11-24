@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 
+import { workPhotoPath, workPhotoWidths } from '@handmake/core';
 import type { Collection, ContentStore, Work } from '@handmake/core';
 
 import { excerpt } from './text';
@@ -62,7 +63,7 @@ export async function loadPortfolio(store: ContentStore, tenantId: string) {
       const sourceWidth = (metadata.orientation ?? 1) >= 5 ? metadata.height : metadata.width;
       if (!sourceWidth) throw new Error(`work ${work.id}: photo ${file} has no dimensions`);
       const variants = [];
-      for (const width of new Set([480, 960, 1440].map((size) => Math.min(size, sourceWidth)))) {
+      for (const width of new Set(workPhotoWidths.map((size) => Math.min(size, sourceWidth)))) {
         const result = await sharp(bytes)
           .rotate()
           .resize({ width, withoutEnlargement: true })
@@ -71,7 +72,7 @@ export async function loadPortfolio(store: ContentStore, tenantId: string) {
         variants.push({
           width: result.info.width,
           height: result.info.height,
-          url: `/work-media/${work.id.toLowerCase()}/${file}/${result.info.width}.webp`,
+          url: workPhotoPath(work.id, file, result.info.width),
           bytes: new Uint8Array(result.data),
         });
       }

@@ -153,6 +153,14 @@ jobs:
             ${{ (((github.event_name == 'workflow_dispatch' && inputs.live)
               || (github.event_name == 'repository_dispatch' && github.event.client_payload.live == true))
               && secrets.YOUTUBE_REFRESH_TOKEN) || '' }}
+          PINTEREST_APP_ID: ${{ secrets.PINTEREST_APP_ID }}
+          PINTEREST_APP_SECRET: ${{ secrets.PINTEREST_APP_SECRET }}
+          PINTEREST_REFRESH_TOKEN: ${{ secrets.PINTEREST_REFRESH_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          SECRETS_WRITE_TOKEN: ${{ secrets.SECRETS_WRITE_TOKEN }}
+          PINTEREST_SANDBOX_ONLY: >-
+            ${{ !((github.event_name == 'workflow_dispatch' && inputs.live)
+              || (github.event_name == 'repository_dispatch' && github.event.client_payload.live == true)) }}
           # The publisher pushes the content commit before delivery so Meta
           # can fetch fresh raw-GitHub photo URLs (framed carousel copies
           # included).

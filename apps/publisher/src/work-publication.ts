@@ -1,19 +1,26 @@
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
-import { youtubeSecretNames } from '@handmake/channels';
-import { collectionSchema, videoOnlyChannelKeys, workPublicationSchema } from '@handmake/core';
+import { pinterestSecretNames, youtubeSecretNames } from '@handmake/channels';
+import {
+  collectionSchema,
+  videoOnlyChannelKeys,
+  workOnlyChannelKeys,
+  workPublicationSchema,
+} from '@handmake/core';
 import type { ContentStore, Post, TenantConfig } from '@handmake/core';
 
 import { buildWorkFromPayload } from './build-work';
 import type { DispatchPayload } from './payload';
 
-/** Secret names a video-only channel needs before it may run (T78 item 4). */
-const videoChannelSecrets: Record<string, readonly string[]> = { youtube: youtubeSecretNames };
+const workChannelSecrets: Record<string, readonly string[]> = {
+  youtube: youtubeSecretNames,
+  pinterest: pinterestSecretNames,
+};
 
 export interface SkippedChannel {
   channel: string;
-  reason: 'no video' | 'secrets missing' | 'not in the first run';
+  reason: 'no video' | 'secrets missing' | 'not in the first run' | 'site excluded' | 'live only';
 }
 
 /** Validate before media fetches/writes; announcements are transient Post projections, not blog posts. */
@@ -79,17 +86,23 @@ export async function prepareWorkPublication(
   if (await store.readPost(tenant.id, work.id))
     throw new Error('work id already belongs to a post');
   const ledger = await store.readLedger(tenant.id, work.id);
-  // T78: a video-only channel runs only with a video and its secrets, and never
-  // gets a ledger entry otherwise (a pending one would block the callback and
-  // the reel cleanup). On retry the ledger decides, so the set stays stable.
+  // Omit unavailable work-only channels before creating the ledger.
+  // On retry the ledger decides, so the set stays stable.
   const videoOnly = (channel: string) => videoOnlyChannelKeys.includes(channel);
   const skippedChannels: SkippedChannel[] = details.channels.flatMap(
     (channel): SkippedChannel[] => {
-      if (!videoOnly(channel)) return [];
+      if (!workOnlyChannelKeys.includes(channel)) return [];
       if (ledger)
         return ledger.channels[channel] ? [] : [{ channel, reason: 'not in the first run' }];
-      if (!work.video) return [{ channel, reason: 'no video' }];
-      return (videoChannelSecrets[channel] ?? []).some((name) => !env[name])
+      if (videoOnly(channel) && !work.video) return [{ channel, reason: 'no video' }];
+      if (channel === 'pinterest') {
+        if (work.siteExcluded) return [{ channel, reason: 'site excluded' }];
+        if (env['GITHUB_ACTIONS'] === 'true' && !env['SECRETS_WRITE_TOKEN']?.trim())
+          return [{ channel, reason: 'secrets missing' }];
+        if (env['PINTEREST_SANDBOX_ONLY'] === 'true' && !tenant.channels.pinterest?.sandbox)
+          return [{ channel, reason: 'live only' }];
+      }
+      return (workChannelSecrets[channel] ?? []).some((name) => !env[name]?.trim())
         ? [{ channel, reason: 'secrets missing' }]
         : [];
     },

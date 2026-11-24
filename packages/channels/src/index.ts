@@ -14,3 +14,4 @@ export * from './youtube/adapter';
 export * from './youtube/render';
 
 export { appendAuthenticity } from './authenticity';
+export * from './pinterest/adapter';
