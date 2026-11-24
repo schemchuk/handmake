@@ -1,18 +1,19 @@
 # STATUS
 
-- **Active agent:** claude-code (T79 review/merge).
+- **Active agent:** none (T79 merged; waiting on H20 and the YouTube audit).
 - **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
   hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
   the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
   `REEL_HANDOFF_BOT_URL`. T80a merged (PR #195), Worker `2a7c57cd`, migration 0028 applied.
   YouTube stays off: the tenant YAML has no `youtube` key.
-- **Branch:** `feat/T79-pinterest` (PR open, reviewed by claude-code).
-- **Last commit:** feat: add Pinterest channel (T79).
+- **Branch:** `main`.
+- **Last commit:** `0bd493e` feat: add Pinterest channel (T79) (PR #198).
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
-- **Next step:** T79 PR reviewed, no blocking findings; merge after green CI and Volodymyr's OK
-  (workflow and secret handling). Deploy the Worker with the callback/schema changes before
-  enabling the tenant channel. Trial setup still depends on H20. YouTube: wait for the audit
-  reply, then enable `youtube: { language: de }` in the tenant YAML.
+- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`,
+  T79 callback/schema; the claude-code deploy was blocked by the classifier) and records the
+  Worker version here. After H20 Trial access: Redirect URI, local OAuth, board via API,
+  `PINTEREST_*` secrets, then uncomment `pinterest` (with `sandbox: true`) in the tenant YAML.
+  YouTube: wait for the audit reply, then `youtube: { language: de }` in the tenant YAML.
 - **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
   sent", no case number shown). Branding re-verified and published 2026-11-24 08:37 EET (consent
   screen shows the privacy links). Form: individual, 1 project (254229190666), use case Video
