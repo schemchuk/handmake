@@ -3413,7 +3413,7 @@ migrations: Volodymyr applies them before the bot deploy.
   skip without secrets.
 
 ### T79 — Pinterest channel (`channels`, `publisher`, F44)
-- Status: planned.
+- Status: in review.
 - Owner: codex · Reviewer: claude-code · Depends on: T77 · Live needs: H20
 - Change:
   1. `packages/channels/src/pinterest/` on API v5 (`https://api.pinterest.com/v5`, sandbox

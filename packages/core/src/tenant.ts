@@ -96,6 +96,15 @@ export const channelsSchema = z
     // No delay: the publisher decides per work whether YouTube runs (T78), and a
     // delayed follow-up the bot plans for a skipped channel would never close.
     youtube: z.object({ language: languageCodeSchema }).strict().optional(),
+    pinterest: z
+      .object({
+        language: z.literal('de'),
+        boardId: z.literal('PINTEREST_BOARD_ID'),
+        delay: z.object({ nextDayAt: timeSchema }).strict(),
+        sandbox: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine((channels) => Object.keys(channels).length > 0, 'at least one channel must be enabled');
@@ -104,6 +113,7 @@ export const channelsSchema = z
 export const knownChannelKeys = Object.keys(channelsSchema.shape);
 /** Channels that carry only a work's video: posts, shows and video-less works skip them. */
 export const videoOnlyChannelKeys: readonly string[] = ['youtube'];
+export const workOnlyChannelKeys: readonly string[] = [...videoOnlyChannelKeys, 'pinterest'];
 export type ChannelKey = keyof typeof channelsSchema.shape;
 
 const repoSvgPathSchema = z
@@ -386,6 +396,13 @@ export const tenantConfigSchema = z
         code: 'custom',
         path: ['channels', 'threads', 'language'],
         message: 'threads.language must be in tenant languages',
+      });
+    }
+    if (config.channels.pinterest && (!config.languages.includes('de') || !config.site)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['channels', 'pinterest'],
+        message: 'pinterest requires German among tenant languages and a site',
       });
     }
     const youtube = config.channels.youtube;

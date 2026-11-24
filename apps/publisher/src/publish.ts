@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import sharp from 'sharp';
 
 import {
   createFacebookAdapter,
   createInstagramAdapter,
+  createPinterestAdapter,
   createTelegramAdapter,
   createThreadsAdapter,
   createYoutubeAdapter,
@@ -16,6 +18,9 @@ import {
   entryNamesAllowed,
   postPollLanguage,
   canonicalLinkSettings,
+  canonicalUrl,
+  workPhotoPath,
+  workPhotoWidths,
   channelDelay,
   channelLabel,
   ChannelRegistry,
@@ -57,6 +62,7 @@ import { numberBallotPhotos } from './photos/number';
 import { createPublishCallbackSender } from './publish-callback';
 import type { PublishCallbackSender } from './publish-callback';
 import { parseDispatchPayload } from './payload';
+import { savePinterestRefreshToken } from './pinterest-token';
 import { requiredEnv } from './required-env';
 import { loadTenantConfig } from './tenant-config';
 import { prepareWorkPublication } from './work-publication';
@@ -107,6 +113,7 @@ export function defaultRegistry(
   tenant: TenantConfig,
   env: NodeJS.ProcessEnv,
   channels = Object.keys(tenant.channels),
+  fetchImpl?: typeof fetch,
 ): ChannelRegistry {
   const registry = new ChannelRegistry();
   for (const key of channels) {
@@ -121,6 +128,13 @@ export function defaultRegistry(
       registry.register(createInstagramAdapter());
     } else if (key === 'threads') {
       registry.register(createThreadsAdapter());
+    } else if (key === 'pinterest') {
+      registry.register(
+        createPinterestAdapter({
+          fetchImpl,
+          saveRefreshToken: (token) => savePinterestRefreshToken(token, env),
+        }),
+      );
     } else if (key === 'youtube') {
       // F43: fixed-name secrets resolve per delivery; uploads the work video.
       registry.register(createYoutubeAdapter());
@@ -149,6 +163,7 @@ export function contestErrorCode(error: unknown): string {
     'ThreadsAdapterError',
     'TelegramAdapterError',
     'YoutubeAdapterError',
+    'PinterestAdapterError',
     'FacebookRenderError',
     'InstagramRenderError',
     'ThreadsRenderError',
@@ -213,7 +228,7 @@ export async function runPublish(
   const post = publication?.post ?? buildPostFromPayload(payload, tenant, { now });
   // T77: a run may deliver only some channels of the work; the others keep
   // their ledger entries untouched for a later run.
-  // T78: a video-only channel the work cannot use is left out, with one log line.
+  // Work-only channels the work cannot use are left out, with one log line.
   for (const skip of workPublication?.skippedChannels ?? [])
     log(`channel ${skip.channel}: skipped (${skip.reason})`);
   const skippedChannels = new Set(workPublication?.skippedChannels.map((skip) => skip.channel));
@@ -245,6 +260,7 @@ export async function runPublish(
     ({ notify: async (target, message) => log(`notify ${target}: ${message}`) } satisfies Notifier);
   // An alert must never change the publish outcome.
   const notify = async (target: NotifyTarget, message: string): Promise<void> => {
+    if (!message) return;
     try {
       await notifier.notify(target, message);
     } catch (error) {
@@ -292,7 +308,7 @@ export async function runPublish(
   const committedPost = await git.commit(paths, `content: add ${payload.kind} ${post.id}`);
   log(committedPost ? `committed ${paths.join(', ')}` : 'content unchanged (already committed)');
 
-  const registry = deps.registry ?? defaultRegistry(tenant, env, runChannels);
+  const registry = deps.registry ?? defaultRegistry(tenant, env, runChannels, deps.fetchImpl);
   const secrets: SecretResolver = deps.secrets ?? {
     resolve: async (name) => requiredEnv(name, env),
   };
@@ -442,6 +458,18 @@ export async function runPublish(
         });
         contentPushed = contentPushed || prepared.pushed;
         photoUrls = prepared.photoUrls;
+      } else if (channel === 'pinterest' && startAt < ops.length) {
+        const config = tenant.channels.pinterest!;
+        if (env['PINTEREST_SANDBOX_ONLY'] === 'true' && !config.sandbox)
+          throw new PublishError('Pinterest production delivery requires a live run');
+        if (env['GITHUB_ACTIONS'] === 'true' && !env['SECRETS_WRITE_TOKEN']?.trim())
+          throw new PublishError('Pinterest needs SECRETS_WRITE_TOKEN before refreshing');
+        const site = tenant.site!;
+        if (post.siteExcluded) throw new PublishError('Pinterest requires a public work page');
+        const { width } = await sharp(photoBytes[0]!).metadata();
+        const coverWidth = Math.min(width, workPhotoWidths[0]);
+        photoUrls = [site.baseUrl + workPhotoPath(post.id, post.photos[0]!, coverWidth)];
+        settings = { ...config, link: canonicalUrl(site, 'works', post.id, config.language) };
       } else if (channel === 'facebook' || channel === 'threads') {
         // Meta fetches the item's own committed photos by raw-GitHub URL;
         // the opted-in push (skipped when Instagram already pushed) makes
@@ -478,7 +506,8 @@ export async function runPublish(
           photos: photoBytes,
           ...(photoUrls !== undefined && { photoUrls }),
           ...(videoUrl !== undefined && { videoUrl }),
-          ...(channel === 'youtube' && workVideo && { video: workVideo }),
+          ...((channel === 'youtube' || channel === 'pinterest') &&
+            workVideo && { video: workVideo }),
         },
         {
           startAt,
@@ -644,6 +673,10 @@ export async function runPublish(
         date: post.date,
         photos: post.photos,
         ...(post.siteExcluded ? { siteExcluded: true } : {}),
+        ...(workPublication &&
+          ledger.channels['pinterest']?.status === 'pending' && {
+            pinterestPendingSince: ledger.channels['pinterest'].updatedAt,
+          }),
         channels,
       });
       log(`published callback sent for ${post.id}`);

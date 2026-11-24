@@ -264,7 +264,10 @@ export async function prepareDispatch(
   try {
     const plan = planFollowups(job, await deps.tenantConfigs.load(job.tenantId), now);
     if (!plan.followups.length) return job;
-    await deps.followups.schedule(job.tenantId, job.postId, job, plan.followups, now);
+    // The publisher confirms Pinterest credentials before the callback schedules it.
+    const immediate = plan.followups.filter(({ channel }) => channel !== 'pinterest');
+    if (immediate.length)
+      await deps.followups.schedule(job.tenantId, job.postId, job, immediate, now);
     return plan.job;
   } catch (error) {
     console.error(

@@ -1,6 +1,10 @@
-import { publishedCallbackBodySchema, verifyCallbackSignature } from '@handmake/core';
+import {
+  buildApprovedWorkJob,
+  publishedCallbackBodySchema,
+  verifyCallbackSignature,
+} from '@handmake/core';
 
-import { createD1FollowupStore } from './channel-followups';
+import { createD1FollowupStore, planFollowups } from './channel-followups';
 import { createD1DraftStore } from './draft-store';
 import { queueNameReconciliations } from './name-withdrawal-store';
 import type { Env } from './env';
@@ -162,7 +166,33 @@ export async function handlePublishedCallback(
   // T77: a follow-up run reports its delayed channel; a manual full rerun
   // may report one too. Either way that follow-up is no longer due.
   if (kind === 'work') {
-    await createD1FollowupStore(env.DB).markDone(
+    const followups = createD1FollowupStore(env.DB);
+    const pendingSince = parsed.data.pinterestPendingSince;
+    const state = draft?.draft.state;
+    if (
+      pendingSince &&
+      draft &&
+      options &&
+      !parsed.data.siteExcluded &&
+      (state === 'publishing' || state === 'ready' || state === 'scheduled')
+    ) {
+      // A dispatch response may be lost after CI accepted the approved job.
+      const job = buildApprovedWorkJob({
+        ...draft.draft,
+        state: state === 'scheduled' ? 'ready' : state,
+      });
+      const config = await options.tenantConfigs.load(tenantId);
+      const now = new Date();
+      const plan = planFollowups(job, config, new Date(pendingSince));
+      await followups.schedule(
+        tenantId,
+        postId,
+        job,
+        plan.followups.filter(({ channel }) => channel === 'pinterest'),
+        now,
+      );
+    }
+    await followups.markDone(
       tenantId,
       postId,
       deliveries.map(([channel]) => channel),

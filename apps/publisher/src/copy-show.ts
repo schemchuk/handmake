@@ -9,7 +9,7 @@ import {
   markOpDelivered,
   renderChannelShow,
   showCopyPlanSchema,
-  videoOnlyChannelKeys,
+  workOnlyChannelKeys,
 } from '@handmake/core';
 import { GitRepoContentStore } from '@handmake/stores';
 import { createGitCommitter } from './git';
@@ -80,7 +80,7 @@ async function copyShow(tenantId: string, showId: string, deps: PublishDeps) {
   let ledger = (await store.readLedger(tenantId, showId)) ?? initLedger(tenantId, showId, [], now);
   // Video-only channels (YouTube, T78) carry works only, never show copies.
   const showChannels = Object.fromEntries(
-    Object.entries(tenant.channels).filter(([key]) => !videoOnlyChannelKeys.includes(key)),
+    Object.entries(tenant.channels).filter(([key]) => !workOnlyChannelKeys.includes(key)),
   );
   const registry =
     deps.registry ??
