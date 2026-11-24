@@ -9,18 +9,16 @@
 - **Branch:** `main`.
 - **Last commit:** docs: record T80b merge.
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
-- **Next step (2026-11-24 morning, fresh session):** (1) Google Auth Platform → Branding →
-  View issues → «I have fixed the issues» → Proceed (domain verified 2026-11-22 19:35 EET).
-  (2) Fill and submit the YouTube API audit form from scratch (the first attempt was lost):
-  answers and the four screenshots are in Volodymyr's `~/Downloads/youtube-audit/`
-  (`form-answers.md`); sections 6-7 not seen yet. (3) After approval: `youtube: { language: de }`
-  in the tenant YAML. Then T79 (Pinterest, owner Codex). T80 verified live 2026-11-23
-  12:59 EET: hand-off 12:55:37 trashed 5 files from both folders, Telegram notice received.
-- **Blocked on:** YouTube go-live: API audit (form being filled 2026-11-22). H21 done: PR #194
-  (`6ecc3d2`), site redeployed; footer links the YouTube channel.
-- **Reminder 2026-11-23 after 19:35 EET:** domain `fadenundstimmung.de` verified in Search Console
-  (TXT in Cloudflare DNS, keep it). Then Google Auth Platform → Branding → View issues → «I have
-  fixed the issues» → Proceed, so the consent screen shows the privacy policy links.
+- **Next step:** wait for Google's reply to the YouTube API audit (mail to the brand account
+  larisash11@gmail.com). After approval: `youtube: { language: de }` in the tenant YAML. Then T79
+  (Pinterest, owner Codex). T80 verified live 2026-11-23 12:59 EET: hand-off 12:55:37 trashed
+  5 files from both folders, Telegram notice received.
+- **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
+  sent", no case number shown). Branding re-verified and published 2026-11-24 08:37 EET (consent
+  screen shows the privacy links). Form: individual, 1 project (254229190666), use case Video
+  Uploading, videos.insert only, 1600 units/day, default quota; evidence 1-4 PNGs plus
+  architecture-diagram.png, user-flow-diagram.png, youtube-upload-script.pdf, all in Volodymyr's
+  `~/Downloads/youtube-audit/`. H21 done: PR #194 (`6ecc3d2`).
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,
