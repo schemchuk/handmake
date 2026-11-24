@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** codex (T79, after the YouTube steps below).
+- **Active agent:** codex (T79).
 - **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
   hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
   the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
@@ -9,10 +9,10 @@
 - **Branch:** `main`.
 - **Last commit:** docs: record T80b merge.
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
-- **Next step:** wait for Google's reply to the YouTube API audit (mail to the brand account
-  larisash11@gmail.com). After approval: `youtube: { language: de }` in the tenant YAML. Then T79
-  (Pinterest, owner Codex). T80 verified live 2026-11-23 12:59 EET: hand-off 12:55:37 trashed
-  5 files from both folders, Telegram notice received.
+- **Next step:** Codex implements T79 (Pinterest channel, docs/03-tasks.md) now against mocked
+  endpoints on branch `feat/T79-pinterest`; live go-live waits for H20 Trial access. The
+  workflow change needs Volodymyr's OK before merge. YouTube: wait for Google's audit reply
+  (mail to the brand account), then `youtube: { language: de }` in the tenant YAML.
 - **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
   sent", no case number shown). Branding re-verified and published 2026-11-24 08:37 EET (consent
   screen shows the privacy links). Form: individual, 1 project (254229190666), use case Video
