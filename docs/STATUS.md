@@ -9,9 +9,8 @@
 - **Branch:** `main`.
 - **Last commit:** `0bd493e` feat: add Pinterest channel (T79) (PR #198).
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
-- **Next step:** Volodymyr deploys the bot from clean `main` (`pnpm -C apps/bot run deploy`,
-  T79 callback/schema; the claude-code deploy was blocked by the classifier) and records the
-  Worker version here. After H20 Trial access: Redirect URI, local OAuth, board via API,
+- **T79 deployed 2026-11-24** (PR #198, `0bd493e`), Worker `6a70b2e7` (deployed by Volodymyr).
+- **Next step:** after H20 Trial access: Redirect URI, local OAuth, board via API,
   `PINTEREST_*` secrets, then uncomment `pinterest` (with `sandbox: true`) in the tenant YAML.
   YouTube: wait for the audit reply, then `youtube: { language: de }` in the tenant YAML.
 - **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
