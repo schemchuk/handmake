@@ -19,6 +19,13 @@
   Uploading, videos.insert only, 1600 units/day, default quota; evidence 1-4 PNGs plus
   architecture-diagram.png, user-flow-diagram.png, youtube-upload-script.pdf, all in Volodymyr's
   `~/Downloads/youtube-audit/`. H21 done: PR #194 (`6ecc3d2`).
+- **H20 progress (2026-11-24):** Pinterest business account `fadenundstimmung` (brand Gmail
+  with a `+pinterest` alias; name, about, Imprint link set); fadenundstimmung.de claimed via
+  Cloudflare TXT `pinterest-site-verification=…`; developer app "Faden und Stimmung Publisher",
+  App ID 1643753, submitted 10:27 EET, **Trial access pending** (secret and Redirect URIs locked
+  until approval). After approval: add Redirect URI `http://localhost:8085/`, OAuth locally
+  (scopes boards:read/write, pins:read/write, user_accounts:read), create the board via API, set
+  `PINTEREST_*` secrets. Board not created in the UI on purpose.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,
