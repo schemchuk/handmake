@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** claude-code (T82 review).
+- **Active agent:** none (T82 merged and deployed).
 - **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
   hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
   the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
@@ -12,8 +12,9 @@
   `sandbox: true`; no bot deploy needed (the Worker reads the YAML from GitHub, 5 min cache).
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
 - **T79 deployed 2026-11-24** (PR #198, `0bd493e`), Worker `6a70b2e7` (deployed by Volodymyr).
-- **Next step:** Codex: implement T82 (docs/03-tasks.md) on `feat/t82-work-channels-default`;
-  edit files only, Claude Code reviews, commits and opens the PR. After that: check the first sandbox Pin: the next published work queues Pinterest for 09:00
+- **T82 deployed 2026-11-27** (PR #200, `af42d09`, author Codex), Worker `71098310`: new works
+  default to «Повідомлення в канали: так».
+- **Next step:** check the first sandbox Pin: the next published work queues Pinterest for 09:00
   the next morning (sandbox API, sandbox board). Verify it via the API, watch for a rejected
   fadenundstimmung.de link; then the demo video and Standard access (H20 rest).
   YouTube: wait for the audit reply, then `youtube: { language: de }` in the tenant YAML.
