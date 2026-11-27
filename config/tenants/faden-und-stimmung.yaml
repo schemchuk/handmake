@@ -22,12 +22,12 @@ channels:
     language: de
     delay:
       minutes: 90
-  # T79: the next morning. Enable after H20. Use sandbox: true for Trial access.
-  # pinterest:
-  #   language: de
-  #   boardId: PINTEREST_BOARD_ID
-  #   delay: { nextDayAt: '09:00' }
-  #   sandbox: true
+  # Sandbox is on until Pinterest Standard access.
+  pinterest:
+    language: de
+    boardId: PINTEREST_BOARD_ID
+    delay: { nextDayAt: '09:00' }
+    sandbox: true
 
 entryNamePolicy:
   telegram: true

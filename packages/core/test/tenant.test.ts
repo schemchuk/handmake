@@ -71,7 +71,8 @@ describe('parseTenantConfig', () => {
     const config = parseTenantConfig(realConfig());
     expect(channelDelay(config, 'threads')).toEqual({ minutes: 90 });
     expect(channelDelay(config, 'telegram')).toBeUndefined();
-    expect(channelDelay(config, 'pinterest')).toBeUndefined();
+    expect(channelDelay(config, 'pinterest')).toEqual({ nextDayAt: '09:00' });
+    expect(config.channels.pinterest?.sandbox).toBe(true);
     expect(channelLabel('threads')).toBe('Threads');
     const threads = (delay: unknown) =>
       channelsSchema.safeParse({ threads: { language: 'de', delay } }).success;
@@ -117,7 +118,13 @@ describe('parseTenantConfig', () => {
     });
     expect(config.channels.facebook).toEqual({ language: 'de' });
     expect(config.channels.threads).toEqual({ language: 'de', delay: { minutes: 90 } });
-    expect(Object.keys(config.channels)).toEqual(['telegram', 'instagram', 'facebook', 'threads']);
+    expect(Object.keys(config.channels)).toEqual([
+      'telegram',
+      'instagram',
+      'facebook',
+      'threads',
+      'pinterest',
+    ]);
     expect(config.offerings).toEqual([]);
   });
 
