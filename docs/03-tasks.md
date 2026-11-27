@@ -3533,7 +3533,7 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
 - Tests (`--maxWorkers=2`, only `apps/bot/test/work-session.test.ts`): both cases above.
 
 ### T82 — Bot: announce a new work in the channels by default (`bot`)
-- Status: todo.
+- Status: in review.
 - Owner: codex · Reviewer: claude-code · Depends on: none
 - Problem (2026-11-27, live): a work approved with the preview toggle left at its default
   «Повідомлення в канали: ні» went out to the site only (`work.channels: []`). The author expects

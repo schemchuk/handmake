@@ -1,6 +1,6 @@
 # STATUS
 
-- **Active agent:** codex (T82).
+- **Active agent:** claude-code (T82 review).
 - **Current task:** T80b merged (PR #196, `118c071`, author Codex): the reel cleanup follows bot
   hand-offs; units reinstalled in `~/.config/systemd/user/`, first run 2026-11-23 12:43 EET set
   the baseline `last`, trashed nothing. `cleanup.env` holds `REEL_HANDOFF_SECRET` and
