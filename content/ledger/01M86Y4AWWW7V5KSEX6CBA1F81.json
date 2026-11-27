@@ -11,9 +11,11 @@
       "updatedAt": "2026-11-27T20:11:02.148Z"
     },
     "instagram": {
-      "status": "pending",
-      "remoteIds": [],
-      "updatedAt": "2026-11-27T20:10:56.305Z"
+      "status": "done",
+      "remoteIds": [
+        "18098028380165366"
+      ],
+      "updatedAt": "2026-11-27T20:11:20.879Z"
     },
     "facebook": {
       "status": "pending",
