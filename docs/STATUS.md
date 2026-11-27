@@ -10,8 +10,8 @@
 - **Last commit:** `0bd493e` feat: add Pinterest channel (T79) (PR #198).
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
 - **T79 deployed 2026-11-24** (PR #198, `0bd493e`), Worker `6a70b2e7` (deployed by Volodymyr).
-- **Next step:** after H20 Trial access: Redirect URI, local OAuth, board via API,
-  `PINTEREST_*` secrets, then uncomment `pinterest` (with `sandbox: true`) in the tenant YAML.
+- **Next step:** uncomment `pinterest` (with `sandbox: true`) in the tenant YAML, then a
+  sandbox test pin; then the demo video and Standard access (H20 rest).
   YouTube: wait for the audit reply, then `youtube: { language: de }` in the tenant YAML.
 - **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
   sent", no case number shown). Branding re-verified and published 2026-11-24 08:37 EET (consent
@@ -19,13 +19,15 @@
   Uploading, videos.insert only, 1600 units/day, default quota; evidence 1-4 PNGs plus
   architecture-diagram.png, user-flow-diagram.png, youtube-upload-script.pdf, all in Volodymyr's
   `~/Downloads/youtube-audit/`. H21 done: PR #194 (`6ecc3d2`).
-- **H20 progress (2026-11-24):** Pinterest business account `fadenundstimmung` (brand Gmail
-  with a `+pinterest` alias; name, about, Imprint link set); fadenundstimmung.de claimed via
-  Cloudflare TXT `pinterest-site-verification=…`; developer app "Faden und Stimmung Publisher",
-  App ID 1643753, submitted 10:27 EET, **Trial access pending** (secret and Redirect URIs locked
-  until approval). After approval: add Redirect URI `http://localhost:8085/`, OAuth locally
-  (scopes boards:read/write, pins:read/write, user_accounts:read), create the board via API, set
-  `PINTEREST_*` secrets. Board not created in the UI on purpose.
+- **H20 progress (2026-11-27):** Trial access approved 2026-11-26. Redirect URI
+  `http://localhost:8085/` added; OAuth done by a one-off local script (not committed), code
+  exchanged at `api-sandbox.pinterest.com` (a production refresh token is rejected by the
+  sandbox); sandbox board "Faden und Stimmung" created via API. GitHub secrets set:
+  `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`, `PINTEREST_REFRESH_TOKEN` (sandbox),
+  `PINTEREST_BOARD_ID` (sandbox board). Pinterest rejected a board description containing the
+  fadenundstimmung.de link ("may lead to inappropriate content"); watch for the same on Pin links.
+  At Standard access: new OAuth against production and a production board, then replace
+  `PINTEREST_REFRESH_TOKEN` and `PINTEREST_BOARD_ID`.
 - **Open questions for Volodymyr:** none.
 - **Validation (T77, local):** typecheck, eslint, prettier clean; core 417/417; publisher
   work-publish, payload, publish, threads-publish green; bot channel-followups 12/12,
