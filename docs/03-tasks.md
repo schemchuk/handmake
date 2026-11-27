@@ -3531,3 +3531,20 @@ against the AGENTS.md roles (fixed 2026-11-23); T80b: owner Codex, reviewer clau
 - Acceptance: three lines → reply names 3 and 4 and lists the four fields, no collection created;
   four lines with blank lines between them → collection created with trimmed fields.
 - Tests (`--maxWorkers=2`, only `apps/bot/test/work-session.test.ts`): both cases above.
+
+### T82 — Bot: announce a new work in the channels by default (`bot`)
+- Status: todo.
+- Owner: codex · Reviewer: claude-code · Depends on: none
+- Problem (2026-11-27, live): a work approved with the preview toggle left at its default
+  «Повідомлення в канали: ні» went out to the site only (`work.channels: []`). The author expects
+  every work in the channels; she had to remember to flip the toggle each time.
+- Change (`apps/bot/src/work-session.ts`, tests):
+  1. When a work is configured (collection picked from the menu, and the new-collection form),
+     set `channels` to `Object.keys(config.channels)` of the tenant instead of `[]`, the same
+     list the «так» toggle sets. Reuse the config already loaded by `configFor(ctx.tenantId)`.
+  2. The toggle stays: «ні» still clears the list for a site-only work.
+  3. Drafts already configured keep their stored list (no migration).
+- Acceptance: a new work, collection picked, no toggle touched → preview shows «Повідомлення в
+  канали: так» and the approved job carries every tenant channel; tapping it once → «ні» and `[]`.
+- Tests (`--maxWorkers=2`, only `apps/bot/test/work-session.test.ts`): both paths above, for an
+  existing collection and for a new one; update tests that expected `[]` by default.
