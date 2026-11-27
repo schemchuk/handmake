@@ -119,6 +119,11 @@ async function selectExisting() {
   await start();
   await press(buttons().find((b) => b.callback_data.includes(':pick:'))!.callback_data);
 }
+async function createCollection() {
+  await start('interior');
+  await press(buttons().find((b) => b.text === botTexts.workCreateButton)!.callback_data);
+  await send('  UA title  \n\n UA description\n \t\nDE title  \n DE description \n');
+}
 async function contentAndGenerate() {
   await bot.handleUpdate(photoUpdate(11, ['photo-1']));
   await send('Author note');
@@ -128,13 +133,11 @@ async function contentAndGenerate() {
 
 describe('/work author flow', () => {
   it('creates a localized collection from plain text, previews, cancels consent and explicitly dispatches the approved work', async () => {
-    await start('interior');
-    await press(buttons().find((b) => b.text === botTexts.workCreateButton)!.callback_data);
-    await send('  UA title  \n\n UA description\n \t\nDE title  \n DE description \n');
+    await createCollection();
     expect((await get()).draft.texts).toEqual({});
     await contentAndGenerate();
     expect(publish.jobs).toEqual([]);
-    await press(`work:${id}:announce:yes`);
+    expect(buttons().some((b) => b.text === botTexts.workAnnounceOn)).toBe(true);
     await press(`draft:${id}:publish`);
     await press(`draft:${id}:publish:cancel`);
     expect(publish.jobs).toEqual([]);
@@ -145,8 +148,7 @@ describe('/work author flow', () => {
     expect(job.kind).toBe('work');
     expect(job.work).toMatchObject({
       kind: 'interior',
-      // "yes" announces on every enabled tenant channel (telegram first).
-      channels: ['telegram', 'instagram', 'facebook', 'threads', 'pinterest'],
+      channels: Object.keys(config.channels),
       collection: `collection-${id.toLowerCase()}`,
       newCollection: {
         versions: {
@@ -168,7 +170,6 @@ describe('/work author flow', () => {
   it('queues an approved work and lets /work start the next one (F42)', async () => {
     await selectExisting();
     await contentAndGenerate();
-    await press(`work:${id}:announce:yes`);
     await press(`draft:${id}:publish`);
     const queueButton = buttons().find((b) =>
       b.callback_data.startsWith(`draft:${id}:publish:queue:`),
@@ -189,20 +190,39 @@ describe('/work author flow', () => {
     expect((await drafts.getChatSession(tenant, '11'))!.draftId).toBe(first);
   });
 
-  it('selects an existing collection and keeps site-only publication as the initial choice', async () => {
+  it('announces a work in an existing collection on every tenant channel by default', async () => {
     await selectExisting();
     await contentAndGenerate();
     expect(readWorkDraftData((await get()).draft).config).toEqual({
       kind: 'worn',
       collection: 'fixture',
-      channels: [],
+      channels: Object.keys(config.channels),
     });
-    expect(buttons().some((b) => b.text === botTexts.workAnnounceOff)).toBe(true);
+    expect(buttons().some((b) => b.text === botTexts.workAnnounceOn)).toBe(true);
     await press(`draft:${id}:publish`);
     await press(`draft:${id}:publish:confirm`);
     await flush();
-    expect(publish.jobs[0]!.work?.channels).toEqual([]);
+    expect(publish.jobs[0]!.work?.channels).toEqual(Object.keys(config.channels));
   });
+
+  it.each([
+    ['an existing', selectExisting],
+    ['a new', createCollection],
+  ])(
+    'clears channels when the author turns off announcements for %s collection',
+    async (_, setup) => {
+      await setup();
+      await contentAndGenerate();
+      const toggle = buttons().find((b) => b.text === botTexts.workAnnounceOn)!;
+      await press(toggle.callback_data);
+      expect(buttons().some((b) => b.text === botTexts.workAnnounceOff)).toBe(true);
+      expect(readWorkDraftData((await get()).draft).config.channels).toEqual([]);
+      await press(`draft:${id}:publish`);
+      await press(`draft:${id}:publish:confirm`);
+      await flush();
+      expect(publish.jobs[0]!.work?.channels).toEqual([]);
+    },
+  );
 
   it('rejects strangers and foreign-tenant callbacks without reading collections or changing the draft', async () => {
     await send('/work', 99);
@@ -364,8 +384,17 @@ describe('/work author flow', () => {
   });
 });
 
-it('does not block a long site-only description on channel rendering limits', async () => {
+it('preserves a stored site-only choice and skips channel limits for a long description', async () => {
   await selectExisting();
+  const { draft, version } = await get();
+  const work = readWorkDraftData(draft);
+  await drafts.updateWork(
+    {
+      ...draft,
+      extras: { ...draft.extras, work: { ...work, config: { ...work.config, channels: [] } } },
+    },
+    version,
+  );
   uk.mockResolvedValueOnce({
     version: {
       description: 'a'.repeat(5000),
@@ -376,6 +405,7 @@ it('does not block a long site-only description on channel rendering limits', as
     notes: '',
   });
   await contentAndGenerate();
+  expect(buttons().some((b) => b.text === botTexts.workAnnounceOff)).toBe(true);
   expect(buttons().some((b) => b.text === botTexts.publishButton)).toBe(true);
   expect(sentTexts(calls).at(-1)).not.toContain(botTexts.previewCaptionSplitNote);
 });

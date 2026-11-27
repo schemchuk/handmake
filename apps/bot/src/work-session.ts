@@ -172,7 +172,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         (c) => c.slug === menu.slugs[index!],
       );
       if (!collection || collection.tenant !== ctx.tenantId) throw new Error('collection absent');
-      const { languages } = await configFor(ctx.tenantId);
+      const { languages, channels } = await configFor(ctx.tenantId);
       if (
         Object.keys(collection.versions).length !== languages.length ||
         languages.some((lang) => !collection.versions[lang])
@@ -180,7 +180,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         throw new Error('collection languages mismatch');
       await configure(
         stored,
-        { kind: menu.kind, collection: collection.slug, channels: [] },
+        { kind: menu.kind, collection: collection.slug, channels: Object.keys(channels) },
         Object.values(collection.versions)[0]!.title,
       );
       await ctx.reply(texts.workConfiguredText);
@@ -215,7 +215,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
     )
       return next();
     try {
-      const { languages } = await configFor(ctx.tenantId);
+      const { languages, channels } = await configFor(ctx.tenantId);
       const fields = ctx.msg.text
         .split('\n')
         .map((field) => field.trim())
@@ -236,7 +236,7 @@ export function registerWorkSession(bot: Bot<AppContext>, options: CreateBotOpti
         {
           kind: menu.kind,
           collection: `collection-${stored.draft.draftId.toLowerCase()}`,
-          channels: [],
+          channels: Object.keys(channels),
           newCollection: { order: 0, versions },
         },
         fields[0]!,
