@@ -7,11 +7,14 @@
   `REEL_HANDOFF_BOT_URL`. T80a merged (PR #195), Worker `2a7c57cd`, migration 0028 applied.
   YouTube stays off: the tenant YAML has no `youtube` key.
 - **Branch:** `main`.
-- **Last commit:** `0bd493e` feat: add Pinterest channel (T79) (PR #198).
+- **Last commit:** `618b729` feat: enable Pinterest channel in sandbox (H20) (PR #199).
+- **PR #199 merged 2026-11-27** (author Codex, reviewer Claude Code): tenant YAML `pinterest` with
+  `sandbox: true`; no bot deploy needed (the Worker reads the YAML from GitHub, 5 min cache).
 - **T81 deployed 2026-11-23** (PR #197, `7283de7`), Worker `d7542c5c` (deployed by Volodymyr).
 - **T79 deployed 2026-11-24** (PR #198, `0bd493e`), Worker `6a70b2e7` (deployed by Volodymyr).
-- **Next step:** uncomment `pinterest` (with `sandbox: true`) in the tenant YAML, then a
-  sandbox test pin; then the demo video and Standard access (H20 rest).
+- **Next step:** check the first sandbox Pin: the next published work queues Pinterest for 09:00
+  the next morning (sandbox API, sandbox board). Verify it via the API, watch for a rejected
+  fadenundstimmung.de link; then the demo video and Standard access (H20 rest).
   YouTube: wait for the audit reply, then `youtube: { language: de }` in the tenant YAML.
 - **Blocked on:** YouTube go-live: API audit submitted 2026-11-24 09:26 EET ("Your email has been
   sent", no case number shown). Branding re-verified and published 2026-11-24 08:37 EET (consent
