@@ -74,6 +74,7 @@ export function createWorkDraftFlow({
       try {
         const generator = await textGeneratorFor(tenantId, draftId);
         if (!data.generated?.['uk']) {
+          data.authorNote ??= current.draft.texts['uk']!;
           data.uaPending = true;
           await save('translating');
           const uk = await generator.generateUkrainian({
