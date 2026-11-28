@@ -45,7 +45,7 @@ Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of
 | Implementing tasks from docs/03-tasks.md | Codex (from 2026-11-10 until Volodymyr names another agent: every task listed with `Owner: kimi-code` goes to Codex; earlier Kimi Code, with Codex standing in 2026-10-31 to 2026-11-05) | Claude Code |
 | Code review | the agent that did NOT write the code | n/a |
 | Commit and push of a session's work | the Active agent in docs/STATUS.md | n/a |
-| Merge of a task PR to `main` | the reviewer agent (never the author), see Git rules | Volodymyr (veto) |
+| Merge of a task PR to `main` | Claude Code, also its own PRs (2026-11-28), see Git rules | Volodymyr (veto) |
 | Secrets, legal/personal-data decisions, OK for sensitive merges | Volodymyr only | n/a |
 Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a task you do not own. If Kimi Code does not read AGENTS.md automatically, I will paste it in (Codex reads it by itself).
 
@@ -66,9 +66,9 @@ Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a
 - The Active agent is responsible for committing and pushing. After EVERY logical block (one coherent unit of work): update STATUS.md, stage only relevant files, commit, `git push`, then tell me the hash and a one-line summary. Never batch several blocks into one commit.
 - Commit format: Conventional Commits (docs:, feat:, fix:, chore:, test:), imperative, under 72 chars, plus a trailer line `Agent: claude-code`, `Agent: kimi-code` or `Agent: codex`.
 - Docs and setup commits may go to `main`. Code goes on `feat/<task-id>-<slug>` branches, one PR per task.
-- Merge (amended 2026-10-22): the reviewer agent merges the PR after CI is green and the review has no
-  blocking findings: `gh pr merge --squash --delete-branch`, then updates STATUS.md on `main`. The author
-  never merges its own PR. Sensitive PRs need Volodymyr's explicit OK in chat before the merge: changes to
+- Merge (amended 2026-11-28, same rule in all his projects): Claude Code merges PRs itself, its own
+  included, after CI is green and the review has no blocking findings:
+  `gh pr merge --squash --delete-branch`, then updates STATUS.md on `main`. Sensitive PRs need Volodymyr's explicit OK in chat before the merge: changes to
   `.github/workflows/`, secret handling, legal texts, or processing of personal data. Volodymyr may veto or
   revert any merge.
 - Handoff after merge (added 2026-11-03): in that same STATUS.md update, the reviewer who merged sets
