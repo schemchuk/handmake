@@ -1,9 +1,13 @@
 # AGENTS.md — Faden und Stimmung
 
-## Language rules
-- Talk to Volodymyr in Ukrainian.
-- Write all repository docs, code, comments and commit messages in English.
-- Channel/site content is written by his wife in Ukrainian and/or German. Never rewrite her texts unless asked.
+Uses Volodymyr's brain: his rules for coding agents (language, gates, interview, git, merge,
+safety, secrets, several agents, machine) come into every Claude Code session from the brain
+plugin. Agents without the plugin (Codex) read `~/.local/share/brain/rules/*.md` at session
+start. This file holds project facts and project rules only; where it says more than the
+brain, this file wins here.
+
+## His wife's texts
+Channel/site content is written by his wife in Ukrainian and/or German. Never rewrite her texts unless asked.
 
 ## Project
 "Faden und Stimmung" is a Telegram channel (already created, with our bot as channel admin) and an Instagram account for a weekly handmade circle in Landshut, Germany, led by Volodymyr's wife as a volunteer. Volodymyr is the technical side; she is the face of the project and decides tone and what gets published. Both participate voluntarily. Purposes:
@@ -27,79 +31,28 @@ Legal prior art: `../coachHelp/docs/legal/` (Impressum, privacy policy, terms of
 - Phase 1 stores NO personal data of participants.
 - Photos: authentic photos of handmade items and hands. No identifiable faces without written consent.
 - Content files carry a `provenance` field (human | ai-assisted | ai-generated).
-- Secrets only in `.env` (gitignored) and GitHub Secrets. Never print, log or commit tokens. Keep `.env.example` with placeholders.
-- Germany/GDPR applies. A public site needs Impressum and Datenschutzerklärung. You are not a lawyer: flag legal questions to me, never present generated legal text as final.
+- Germany/GDPR applies. A public site needs Impressum and Datenschutzerklärung. Legal questions: see the brain's safety rules.
 - Everything must be automated: content -> Telegram / Instagram -> website, triggered by CI. My wife writes; the pipeline does the rest.
-- Publishing must be idempotent: re-running CI never posts the same item twice.
 - Channels are pluggable: Telegram now, Instagram, Facebook and Threads next (built together), but nothing in the core may depend on a specific network.
 - Do NOT assume the tech stack. It is decided in the interview, from my goals and trade-offs you present.
 
 ## Environment
-- Both agents run in the repo root inside VS Code's terminal. `origin` is GitHub over SSH, already authenticated by me. If push fails on auth, stop and tell me.
-- Only ONE agent is active at a time in the working tree. Never run both in parallel on the same checkout.
+- Agents run in the repo root inside VS Code's terminal. `origin` is GitHub over SSH, already authenticated by me. If push fails on auth, stop and tell me.
 
-## Roles and ownership
-| Area | Owner | Reviewer |
-|---|---|---|
-| Repo setup, docs, interview, spec, architecture, task planning | Claude Code | Volodymyr |
-| Implementing tasks from docs/03-tasks.md | Codex (from 2026-11-10 until Volodymyr names another agent: every task listed with `Owner: kimi-code` goes to Codex; earlier Kimi Code, with Codex standing in 2026-10-31 to 2026-11-05) | Claude Code |
-| Code review | the agent that did NOT write the code | n/a |
-| Commit and push of a session's work | the Active agent in docs/STATUS.md | n/a |
-| Merge of a task PR to `main` | Claude Code, also its own PRs (2026-11-28), see Git rules | Volodymyr (veto) |
-| Secrets, legal/personal-data decisions, OK for sensitive merges | Volodymyr only | n/a |
-Each task in docs/03-tasks.md has `Owner:` and `Reviewer:` fields. Never touch a task you do not own. If Kimi Code does not read AGENTS.md automatically, I will paste it in (Codex reads it by itself).
+## Handoff
+`docs/STATUS.md` fields: Active agent, Current task, Branch, Last commit (hash + message), Next step, Blocked on, Open questions for Volodymyr. Tasks in docs/03-tasks.md carry `Owner:` and `Reviewer:`; Claude Code writes and merges unless Volodymyr names Codex for a task (brain rule).
+- Context budget (ADR 009): read docs/review-notes.md, the spec, architecture and ADRs only for the parts your task touches. Keep STATUS.md to the handoff fields plus short reminders.
 
-## Handoff protocol
-`docs/STATUS.md` is the single source of truth. Fields: Active agent, Current task, Branch, Last commit (hash + message), Next step, Blocked on, Open questions for Volodymyr.
-- START of every session: `git pull --rebase`, read AGENTS.md and docs/STATUS.md, confirm you are the Active agent. If not, stop and tell me.
-- END of every session: working tree clean, STATUS.md updated, everything pushed, Active agent set to the next owner or "none".
-
-## Context budget (ADR 009)
-- At session start read only AGENTS.md and docs/STATUS.md. Read docs/review-notes.md, the spec,
-  architecture and ADRs only for the parts your task touches.
-- One session per task. Start a fresh session for the next task instead of continuing a long one.
-- Keep a task PR under ~400 changed non-test lines; if a task will be larger, the task owner proposes
-  a split in docs/03-tasks.md before coding.
-- Keep STATUS.md to the handoff fields plus short reminders; history belongs in git and PRs.
-
-## Git rules
-- The Active agent is responsible for committing and pushing. After EVERY logical block (one coherent unit of work): update STATUS.md, stage only relevant files, commit, `git push`, then tell me the hash and a one-line summary. Never batch several blocks into one commit.
-- Commit format: Conventional Commits (docs:, feat:, fix:, chore:, test:), imperative, under 72 chars, plus a trailer line `Agent: claude-code`, `Agent: kimi-code` or `Agent: codex`.
-- Docs and setup commits may go to `main`. Code goes on `feat/<task-id>-<slug>` branches, one PR per task.
-- Merge (amended 2026-11-28, same rule in all his projects): Claude Code merges PRs itself, its own
-  included, after CI is green and the review has no blocking findings:
-  `gh pr merge --squash --delete-branch`, then updates STATUS.md on `main`. Sensitive PRs need Volodymyr's explicit OK in chat before the merge: changes to
-  `.github/workflows/`, secret handling, legal texts, or processing of personal data. Volodymyr may veto or
-  revert any merge.
-- Handoff after merge (added 2026-11-03): in that same STATUS.md update, the reviewer who merged sets
-  Active agent to the next task's `Owner:` and Next step to that task, for the owner to start in a
-  fresh session, then ends its session.
+## Project git rules
+- Commit trailer `Agent: claude-code` or `Agent: codex`.
 - Bot deploy after merge (added 2026-11-05): when a merged PR changes `apps/bot` or `packages/`,
-  the reviewer who merged deploys the bot from a clean `main` with `pnpm -C apps/bot run deploy` and
+  the agent who merged deploys the bot from a clean `main` with `pnpm -C apps/bot run deploy` and
   records the Worker version in STATUS.md. If the PR adds D1 migrations or changes
   `apps/bot/wrangler.toml` or secrets, it stops and asks Volodymyr first. The publisher needs no
   deploy: Actions run it from `main`.
-- Review notes (added 2026-11-03): the reviewer never fixes non-blocking findings itself. It lists
-  them in the PR review comment and adds them to the next implementer task in docs/03-tasks.md (a
-  `Review notes from PR #N` line) and to STATUS.md Next step, so its owner fixes them in that PR.
-  Blocking findings still stop the merge and go back to the PR author.
+- Review notes (added 2026-11-03): non-blocking findings go into the next task in docs/03-tasks.md (a
+  `Review notes from PR #N` line) and to STATUS.md Next step.
 - Exception (approved 2026-10-21, ADR 003): the publish workflow in GitHub Actions may commit published posts and ledger entries directly to `main`, under `content/` only, as the bot identity. It never touches any other path. Agents never use this exception.
-- Never force-push, never rewrite history, never commit `.env` or any secret. Run `git status` and `git diff --staged` before each commit and check for secrets.
-- If a push is rejected: `git pull --rebase`, resolve, push again; on non-trivial conflicts stop and ask me.
 
-## Workflow (spec-driven, with gates)
-No code before steps 1-4 are approved by me.
-1. INTERVIEW -> docs/00-interview.md
-2. SPEC -> docs/01-spec.md (what and why, acceptance criteria, explicit non-goals). Stop for review.
-3. ARCHITECTURE -> docs/02-architecture.md plus docs/decisions/NNN-title.md per major choice (options, decision, reason). Stop for review.
-4. TASKS -> docs/03-tasks.md: small tasks (reviewable in 10-15 minutes), each with Owner, Reviewer, acceptance criteria and tests. Stop for review.
-5. EXECUTE one task at a time on its own branch; writer and reviewer are different agents. If reality diverges from the spec, update the docs. Docs are the source of truth.
-6. Each finished task: tests pass, docs updated, small clear commit.
-
-## Interview rules
-- Max 5-6 questions per round, then wait. Be direct and concise.
-- If my answer is vague, contradictory, or misses the question, push back and ask again.
-- After each round append my answers to docs/00-interview.md.
-- When questions are closed, summarize my answers in 10 lines and ask me to confirm before writing the spec.
-- Cover at least: target audience and languages (UA/DE) and how both are handled; my wife's workflow (where she writes, who approves posts, how photos reach the repo); Instagram account type and publishing mode; posting frequency and post types; whether a presentation is still needed and in what form (no third-party branding); my target job market and which skills the portfolio must prove; stack preferences (present options with trade-offs, do not pick for me); hosting and budget (assume near zero); what is public vs private in the repo and when it becomes public; how success is measured; time per week I can spend; the gap between "ideal" and "MVP in one week".
-- Flag anything touching legal or personal-data risk and ask me.
+## Interview topics
+Cover at least: target audience and languages (UA/DE) and how both are handled; my wife's workflow (where she writes, who approves posts, how photos reach the repo); Instagram account type and publishing mode; posting frequency and post types; whether a presentation is still needed and in what form (no third-party branding); my target job market and which skills the portfolio must prove; stack preferences (present options with trade-offs, do not pick for me); hosting and budget (assume near zero); what is public vs private in the repo and when it becomes public; how success is measured; time per week I can spend; the gap between "ideal" and "MVP in one week". Flag anything touching legal or personal-data risk and ask me.
