@@ -88,7 +88,10 @@ describe('work draft generation recovery', () => {
     expect(readWorkDraftData(stored.draft)).toMatchObject({
       generated: { uk: uk.version, de: de.version },
       notes: { uk: uk.notes, de: de.notes },
+      authorNote: 'Author note',
     });
+    expect(stored.draft.texts['uk']).toBe('UA fixture');
+    expect(buildApprovedWorkJob(stored.draft).work).not.toHaveProperty('authorNote');
     expect(factory).toHaveBeenCalledExactlyOnceWith(tenant, id);
     expect(buildApprovedWorkJob(stored.draft).work?.versions['uk']?.provenance).toBe(
       'ai-generated',

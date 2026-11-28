@@ -25,6 +25,8 @@ export const workDraftDataSchema = z
       .refine((v) => !!v['uk'] && Object.keys(v).every((lang) => lang === 'uk' || lang === 'de'))
       .optional(),
     notes: z.record(z.string(), z.string()).default({}),
+    /** The author's own note as typed, kept before the UA text replaces it; never published. */
+    authorNote: z.string().optional(),
     /** Set before paying for UA; an interrupted attempt must not silently generate it again. */
     uaPending: z.boolean().default(false),
   })
